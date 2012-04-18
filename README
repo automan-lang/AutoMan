@@ -1,0 +1,92 @@
+AutoMan: Human-Computation Runtime v0.2
+---------------------------------------
+
+This is a preliminary release of AutoMan.  Please report any bugs you
+may find to the project maintainer, Dan Barowy <dbarowy@cs.umass.edu>.
+
+Presently, we have only tested AutoMan with Scala programs.  In
+principle, Java can use AutoMan as-is, but adding official support is
+currently on our TODO list.
+
+License
+-------
+
+AutoMan is licensed under the GPLv2, Copyright (C) 2011-2012 The
+University of Massachusetts, Amherst.
+
+Compiling AutoMan
+-----------------
+
+To use AutoMan, you will need to compile a JAR.  Currently, this is
+a manual process, and you will need to fetch all of the required
+libraries manually.  We are putting together an Apache Buildr script
+that will do this for you, and we will add this file to the repository
+shortly.
+
+Using AutoMan in Your Project
+-----------------------------
+
+In your source file, import the Mechanical Turk adapter (Scala syntax):
+
+  import edu.umass.cs.automan.adapters.MTurk.MTurkAdapter
+
+After that, initialize the AutoMan runtime with an MTurk config and
+define your tasks.  You may then call those tasks like regular
+functions.  Note that these functions return immediately, as calling
+a human function runs in a separate background thread.
+
+In order to access data returned by the function, you must call
+apply on the object returned by the function and then access the
+"value" field in the Answer object, as human functions return
+Future[Answer] objects.  E.g.,
+
+  val answer = human_function(args)
+  answer().value
+
+Automan v0.3 is likely to simplify this syntax somewhat.  Automan v0.1
+did not use Scala's built-in futures.
+
+Please see the collection of sample programs in the "sample_programs"
+directory. This folder contains the programs we used in the technical
+report (see below).
+
+
+Using AutoMan with a Different Crowdsourcing Backend
+----------------------------------------------------
+
+We currently only support Amazon's Mechanical Turk.  However, AutoMan
+was designed to accommodate arbitrary backends.  If you are interested
+in seeing your backend supported, please contact Dan Barowy.
+
+However, we are happy to work with you to ensure that you have all of
+the information you need to write your adapter library. We will also fix
+any compatibility problems with the AutoMan runtime that you might
+encounter along the way.
+
+Memoization
+-----------
+
+AutoMan saves all intermediate human-computed results.  In the event
+of a program exception or unexpected termination, the programmer may
+restart AutoMan and it will reuse any previously-obtained results.  If
+you want to discard these intermediate results, delete the
+AutomanMemoDB file.  The format of this database is Apache Derby 10.8.
+
+More Information
+----------------
+
+More detailed information is available in our technical report:
+
+  UMass CS TR 2012-013:
+  AutoMan: A Platform for Integrating Human-Based and Digital Computation
+  Daniel W. Barowy, Charlie Curtsinger, Emery D. Berger, and Andrew McGregor
+
+  http://www.cs.umass.edu/~emery/pubs/AutoMan-UMass-CS-TR-2012-013.pdf
+
+Please contact us if you plan to cite this work as there may be a more
+up-to-date citation.
+
+Contact information:
+
+  Emery Berger, emery@cs.umass.edu
+  Dan Barowy, dbarowy@cs.umass.edu
