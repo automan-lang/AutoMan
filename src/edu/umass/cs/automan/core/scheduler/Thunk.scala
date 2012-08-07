@@ -1,10 +1,12 @@
 package edu.umass.cs.automan.core.scheduler
 
 import edu.umass.cs.automan.core.question.Question
-import java.util.{Calendar, Date}
+import java.util.{UUID, Calendar, Date}
 import edu.umass.cs.automan.core.answer.Answer
+import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 
-class Thunk(val question: Question, val timeout_in_s: Int, val worker_timeout: Int, val cost: BigDecimal) {
+class Thunk(val question: Question, val timeout_in_s: Int, val worker_timeout: Int, val cost: BigDecimal, val computation_id: UUID) {
+  val created_at: Date = new Date()
   var _state = SchedulerState.READY
   var answer : Answer = null
   var is_dual: Boolean = false
@@ -27,6 +29,5 @@ class Thunk(val question: Question, val timeout_in_s: Int, val worker_timeout: I
     val worker_id = if (answer == null) "n/a" else answer.worker_id
     "Thunk(state: " + state + ", has answer: " + has_answer + ", completed by worker_id: " + worker_id + ")"
   }
-  
-  println("DEBUG: THUNK: New Thunk, will expire on: " + expires_at.toString)
+  Utilities.DebugLog("New Thunk, will expire on: " + expires_at.toString, LogLevel.INFO, LogType.SCHEDULER, computation_id)
 }

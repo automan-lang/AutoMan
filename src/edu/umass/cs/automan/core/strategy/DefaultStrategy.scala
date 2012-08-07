@@ -3,10 +3,11 @@ package edu.umass.cs.automan.core.strategy
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 import edu.umass.cs.automan.core.question.{CheckboxQuestion, Question}
 import edu.umass.cs.automan.core.exception.OverBudgetException
-import edu.umass.cs.automan.core.Utilities
+import edu.umass.cs.automan.core.{LogLevel, LogType, Utilities}
+import java.util.UUID
 
 class DefaultStrategy extends ValidationStrategy {
-  Utilities.DebugLog("DEFAULT strategy loaded!",0,"STRATEGY")
+  Utilities.DebugLog("DEFAULT strategy loaded!",LogLevel.INFO,LogType.STRATEGY,_computation_id)
 
   def current_confidence: Double = {
     val valid_ts = _thunks.filter(t => t.state == SchedulerState.RETRIEVED || t.state == SchedulerState.PROCESSED )
@@ -16,7 +17,7 @@ class DefaultStrategy extends ValidationStrategy {
   }
   def is_confident: Boolean = {
     if (_thunks.size == 0) {
-      Utilities.DebugLog("Have no thunks; confidence is undefined.", 0, "STRATEGY")
+      Utilities.DebugLog("Have no thunks; confidence is undefined.", LogLevel.INFO, LogType.STRATEGY, _computation_id)
       false
     } else {
       val valid_ts = _thunks.filter(t => t.state == SchedulerState.RETRIEVED || t.state == SchedulerState.PROCESSED )
@@ -26,10 +27,10 @@ class DefaultStrategy extends ValidationStrategy {
       // TODO: MonteCarlo simulator needs to take BigInts!
       val min_agree = MonteCarlo.requiredForAgreement(_num_possibilities.toInt, _thunks.size, _confidence, 1000000)
       if (biggest_answer >= min_agree) {
-        Utilities.DebugLog("DEBUG: STRATEGY: Reached or exceeded alpha = " + (1 - _confidence).toString, 0, "STRATEGY")
+        Utilities.DebugLog("Reached or exceeded alpha = " + (1 - _confidence).toString, LogLevel.INFO, LogType.STRATEGY, _computation_id)
         true
       } else {
-        Utilities.DebugLog("DEBUG: STRATEGY: Need " + min_agree + " for alpha = " + (1 - _confidence) + "; have " + biggest_answer, 0, "STRATEGY")
+        Utilities.DebugLog("Need " + min_agree + " for alpha = " + (1 - _confidence) + "; have " + biggest_answer, LogLevel.INFO, LogType.STRATEGY, _computation_id)
         false
       }
     }
@@ -49,23 +50,26 @@ class DefaultStrategy extends ValidationStrategy {
 
     // determine duration
     if (had_timeout) {
-      Utilities.DebugLog("Had a timeout; doubling worker timeout.", 0, "STRATEGY")
+      Utilities.DebugLog("Had a timeout; doubling worker timeout.", LogLevel.INFO, LogType.STRATEGY, _computation_id)
       question.worker_timeout_in_s *= 2
     }
 
     Utilities.DebugLog("You should spawn " + num_to_spawn +
                         " more Thunks at $" + question.reward + "/thunk, " +
                           question.question_timeout_in_s + "s until question timeout, " +
-                          question.worker_timeout_in_s + "s until worker task timeout.", 0, "STRATEGY")
+                          question.worker_timeout_in_s + "s until worker task timeout.", LogLevel.INFO, LogType.STRATEGY,
+                        _computation_id)
 
     // allocate Thunk objects
     val new_thunks = (0 until num_to_spawn).map { i =>
       _budget_committed += question.reward
       if (_budget_committed > question.budget) {
-        Utilities.DebugLog("Over budget. budget_committed = " + _budget_committed + " > budget = " + question.budget, 0, "STRATEGY")
+        Utilities.DebugLog("Over budget. budget_committed = " + _budget_committed + " > budget = " + question.budget, LogLevel.FATAL, LogType.STRATEGY, _computation_id)
         throw OverBudgetException("")
       }
-      new Thunk(question, question.question_timeout_in_s, question.worker_timeout_in_s, question.reward)
+      val t = new Thunk(question, question.question_timeout_in_s, question.worker_timeout_in_s, question.reward, _computation_id)
+      Utilities.DebugLog("spawned question_id = " + question.id_string,LogLevel.INFO,LogType.STRATEGY,_computation_id)
+      t
     }.toList
     _thunks = new_thunks ::: _thunks
 
@@ -120,9 +124,9 @@ class DefaultStrategy extends ValidationStrategy {
   def pessimism(q: Question) = {
     val p: Double = math.max((q.time_value_per_hour/q.wage).toDouble, 1.0)
     if (p > 1) {
-      Utilities.DebugLog("Using pessimistic (expensive) strategy.", 0, "STRATEGY")
+      Utilities.DebugLog("Using pessimistic (expensive) strategy.", LogLevel.INFO, LogType.STRATEGY, _computation_id)
     } else {
-      Utilities.DebugLog("Using Using optimistic (cheap) strategy.", 0, "STRATEGY")
+      Utilities.DebugLog("Using Using optimistic (cheap) strategy.", LogLevel.INFO, LogType.STRATEGY, _computation_id)
     }
     p
   }

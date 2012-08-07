@@ -20,5 +20,5 @@ class MTurkAnswerCustomInfo {
     }
   }
 
-  override def toString = assignment_id + ";" + hit_id
+  override def toString = "assignment_id: " + assignment_id + ";" + "hit_id: " + hit_id
 }

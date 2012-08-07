@@ -1,10 +1,13 @@
 package edu.umass.cs.automan.core.strategy
 
-import edu.umass.cs.automan.core.answer.{CheckboxAnswer, RadioButtonAnswer, Answer}
+import edu.umass.cs.automan.core.answer.{FreeTextAnswer, CheckboxAnswer, RadioButtonAnswer, Answer}
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 import edu.umass.cs.automan.core.question.{CheckboxQuestion, RadioButtonQuestion, Question}
+import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
+import java.util.UUID
 
 abstract class ValidationStrategy {
+  val _computation_id = UUID.randomUUID()
   var _budget_committed: BigDecimal = 0.00
   var _confidence: Double = 0.95
   var _num_possibilities: BigInt = 2
@@ -33,18 +36,19 @@ abstract class ValidationStrategy {
 
     val groups = valid_thunks.groupBy { t => t.answer.comparator }
     
-    println("DEBUG: STRATEGY: Groups = " + groups)
+    Utilities.DebugLog("Groups = " + groups, LogLevel.INFO, LogType.STRATEGY,_computation_id)
 
     // find the grouping symbol of the largest group
     val gsymb = groups.maxBy { case(opt, as) => as.size }._1
 
-    println("DEBUG: STRATEGY: Symbol of largest group is " + gsymb)
-    println("DEBUG: STRATEGY: classOf Thunk.answer is " + groups(gsymb).head.answer.getClass)
+    Utilities.DebugLog("Symbol of largest group is " + gsymb, LogLevel.INFO, LogType.STRATEGY,_computation_id)
+    Utilities.DebugLog("classOf Thunk.answer is " + groups(gsymb).head.answer.getClass, LogLevel.INFO, LogType.STRATEGY,_computation_id)
 
     // return an Answer
     groups(gsymb).head.answer match {
       case rba: RadioButtonAnswer => new RadioButtonAnswer(Some(current_confidence), "aggregated", rba.value)
       case cba: CheckboxAnswer => new CheckboxAnswer(Some(current_confidence), "aggregated", cba.values)
+      case fta: FreeTextAnswer => new FreeTextAnswer(Some(current_confidence), "aggregated", fta.value)
       case _ => throw new Exception("Question type not yet supported.")
     }
   }

@@ -8,7 +8,8 @@ object SchedulerState extends Enumeration {
       ACCEPTED, // answer has been paid for
       REJECTED, // answer is incorrect (and will not be paid for)
       PROCESSED, // answer was accepted/rejected in previous execution (for memo-recalled Thunks)
-      TIMEOUT // thunk timed out (reschedule)
+      TIMEOUT, // thunk timed out (reschedule)
+      CANCELLED
   = Value
 }
 

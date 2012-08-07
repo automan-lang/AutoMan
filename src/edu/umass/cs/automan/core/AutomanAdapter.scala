@@ -5,7 +5,7 @@ import edu.umass.cs.automan.core.question._
 import java.util.Locale
 import java.text.NumberFormat
 import actors.Future
-import memoizer.AutomanMemoizer
+import memoizer.{ThunkLogger, AutomanMemoizer}
 import scheduler.Thunk
 import strategy._
 import edu.umass.cs.automan.adapters.MTurk.question.MTQuestionOption
@@ -22,6 +22,10 @@ abstract class AutomanAdapter[RBQ <: RadioButtonQuestion[MTQuestionOption],
   protected var _memo_conn_string: String = "jdbc:derby:AutomanMemoDB;create=true"
   protected var _memo_user: String = ""
   protected var _memo_pass: String = ""
+  protected var _thunklog: ThunkLogger = _
+  protected var _thunk_conn_string: String = "jdbc:derby:ThunkLogDB;create=true"
+  protected var _thunk_user: String = ""
+  protected var _thunk_pass: String = ""
 
   // getters and setters
   def accept(t: Thunk)
@@ -30,10 +34,11 @@ abstract class AutomanAdapter[RBQ <: RadioButtonQuestion[MTQuestionOption],
   def cancel(t: Thunk)
   def confidence: Double = _confidence
   def confidence_=(c: Double) { _confidence = c }
-//  def max_replicas: Int = _max_replicas
-//  def max_replicas_(m: Int) { _max_replicas = m }
   def memo_init() {
     _memoizer = new AutomanMemoizer(_memo_conn_string, _memo_user, _memo_pass)
+  }
+  def thunklog_init() {
+    _thunklog = new ThunkLogger(_thunk_conn_string, _thunk_user, _thunk_pass)
   }
   def post(ts: List[Thunk], dual: Boolean, exclude_worker_ids: List[String])
   def process_custom_info(t: Thunk, i: Option[String])

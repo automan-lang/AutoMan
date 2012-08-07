@@ -1,3 +1,4 @@
+import collection.mutable
 import com.amazonaws.services.s3.AmazonS3Client
 import edu.umass.cs.automan.core.Utilities
 import java.awt.image.BufferedImage
@@ -10,10 +11,11 @@ object license_plate_reader extends App {
   val a = MTurkAdapter { mt =>
     mt.access_key_id = opts('key)
     mt.secret_access_key = opts('secret)
-    mt.sandbox_mode = true
+    mt.sandbox_mode = false
   }
 
   def is_a_car(image_url: String) = a.RadioButtonQuestion { q =>
+    q.budget = 5.00
     q.image_url = image_url
     q.text = "Is this a vehicle with a readable license plate?"
     q.options = List(
@@ -23,10 +25,11 @@ object license_plate_reader extends App {
   }
 
   def get_plate_text(image_url: String) = a.FreeTextQuestion { q =>
+    q.budget = 5.00
     q.text = "What are the characters printed on this license plate? (NO DASHES, DOTS OR SPACES please!)"
     q.image_url = image_url
-    q.pattern = "XXXXXXY"
-    q.pattern_error_text = "Answers may only be letters or numeric digits, no more than 7 characters long, no spaces."
+    q.pattern = "XXXXXYYY"
+    q.pattern_error_text = "Answers may only be letters or numeric digits, no more than 8 characters long, no spaces."
   }
 
   // Search for a bunch of images
@@ -36,22 +39,24 @@ object license_plate_reader extends App {
   val images = urls.map(download_image(_))
 
   // resize each image
-  val sc_images = images.map(resize(_))
+  val sc_images: List[File] = images.map(resize(_))
 
   // store each image in S3
-  val s3client = init_s3()
-  val s3_urls = sc_images.map{ i => store_in_s3(i, s3client) }
+  val s3client: AmazonS3Client = init_s3()
+  val s3_urls: List[String] = sc_images.map{ i => store_in_s3(i, s3client) }
 
   // Are these pictures of cars with license plates?
-  val possible_cars = s3_urls.map( is_a_car(_) )
+  val possible_cars = s3_urls.par.map { url =>
+    if (is_a_car(url)().value == 'yes) Some(url) else None
+  }.flatten
 
   // filter out the bad cars and get plate texts for the good ones
-  val plate_texts = possible_cars.filter{ ans => ans().value == 'yes}.map { ans =>
-    get_plate_text(ans().value.toString)
+  val plate_texts = possible_cars.par.map { url =>
+    get_plate_text(url)()
   }
 
   // print out results
-  plate_texts.foreach { fd => println(fd().value) }
+  plate_texts.foreach { fd => println(fd.value) }
 
   // helper functions
   def download_image(u: String) : BufferedImage = {
@@ -90,11 +95,11 @@ object license_plate_reader extends App {
   def init_s3() : AmazonS3Client = {
     import com.amazonaws.auth.BasicAWSCredentials
 
-    val awsAccessKey = "XXXX";
-    val awsSecretKey = "XXXX";
-    val c = new BasicAWSCredentials(awsAccessKey, awsSecretKey);
+    val awsAccessKey = opts('key)
+    val awsSecretKey = opts('secret)
+    val c = new BasicAWSCredentials(awsAccessKey, awsSecretKey)
     val s3 = new AmazonS3Client(c)
-    s3.createBucket("cardata");
+    s3.createBucket("cardata")
     s3
   }
 

@@ -5,5 +5,6 @@ public enum MemoState {
   RETRIEVED, // answer has been retrieved
   ACCEPTED, // answer has been paid for
   REJECTED, // answer is incorrect (and was not paid for)
-  TIMEOUT // thunk timed out (reschedule)
+  TIMEOUT, // thunk timed out (reschedule)
+  CANCELLED
 }

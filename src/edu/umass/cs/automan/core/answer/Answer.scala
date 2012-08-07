@@ -6,7 +6,7 @@ abstract class Answer(val conf: Option[Double], val worker_id: String) {
   var paid: Boolean = false
   var over_budget = false
 //  var timeout = false
-  var final_cost = 0
+  var final_cost: BigDecimal = 0
   // A method that lets the Strategy decide when two answers are the same;
   // all answers have a canonical form, which must be the same whether an
   // answer is or is not for a question dual.

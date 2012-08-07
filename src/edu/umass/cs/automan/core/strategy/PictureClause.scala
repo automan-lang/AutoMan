@@ -3,9 +3,14 @@ package edu.umass.cs.automan.core.strategy
 import scala.math._
 
 object PictureClause {
-  def apply(input: String): (String, BigInt) = {
-    Compile(input) match {
+  def apply(input: String, allow_empty: Boolean): (String, BigInt) = {
+    val pattern = Compile(input) match {
       case (regex, count) => ("^"+regex+"$", count)
+    }
+    if (allow_empty) {
+      ("(" + pattern._1 + ")|(^(N|n)(A|a)$)",pattern._2 + 1)
+    } else {
+      pattern
     }
   }
   

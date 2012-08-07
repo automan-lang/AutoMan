@@ -18,17 +18,19 @@ abstract class Question {
   protected var _wage: BigDecimal = 7.25  // per hour
   protected var _blacklisted_workers = List[String]()
   protected var _dry_run: Boolean = false
+  protected var _dont_reject: Boolean = false
 
   def blacklist_worker(worker_id: String) { _blacklisted_workers = worker_id :: _blacklisted_workers }
   def blacklisted_workers = _blacklisted_workers
   def budget: BigDecimal = _budget match { case Some(b) => b; case None => 1.00 }
   def budget_=(b: BigDecimal) { _budget = Some(b) }
-  def bunnies_=(num: Int) { (0 until num).foreach {i => print("BUNNIES!!! ")}; sys.exit(1) }
-  def bunnies: Int = 0
   def confidence: Double = _confidence match { case Some(c) => c; case None => 0.95 }
   def confidence_=(c: Double) { _confidence = Some(c) }
+  def dont_reject_=(r: Boolean) { _dont_reject = r }
+  def dont_reject: Boolean = _dont_reject
   def dry_run_=(dr: Boolean) { _dry_run = dr }
   def dry_run: Boolean = _dry_run
+  def id: UUID = _id
   def id_string: String = _id.toString
   def image_alt_text: String = _image_alt_text match { case Some(x) => x; case None => "" }
   def image_alt_text_=(s: String) { _image_alt_text = Some(s) }

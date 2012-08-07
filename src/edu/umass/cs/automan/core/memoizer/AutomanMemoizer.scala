@@ -3,9 +3,10 @@ package edu.umass.cs.automan.core.memoizer
 import net.java.ao._
 import edu.umass.cs.automan.core.question.{FreeTextQuestion, CheckboxQuestion, RadioButtonQuestion, Question}
 import edu.umass.cs.automan.core.answer.{FreeTextAnswer, CheckboxAnswer, RadioButtonAnswer, Answer}
+import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 
 class AutomanMemoizer(DBConnString: String, user: String, password: String) {
-  println("DEBUG: MEMOIZER: Startup...")
+  Utilities.DebugLog("Startup...",LogLevel.INFO, LogType.MEMOIZER,null)
   private val _manager = new EntityManager(DBConnString, user, password)
   _manager.migrate(classOf[RadioButtonAnswerMemo], classOf[CheckboxAnswerMemo], classOf[FreeTextAnswerMemo])
 
