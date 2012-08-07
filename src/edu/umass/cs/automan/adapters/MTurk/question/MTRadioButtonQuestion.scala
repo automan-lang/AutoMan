@@ -9,6 +9,7 @@ import com.amazonaws.mturk.requester.Assignment
 import xml.XML
 import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
+import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 
 object MTRadioButtonQuestion {
   def apply(init: MTRadioButtonQuestion => Unit, a: MTurkAdapter) : Future[RadioButtonAnswer] = {
@@ -38,8 +39,9 @@ class MTRadioButtonQuestion extends RadioButtonQuestion[MTQuestionOption] with M
       a.lifetimeInSeconds = question_timeout_in_s
       a.maxAssignments = ts.size
       a.cost = ts.head.cost
+      a.id = id
     }
-    println(x)
+    Utilities.DebugLog("Posting XML:\n" + x,LogLevel.INFO,LogType.ADAPTER,id)
     hits = h :: hits
     hit_thunk_map += (h -> ts)
     h
@@ -57,8 +59,7 @@ class MTRadioButtonQuestion extends RadioButtonQuestion[MTQuestionOption] with M
     //      <SelectionIdentifier>count</SelectionIdentifier>
     //    </Answer>
 
-    println("DEBUG: MTRadioButtonQuestion: fromXML: ")
-    println(x.toString())
+    Utilities.DebugLog("MTRadioButtonQuestion: fromXML:\n" + x.toString,LogLevel.INFO,LogType.ADAPTER,id)
 
     Symbol((x \\ "Answer" \\ "SelectionIdentifier").text)
   }

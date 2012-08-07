@@ -9,7 +9,7 @@ import edu.umass.cs.automan.core.strategy.ValidationStrategy
 import memoizer.MTurkAnswerCustomInfo
 import question._
 import edu.umass.cs.automan.core.scheduler.{Scheduler, SchedulerState, Thunk}
-import edu.umass.cs.automan.core.{retry, AutomanAdapter}
+import edu.umass.cs.automan.core.{LogLevel, LogType, Utilities, retry, AutomanAdapter}
 import xml.XML
 import java.util.{UUID, Date}
 import com.amazonaws.mturk.requester._
@@ -17,12 +17,14 @@ import scala.Predef._
 import collection.mutable.Queue
 import edu.umass.cs.automan.core.exception.OverBudgetException
 import edu.umass.cs.automan.core.answer.{FreeTextAnswer, Answer, RadioButtonAnswer, CheckboxAnswer}
+import org.apache.commons.httpclient.protocol.SecureProtocolSocketFactory
 
 object MTurkAdapter {
   def apply(init: MTurkAdapter => Unit) : MTurkAdapter = {
     val mta = new MTurkAdapter
     init(mta)
     mta.memo_init()               // starts up Memoizer
+    mta.thunklog_init()           // start up Thunk Logger
     mta.setup()                   // initializes MTurk SDK
     mta.get_budget_from_backend() // asks MTurk for our current budget
     mta
@@ -45,23 +47,23 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
   def Option(id: Symbol, text: String) = new MTQuestionOption(id, text, "")
   def Option(id: Symbol, text: String, image_url: String) = new MTQuestionOption(id, text, image_url)
   def schedule(q: MTRadioButtonQuestion): Future[RadioButtonAnswer] = future {
-    val sched = new Scheduler(q, this, init_strategy(q), _memoizer, _poll_interval_in_s)
+    val sched = new Scheduler(q, this, init_strategy(q), _memoizer, _thunklog, _poll_interval_in_s)
     sched.run[RadioButtonAnswer]()
   }
   def schedule(q: MTCheckboxQuestion): Future[CheckboxAnswer] = future {
-    val sched = new Scheduler(q, this, init_strategy(q), _memoizer, _poll_interval_in_s)
+    val sched = new Scheduler(q, this, init_strategy(q), _memoizer, _thunklog, _poll_interval_in_s)
     sched.run[CheckboxAnswer]()
   }
   def schedule(q: MTFreeTextQuestion): Future[FreeTextAnswer] = future {
-    val sched = new Scheduler(q, this, init_strategy(q), _memoizer, _poll_interval_in_s)
+    val sched = new Scheduler(q, this, init_strategy(q), _memoizer, _thunklog, _poll_interval_in_s)
     sched.run[FreeTextAnswer]()
   }
-  def get_qualifications(q: MTurkQuestion, title: String, qualify_early: Boolean) : List[QualificationRequirement] = {
+  def get_qualifications(q: MTurkQuestion, title: String, qualify_early: Boolean, question_id: UUID) : List[QualificationRequirement] = {
     // The first qualification always needs to be the special
     // "dequalification" type so that we may grant it as soon as
     // a worker completes some work.
     if (q.firstrun) {
-      println("DEBUG: Adapter: This is the task's first run; creating dequalification.")
+      Utilities.DebugLog("This is the task's first run; creating dequalification.",LogLevel.INFO,LogType.ADAPTER,question_id)
       val qual : QualificationType = backend.createQualificationType("AutoMan " + UUID.randomUUID(),
             "automan", "AutoMan automatically generated Qualification (title: " + title + ")")
       val deq = new QualificationRequirement(qual.getQualificationTypeId, Comparator.NotEqualTo, 1, null, false)
@@ -91,7 +93,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     val question = question_for_thunks(ts)
     val mtquestion = question match { case mtq: MTurkQuestion => mtq; case _ => throw new Exception("Impossible.") }
     val qualify_early = if (question.blacklisted_workers.size > 0) true else false
-    val quals = get_qualifications(mtquestion, ts.head.question.text, qualify_early)
+    val quals = get_qualifications(mtquestion, ts.head.question.text, qualify_early, question.id)
     
     // Build HIT and post it
     mtquestion match {
@@ -127,11 +129,12 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
   }
   // put HIT's AssignmentId back into map or mark as PROCESSED
   def process_custom_info(t: Thunk, i: Option[String]) {
-    println("DEBUG: ADAPTER: Processing custom info...")
+    val q = question_for_thunks(List(t))
+    Utilities.DebugLog("Processing custom info...", LogLevel.INFO, LogType.ADAPTER, q.id)
     t.question match {
       case mtq: MTurkQuestion => {
         if (!t.answer.paid) {
-          println("DEBUG: ADAPTER: Answer is not paid for; leaving thunk as RETRIEVED.")
+          Utilities.DebugLog("Answer is not paid for; leaving thunk as RETRIEVED.", LogLevel.INFO, LogType.ADAPTER, q.id)
           val info = t.answer.custom_info match {
             case Some(str) => {
               val ci = new MTurkAnswerCustomInfo
@@ -142,7 +145,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
           }
           mtq.thunk_assnid_map += (t -> info.assignment_id)
         } else {
-          println("DEBUG: ADAPTER: Answer was previously paid for; marking thunk as PROCESSED.")
+          Utilities.DebugLog("Answer was previously paid for; marking thunk as PROCESSED.", LogLevel.INFO, LogType.ADAPTER, q.id)
           t.state = SchedulerState.PROCESSED
         }
       }
@@ -177,6 +180,11 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
             cba.memo_handle.save()
             cba.paid = true
           }
+          case fta: FreeTextAnswer => if (!fta.paid) {
+            fta.memo_handle.setPaidStatus(true)
+            fta.memo_handle.save()
+            fta.paid = true
+          }
         }
       }
       case _ => throw new Exception("Impossible error.")
@@ -198,6 +206,11 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
             cba.memo_handle.save()
             cba.paid = true
           }
+          case fta: FreeTextAnswer => if (!fta.paid) {
+            fta.memo_handle.setPaidStatus(true)
+            fta.memo_handle.save()
+            fta.paid = true
+          }
         }
       }
       case _ => throw new Exception("Impossible error.")
@@ -205,10 +218,11 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
   }
   def retrieve(ts: List[Thunk]) : List[Thunk] = {
     val question = mtquestion_for_thunks(ts)
+    val auquestion = question_for_thunks(ts)
     val hits = question.hits.filter{_.state == HITState.RUNNING}
 
     // start by granting qualifications
-    grant_qualification_requests(question, question_for_thunks(ts).blacklisted_workers)
+    grant_qualification_requests(question, auquestion.blacklisted_workers, auquestion.id)
 
     // try grabbing something from each HIT
     hits.foreach { hit =>
@@ -217,7 +231,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
       hts ++= question.hit_thunk_map(hit).filter{_.state == SchedulerState.RUNNING}
       val assignments = hit.retrieve(backend)
 
-      println("DEBUG: ADAPTER: There are " + assignments.size + " assignments available to process.")
+      Utilities.DebugLog("There are " + assignments.size + " assignments available to process.", LogLevel.INFO, LogType.ADAPTER, auquestion.id)
 
       // mark next available thunk as RETRIEVED for each answer
       assignments.foreach { a => process_assignment(question, a, hit.hit.getHITId, hts.dequeue()) }
@@ -229,31 +243,31 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
       mark_hit_complete(hit, hts.toList)
     }
 
-    println("DEBUG: Adapter: " + ts.filter{_.state == SchedulerState.RETRIEVED}.size + " thunks marked RETRIEVED.")
+    Utilities.DebugLog(ts.filter{_.state == SchedulerState.RETRIEVED}.size + " thunks marked RETRIEVED.", LogLevel.INFO, LogType.ADAPTER, auquestion.id)
     ts
   }
 
   def mark_hit_complete(hit: AutomanHIT, ts: List[Thunk]) {
     if (ts.filter{_.state == SchedulerState.RUNNING}.size == 0) {
       // we're done
-      println("DEBUG: ADAPTER: HIT is RESOLVED.")
+      Utilities.DebugLog("HIT is RESOLVED.", LogLevel.INFO, LogType.ADAPTER, hit.id)
       hit.state = HITState.RESOLVED
     }
   }
   def process_timeouts(hit: AutomanHIT, ts: List[Thunk]) {
     var hitcancelled = false
     ts.filter{_.is_timedout}.foreach { t =>
-      println("DEBUG: ADAPTER: HIT is TIMEOUT'ed")
+      Utilities.DebugLog("HIT TIMED OUT.", LogLevel.WARN, LogType.ADAPTER, hit.id)
       t.state = SchedulerState.TIMEOUT
       if (!hitcancelled) {
-        println("DEBUG: ADAPTER: Force-expiring HIT.")
+        Utilities.DebugLog("Force-expiring HIT.", LogLevel.WARN, LogType.ADAPTER, hit.id)
         hit.cancel(backend)
         hitcancelled = true
       }
     }
   }
   def process_assignment(q: MTurkQuestion, a: Assignment, hit_id: String, t: Thunk) {
-    println("DEBUG: ADAPTER: Processing assignment...")
+    Utilities.DebugLog("Processing assignment...", LogLevel.WARN, LogType.ADAPTER, t.question.id)
 
     // mark as RETRIEVED
     t.state = SchedulerState.RETRIEVED
@@ -262,7 +276,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     t.answer = q.answer(a, t.is_dual)
 
     // dequalify worker
-    dequalify_worker(q, a.getWorkerId)
+    dequalify_worker(q, a.getWorkerId, t.question.id)
 
     // pair assignment with thunk
     q.thunk_assnid_map += (t -> a.getAssignmentId)
@@ -271,21 +285,21 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     t.answer.custom_info = Some(new MTurkAnswerCustomInfo(a.getAssignmentId, hit_id).toString)
   }
 
-  def dequalify_worker(q: MTurkQuestion, worker_id: String) {
+  def dequalify_worker(q: MTurkQuestion, worker_id: String, question_id: UUID) {
     // grant dequalification Qualification
     // AMT checks whether worker's assigned value == 1; if so, not allowed
     if (q.worker_is_qualified(q.dequalification.getQualificationTypeId, worker_id)) {
       // the user may have asked for the dequalification for second-round thunks
-      println("DEBUG: Adapter: Updating worker dequalification for " + worker_id + ".")
+      Utilities.DebugLog("Updating worker dequalification for " + worker_id + ".", LogLevel.INFO, LogType.ADAPTER, question_id)
       backend.updateQualificationScore(q.dequalification.getQualificationTypeId, worker_id, 1)
     } else {
       // otherwise, just grant it
-      println("DEBUG: Adapter: Dequalifying worker " + worker_id + " from future work.")
+      Utilities.DebugLog("Dequalifying worker " + worker_id + " from future work.", LogLevel.INFO, LogType.ADAPTER, question_id)
       backend.assignQualification(q.dequalification.getQualificationTypeId, worker_id, 1, false)
       q.qualify_worker(q.dequalification.getQualificationTypeId, worker_id)
     }
   }
-  def grant_qualification_requests(q: MTurkQuestion, blacklisted_workers: List[String]) {
+  def grant_qualification_requests(q: MTurkQuestion, blacklisted_workers: List[String], question_id: UUID) {
     // get all requests for all qualifications on this HIT
     val qrs = q.qualifications.map { qual =>
       backend.getAllQualificationRequests(qual.getQualificationTypeId)
@@ -294,16 +308,16 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     qrs.foreach { qr =>
       if (blacklisted_workers.contains(qr.getSubjectId)) {
         // we don't want blacklisted workers working on this
-        println("DEBUG: ADAPTER: Worker " + qr.getSubjectId + " cannot request a qualification for a question that they are blacklisted for; rejecting request.")
+        Utilities.DebugLog("Worker " + qr.getSubjectId + " cannot request a qualification for a question that they are blacklisted for; rejecting request.", LogLevel.INFO, LogType.ADAPTER, question_id)
         backend.rejectQualificationRequest(qr.getQualificationRequestId, "You may not work on this particular hit for statistical purposes.")
       } else if (q.worker_is_qualified(qr.getQualificationTypeId, qr.getSubjectId)) {
         // we don't want to grant more than once
-        println("DEBUG: ADAPTER: Worker " + qr.getSubjectId + " cannot request a qualification more than once; rejecting request.")
+        Utilities.DebugLog("Worker " + qr.getSubjectId + " cannot request a qualification more than once; rejecting request.", LogLevel.INFO, LogType.ADAPTER, question_id)
         backend.rejectQualificationRequest(qr.getQualificationRequestId, "You cannot request this Qualification more than once.")
       } else {
         // grant
         if (qr.getQualificationTypeId == q.dequalification.getQualificationTypeId) {
-          println("DEBUG: ADAPTER: Worker " + qr.getSubjectId + " requests one-time qualification; granting.")
+          Utilities.DebugLog("Worker " + qr.getSubjectId + " requests one-time qualification; granting.", LogLevel.INFO, LogType.ADAPTER, question_id)
           backend.grantQualification(qr.getQualificationRequestId, 0)
           q.qualify_worker(qr.getQualificationTypeId, qr.getSubjectId)
         } else {
@@ -321,7 +335,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     // mark timeouts
     ts.filter{_.state == SchedulerState.RUNNING}.foreach { t =>
       if(t.expires_at.before(new Date())) {
-        println("DEBUG: ADAPTER: Thunk timeout.")
+        Utilities.DebugLog("Thunk timeout.", LogLevel.WARN, LogType.ADAPTER, t.question.id)
         t.state = SchedulerState.TIMEOUT
       }
     }
@@ -348,7 +362,9 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
   def retry_attempts = _retry_attempts
   def retry_delay_millis_=(rdm: Int) { _retry_delay_millis = rdm }
   def retry_delay_millis = _retry_delay_millis
-  def sandbox_mode = _service_url match { case ClientConfig.SANDBOX_SERVICE_URL => true; case _ => false }
+  def sandbox_mode = {
+    _service_url == ClientConfig.SANDBOX_SERVICE_URL
+  }
   def sandbox_mode_=(b: Boolean) {
     b match {
       case true => _service_url = ClientConfig.SANDBOX_SERVICE_URL

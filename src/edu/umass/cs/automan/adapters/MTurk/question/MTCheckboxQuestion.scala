@@ -10,6 +10,7 @@ import edu.umass.cs.automan.core.scheduler.Thunk
 import edu.umass.cs.automan.adapters.MTurk.{AutomanHIT, MTurkAdapter}
 import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
+import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 
 object MTCheckboxQuestion {
   def apply(init: MTCheckboxQuestion => Unit, a: MTurkAdapter) : Future[CheckboxAnswer] = {
@@ -45,8 +46,9 @@ class MTCheckboxQuestion extends CheckboxQuestion[MTQuestionOption] with MTurkQu
       a.lifetimeInSeconds = question_timeout_in_s
       a.maxAssignments = ts.size
       a.cost = ts.head.cost
+      a.id = id
     }
-    println(x)
+    Utilities.DebugLog("Posting XML:\n" + x,LogLevel.INFO,LogType.ADAPTER,id)
     hits = h :: hits
     hit_thunk_map += (h -> ts)
     h

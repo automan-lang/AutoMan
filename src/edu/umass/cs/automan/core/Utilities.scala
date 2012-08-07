@@ -1,6 +1,7 @@
 package edu.umass.cs.automan.core
 
-import java.util.{Date, Calendar}
+import java.util.{UUID, Date, Calendar}
+import java.util
 
 
 object Utilities {
@@ -66,8 +67,15 @@ object Utilities {
     c.getTime()
   }
 
-  def DebugLog(msg: String, level: Int, source: String) {
-    println(new Date().toString + ": INFO: " + source + ": " + msg)
+  def DebugLog(msg: String, level: LogLevel.Value, source: LogType.Value, id: UUID) {
+    val idstr = source match {
+      case LogType.SCHEDULER => "question_id = " + id.toString + ", "
+      case LogType.STRATEGY => "computation_id = " + id.toString + ", "
+      case LogType.ADAPTER => "question_id = " + id.toString + ", "
+      case LogType.MEMOIZER => ""
+    }
+
+    println(new Date().toString + ": " + level.toString + ": " + source.toString + ": " + idstr +  msg)
   }
 
   def invoked_as_name : String = {
@@ -96,3 +104,23 @@ object Utilities {
     }
   }
 }
+
+object LogType extends Enumeration {
+  type LogType = Value
+  val STRATEGY,
+  SCHEDULER,
+  ADAPTER,
+  MEMOIZER
+  = Value
+}
+
+object LogLevel extends Enumeration {
+  type LogLevel = Value
+  val INFO,
+  WARN,
+  FATAL
+  = Value
+}
+
+import LogType._
+import LogLevel._

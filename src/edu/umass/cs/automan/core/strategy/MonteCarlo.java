@@ -1,5 +1,8 @@
 package edu.umass.cs.automan.core.strategy;
 
+import edu.umass.cs.automan.core.LogLevel;
+import edu.umass.cs.automan.core.Utilities;
+
 import java.util.Random;
 
 public final class MonteCarlo {
