@@ -1,4 +1,4 @@
-AutoMan: Human-Computation Runtime v0.2.1
+AutoMan: Human-Computation Runtime v0.3
 ---------------------------------------
 
 This is a preliminary release of AutoMan.  Please report any bugs you
@@ -23,6 +23,34 @@ libraries manually.  We are putting together an Apache Buildr script
 that will do this for you, and we will add this file to the repository
 shortly.
 
+Building the JAR
+----------------
+
+This release incorporates a Buildr script that can build the AutoMan JAR
+for you, including downloading all of AutoMan's dependencies.  The build
+script can also build the sample applications that are located in the
+'apps' directory.  These applications are the ones used in our paper.
+
+Buildr is a build dependency system somewhat like a cross between 'make'
+and Maven.  It is based on the 'rake' program that ships with Ruby.  If
+you already have Ruby and RubyGems installed on your system (comes with
+most Macs), simply issue the following command to install Buildr:
+
+  sudo gem install buildr
+
+You can build the entire project using the following Buildr command when
+your current working directory is at the root of the AutoMan project
+directory:
+
+  buildr build
+  
+You can build specific applications like:
+
+  buildr build automan:apps:anpr
+  
+Consult the Buildr documentation if you are interested in learning more
+of Buildr's commands (http://buildr.apache.org/).
+
 Using AutoMan in Your Project
 -----------------------------
 
@@ -43,13 +71,9 @@ Future[Answer] objects.  E.g.,
   val answer = human_function(args)
   answer().value
 
-Automan v0.3 is likely to simplify this syntax somewhat.  Automan v0.1
-did not use Scala's built-in futures.
-
 Please see the collection of sample programs in the "sample_programs"
 directory. This folder contains the programs we used in the technical
 report (see below).
-
 
 Using AutoMan with a Different Crowdsourcing Backend
 ----------------------------------------------------
@@ -75,26 +99,29 @@ AutomanMemoDB file.  The format of this database is Apache Derby 10.8.
 More Information
 ----------------
 
-More detailed information is available in our technical report:
+More detailed information is available in a preprint of our paper
+(to appear at OOPSLA 2012):
 
-  UMass CS TR 2012-013:
   AutoMan: A Platform for Integrating Human-Based and Digital Computation
   Daniel W. Barowy, Charlie Curtsinger, Emery D. Berger, and Andrew McGregor
 
-  http://www.cs.umass.edu/~emery/pubs/AutoMan-UMass-CS-TR-2012-013.pdf
-
-This paper has been accepted at OOPSLA 2012.  We will have an updated citation and a link for the final version of the paper in the near future.
+  http://www.cs.umass.edu/~emery/pubs/res0007-barowy.pdf
+  
+Please contact us if you plan to cite this work as there may be a more
+up-to-date citation.
 
 Contact information:
 
   Emery Berger, emery@cs.umass.edu
   Dan Barowy, dbarowy@cs.umass.edu
-
+  
 CHANGELOG:
 ----------
+0.3:	Maintenance release.
+		• Buildr Buildfile, including reorganization of project directory.
 0.2.1:	Maintenance release.
 		• Update to work with latest MTurk API (1.6.0).  
 		• Better log output, including scheduler object logging.
-		• New Automatic Number Plate Recognition (ANPR) app.
+		• New Automatic Number Plate Recognition (ANPR) app.
 0.2:	Major rewrite to simplify syntax.
 0.1:	First release.
