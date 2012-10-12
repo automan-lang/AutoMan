@@ -33,7 +33,7 @@ object HowManyThings extends App {
   val scaled = images.map(resize(_))
 
   // store each image in S3
-  val s3client = init_s3()
+  val s3client = init_s3("key", "secret")
   val s3_urls = scaled.map{ i => store_in_s3(i, s3client) }
 
   // ask humans for answers
@@ -104,11 +104,11 @@ object HowManyThings extends App {
     s3.generatePresignedUrl("foo", si.getName, cal.getTime).toString
   }
 
-  def init_s3() : AmazonS3Client = {
+  def init_s3(key: String, secret: String) : AmazonS3Client = {
     import com.amazonaws.auth.BasicAWSCredentials
 
-    val awsAccessKey = "XXXX";
-    val awsSecretKey = "XXXX";
+    val awsAccessKey = key;
+    val awsSecretKey = secret;
     val c = new BasicAWSCredentials(awsAccessKey, awsSecretKey);
     val s3 = new AmazonS3Client(c)
     s3.createBucket("foo");

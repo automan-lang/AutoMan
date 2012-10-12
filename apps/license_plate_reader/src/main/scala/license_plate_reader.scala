@@ -11,7 +11,7 @@ object license_plate_reader extends App {
   val a = MTurkAdapter { mt =>
     mt.access_key_id = opts('key)
     mt.secret_access_key = opts('secret)
-    mt.sandbox_mode = false
+    mt.sandbox_mode = true
   }
 
   def is_a_car(image_url: String) = a.RadioButtonQuestion { q =>
