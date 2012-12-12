@@ -100,14 +100,15 @@ More Information
 ----------------
 
 More detailed information is available in the following paper,
-published at OOPSLA 2012.
+published at OOPSLA 2012, included in the repo as AutoMan-OOPSLA2012.pdf.
+
 
   AutoMan: A Platform for Integrating Human-Based and Digital Computation
   Daniel W. Barowy, Charlie Curtsinger, Emery D. Berger, and Andrew McGregor
 
   http://www.cs.umass.edu/~emery/pubs/res0007-barowy.pdf
 
-  The full citation is here.
+  The full citation is given below:
 
 @inproceedings{Barowy:2012:API:2384616.2384663,
  author = {Barowy, Daniel W. and Curtsinger, Charlie and Berger, Emery D. and McGregor, Andrew},
