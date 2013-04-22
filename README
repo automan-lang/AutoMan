@@ -14,15 +14,6 @@ License
 AutoMan is licensed under the GPLv2, Copyright (C) 2011-2012 The
 University of Massachusetts, Amherst.
 
-Compiling AutoMan
------------------
-
-To use AutoMan, you will need to compile a JAR.  Currently, this is
-a manual process, and you will need to fetch all of the required
-libraries manually.  We are putting together an Apache Buildr script
-that will do this for you, and we will add this file to the repository
-shortly.
-
 Building the JAR
 ----------------
 
