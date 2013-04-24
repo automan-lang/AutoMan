@@ -14,6 +14,16 @@ License
 AutoMan is licensed under the GPLv2, Copyright (C) 2011-2012 The
 University of Massachusetts, Amherst.
 
+Pre-Built Binary
+----------------
+
+There is a pre-built AutoMan JAR file in the "jar" directory.  This JAR
+includes _all_ of AutoMan's dependencies, as installing all of AutoMan's
+dependencies' dependencies can sometimes be... unpleasant, even with a
+build script.  Anyone wanting to contribute changes to AutoMan's source
+code will need to follow the JAR build instructions below.  Everyone
+else should use this JAR file.
+
 Building the JAR
 ----------------
 
