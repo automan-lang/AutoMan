@@ -1,28 +1,43 @@
-## BINARY LOCATIONS
+## BINARY UTILITY LOCATIONS
 TAR		:= $(shell which tar)
 CURL	:= $(shell which curl)
 WGET	:= $(shell which wget)
 ANT		:= $(shell which ant)
 JAR		:= $(shell which jar)
 JAVAC := $(shell which javac)
-SCALAC = $(SCALADIR)/bin/scalac
 
-## LIBRARY URLS
-MTURKSDK 	:= http://downloads.sourceforge.net/project/mturksdk-java/mturksdk-java/1.6.2/java-aws-mturk-1.6.2.tar.gz
-ACTIVEOBJ := http://java.net/projects/activeobjects/downloads/download/0.8.2/activeobjects-0.8.2.tar.gz
-JARJAR 		:= https://jarjar.googlecode.com/files/jarjar-1.4.jar
-SCALA			:= http://www.scala-lang.org/files/archive/scala-2.10.3.tgz
+## ARCHIVE NAMES (MODIFY HERE FOR NEW VERSIONS)
+ARCH_MTURKSDK 	:= java-aws-mturk-1.6.2.tar.gz
+ARCH_ACTIVEOBJ 	:= activeobjects-0.8.2.tar.gz
+ARCH_ONEJAR			:= one-jar-boot-0.97.jar
+ARCH_SCALA			:= scala-2.10.3.tgz
 
-## OTHER VARS
+## UNPACK DIR NAMES (DO NOT MODIFY)
+DIR_MTURKSDK 	:= $(patsubst %.tar.gz,%,$(ARCH_MTURKSDK))
+DIR_ACTIVEOBJ := $(patsubst %.tar.gz,%,$(ARCH_ACTIVEOBJ))
+DIR_SCALA			:= $(patsubst %.tgz,%,$(ARCH_SCALA))
+
+## VERSION STRINGS (DO NOT MODIFY)
+VER_MTURKSDK 	:= $(patsubst java-aws-mturk-%.tar.gz,%,$(ARCH_MTURKSDK))
+VER_ACTIVEOBJ := $(patsubst activeobjects-%.tar.gz,%,$(ARCH_ACTIVEOBJ))
+VER_ONEJAR		:= $(patsubst one-jar-boot-%.jar,%,$(ARCH_ONEJAR))
+VER_SCALA			:= $(patsubst scala-%.tgz,%,$(ARCH_SCALA))
+
+## LIBRARY URLS (DO NOT MODIFY)
+MTURKSDK 	:= http://downloads.sourceforge.net/project/mturksdk-java/mturksdk-java/$(VER_MTURKSDK)/$(ARCH_MTURKSDK)
+ACTIVEOBJ := http://java.net/projects/activeobjects/downloads/download/$(VER_ACTIVEOBJ)/$(ARCH_ACTIVEOBJ)
+ONEJAR 		:= https://sourceforge.net/projects/one-jar/files/one-jar/one-jar-$(VER_ONEJAR)/$(ARCH_ONEJAR)
+SCALA			:= http://www.scala-lang.org/files/archive/$(ARCH_SCALA)
+
+## STATIC VARS
 OUTJARS := jars
 TEMPDIR := temp_output
 UNPACKDIR := $(TEMPDIR)/libs
-TURKDIR := $(UNPACKDIR)/java-aws-mturk-1.6.2
-AODIR := $(UNPACKDIR)/activeobjects-0.8.2
-SCALADIR := $(UNPACKDIR)/scala-2.10.3
+TURKDIR := $(UNPACKDIR)/$(ARCH_MTURKSDK)
+AODIR := $(UNPACKDIR)/$(ARCH_ACTIVEOBJ)
+SCALADIR := $(UNPACKDIR)/$(ARCH_SCALA)
 JARDIR := $(TEMPDIR)/jars
 DOWNLOADDIR := $(TEMPDIR)/downloads
-CLASSPATH := $(JARDIR)/activeobjects-0.8.2.jar:$(JARDIR)/aws-mturk-dataschema.jar:$(JARDIR)/aws-mturk-wsdl.jar:$(JARDIR)/axis-ant.jar:$(JARDIR)/axis.jar:$(JARDIR)/commons-beanutils.jar:$(JARDIR)/commons-codec-1.4.jar:$(JARDIR)/commons-collections-3.2.jar:$(JARDIR)/commons-collections-testframework-3.2.jar:$(JARDIR)/commons-dbcp-1.2.2.jar:$(JARDIR)/commons-digester-1.8.jar:$(JARDIR)/commons-discovery-0.2.jar:$(JARDIR)/commons-httpclient-3.1.jar:$(JARDIR)/commons-httpclient-contrib-3.1.jar:$(JARDIR)/commons-lang-2.3.jar:$(JARDIR)/commons-logging-1.1.1.jar:$(JARDIR)/commons-logging-api.jar:$(JARDIR)/commons-logging.jar:$(JARDIR)/commons-pool-1.3.jar:$(JARDIR)/dom4j-1.6.1.jar:$(JARDIR)/geronimo-activation_1.0.2_spec-1.2.jar:$(JARDIR)/geronimo-javamail_1.3.1_spec-1.3.jar:$(JARDIR)/httpclient-4.1.2.jar:$(JARDIR)/httpclient-cache-4.1.2.jar:$(JARDIR)/httpcore-4.1.2.jar:$(JARDIR)/httpmime-4.1.2.jar:$(JARDIR)/java-aws-mturk.jar:$(JARDIR)/jaxme2-0.5.2.jar:$(JARDIR)/jaxme2-rt-0.5.2.jar:$(JARDIR)/jaxmeapi-0.5.2.jar:$(JARDIR)/jaxmejs-0.5.2.jar:$(JARDIR)/jaxmepm-0.5.2.jar:$(JARDIR)/jaxmexs-0.5.2.jar:$(JARDIR)/jaxrpc.jar:$(JARDIR)/log4j-1.2.15.jar:$(JARDIR)/opencsv-1.8.jar:$(JARDIR)/resolver.jar:$(JARDIR)/saaj.jar:$(JARDIR)/velocity-1.5.jar:$(JARDIR)/velocity-tools-1.4.jar:$(JARDIR)/wsdl4j.jar:$(JARDIR)/wstx-asl-3.2.3.jar:$(JARDIR)/xalan.jar:$(JARDIR)/xercesImpl.jar:$(JARDIR)/xml-apis.jar:$(JARDIR)/diffutils.jar:$(JARDIR)/jline.jar:$(JARDIR)/scala-actors-migration.jar:$(JARDIR)/scala-actors.jar:$(JARDIR)/scala-compiler.jar:$(JARDIR)/scala-library.jar:$(JARDIR)/scala-partest.jar:$(JARDIR)/scala-reflect.jar:$(JARDIR)/scala-swing.jar:$(JARDIR)/scalap.jar:$(JARDIR)/typesafe-config.jar
 CLASSDIR := $(TEMPDIR)/classes
 APPCLASSES := $(TEMPDIR)/apps/classes
 AUTOMAN_JAVA_SRC := $(shell find lib -iname "*.java" -type f | tr '\n' ' ')
@@ -36,9 +51,11 @@ else
 $(shell $(CURL) -L -o $(2) $(1))
 endif
 endef
+CLASSPATH = $(shell find $(JARDIR) -iname "*.jar" -type f | tr '\n' ':')
+SCALAC = $(SCALADIR)/bin/scalac
 
 ## BUILD TARGETS
-all: $(OUTJARS)/automan.jar $(OUTJARS)/simple_program.jar
+all: scalacheck jarcheck $(OUTJARS)/automan.jar $(OUTJARS)/simple_program.jar
 
 $(OUTJARS)/automan.jar: $(JARDIR)/java-aws-mturk.jar \
 	$(JARDIR)/aws-mturk-wsdl.jar \
@@ -92,12 +109,8 @@ $(OUTJARS)/automan.jar: $(JARDIR)/java-aws-mturk.jar \
 	cd $(CLASSDIR); $(JAR) cvf ../../$(OUTJARS)/automan.jar edu
 	cd $(OUTJARS); $(JAR) i automan.jar
 
-$(OUTJARS)/simple_program.jar: $(APPCLASSES)/simple_program $(OUTJARS)/automan.jar
-	$(SCALAC) -classpath $(OUTJARS)/automan.jar:$(CLASSPATH) -d $(APPCLASSES)/simple_program apps/simple_program/src/main/scala/simple_program.scala
-	cd $(APPCLASSES)/simple_program; $(JAR) cvfe ../../../../$(OUTJARS)/simple_program.jar simple_program/main *
-	# cd $(APPCLASSES)/simple_program
-
-$(OUTJARS)/hello_world.jar: $(APPCLASSES)/hello_world \
+$(OUTJARS)/simple_program.jar: $(APPCLASSES)/simple_program \
+	$(OUTJARS)/automan.jar \
 	$(JARDIR)/diffutils.jar \
 	$(JARDIR)/jline.jar \
 	$(JARDIR)/scala-actors-migration.jar \
@@ -109,17 +122,17 @@ $(OUTJARS)/hello_world.jar: $(APPCLASSES)/hello_world \
 	$(JARDIR)/scala-swing.jar \
 	$(JARDIR)/scalap.jar \
 	$(JARDIR)/typesafe-config.jar
-	$(SCALAC) -classpath $(CLASSPATH) -d $(APPCLASSES)/hello_world apps/hello_world/src/main/scala/hello_world.scala
-	cd $(APPCLASSES)/hello_world; $(JAR) cvfe ../../../../$(OUTJARS)/hello_world.jar HelloWorld *
+	$(SCALAC) -classpath $(OUTJARS)/automan.jar:$(CLASSPATH) -d $(APPCLASSES)/simple_program apps/simple_program/src/main/scala/simple_program.scala
+	cd $(APPCLASSES)/simple_program; $(JAR) cvfe ../../../../$(OUTJARS)/simple_program.jar simple_program/main *
 
-antcheck:
-ifeq ($(ANT),)
-$(error Must have Apache Ant)
-endif
-
+# antcheck:
+# ifeq ($(ANT),)
+# $(error Must have Apache Ant)
+# endif
+# 
 jarcheck:
 ifeq ($(JAR),)
-$(error Must have the jar utility installed)
+$(error Must have the JAR utility installed)
 endif
 
 scalacheck:
@@ -264,43 +277,43 @@ $(JARDIR)/xml-apis.jar: $(TURKDIR)
 	cp $(TURKDIR)/lib/third-party/xerces-2.9.1/xml-apis.jar $(JARDIR)/
 
 # untarball MTurk SDK
-$(TURKDIR): $(JARDIR) $(DOWNLOADDIR)/java-aws-mturk-1.6.2.tar.gz
+$(TURKDIR): $(JARDIR) $(DOWNLOADDIR)/$(ARCH_MTURKSDK)
 	mkdir -p $(TURKDIR)
-	$(TAR) xzvf $(DOWNLOADDIR)/java-aws-mturk-1.6.2.tar.gz -C $(UNPACKDIR)
+	$(TAR) xzvf $(DOWNLOADDIR)/$(ARCH_MTURKSDK) -C $(UNPACKDIR)
 
 # fetch MTurk SDK
-$(DOWNLOADDIR)/java-aws-mturk-1.6.2.tar.gz: $(DOWNLOADDIR)
-	$(eval $(call DOWNLOAD,$(MTURKSDK),$(DOWNLOADDIR)/java-aws-mturk-1.6.2.tar.gz))
+$(DOWNLOADDIR)/$(ARCH_MTURKSDK): $(DOWNLOADDIR)
+	$(eval $(call DOWNLOAD,$(MTURKSDK),$(DOWNLOADDIR)/$(ARCH_MTURKSDK)))
 
 ## ACTIVEOBJECTS
 
-$(JARDIR)/activeobjects-0.8.2.jar: $(AODIR)
-	cp $(AODIR)/activeobjects-0.8.2.jar $(JARDIR)/
+$(JARDIR)/$(ARCH_ACTIVEOBJ): $(AODIR)
+	cp $(AODIR)/$(ARCH_ACTIVEOBJ) $(JARDIR)/
 
 # untarball ActiveObjects lib
-$(AODIR): $(JARDIR) $(DOWNLOADDIR)/activeobjects-0.8.2.tar.gz
+$(AODIR): $(JARDIR) $(DOWNLOADDIR)/$(ARCH_ACTIVEOBJ)
 	mkdir -p $(AODIR)
-	$(TAR) xzvf $(DOWNLOADDIR)/activeobjects-0.8.2.tar.gz -C $(UNPACKDIR)
+	$(TAR) xzvf $(DOWNLOADDIR)/$(ARCH_ACTIVEOBJ) -C $(UNPACKDIR)
 
 # fetch ActiveObjects lib
-$(DOWNLOADDIR)/activeobjects-0.8.2.tar.gz: $(DOWNLOADDIR)
-	$(eval $(call DOWNLOAD,$(ACTIVEOBJ),$(DOWNLOADDIR)/activeobjects-0.8.2.tar.gz))
+$(DOWNLOADDIR)/$(ARCH_ACTIVEOBJ): $(DOWNLOADDIR)
+	$(eval $(call DOWNLOAD,$(ACTIVEOBJ),$(DOWNLOADDIR)/$(ARCH_ACTIVEOBJ)))
 
-## JARJAR
+## ONEJAR
 
-# fetch JarJar lib
-$(JARDIR)/jarjar-1.4.jar: $(DOWNLOADDIR)
-	$(eval $(call DOWNLOAD,$(JARJAR),$(JARDIR)/jarjar-1.4.jar))
+# fetch One-JAR lib
+$(JARDIR)/$(ARCH_ONEJAR): $(DOWNLOADDIR)
+	$(eval $(call DOWNLOAD,$(ONEJAR),$(JARDIR)/$(ARCH_ONEJAR)))
 
 ## SCALA
 # fetch Scala libs
-$(DOWNLOADDIR)/scala-2.10.3.tgz:
-	$(eval $(call DOWNLOAD,$(SCALA),$(DOWNLOADDIR)/scala-2.10.3.tgz))
+$(DOWNLOADDIR)/$(ARCH_SCALA):
+	$(eval $(call DOWNLOAD,$(SCALA),$(DOWNLOADDIR)/$(ARCH_SCALA)))
 
 # untarball Scala libs
-$(SCALADIR): $(JARDIR) $(DOWNLOADDIR)/scala-2.10.3.tgz
+$(SCALADIR): $(JARDIR) $(DOWNLOADDIR)/$(ARCH_SCALA)
 	mkdir -p $(SCALADIR)
-	$(TAR) xzvf $(DOWNLOADDIR)/scala-2.10.3.tgz -C $(UNPACKDIR)
+	$(TAR) xzvf $(DOWNLOADDIR)/$(ARCH_SCALA) -C $(UNPACKDIR)
 
 $(JARDIR)/diffutils.jar: $(SCALADIR)
 	cp $(SCALADIR)/lib/diffutils.jar $(JARDIR)/
@@ -338,9 +351,6 @@ $(JARDIR)/typesafe-config.jar: $(SCALADIR)
 ## DIRECTORIES
 
 # create binary class directory
-$(APPCLASSES)/hello_world:
-	mkdir -p $(APPCLASSES)/hello_world
-
 $(APPCLASSES)/simple_program:
 	mkdir -p $(APPCLASSES)/simple_program
 
