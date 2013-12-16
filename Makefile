@@ -1,3 +1,11 @@
+## START INFORMATION FOR HUMANS
+# This Makefile does the following things:
+# 1. Downloads AutoMan dependencies, including the Scala compiler.
+# 2. Unpacks dependencies so that they may be linked against AutoMan code.
+# 3. Makes an AutoMan JAR.
+# 4. Runs One-JAR to create an AutoMan überJAR (AutoMan + deps in one JAR).
+## END INFORMATION FOR HUMANS
+
 ## BINARY UTILITY LOCATIONS
 TAR		:= $(shell which tar)
 CURL	:= $(shell which curl)
@@ -23,6 +31,10 @@ VER_ACTIVEOBJ := $(patsubst activeobjects-%.tar.gz,%,$(ARCH_ACTIVEOBJ))
 VER_ONEJAR		:= $(patsubst one-jar-boot-%.jar,%,$(ARCH_ONEJAR))
 VER_SCALA			:= $(patsubst scala-%.tgz,%,$(ARCH_SCALA))
 
+## JARS (DO NOT MODIFY)
+JAR_ACTIVEOBJ	:= activeobjects-$(VER_ACTIVEOBJ).jar
+JAR_ONEJAR	:= $(ARCH_ONEJAR)
+
 ## LIBRARY URLS (DO NOT MODIFY)
 MTURKSDK 	:= http://downloads.sourceforge.net/project/mturksdk-java/mturksdk-java/$(VER_MTURKSDK)/$(ARCH_MTURKSDK)
 ACTIVEOBJ := http://java.net/projects/activeobjects/downloads/download/$(VER_ACTIVEOBJ)/$(ARCH_ACTIVEOBJ)
@@ -33,9 +45,9 @@ SCALA			:= http://www.scala-lang.org/files/archive/$(ARCH_SCALA)
 OUTJARS := jars
 TEMPDIR := temp_output
 UNPACKDIR := $(TEMPDIR)/libs
-TURKDIR := $(UNPACKDIR)/$(ARCH_MTURKSDK)
-AODIR := $(UNPACKDIR)/$(ARCH_ACTIVEOBJ)
-SCALADIR := $(UNPACKDIR)/$(ARCH_SCALA)
+TURKDIR := $(UNPACKDIR)/$(DIR_MTURKSDK)
+AODIR := $(UNPACKDIR)/$(DIR_ACTIVEOBJ)
+SCALADIR := $(UNPACKDIR)/$(DIR_SCALA)
 JARDIR := $(TEMPDIR)/jars
 DOWNLOADDIR := $(TEMPDIR)/downloads
 CLASSDIR := $(TEMPDIR)/classes
@@ -101,8 +113,20 @@ $(OUTJARS)/automan.jar: $(JARDIR)/java-aws-mturk.jar \
 	$(JARDIR)/resolver.jar \
 	$(JARDIR)/xercesImpl.jar \
 	$(JARDIR)/xml-apis.jar \
-	$(JARDIR)/activeobjects-0.8.2.jar \
-	$(JARDIR)/jarjar-1.4.jar \
+	$(JARDIR)/$(JAR_ACTIVEOBJ) \
+	$(JARDIR)/$(JAR_ONEJAR) \
+	$(JARDIR)/$(JAR_SCALA) \
+	$(JARDIR)/diffutils.jar \
+	$(JARDIR)/jline.jar \
+	$(JARDIR)/scala-actors-migration.jar \
+	$(JARDIR)/scala-actors.jar \
+	$(JARDIR)/scala-compiler.jar \
+	$(JARDIR)/scala-library.jar \
+	$(JARDIR)/scala-partest.jar \
+	$(JARDIR)/scala-reflect.jar \
+	$(JARDIR)/scala-swing.jar \
+	$(JARDIR)/scalap.jar \
+	$(JARDIR)/typesafe-config.jar \
 	$(CLASSDIR) \
 	$(OUTJARS)
 	$(SCALAC) -classpath $(CLASSPATH) -d $(CLASSDIR) $(AUTOMAN_SCALA_SRC) $(AUTOMAN_JAVA_SRC)
@@ -287,8 +311,9 @@ $(DOWNLOADDIR)/$(ARCH_MTURKSDK): $(DOWNLOADDIR)
 
 ## ACTIVEOBJECTS
 
-$(JARDIR)/$(ARCH_ACTIVEOBJ): $(AODIR)
-	cp $(AODIR)/$(ARCH_ACTIVEOBJ) $(JARDIR)/
+# copy ActiveObjects lib to JARDIR
+$(JARDIR)/$(JAR_ACTIVEOBJ): $(AODIR)
+	cp $(AODIR)/$(JAR_ACTIVEOBJ) $(JARDIR)/
 
 # untarball ActiveObjects lib
 $(AODIR): $(JARDIR) $(DOWNLOADDIR)/$(ARCH_ACTIVEOBJ)
@@ -302,7 +327,7 @@ $(DOWNLOADDIR)/$(ARCH_ACTIVEOBJ): $(DOWNLOADDIR)
 ## ONEJAR
 
 # fetch One-JAR lib
-$(JARDIR)/$(ARCH_ONEJAR): $(DOWNLOADDIR)
+$(JARDIR)/$(JAR_ONEJAR): $(DOWNLOADDIR)
 	$(eval $(call DOWNLOAD,$(ONEJAR),$(JARDIR)/$(ARCH_ONEJAR)))
 
 ## SCALA
@@ -369,3 +394,5 @@ $(JARDIR):
 # create target downloads directory
 $(DOWNLOADDIR):
 	mkdir -p $(DOWNLOADDIR)
+
+# create target temp directory
