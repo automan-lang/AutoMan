@@ -2,7 +2,7 @@ import edu.umass.cs.automan.adapters.MTurk.MTurkAdapter
 import edu.umass.cs.automan.core.Utilities
 
 object simple_checkbox_program extends App {
-  val opts = Utilities.unsafe_optparse(args)
+  val opts = Utilities.unsafe_optparse(args, "simple_checkbox_program.jar")
 
   val a = MTurkAdapter { mt =>
     mt.access_key_id = opts('key)

@@ -21,6 +21,7 @@ VER_AUTOMAN	:= 0.3
 
 ## ARCHIVE NAMES
 ARCH_MTURKSDK 	:= java-aws-mturk-1.6.2.tar.gz
+ARCH_AWSSDK 		:= aws-java-sdk.zip
 ARCH_ACTIVEOBJ 	:= activeobjects-0.8.2.tar.gz
 ARCH_ONEJAR			:= one-jar-boot-0.97.jar
 ARCH_SCALA			:= scala-2.10.3.tgz
@@ -31,6 +32,7 @@ ARCH_SCALA			:= scala-2.10.3.tgz
 
 ## BINARY UTILITY LOCATIONS (DO NOT MODIFY)
 TAR		:= $(shell which tar)
+UNZIP	:= $(shell which unzip)
 CURL	:= $(shell which curl)
 WGET	:= $(shell which wget)
 ANT		:= $(shell which ant)
@@ -39,6 +41,7 @@ JAVAC := $(shell which javac)
 
 ## UNPACK DIR NAMES (DO NOT MODIFY)
 DIR_MTURKSDK 	:= $(patsubst %.tar.gz,%,$(ARCH_MTURKSDK))
+DIR_AWSSDK 		:= $(patsubst %.zip,%,$(ARCH_AWSSDK))
 DIR_ACTIVEOBJ := $(patsubst %.tar.gz,%,$(ARCH_ACTIVEOBJ))
 DIR_SCALA			:= $(patsubst %.tgz,%,$(ARCH_SCALA))
 
@@ -54,24 +57,23 @@ JAR_ACTIVEOBJ	:= activeobjects-$(VER_ACTIVEOBJ).jar
 JAR_ONEJAR		:= $(ARCH_ONEJAR)
 
 ## LIBRARY URLS (DO NOT MODIFY)
-MTURKSDK 	:= http://downloads.sourceforge.net/project/mturksdk-java/mturksdk-java/$(VER_MTURKSDK)/$(ARCH_MTURKSDK)
-ACTIVEOBJ := http://java.net/projects/activeobjects/downloads/download/$(VER_ACTIVEOBJ)/$(ARCH_ACTIVEOBJ)
-ONEJAR 		:= https://sourceforge.net/projects/one-jar/files/one-jar/one-jar-$(VER_ONEJAR)/$(ARCH_ONEJAR)
-SCALA			:= http://www.scala-lang.org/files/archive/$(ARCH_SCALA)
+URL_MTURKSDK 	:= http://downloads.sourceforge.net/project/mturksdk-java/mturksdk-java/$(VER_MTURKSDK)/$(ARCH_MTURKSDK)
+URL_AWSSDK		:= http://sdk-for-java.amazonwebservices.com/latest/aws-java-sdk.zip
+URL_ACTIVEOBJ := http://java.net/projects/activeobjects/downloads/download/$(VER_ACTIVEOBJ)/$(ARCH_ACTIVEOBJ)
+URL_ONEJAR 		:= https://sourceforge.net/projects/one-jar/files/one-jar/one-jar-$(VER_ONEJAR)/$(ARCH_ONEJAR)
+URL_SCALA			:= http://www.scala-lang.org/files/archive/$(ARCH_SCALA)
 
 ## STATIC VARS (DO NOT MODIFY)
 PREFIX			:= $(strip $(shell pwd))
 OUTJARS 		:= jars
+TEMPDIR 		:= tmp
 AOUTJARS		:= $(PREFIX)/$(OUTJARS)
-TEMPDIR 		:= $(PREFIX)/tmp
-UNPACKDIR 	:= $(TEMPDIR)/unpack
-TURKDIR 		:= $(UNPACKDIR)/$(DIR_MTURKSDK)
-AODIR 			:= $(UNPACKDIR)/$(DIR_ACTIVEOBJ)
-SCALADIR 		:= $(UNPACKDIR)/$(DIR_SCALA)
-JARDIR 			:= $(TEMPDIR)/lib
-DOWNLOADDIR := $(TEMPDIR)/downloads
-CLASSDIR 		:= $(TEMPDIR)/classes
-APPCLASSES 	:= $(TEMPDIR)/apps/classes
+ATEMPDIR 		:= $(PREFIX)/$(TEMPDIR)
+UNPACKDIR 	:= $(ATEMPDIR)/unpack
+JARDIR 			:= $(ATEMPDIR)/lib
+DOWNLOADDIR := $(ATEMPDIR)/downloads
+CLASSDIR 		:= $(ATEMPDIR)/classes
+APPCLASSES	:= $(TEMPDIR)/apps/classes
 APPJARS			:= $(TEMPDIR)/apps/jars
 
 ## FUNCTIONS
@@ -82,341 +84,144 @@ else
 $(shell $(CURL) -L -o $(2) $(1))
 endif
 endef
-
 # First arg: basename of class file
 # Second arg: entry point class name
-# If you do things the Java(TM) way, then the first arg
-# and the second arg are the same.
 define MAKEAPP
-$(SCALAC) -classpath $(OUTJARS)/$(JAR_AUTOMAN):$(CLASSPATH) -d $(APPCLASSES)/$(1) apps/$(1)/src/main/scala/$(1).scala
+$(SCALAC) -classpath $(OUTJARS)/$(JAR_AUTOMAN):$(CP) -d $(APPCLASSES)/$(1) apps/$(1)/src/main/scala/$(1).scala
 mkdir -p $(APPJARS)/$(1)/main $(APPJARS)/$(1)/lib
 cd $(APPCLASSES)/$(1); $(JAR) cvfe $(APPJARS)/$(1)/main/main.jar $(2) *
 cp $(OUTJARS)/$(JAR_AUTOMAN) $(APPJARS)/$(1)/lib
-cp $(JARDIR)/* $(APPJARS)/$(1)/lib
-cd $(APPJARS)/$(1); $(JAR) xfv $(JARDIR)/$(JAR_ONEJAR)
+find $(JARDIR) -iname "*.jar" -type f -exec cp {} $(APPJARS)/$(1)/lib \;
+cd $(APPJARS)/$(1); $(JAR) xfv $(JARDIR)/onejar/$(JAR_ONEJAR)
 rm -rf $(APPJARS)/$(1)/src
 echo "One-Jar-Main-Class: $(2)" >> $(APPJARS)/$(1)/boot-manifest.mf
 cd $(APPJARS)/$(1); $(JAR) cvfm $(AOUTJARS)/$(1).jar boot-manifest.mf .
 endef
-
-CLASSPATH = $(shell find $(JARDIR) -iname "*.jar" -type f | tr '\n' ':')
-SCALAC = $(SCALADIR)/bin/scalac
+CP = $(shell find $(JARDIR) -iname "*.jar" -type f | tr '\n' ':')
+SCALAC = $(UNPACKDIR)/$(DIR_SCALA)/bin/scalac
 AUTOMAN_JAVA_SRC = $(shell find lib -iname "*.java" -type f | tr '\n' ' ')
 AUTOMAN_SCALA_SRC = $(shell find lib -type f -iname "*.scala" | tr '\n' ' ')
 
 ## BUILD TARGETS
-all: scalacheck jarcheck $(OUTJARS)/$(JAR_AUTOMAN) #$(OUTJARS)/simple_program.jar
-
-clean:
-	@-rm -rf $(TEMPDIR) $(OUTJARS)
-
-$(OUTJARS)/$(JAR_AUTOMAN): $(JARDIR)/java-aws-mturk.jar \
-	$(JARDIR)/aws-mturk-wsdl.jar \
-	$(JARDIR)/aws-mturk-dataschema.jar \
-	$(JARDIR)/log4j-1.2.15.jar \
-	$(JARDIR)/axis-ant.jar \
-	$(JARDIR)/axis.jar \
-	$(JARDIR)/commons-discovery-0.2.jar \
-	$(JARDIR)/jaxrpc.jar \
-	$(JARDIR)/saaj.jar \
-	$(JARDIR)/commons-beanutils.jar \
-	$(JARDIR)/commons-collections-3.2.jar \
-	$(JARDIR)/commons-collections-testframework-3.2.jar \
-	$(JARDIR)/commons-dbcp-1.2.2.jar \
-	$(JARDIR)/commons-digester-1.8.jar \
-	$(JARDIR)/commons-httpclient-3.1.jar \
-	$(JARDIR)/commons-httpclient-contrib-3.1.jar \
-	$(JARDIR)/commons-lang-2.3.jar \
-	$(JARDIR)/commons-logging-api.jar \
-	$(JARDIR)/commons-logging.jar \
-	$(JARDIR)/commons-pool-1.3.jar \
-	$(JARDIR)/dom4j-1.6.1.jar \
-	$(JARDIR)/geronimo-activation_1.0.2_spec-1.2.jar \
-	$(JARDIR)/geronimo-javamail_1.3.1_spec-1.3.jar \
-	$(JARDIR)/commons-codec-1.4.jar \
-	$(JARDIR)/commons-logging-1.1.1.jar \
-	$(JARDIR)/httpclient-4.1.2.jar \
-	$(JARDIR)/httpclient-cache-4.1.2.jar \
-	$(JARDIR)/httpcore-4.1.2.jar \
-	$(JARDIR)/httpmime-4.1.2.jar \
-	$(JARDIR)/opencsv-1.8.jar \
-	$(JARDIR)/velocity-1.5.jar \
-	$(JARDIR)/velocity-tools-1.4.jar \
-	$(JARDIR)/jaxme2-0.5.2.jar \
-	$(JARDIR)/jaxme2-rt-0.5.2.jar \
-	$(JARDIR)/jaxmeapi-0.5.2.jar \
-	$(JARDIR)/jaxmejs-0.5.2.jar \
-	$(JARDIR)/jaxmepm-0.5.2.jar \
-	$(JARDIR)/jaxmexs-0.5.2.jar \
-	$(JARDIR)/wsdl4j.jar \
-	$(JARDIR)/wstx-asl-3.2.3.jar \
-	$(JARDIR)/xalan.jar \
-	$(JARDIR)/resolver.jar \
-	$(JARDIR)/xercesImpl.jar \
-	$(JARDIR)/xml-apis.jar \
-	$(JARDIR)/$(JAR_ACTIVEOBJ) \
-	$(JARDIR)/$(JAR_SCALA) \
-	$(JARDIR)/diffutils.jar \
-	$(JARDIR)/jline.jar \
-	$(JARDIR)/scala-actors-migration.jar \
-	$(JARDIR)/scala-actors.jar \
-	$(JARDIR)/scala-compiler.jar \
-	$(JARDIR)/scala-library.jar \
-	$(JARDIR)/scala-partest.jar \
-	$(JARDIR)/scala-reflect.jar \
-	$(JARDIR)/scala-swing.jar \
-	$(JARDIR)/scalap.jar \
-	$(JARDIR)/typesafe-config.jar | \
-	$(JARDIR) \
-	$(CLASSDIR) \
-	$(OUTJARS)
-	$(SCALAC) -classpath $(CLASSPATH) -d $(CLASSDIR) $(AUTOMAN_SCALA_SRC) $(AUTOMAN_JAVA_SRC)
-	cd $(CLASSDIR); $(JAR) cvf $(AOUTJARS)/$(JAR_AUTOMAN) edu
-	cd $(OUTJARS); $(JAR) i $(JAR_AUTOMAN)
-
-$(OUTJARS)/simple_program.jar: $(OUTJARS)/$(JAR_AUTOMAN) $(JARDIR)/diffutils.jar $(JARDIR)/jline.jar $(JARDIR)/scala-actors-migration.jar $(JARDIR)/scala-actors.jar $(JARDIR)/scala-compiler.jar $(JARDIR)/scala-library.jar $(JARDIR)/scala-partest.jar $(JARDIR)/scala-reflect.jar $(JARDIR)/scala-swing.jar $(JARDIR)/scalap.jar $(JARDIR)/typesafe-config.jar $(JARDIR)/$(JAR_ONEJAR) | $(APPCLASSES)/simple_program $(APPJARS)/simple_program
-	$(call MAKEAPP,simple_program,simple_program)
+all: jarcheck $(OUTJARS)/$(JAR_AUTOMAN) $(OUTJARS)/simple_program.jar
 
 jarcheck:
 ifeq ($(JAR),)
-$(error Must have the JAR utility installed)
+$(error Must have the "jar" utility installed)
 endif
 
-scalacheck:
-ifeq ($(SCALAC),)
-$(error Must have the Scala compiler installed)
+unzipcheck:
+ifeq ($(UNZIP),)
+$(error Must have the "unzip" utility installed)
 endif
+
+clean:
+	@-rm -rf $(ATEMPDIR) $(OUTJARS)
+
+# AUTOMAN
+$(OUTJARS)/$(JAR_AUTOMAN): $(JARDIR)/mturk-sdk $(JARDIR)/activeobject $(JARDIR)/scala | $(JARDIR) $(CLASSDIR) $(OUTJARS)
+	$(SCALAC) -classpath $(CP) -d $(CLASSDIR) $(AUTOMAN_SCALA_SRC) $(AUTOMAN_JAVA_SRC)
+	cd $(CLASSDIR); $(JAR) cvf $(AOUTJARS)/$(JAR_AUTOMAN) edu
+	cd $(OUTJARS); $(JAR) i $(JAR_AUTOMAN)
+
+# SAMPLE PROGRAMS
+
+# simple_program
+$(OUTJARS)/simple_program.jar: $(OUTJARS)/$(JAR_AUTOMAN) $(JARDIR)/onejar/$(JAR_ONEJAR) | $(APPCLASSES)/simple_program $(APPJARS)/simple_program
+	$(call MAKEAPP,simple_program,simple_program)
+
+# anpr
+$(OUTJARS)/anpr.jar: unzipcheck $(OUTJARS)/$(JAR_AUTOMAN) $(JARDIR)/aws-sdk $(JARDIR)/onejar/$(JAR_ONEJAR) | $(APPCLASSES)/anpr $(APPJARS)/anpr
+	$(call MAKEAPP,anpr,anpr)
 
 ## MTURK SDK
-$(JARDIR)/java-aws-mturk.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/java-aws-mturk.jar $(JARDIR)/
-
-$(JARDIR)/aws-mturk-wsdl.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/aws-mturk-wsdl.jar $(JARDIR)/
-
-$(JARDIR)/aws-mturk-dataschema.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/aws-mturk-dataschema.jar $(JARDIR)/
-
-$(JARDIR)/log4j-1.2.15.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/apache-log4j-1.2.15/log4j-1.2.15.jar $(JARDIR)/
-
-$(JARDIR)/axis-ant.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/axis-1.4/axis-ant.jar $(JARDIR)/
-
-$(JARDIR)/axis.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/axis-1.4/axis.jar $(JARDIR)/
-
-$(JARDIR)/commons-discovery-0.2.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/axis-1.4/commons-discovery-0.2.jar $(JARDIR)/
-
-$(JARDIR)/jaxrpc.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/axis-1.4/jaxrpc.jar $(JARDIR)/
-
-$(JARDIR)/saaj.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/axis-1.4/saaj.jar $(JARDIR)/
-
-$(JARDIR)/commons-beanutils.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/commons-beanutils-1.7.0/commons-beanutils.jar $(JARDIR)/
-
-$(JARDIR)/commons-collections-3.2.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/commons-collections-3.2/commons-collections-3.2.jar $(JARDIR)/
-
-$(JARDIR)/commons-collections-testframework-3.2.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/commons-collections-3.2/commons-collections-testframework-3.2.jar $(JARDIR)/
-
-$(JARDIR)/commons-dbcp-1.2.2.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/commons-dbcp-1.2.2/commons-dbcp-1.2.2.jar $(JARDIR)/
-
-$(JARDIR)/commons-digester-1.8.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/commons-digester-1.8/commons-digester-1.8.jar $(JARDIR)/
-
-$(JARDIR)/commons-httpclient-3.1.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/commons-httpclient-3.1/commons-httpclient-3.1.jar $(JARDIR)/
-
-$(JARDIR)/commons-httpclient-contrib-3.1.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/commons-httpclient-3.1/commons-httpclient-contrib-3.1.jar $(JARDIR)/
-
-$(JARDIR)/commons-lang-2.3.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/commons-lang-2.3/commons-lang-2.3.jar $(JARDIR)/
-
-$(JARDIR)/commons-logging-api.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/commons-logging-1.0.4/commons-logging-api.jar $(JARDIR)/
-
-$(JARDIR)/commons-logging.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/commons-logging-1.0.4/commons-logging.jar $(JARDIR)/
-
-$(JARDIR)/commons-pool-1.3.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/commons-pool-1.3/commons-pool-1.3.jar $(JARDIR)/
-
-$(JARDIR)/dom4j-1.6.1.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/dom4j-1.6.1/dom4j-1.6.1.jar $(JARDIR)/
-
-$(JARDIR)/geronimo-activation_1.0.2_spec-1.2.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/geronimo-activation-1.0.2/geronimo-activation_1.0.2_spec-1.2.jar $(JARDIR)/
-
-$(JARDIR)/geronimo-javamail_1.3.1_spec-1.3.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/geronimo-javamail-1.3.1/geronimo-javamail_1.3.1_spec-1.3.jar $(JARDIR)/
-
-$(JARDIR)/commons-codec-1.4.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/httpcomponents-client-4.1.2/commons-codec-1.4.jar $(JARDIR)/
-
-$(JARDIR)/commons-logging-1.1.1.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/httpcomponents-client-4.1.2/commons-logging-1.1.1.jar $(JARDIR)/
-
-$(JARDIR)/httpclient-4.1.2.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/httpcomponents-client-4.1.2/httpclient-4.1.2.jar $(JARDIR)/
-
-$(JARDIR)/httpclient-cache-4.1.2.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/httpcomponents-client-4.1.2/httpclient-cache-4.1.2.jar $(JARDIR)/
-
-$(JARDIR)/httpcore-4.1.2.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/httpcomponents-client-4.1.2/httpcore-4.1.2.jar $(JARDIR)/
-
-$(JARDIR)/httpmime-4.1.2.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/httpcomponents-client-4.1.2/httpmime-4.1.2.jar $(JARDIR)/
-
-$(JARDIR)/opencsv-1.8.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/opencsv-1.8/opencsv-1.8.jar $(JARDIR)/
-
-$(JARDIR)/velocity-1.5.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/velocity-1.5/velocity-1.5.jar $(JARDIR)/
-
-$(JARDIR)/velocity-tools-1.4.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/velocity-tools-1.4/velocity-tools-1.4.jar $(JARDIR)/
-
-$(JARDIR)/jaxme2-0.5.2.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/ws-jaxme-0.5.2/jaxme2-0.5.2.jar $(JARDIR)/
-
-$(JARDIR)/jaxme2-rt-0.5.2.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/ws-jaxme-0.5.2/jaxme2-rt-0.5.2.jar $(JARDIR)/
-
-$(JARDIR)/jaxmeapi-0.5.2.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/ws-jaxme-0.5.2/jaxmeapi-0.5.2.jar $(JARDIR)/
-
-$(JARDIR)/jaxmejs-0.5.2.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/ws-jaxme-0.5.2/jaxmejs-0.5.2.jar $(JARDIR)/
-
-$(JARDIR)/jaxmepm-0.5.2.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/ws-jaxme-0.5.2/jaxmepm-0.5.2.jar $(JARDIR)/
-
-$(JARDIR)/jaxmexs-0.5.2.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/ws-jaxme-0.5.2/jaxmexs-0.5.2.jar $(JARDIR)/
-
-$(JARDIR)/wsdl4j.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/wsdl4j-1.5.1/wsdl4j.jar $(JARDIR)/
-
-$(JARDIR)/wstx-asl-3.2.3.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/wstx-asl-3.2.3/wstx-asl-3.2.3.jar $(JARDIR)/
-
-$(JARDIR)/xalan.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/xalan-j-2.7.1/xalan.jar $(JARDIR)/
-
-$(JARDIR)/resolver.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/xerces-2.9.1/resolver.jar $(JARDIR)/
-
-$(JARDIR)/xercesImpl.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/xerces-2.9.1/xercesImpl.jar $(JARDIR)/
-
-$(JARDIR)/xml-apis.jar: | $(TURKDIR)
-	cp $(TURKDIR)/lib/third-party/xerces-2.9.1/xml-apis.jar $(JARDIR)/
+$(JARDIR)/mturk-sdk: | $(UNPACKDIR)/$(DIR_MTURKSDK)
+	mkdir -p $(JARDIR)/mturk-sdk
+	find $(UNPACKDIR)/$(DIR_MTURKSDK)/lib -iname "*.jar" -type f -exec cp {} $(JARDIR)/mturk-sdk \;
 
 # untarball MTurk SDK
-$(TURKDIR): | $(JARDIR) $(DOWNLOADDIR)/$(ARCH_MTURKSDK)
-	mkdir -p $(TURKDIR)
+$(UNPACKDIR)/$(DIR_MTURKSDK): | $(JARDIR) $(DOWNLOADDIR)/$(ARCH_MTURKSDK)
+	mkdir -p $(UNPACKDIR)/$(DIR_MTURKSDK)
 	$(TAR) xzvf $(DOWNLOADDIR)/$(ARCH_MTURKSDK) -C $(UNPACKDIR)
 
 # fetch MTurk SDK
 $(DOWNLOADDIR)/$(ARCH_MTURKSDK): | $(DOWNLOADDIR)
-	$(eval $(call DOWNLOAD,$(MTURKSDK),$(DOWNLOADDIR)/$(ARCH_MTURKSDK)))
+	$(eval $(call DOWNLOAD,$(URL_MTURKSDK),$(DOWNLOADDIR)/$(ARCH_MTURKSDK)))
+
+## AWS SDK
+$(JARDIR)/aws-sdk: | $(AWSDIR)
+	mkdir -p $(JARDIR)/aws-sdk
+	find $(AWSDIR)/lib -iname "*.jar" -type f -exec cp {} $(JARDIR)/aws-sdk \;
+
+# untarball AWS SDK
+$(UNPACKDIR)/$(DIR_AWSSDK): | $(JARDIR) $(DOWNLOADDIR)/$(ARCH_AWSSDK)
+	mkdir -p $(UNPACKDIR)/$(DIR_AWSSDK)
+	$(TAR) xzvf $(DOWNLOADDIR)/$(ARCH_AWSSDK) -C $(UNPACKDIR)
+
+# fetch AWS SDK
+$(DOWNLOADDIR)/$(ARCH_AWSSDK): | $(DOWNLOADDIR)
+	$(eval $(call DOWNLOAD,$(URL_AWSSDK),$(DOWNLOADDIR)/$(ARCH_AWSSDK)))
 
 ## ACTIVEOBJECTS
-
 # copy ActiveObjects lib to JARDIR
-$(JARDIR)/$(JAR_ACTIVEOBJ): | $(AODIR)
-	cp $(AODIR)/$(JAR_ACTIVEOBJ) $(JARDIR)/
+$(JARDIR)/activeobject: | $(UNPACKDIR)/$(DIR_ACTIVEOBJ)
+	mkdir -p $(JARDIR)/activeobject
+	cp $(UNPACKDIR)/$(DIR_ACTIVEOBJ)/$(JAR_ACTIVEOBJ) $(JARDIR)/activeobject/
 
 # untarball ActiveObjects lib
-$(AODIR): | $(JARDIR) $(DOWNLOADDIR)/$(ARCH_ACTIVEOBJ)
-	mkdir -p $(AODIR)
+$(UNPACKDIR)/$(DIR_ACTIVEOBJ): | $(JARDIR) $(DOWNLOADDIR)/$(ARCH_ACTIVEOBJ)
+	mkdir -p $(UNPACKDIR)/$(DIR_ACTIVEOBJ)
 	$(TAR) xzvf $(DOWNLOADDIR)/$(ARCH_ACTIVEOBJ) -C $(UNPACKDIR)
 
 # fetch ActiveObjects lib
 $(DOWNLOADDIR)/$(ARCH_ACTIVEOBJ): | $(DOWNLOADDIR)
-	$(eval $(call DOWNLOAD,$(ACTIVEOBJ),$(DOWNLOADDIR)/$(ARCH_ACTIVEOBJ)))
+	$(eval $(call DOWNLOAD,$(URL_ACTIVEOBJ),$(DOWNLOADDIR)/$(ARCH_ACTIVEOBJ)))
 
 ## ONEJAR
-
 # fetch One-JAR lib
-$(JARDIR)/$(JAR_ONEJAR): | $(DOWNLOADDIR)
-	$(eval $(call DOWNLOAD,$(ONEJAR),$(JARDIR)/$(ARCH_ONEJAR)))
+$(JARDIR)/onejar/$(JAR_ONEJAR): | $(DOWNLOADDIR) $(JARDIR)/onejar
+	$(eval $(call DOWNLOAD,$(URL_ONEJAR),$(JARDIR)/onejar/$(ARCH_ONEJAR)))
 
 ## SCALA
-# fetch Scala libs
-$(DOWNLOADDIR)/$(ARCH_SCALA):
-	$(eval $(call DOWNLOAD,$(SCALA),$(DOWNLOADDIR)/$(ARCH_SCALA)))
-
 # untarball Scala libs
-$(SCALADIR): $(DOWNLOADDIR)/$(ARCH_SCALA) | $(JARDIR)
-	mkdir -p $(SCALADIR)
+$(UNPACKDIR)/$(DIR_SCALA): $(DOWNLOADDIR)/$(ARCH_SCALA) | $(UNPACKDIR)
+	mkdir -p $(UNPACKDIR)/$(DIR_SCALA)
 	$(TAR) xzvf $(DOWNLOADDIR)/$(ARCH_SCALA) -C $(UNPACKDIR)
 
-$(JARDIR)/diffutils.jar: | $(SCALADIR)
-	cp $(SCALADIR)/lib/diffutils.jar $(JARDIR)/
+# fetch Scala libs
+$(DOWNLOADDIR)/$(ARCH_SCALA): | $(DOWNLOADDIR)
+	$(eval $(call DOWNLOAD,$(URL_SCALA),$(DOWNLOADDIR)/$(ARCH_SCALA)))
 
-$(JARDIR)/jline.jar: | $(SCALADIR)
-	cp $(SCALADIR)/lib/jline.jar $(JARDIR)/
-
-$(JARDIR)/scala-actors-migration.jar: | $(SCALADIR)
-	cp $(SCALADIR)/lib/scala-actors-migration.jar $(JARDIR)/
-
-$(JARDIR)/scala-actors.jar: | $(SCALADIR)
-	cp $(SCALADIR)/lib/scala-actors.jar $(JARDIR)/
-
-$(JARDIR)/scala-compiler.jar: | $(SCALADIR)
-	cp $(SCALADIR)/lib/scala-compiler.jar $(JARDIR)/
-
-$(JARDIR)/scala-library.jar: | $(SCALADIR)
-	cp $(SCALADIR)/lib/scala-library.jar $(JARDIR)/
-
-$(JARDIR)/scala-partest.jar: | $(SCALADIR)
-	cp $(SCALADIR)/lib/scala-partest.jar $(JARDIR)/
-
-$(JARDIR)/scala-reflect.jar: | $(SCALADIR)
-	cp $(SCALADIR)/lib/scala-reflect.jar $(JARDIR)/
-
-$(JARDIR)/scala-swing.jar: | $(SCALADIR)
-	cp $(SCALADIR)/lib/scala-swing.jar $(JARDIR)/
-
-$(JARDIR)/scalap.jar: | $(SCALADIR)
-	cp $(SCALADIR)/lib/scalap.jar $(JARDIR)/
-
-$(JARDIR)/typesafe-config.jar: | $(SCALADIR)
-	cp $(SCALADIR)/lib/typesafe-config.jar $(JARDIR)/
+# copy scala libs
+$(JARDIR)/scala: | $(UNPACKDIR)/$(DIR_SCALA)
+	mkdir -p $(JARDIR)/scala
+	find $(UNPACKDIR)/$(DIR_SCALA)/lib -iname "*.jar" -type f -exec cp {} $(JARDIR)/scala \;
 
 ## DIRECTORIES
+$(UNPACKDIR):
+	mkdir -p $(UNPACKDIR)
 
-# create subproject class dirs
-$(APPCLASSES)/simple_program:
-	mkdir -p $(APPCLASSES)/simple_program
+$(JARDIR)/onejar: | $(JARDIR)
+	mkdir -p $(JARDIR)/onejar
 
-# create subproject JAR dirs
-$(APPJARS)/simple_program:
-	mkdir -p $(APPJARS)/simple_program
+$(APPCLASSES)/%:
+	mkdir -p $@
 
-# create output JAR directory
+$(APPJARS)/%:
+	mkdir -p $@
+
 $(OUTJARS):
 	mkdir -p $(OUTJARS)
 
-# create input JAR directory
 $(JARDIR):
 	mkdir -p $(JARDIR)
 
-# create binary class directory
 $(CLASSDIR):
 	mkdir -p $(CLASSDIR)
 
-# create target downloads directory
 $(DOWNLOADDIR):
 	mkdir -p $(DOWNLOADDIR)
+
+.PHONY : clean jarcheck
 
 #### END MODIFY-AT-YOUR-PERIL ZONE ####

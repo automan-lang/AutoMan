@@ -78,11 +78,7 @@ object Utilities {
     println(new Date().toString + ": " + level.toString + ": " + source.toString + ": " + idstr +  msg)
   }
 
-  def invoked_as_name : String = {
-    Utilities.getClass.getProtectionDomain.getCodeSource.getLocation.getPath.split("/").last
-  }
-  
-  def unsafe_optparse(args: Array[String]) : OptionMap = {
+  def unsafe_optparse(args: Array[String], invoked_as_name: String) : OptionMap = {
     val usage = "Usage: " + invoked_as_name + " -k [key] -s [secret]" +
                 "\n  NOTE: passing key and secret this way will expose your" +
                 "\n  credentials to users on this system."
