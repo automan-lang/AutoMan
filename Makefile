@@ -75,8 +75,15 @@ DOWNLOADDIR := $(ATEMPDIR)/downloads
 CLASSDIR 		:= $(ATEMPDIR)/classes
 APPCLASSES	:= $(TEMPDIR)/apps/classes
 APPJARS			:= $(TEMPDIR)/apps/jars
+AAPPJARS		:= $(ATEMPDIR)/apps/jars
 
 ## FUNCTIONS
+
+# NOTE: functions go bonkers if the environment already contains
+#       a variable with the same name; thus I pre-emptively "unexport"
+#       all of these names to avoid the pain.
+unexport DOWNLOAD MAKEAPP CP SCALAC AUTOMAN_JAVA_SRC AUTOMAN_SCALA_SRC
+
 define DOWNLOAD
 ifeq ($(CURL),)
 $(shell $(WGET) -O $(2) $(1))
@@ -89,7 +96,7 @@ endef
 define MAKEAPP
 $(SCALAC) -classpath $(OUTJARS)/$(JAR_AUTOMAN):$(CP) -d $(APPCLASSES)/$(1) apps/$(1)/src/main/scala/$(1).scala
 mkdir -p $(APPJARS)/$(1)/main $(APPJARS)/$(1)/lib
-cd $(APPCLASSES)/$(1); $(JAR) cvfe $(APPJARS)/$(1)/main/main.jar $(2) *
+cd $(APPCLASSES)/$(1); $(JAR) cvfe $(AAPPJARS)/$(1)/main/main.jar $(2) *
 cp $(OUTJARS)/$(JAR_AUTOMAN) $(APPJARS)/$(1)/lib
 find $(JARDIR) -iname "*.jar" -type f -exec cp {} $(APPJARS)/$(1)/lib \;
 cd $(APPJARS)/$(1); $(JAR) xfv $(JARDIR)/onejar/$(JAR_ONEJAR)
@@ -119,7 +126,7 @@ clean:
 	@-rm -rf $(ATEMPDIR) $(OUTJARS)
 
 # AUTOMAN
-$(OUTJARS)/$(JAR_AUTOMAN): $(JARDIR)/mturk-sdk $(JARDIR)/activeobject $(JARDIR)/scala | $(JARDIR) $(CLASSDIR) $(OUTJARS)
+$(OUTJARS)/$(JAR_AUTOMAN): $(AUTOMAN_SCALA_SRC) $(JARDIR)/mturk-sdk $(JARDIR)/activeobject $(JARDIR)/scala | $(JARDIR) $(CLASSDIR) $(OUTJARS)
 	$(SCALAC) -classpath $(CP) -d $(CLASSDIR) $(AUTOMAN_SCALA_SRC) $(AUTOMAN_JAVA_SRC)
 	cd $(CLASSDIR); $(JAR) cvf $(AOUTJARS)/$(JAR_AUTOMAN) edu
 	cd $(OUTJARS); $(JAR) i $(JAR_AUTOMAN)
