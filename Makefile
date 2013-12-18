@@ -41,9 +41,9 @@ JAVAC := $(shell which javac)
 
 ## UNPACK DIR NAMES (DO NOT MODIFY)
 DIR_MTURKSDK 	:= $(patsubst %.tar.gz,%,$(ARCH_MTURKSDK))
-DIR_AWSSDK 		:= $(patsubst %.zip,%,$(ARCH_AWSSDK))
 DIR_ACTIVEOBJ := $(patsubst %.tar.gz,%,$(ARCH_ACTIVEOBJ))
 DIR_SCALA			:= $(patsubst %.tgz,%,$(ARCH_SCALA))
+DIR_AWSSDK		:= $(patsubst %.zip,%,$(ARCH_AWSSDK))
 
 ## VERSION STRINGS (DO NOT MODIFY)
 VER_MTURKSDK 	:= $(patsubst java-aws-mturk-%.tar.gz,%,$(ARCH_MTURKSDK))
@@ -82,7 +82,7 @@ AAPPJARS		:= $(ATEMPDIR)/apps/jars
 # NOTE: functions go bonkers if the environment already contains
 #       a variable with the same name; thus I pre-emptively "unexport"
 #       all of these names to avoid the pain.
-unexport DOWNLOAD MAKEAPP CP SCALAC AUTOMAN_JAVA_SRC AUTOMAN_SCALA_SRC
+unexport DOWNLOAD MAKEAPP CP SCALAC AUTOMAN_JAVA_SRC AUTOMAN_SCALA_SRC DIR_AWSSDK
 
 define DOWNLOAD
 ifeq ($(CURL),)
@@ -91,6 +91,7 @@ else
 $(shell $(CURL) -L -o $(2) $(1))
 endif
 endef
+
 # First arg: basename of class file
 # Second arg: entry point class name
 define MAKEAPP
@@ -104,13 +105,14 @@ rm -rf $(APPJARS)/$(1)/src
 echo "One-Jar-Main-Class: $(2)" >> $(APPJARS)/$(1)/boot-manifest.mf
 cd $(APPJARS)/$(1); $(JAR) cvfm $(AOUTJARS)/$(1).jar boot-manifest.mf .
 endef
-CP = $(shell find $(JARDIR) -iname "*.jar" -type f | tr '\n' ':')
-SCALAC = $(UNPACKDIR)/$(DIR_SCALA)/bin/scalac
-AUTOMAN_JAVA_SRC = $(shell find lib -iname "*.java" -type f | tr '\n' ' ')
+
+CP 								= $(shell find $(JARDIR) -iname "*.jar" -type f | tr '\n' ':')
+SCALAC 						= $(UNPACKDIR)/$(DIR_SCALA)/bin/scalac
+AUTOMAN_JAVA_SRC 	= $(shell find lib -iname "*.java" -type f | tr '\n' ' ')
 AUTOMAN_SCALA_SRC = $(shell find lib -type f -iname "*.scala" | tr '\n' ' ')
 
 ## BUILD TARGETS
-all: jarcheck $(OUTJARS)/$(JAR_AUTOMAN) $(OUTJARS)/simple_program.jar
+all: jarcheck $(OUTJARS)/$(JAR_AUTOMAN) $(OUTJARS)/simple_program.jar $(OUTJARS)/anpr.jar
 
 jarcheck:
 ifeq ($(JAR),)
@@ -126,7 +128,7 @@ clean:
 	@-rm -rf $(ATEMPDIR) $(OUTJARS)
 
 # AUTOMAN
-$(OUTJARS)/$(JAR_AUTOMAN): $(AUTOMAN_SCALA_SRC) $(JARDIR)/mturk-sdk $(JARDIR)/activeobject $(JARDIR)/scala | $(JARDIR) $(CLASSDIR) $(OUTJARS)
+$(OUTJARS)/$(JAR_AUTOMAN): $(AUTOMAN_SCALA_SRC) $(AUTOMAN_JAVA_SRC) $(JARDIR)/mturk-sdk $(JARDIR)/activeobject $(JARDIR)/scala | $(JARDIR) $(CLASSDIR) $(OUTJARS)
 	$(SCALAC) -classpath $(CP) -d $(CLASSDIR) $(AUTOMAN_SCALA_SRC) $(AUTOMAN_JAVA_SRC)
 	cd $(CLASSDIR); $(JAR) cvf $(AOUTJARS)/$(JAR_AUTOMAN) edu
 	cd $(OUTJARS); $(JAR) i $(JAR_AUTOMAN)
@@ -156,14 +158,15 @@ $(DOWNLOADDIR)/$(ARCH_MTURKSDK): | $(DOWNLOADDIR)
 	$(eval $(call DOWNLOAD,$(URL_MTURKSDK),$(DOWNLOADDIR)/$(ARCH_MTURKSDK)))
 
 ## AWS SDK
-$(JARDIR)/aws-sdk: | $(AWSDIR)
+$(JARDIR)/aws-sdk: | $(JARDIR) $(UNPACKDIR)/$(DIR_AWSSDK)
 	mkdir -p $(JARDIR)/aws-sdk
-	find $(AWSDIR)/lib -iname "*.jar" -type f -exec cp {} $(JARDIR)/aws-sdk \;
+	find $(UNPACKDIR)/$(DIR_AWSSDK)/lib -iname "*.jar" -type f -exec cp {} $(JARDIR)/aws-sdk \;
 
-# untarball AWS SDK
-$(UNPACKDIR)/$(DIR_AWSSDK): | $(JARDIR) $(DOWNLOADDIR)/$(ARCH_AWSSDK)
-	mkdir -p $(UNPACKDIR)/$(DIR_AWSSDK)
-	$(TAR) xzvf $(DOWNLOADDIR)/$(ARCH_AWSSDK) -C $(UNPACKDIR)
+# unzip AWS SDK
+$(UNPACKDIR)/$(DIR_AWSSDK): | $(DOWNLOADDIR)/$(ARCH_AWSSDK)
+	$(UNZIP) -o $(DOWNLOADDIR)/$(ARCH_AWSSDK) -d $(UNPACKDIR)
+	# We have no way of knowing the name of the folder until we unpack it. THANKS, OBAMA.
+	find $(UNPACKDIR) -type d -iname "aws-java-sdk*" -maxdepth 1 -exec mv {} $(UNPACKDIR)/$(DIR_AWSSDK) \;
 
 # fetch AWS SDK
 $(DOWNLOADDIR)/$(ARCH_AWSSDK): | $(DOWNLOADDIR)
