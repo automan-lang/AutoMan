@@ -6,7 +6,7 @@ import java.io.File
 import edu.umass.cs.automan.adapters.MTurk._
 
 object license_plate_reader extends App {
-  val opts = Utilities.unsafe_optparse(args)
+  val opts = Utilities.unsafe_optparse(args, "license_plate_reader.jar")
 
   val a = MTurkAdapter { mt =>
     mt.access_key_id = opts('key)

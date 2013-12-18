@@ -2,7 +2,7 @@ import edu.umass.cs.automan.adapters.MTurk._
 import edu.umass.cs.automan.core.Utilities
 
 object simple_program extends App {
-  val opts = Utilities.unsafe_optparse(args)
+  val opts = Utilities.unsafe_optparse(args, "simple_program.jar")
 
   val a = MTurkAdapter { mt =>
     mt.access_key_id = opts('key)

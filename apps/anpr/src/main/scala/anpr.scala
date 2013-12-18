@@ -5,7 +5,7 @@ import java.io.File
 import edu.umass.cs.automan.adapters.MTurk._
 
 object anpr extends App {
-  val opts = my_optparse(args)
+  val opts = my_optparse(args, "anpr.jar")
   val bucketname = opts('directory).split("/").last.replaceAll("/","").replaceAll("_","")
 
   val a = MTurkAdapter { mt =>

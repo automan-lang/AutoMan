@@ -5,7 +5,7 @@ import java.awt.image.BufferedImage
 import java.io.File
 
 object HowManyThings extends App {
-  val opts = Utilities.unsafe_optparse(args)
+  val opts = Utilities.unsafe_optparse(args, "HowManyThings.jar")
 
   val a = MTurkAdapter { mt =>
     mt.access_key_id = opts('key)
