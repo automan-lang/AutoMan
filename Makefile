@@ -85,7 +85,7 @@ URL_COMMONSIO	:= http://mirror.tcpdiag.net/apache/commons/io/binaries/$(ARCH_COM
 URL_GSEARCH		:= http://gsearch-java-client.googlecode.com/svn/trunk/gsearch-java-client
 URL_GSON			:= http://google-gson.googlecode.com/files/$(ARCH_GSON)
 URL_ONEJAR 		:= https://sourceforge.net/projects/one-jar/files/one-jar/one-jar-$(VER_ONEJAR)/$(ARCH_ONEJAR)
-URL_JUNIT			:= http://search.maven.org/remotecontent?filepath=junit/junit/$(VER_JUNIT)/$(ARCH_JUNIT)
+URL_JUNIT			:= http://repo1.maven.org/maven2/junit/junit/$(VER_JUNIT)/$(ARCH_JUNIT)
 URL_SCALA			:= http://www.scala-lang.org/files/archive/$(ARCH_SCALA)
 URL_IMGSCALR	:= https://github.com/downloads/thebuzzmedia/imgscalr/$(ARCH_IMGSCALR)
 
@@ -113,9 +113,11 @@ unexport DOWNLOAD MAKEAPP CHECKOUT CP SCALAC AUTOMAN_JAVA_SRC AUTOMAN_SCALA_SRC 
 
 define DOWNLOAD
 ifeq ($(CURL),)
-$(shell $(WGET) -O $(2) $(1))
+$(info $(WGET) --no-check-certificate -O $(2) '$(1)')
+$(shell $(WGET) --no-check-certificate -O $(2) '$(1)')
 else
-$(shell $(CURL) -L -o $(2) $(1))
+$(info $(CURL) -L -o $(2) '$(1)')
+$(shell $(CURL) -L -o $(2) '$(1)')
 endif
 endef
 
@@ -164,6 +166,11 @@ endif
 
 javaccheck:
 ifeq ($(JAVAC),)
+$(error Must have the "javac" utility installed)
+endif
+
+patchcheck:
+ifeq ($(PATCH),)
 $(error Must have the "javac" utility installed)
 endif
 
@@ -288,7 +295,7 @@ $(CLASSDIR)/gsearch: javaccheck | $(UNPACKDIR)/$(DIR_GSEARCH) $(JARDIR)/$(DIR_GS
 	$(JAVAC) -classpath $(CP) -d $(CLASSDIR) $(GSEARCH_JAVA_SRC)
 
 # fetch and patch gsearch libs
-$(UNPACKDIR)/$(DIR_GSEARCH): | $(UNPACKDIR)
+$(UNPACKDIR)/$(DIR_GSEARCH): patchcheck svncheck | $(UNPACKDIR)
 	$(SVN) co $(URL_GSEARCH) $(UNPACKDIR)/$(DIR_GSEARCH)
 	cd $(UNPACKDIR)/$(DIR_GSEARCH)/src/main/gsearch; patch < $(APATCHDIR)/gsearch_client_patch.patch
 
@@ -312,7 +319,8 @@ $(DOWNLOADDIR)/$(ARCH_GSON): | $(DOWNLOADDIR)
 $(JARDIR)/$(DIR_JUNIT):
 	mkdir -p $(JARDIR)/$(DIR_JUNIT)
 	# TODO: for some reason, JUnit breaks my download function. Baffling.
-	curl -L -o $(JARDIR)/$(DIR_JUNIT)/$(ARCH_JUNIT) $(URL_JUNIT)
+	# curl -L -o $(JARDIR)/$(DIR_JUNIT)/$(ARCH_JUNIT) $(URL_JUNIT)
+	$(eval $(call DOWNLOAD,$(URL_JUNIT),$(JARDIR)/$(DIR_JUNIT)/$(ARCH_JUNIT)))
 
 ## IMGSCALR
 # copy imgscalr libs to JARDIR
