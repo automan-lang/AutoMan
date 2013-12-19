@@ -44,6 +44,7 @@ SVN		:= $(shell which svn)
 ANT		:= $(shell which ant)
 JAR		:= $(shell which jar)
 JAVAC := $(shell which javac)
+PATCH	:= $(shell which patch)
 
 ## UNPACK DIR NAMES (DO NOT MODIFY)
 DIR_MTURKSDK 	:= $(patsubst %.tar.gz,%,$(ARCH_MTURKSDK))
@@ -94,6 +95,7 @@ OUTJARS 		:= jars
 TEMPDIR 		:= tmp
 AOUTJARS		:= $(PREFIX)/$(OUTJARS)
 ATEMPDIR 		:= $(PREFIX)/$(TEMPDIR)
+APATCHDIR		:= $(PREFIX)/patches
 UNPACKDIR 	:= $(ATEMPDIR)/unpack
 JARDIR 			:= $(ATEMPDIR)/lib
 DOWNLOADDIR := $(ATEMPDIR)/downloads
@@ -285,9 +287,10 @@ $(JARDIR)/$(DIR_GSEARCH): | $(JARDIR) $(CLASSDIR)/gsearch
 $(CLASSDIR)/gsearch: javaccheck | $(UNPACKDIR)/$(DIR_GSEARCH) $(JARDIR)/$(DIR_GSON) $(JARDIR)/$(DIR_JUNIT) $(JARDIR)/mturk-sdk
 	$(JAVAC) -classpath $(CP) -d $(CLASSDIR) $(GSEARCH_JAVA_SRC)
 
-# fetch gsearch libs
+# fetch and patch gsearch libs
 $(UNPACKDIR)/$(DIR_GSEARCH): | $(UNPACKDIR)
 	$(SVN) co $(URL_GSEARCH) $(UNPACKDIR)/$(DIR_GSEARCH)
+	cd $(UNPACKDIR)/$(DIR_GSEARCH)/src/main/gsearch; patch < $(APATCHDIR)/gsearch_client_patch.patch
 
 ## GSON
 # copy GSON libs to JARDIR
