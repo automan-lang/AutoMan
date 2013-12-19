@@ -87,9 +87,9 @@ object HowManyThings extends App {
     import scala.collection.JavaConverters._
     import gsearch._
 
-    val c = new Client
+    val c: Client = new Client();
     val results: List[Result] = (0 until 1).map { i =>
-      c.searchCustomImages(query, i * 8).asScala.toList
+      c.searchImagesByOffset(query, new Java.lang.Integer(i * 8)).asScala.toList
     }.toList.flatten
     results.map { _.getUnescapedUrl }.distinct
   }
