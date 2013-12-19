@@ -89,7 +89,7 @@ object HowManyThings extends App {
 
     val c: Client = new Client();
     val results: List[Result] = (0 until 1).map { i =>
-      c.searchImagesByOffset(query, new Java.lang.Integer(i * 8)).asScala.toList
+      c.searchImagesByOffset(query, new java.lang.Integer(i * 8)).asScala.toList
     }.toList.flatten
     results.map { _.getUnescapedUrl }.distinct
   }
