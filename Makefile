@@ -23,8 +23,13 @@ VER_AUTOMAN	:= 0.3
 ARCH_MTURKSDK 	:= java-aws-mturk-1.6.2.tar.gz
 ARCH_AWSSDK 		:= aws-java-sdk.zip
 ARCH_ACTIVEOBJ 	:= activeobjects-0.8.2.tar.gz
+ARCH_COMMONSIO	:= commons-io-2.4-bin.tar.gz
+ARCH_GSEARCH		:= gsearch-java-client
+ARCH_GSON				:= google-gson-2.2.4-release.zip
 ARCH_ONEJAR			:= one-jar-boot-0.97.jar
+ARCH_JUNIT			:= junit-4.11.jar
 ARCH_SCALA			:= scala-2.10.3.tgz
+ARCH_IMGSCALR		:= imgscalr-lib-4.2.zip
 
 #### END OK-TO-MODIFY ZONE ####
 
@@ -35,6 +40,7 @@ TAR		:= $(shell which tar)
 UNZIP	:= $(shell which unzip)
 CURL	:= $(shell which curl)
 WGET	:= $(shell which wget)
+SVN		:= $(shell which svn)
 ANT		:= $(shell which ant)
 JAR		:= $(shell which jar)
 JAVAC := $(shell which javac)
@@ -42,26 +48,45 @@ JAVAC := $(shell which javac)
 ## UNPACK DIR NAMES (DO NOT MODIFY)
 DIR_MTURKSDK 	:= $(patsubst %.tar.gz,%,$(ARCH_MTURKSDK))
 DIR_ACTIVEOBJ := $(patsubst %.tar.gz,%,$(ARCH_ACTIVEOBJ))
+DIR_COMMONSIO	:= $(patsubst %-bin.tar.gz,%,$(ARCH_COMMONSIO))
+DIR_GSEARCH		:= $(ARCH_GSEARCH)
+DIR_GSON			:= $(patsubst %-release.zip,%,$(ARCH_GSON))
 DIR_SCALA			:= $(patsubst %.tgz,%,$(ARCH_SCALA))
 DIR_AWSSDK		:= $(patsubst %.zip,%,$(ARCH_AWSSDK))
+DIR_JUNIT			:= $(patsubst %.jar,%,$(ARCH_JUNIT))
+DIR_IMGSCALR	:= $(patsubst %.zip,%,$(ARCH_IMGSCALR))
 
 ## VERSION STRINGS (DO NOT MODIFY)
 VER_MTURKSDK 	:= $(patsubst java-aws-mturk-%.tar.gz,%,$(ARCH_MTURKSDK))
 VER_ACTIVEOBJ := $(patsubst activeobjects-%.tar.gz,%,$(ARCH_ACTIVEOBJ))
+VER_COMMONSIO	:= $(patsubst commons-io-%-bin.tar.gz,%,$(ARCH_COMMONSIO))
+VER_GSON			:= $(patsubst google-gson-%-release.zip,%,$(ARCH_GSON))
 VER_ONEJAR		:= $(patsubst one-jar-boot-%.jar,%,$(ARCH_ONEJAR))
 VER_SCALA			:= $(patsubst scala-%.tgz,%,$(ARCH_SCALA))
+VER_JUNIT			:= $(patsubst junit-%.jar,%,$(ARCH_JUNIT))
+VER_IMGSCALR	:= $(patsubst imgscalr-lib-%.zip,%,$(ARCH_IMGSCALR))
 
 ## JARS (DO NOT MODIFY)
 JAR_AUTOMAN		:= automan-${VER_AUTOMAN}.jar
 JAR_ACTIVEOBJ	:= activeobjects-$(VER_ACTIVEOBJ).jar
+JAR_COMMONSIO	:= commons-io-$(VER_COMMONSIO).jar
+JAR_GSON			:= gson-$(VER_GSON).jar
 JAR_ONEJAR		:= $(ARCH_ONEJAR)
+JAR_JUNIT			:= $(ARCH_JUNIT)
+JAR_GSEARCH		:= $(ARCH_GSEARCH).jar
+JAR_IMGSCALR	:= imgscalr-lib-$(VER_IMGSCALR).jar
 
 ## LIBRARY URLS (DO NOT MODIFY)
 URL_MTURKSDK 	:= http://downloads.sourceforge.net/project/mturksdk-java/mturksdk-java/$(VER_MTURKSDK)/$(ARCH_MTURKSDK)
 URL_AWSSDK		:= http://sdk-for-java.amazonwebservices.com/latest/aws-java-sdk.zip
 URL_ACTIVEOBJ := http://java.net/projects/activeobjects/downloads/download/$(VER_ACTIVEOBJ)/$(ARCH_ACTIVEOBJ)
+URL_COMMONSIO	:= http://mirror.tcpdiag.net/apache/commons/io/binaries/$(ARCH_COMMONSIO)
+URL_GSEARCH		:= http://gsearch-java-client.googlecode.com/svn/trunk/gsearch-java-client
+URL_GSON			:= http://google-gson.googlecode.com/files/$(ARCH_GSON)
 URL_ONEJAR 		:= https://sourceforge.net/projects/one-jar/files/one-jar/one-jar-$(VER_ONEJAR)/$(ARCH_ONEJAR)
+URL_JUNIT			:= http://search.maven.org/remotecontent?filepath=junit/junit/$(VER_JUNIT)/$(ARCH_JUNIT)
 URL_SCALA			:= http://www.scala-lang.org/files/archive/$(ARCH_SCALA)
+URL_IMGSCALR	:= https://github.com/downloads/thebuzzmedia/imgscalr/$(ARCH_IMGSCALR)
 
 ## STATIC VARS (DO NOT MODIFY)
 PREFIX			:= $(strip $(shell pwd))
@@ -82,7 +107,7 @@ AAPPJARS		:= $(ATEMPDIR)/apps/jars
 # NOTE: functions go bonkers if the environment already contains
 #       a variable with the same name; thus I pre-emptively "unexport"
 #       all of these names to avoid the pain.
-unexport DOWNLOAD MAKEAPP CP SCALAC AUTOMAN_JAVA_SRC AUTOMAN_SCALA_SRC DIR_AWSSDK
+unexport DOWNLOAD MAKEAPP CHECKOUT CP SCALAC AUTOMAN_JAVA_SRC AUTOMAN_SCALA_SRC DIR_AWSSDK GSEARCH_JAVA_SRC
 
 define DOWNLOAD
 ifeq ($(CURL),)
@@ -110,9 +135,15 @@ CP 								= $(shell find $(JARDIR) -iname "*.jar" -type f | tr '\n' ':')
 SCALAC 						= $(UNPACKDIR)/$(DIR_SCALA)/bin/scalac
 AUTOMAN_JAVA_SRC 	= $(shell find lib -iname "*.java" -type f | tr '\n' ' ')
 AUTOMAN_SCALA_SRC = $(shell find lib -type f -iname "*.scala" | tr '\n' ' ')
+GSEARCH_JAVA_SRC	= $(shell find $(UNPACKDIR)/$(DIR_GSEARCH) -type f -iname "*.java" | tr '\n' ' ')
 
 ## BUILD TARGETS
-all: jarcheck $(OUTJARS)/$(JAR_AUTOMAN) $(OUTJARS)/simple_program.jar $(OUTJARS)/anpr.jar
+all: jarcheck \
+	$(OUTJARS)/$(JAR_AUTOMAN) \
+	$(OUTJARS)/simple_program.jar \
+	$(OUTJARS)/anpr.jar \
+	$(OUTJARS)/banana_question.jar \
+	$(OUTJARS)/HowManyThings.jar
 
 jarcheck:
 ifeq ($(JAR),)
@@ -124,11 +155,28 @@ ifeq ($(UNZIP),)
 $(error Must have the "unzip" utility installed)
 endif
 
+svncheck:
+ifeq ($(SVN),)
+$(error Must have the "svn" utility installed)
+endif
+
+javaccheck:
+ifeq ($(JAVAC),)
+$(error Must have the "javac" utility installed)
+endif
+
 clean:
 	@-rm -rf $(ATEMPDIR) $(OUTJARS)
 
 # AUTOMAN
-$(OUTJARS)/$(JAR_AUTOMAN): $(AUTOMAN_SCALA_SRC) $(AUTOMAN_JAVA_SRC) $(JARDIR)/mturk-sdk $(JARDIR)/activeobject $(JARDIR)/scala | $(JARDIR) $(CLASSDIR) $(OUTJARS)
+$(OUTJARS)/$(JAR_AUTOMAN): $(AUTOMAN_SCALA_SRC) \
+	$(AUTOMAN_JAVA_SRC) \
+	$(JARDIR)/mturk-sdk \
+	$(JARDIR)/activeobjects \
+	$(JARDIR)/scala | \
+	$(JARDIR) \
+	$(CLASSDIR) \
+	$(OUTJARS)
 	$(SCALAC) -classpath $(CP) -d $(CLASSDIR) $(AUTOMAN_SCALA_SRC) $(AUTOMAN_JAVA_SRC)
 	cd $(CLASSDIR); $(JAR) cvf $(AOUTJARS)/$(JAR_AUTOMAN) edu
 	cd $(OUTJARS); $(JAR) i $(JAR_AUTOMAN)
@@ -136,12 +184,38 @@ $(OUTJARS)/$(JAR_AUTOMAN): $(AUTOMAN_SCALA_SRC) $(AUTOMAN_JAVA_SRC) $(JARDIR)/mt
 # SAMPLE PROGRAMS
 
 # simple_program
-$(OUTJARS)/simple_program.jar: $(OUTJARS)/$(JAR_AUTOMAN) $(JARDIR)/onejar/$(JAR_ONEJAR) | $(APPCLASSES)/simple_program $(APPJARS)/simple_program
+$(OUTJARS)/simple_program.jar: $(OUTJARS)/$(JAR_AUTOMAN) \
+	$(JARDIR)/onejar/$(JAR_ONEJAR) | \
+	$(APPCLASSES)/simple_program \
+	$(APPJARS)/simple_program
 	$(call MAKEAPP,simple_program,simple_program)
 
 # anpr
-$(OUTJARS)/anpr.jar: unzipcheck $(OUTJARS)/$(JAR_AUTOMAN) $(JARDIR)/aws-sdk $(JARDIR)/onejar/$(JAR_ONEJAR) | $(APPCLASSES)/anpr $(APPJARS)/anpr
+$(OUTJARS)/anpr.jar: unzipcheck \
+	$(OUTJARS)/$(JAR_AUTOMAN) \
+	$(JARDIR)/aws-sdk \
+	$(JARDIR)/onejar/$(JAR_ONEJAR) | \
+	$(APPCLASSES)/anpr \
+	$(APPJARS)/anpr
 	$(call MAKEAPP,anpr,anpr)
+
+# banana question
+$(OUTJARS)/banana_question.jar: $(OUTJARS)/$(JAR_AUTOMAN) \
+	$(JARDIR)/onejar/$(JAR_ONEJAR) | \
+	$(APPCLASSES)/banana_question \
+	$(APPJARS)/banana_question
+	$(call MAKEAPP,banana_question,banana_question)
+
+# HowManyThings
+$(OUTJARS)/HowManyThings.jar: $(OUTJARS)/$(JAR_AUTOMAN) \
+	$(JARDIR)/aws-sdk \
+	$(JARDIR)/$(DIR_COMMONSIO) \
+	$(JARDIR)/onejar/$(JAR_ONEJAR) | \
+	$(APPCLASSES)/HowManyThings \
+	$(APPJARS)/HowManyThings \
+	$(JARDIR)/$(DIR_GSEARCH) \
+	$(JARDIR)/$(DIR_IMGSCALR)
+	$(call MAKEAPP,HowManyThings,HowManyThings)
 
 ## MTURK SDK
 $(JARDIR)/mturk-sdk: | $(UNPACKDIR)/$(DIR_MTURKSDK)
@@ -174,9 +248,9 @@ $(DOWNLOADDIR)/$(ARCH_AWSSDK): | $(DOWNLOADDIR)
 
 ## ACTIVEOBJECTS
 # copy ActiveObjects lib to JARDIR
-$(JARDIR)/activeobject: | $(UNPACKDIR)/$(DIR_ACTIVEOBJ)
-	mkdir -p $(JARDIR)/activeobject
-	cp $(UNPACKDIR)/$(DIR_ACTIVEOBJ)/$(JAR_ACTIVEOBJ) $(JARDIR)/activeobject/
+$(JARDIR)/activeobjects: | $(UNPACKDIR)/$(DIR_ACTIVEOBJ)
+	mkdir -p $(JARDIR)/activeobjects
+	cp $(UNPACKDIR)/$(DIR_ACTIVEOBJ)/$(JAR_ACTIVEOBJ) $(JARDIR)/activeobjects/
 
 # untarball ActiveObjects lib
 $(UNPACKDIR)/$(DIR_ACTIVEOBJ): | $(JARDIR) $(DOWNLOADDIR)/$(ARCH_ACTIVEOBJ)
@@ -186,6 +260,71 @@ $(UNPACKDIR)/$(DIR_ACTIVEOBJ): | $(JARDIR) $(DOWNLOADDIR)/$(ARCH_ACTIVEOBJ)
 # fetch ActiveObjects lib
 $(DOWNLOADDIR)/$(ARCH_ACTIVEOBJ): | $(DOWNLOADDIR)
 	$(eval $(call DOWNLOAD,$(URL_ACTIVEOBJ),$(DOWNLOADDIR)/$(ARCH_ACTIVEOBJ)))
+
+## COMMONS IO
+# copy Commons IO libs to JARDIR
+$(JARDIR)/$(DIR_COMMONSIO): | $(UNPACKDIR)/$(DIR_COMMONSIO)
+	mkdir -p $(JARDIR)/$(DIR_COMMONSIO)
+	cp $(UNPACKDIR)/$(DIR_COMMONSIO)/$(JAR_COMMONSIO) $(JARDIR)/$(DIR_COMMONSIO)/
+
+# untarball Commons IO libs
+$(UNPACKDIR)/$(DIR_COMMONSIO): | $(JARDIR) $(DOWNLOADDIR)/$(ARCH_COMMONSIO)
+	mkdir -p $(UNPACKDIR)/$(DIR_COMMONSIO)
+	$(TAR) xzvf $(DOWNLOADDIR)/$(ARCH_COMMONSIO) -C $(UNPACKDIR)
+
+# fetch Commons IO libs
+$(DOWNLOADDIR)/$(ARCH_COMMONSIO): | $(DOWNLOADDIR)
+	$(eval $(call DOWNLOAD,$(URL_COMMONSIO),$(DOWNLOADDIR)/$(ARCH_COMMONSIO)))
+
+## GSEARCH
+$(JARDIR)/$(DIR_GSEARCH): | $(JARDIR) $(CLASSDIR)/gsearch
+	mkdir -p $(JARDIR)/$(DIR_GSEARCH)
+	$(JAR) cvf $(JARDIR)/$(DIR_GSEARCH)/$(JAR_GSEARCH) -C $(CLASSDIR) gsearch
+
+# build gsearch using MTurk's JAR deps instead of the supplied JARs
+$(CLASSDIR)/gsearch: javaccheck | $(UNPACKDIR)/$(DIR_GSEARCH) $(JARDIR)/$(DIR_GSON) $(JARDIR)/$(DIR_JUNIT) $(JARDIR)/mturk-sdk
+	$(JAVAC) -classpath $(CP) -d $(CLASSDIR) $(GSEARCH_JAVA_SRC)
+
+# fetch gsearch libs
+$(UNPACKDIR)/$(DIR_GSEARCH): | $(UNPACKDIR)
+	$(SVN) co $(URL_GSEARCH) $(UNPACKDIR)/$(DIR_GSEARCH)
+
+## GSON
+# copy GSON libs to JARDIR
+$(JARDIR)/$(DIR_GSON): | $(UNPACKDIR)/$(DIR_GSON) $(JARDIR)
+	mkdir -p $(JARDIR)/$(DIR_GSON)
+	cp $(UNPACKDIR)/$(DIR_GSON)/$(JAR_GSON) $(JARDIR)/$(DIR_GSON)/
+
+# unzip GSON libs
+$(UNPACKDIR)/$(DIR_GSON): | $(DOWNLOADDIR)/$(ARCH_GSON)
+	mkdir -p $(UNPACKDIR)/$(DIR_GSON)
+	$(UNZIP) -o $(DOWNLOADDIR)/$(ARCH_GSON) -d $(UNPACKDIR)
+
+# fetch GSON libs
+$(DOWNLOADDIR)/$(ARCH_GSON): | $(DOWNLOADDIR)
+	$(eval $(call DOWNLOAD,$(URL_GSON),$(DOWNLOADDIR)/$(ARCH_GSON)))
+
+## JUNIT
+# download JUNIT lib to JARDIR
+$(JARDIR)/$(DIR_JUNIT):
+	mkdir -p $(JARDIR)/$(DIR_JUNIT)
+	# TODO: for some reason, JUnit breaks my download function. Baffling.
+	curl -L -o $(JARDIR)/$(DIR_JUNIT)/$(ARCH_JUNIT) $(URL_JUNIT)
+
+## IMGSCALR
+# copy imgscalr libs to JARDIR
+$(JARDIR)/$(DIR_IMGSCALR): | $(UNPACKDIR)/$(DIR_IMGSCALR) $(JARDIR)
+	mkdir -p $(JARDIR)/$(DIR_IMGSCALR)
+	cp $(UNPACKDIR)/$(DIR_IMGSCALR)/$(JAR_IMGSCALR) $(JARDIR)/$(DIR_IMGSCALR)/
+
+# unzip imgscalr libs
+$(UNPACKDIR)/$(DIR_IMGSCALR): | $(DOWNLOADDIR)/$(ARCH_IMGSCALR)
+	mkdir -p $(UNPACKDIR)/$(DIR_IMGSCALR)
+	$(UNZIP) -o $(DOWNLOADDIR)/$(ARCH_IMGSCALR) -d $(UNPACKDIR)/$(DIR_IMGSCALR)
+
+# fetch imgscalr libs
+$(DOWNLOADDIR)/$(ARCH_IMGSCALR): | $(DOWNLOADDIR)
+	$(eval $(call DOWNLOAD,$(URL_IMGSCALR),$(DOWNLOADDIR)/$(ARCH_IMGSCALR)))
 
 ## ONEJAR
 # fetch One-JAR lib
