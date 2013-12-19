@@ -316,8 +316,7 @@ $(DOWNLOADDIR)/$(ARCH_GSON): | $(DOWNLOADDIR)
 
 ## JUNIT
 # download JUNIT lib to JARDIR
-$(JARDIR)/$(DIR_JUNIT):
-	mkdir -p $(JARDIR)/$(DIR_JUNIT)
+$(JARDIR)/$(DIR_JUNIT): | $(JARDIR)/$(DIR_JUNIT)
 	# TODO: for some reason, JUnit breaks my download function. Baffling.
 	# curl -L -o $(JARDIR)/$(DIR_JUNIT)/$(ARCH_JUNIT) $(URL_JUNIT)
 	$(eval $(call DOWNLOAD,$(URL_JUNIT),$(JARDIR)/$(DIR_JUNIT)/$(ARCH_JUNIT)))
@@ -372,6 +371,9 @@ $(APPJARS)/%:
 
 $(OUTJARS):
 	mkdir -p $(OUTJARS)
+
+$(JARDIR)/%: | $(JARDIR)
+	mkdir -p $@
 
 $(JARDIR):
 	mkdir -p $(JARDIR)
