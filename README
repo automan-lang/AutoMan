@@ -11,45 +11,26 @@ currently on our TODO list.
 License
 -------
 
-AutoMan is licensed under the GPLv2, Copyright (C) 2011-2012 The
+AutoMan is licensed under the GPLv2, Copyright (C) 2011-2013 The
 University of Massachusetts, Amherst.
 
 Compiling AutoMan
 -----------------
 
-To use AutoMan, you will need to compile a JAR.  Currently, this is
-a manual process, and you will need to fetch all of the required
-libraries manually.  We are putting together an Apache Buildr script
-that will do this for you, and we will add this file to the repository
-shortly.
+To use AutoMan, you will need to compile it.  We have supplied a
+Makefile to facilitate this process.
 
 Building the JAR
 ----------------
 
-This release incorporates a Buildr script that can build the AutoMan JAR
+This release incorporates a Make script that can build the AutoMan JAR
 for you, including downloading all of AutoMan's dependencies.  The build
 script can also build the sample applications that are located in the
 'apps' directory.  These applications are the ones used in our paper.
 
-Buildr is a build dependency system somewhat like a cross between 'make'
-and Maven.  It is based on the 'rake' program that ships with Ruby.  If
-you already have Ruby and RubyGems installed on your system (comes with
-most Macs), simply issue the following command to install Buildr:
+Type 'make' to get a list of make targets.  Build one of them like:
 
-  sudo gem install buildr
-
-You can build the entire project using the following Buildr command when
-your current working directory is at the root of the AutoMan project
-directory:
-
-  buildr build
-  
-You can build specific applications like:
-
-  buildr build automan:apps:anpr
-  
-Consult the Buildr documentation if you are interested in learning more
-of Buildr's commands (http://buildr.apache.org/).
+  make automan
 
 Using AutoMan in Your Project
 -----------------------------
@@ -101,7 +82,6 @@ More Information
 
 More detailed information is available in the following paper,
 published at OOPSLA 2012, included in the repo as AutoMan-OOPSLA2012.pdf.
-
 
   AutoMan: A Platform for Integrating Human-Based and Digital Computation
   Daniel W. Barowy, Charlie Curtsinger, Emery D. Berger, and Andrew McGregor
