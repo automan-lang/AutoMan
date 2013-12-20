@@ -14,13 +14,7 @@ License
 AutoMan is licensed under the GPLv2, Copyright (C) 2011-2013 The
 University of Massachusetts, Amherst.
 
-Compiling AutoMan
------------------
-
-To use AutoMan, you will need to compile it.  We have supplied a
-Makefile to facilitate this process.
-
-Building the JAR
+Building a JAR
 ----------------
 
 This release incorporates a Make script that can build the AutoMan JAR
@@ -28,9 +22,12 @@ for you, including downloading all of AutoMan's dependencies.  The build
 script can also build the sample applications that are located in the
 'apps' directory.  These applications are the ones used in our paper.
 
-Type 'make' to get a list of make targets.  Build one of them like:
+You can build the AutoMan JAR using the following command:
 
   make automan
+
+If you want to see a list of other targets, e.g., sample applications,
+just type 'make'.
 
 Using AutoMan in Your Project
 -----------------------------
