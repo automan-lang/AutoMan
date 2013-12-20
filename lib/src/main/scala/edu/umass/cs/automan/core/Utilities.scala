@@ -79,7 +79,8 @@ object Utilities {
   }
 
   def unsafe_optparse(args: Array[String], invoked_as_name: String) : OptionMap = {
-    val usage = "Usage: " + invoked_as_name + " -k [key] -s [secret]" +
+    val usage = "Usage: " + invoked_as_name + " -k [key] -s [secret] [--sandbox [true|false]]" +
+                "\n  If --sandbox is not specified, the default setting is 'true'." +
                 "\n  NOTE: passing key and secret this way will expose your" +
                 "\n  credentials to users on this system."
     if (args.length != 4) {
@@ -87,7 +88,12 @@ object Utilities {
       sys.exit(1)
     }
     val arglist = args.toList
-    nextOption(Map(),arglist)
+    val opts = nextOption(Map(),arglist)
+    if(!opts.contains('sandbox)) {
+      (opts ++ Map('sandbox -> true)).asInstanceOf[OptionMap];
+    } else {
+      opts
+    }
   }
   
   def nextOption(map : OptionMap, list: List[String]) : OptionMap = {
@@ -95,6 +101,7 @@ object Utilities {
       case Nil => map
       case "-k" :: value :: tail => nextOption(map ++ Map('key -> value), tail)
       case "-s" :: value :: tail => nextOption(map ++ Map('secret -> value), tail)
+      case "--sandbox" :: value :: tail => nextOption(map ++ Map('sandbox -> value), tail)
       case option :: tail => println("Unknown option "+option)
       sys.exit(1)
     }

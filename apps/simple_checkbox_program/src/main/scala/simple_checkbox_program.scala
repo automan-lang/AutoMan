@@ -8,7 +8,7 @@ object simple_checkbox_program extends App {
     mt.access_key_id = opts('key)
     mt.secret_access_key = opts('secret)
     mt.budget = 8.00
-    mt.sandbox_mode = true
+    mt.sandbox_mode = opts('sandbox).toBoolean
   }
 
   def which_one(text: String, dual_text: String) = a.CheckboxQuestion { q =>

@@ -142,43 +142,87 @@ AUTOMAN_SCALA_SRC = $(shell find lib -type f -iname "*.scala" | tr '\n' ' ')
 GSEARCH_JAVA_SRC	= $(shell find $(UNPACKDIR)/$(DIR_GSEARCH) -type f -iname "*.java" | tr '\n' ' ')
 
 ## BUILD TARGETS
-all: jarcheck \
+default:
+	@echo "\nBuild targets are:"
+	@echo "  all\t\t\t\tBuild all targets."
+	@echo "  automan\t\t\tJust the AutoMan library. Note that dependencies will be"
+	@echo "         \t\t\tplaced in the 'jars/deps' folder."
+	@echo "  HowManyThings\t\t\tSample app.  Shows a simple object-counting function."
+	@echo "  anpr\t\t\t\tSample app.  A license-plate reader."
+	@echo "  banana_question\t\tSample app.  Classification task that shows interesting"
+	@echo "  \t\t\t\tcrowd biases."
+	@echo "  license_plate_reader\t\tSample app.  Like 'anpr' but uses an amusing"
+	@echo "  \t\t\t\timage source."
+	@echo "  simple_program\t\tSample app.  Very simple classification app."
+	@echo "  simple_checkbox_program\tSample app.  Variation on 'simple_question'."
+	@echo "\nNOTE:\tSample applications have NO dependencies, as they are"
+	@echo "\tpackaged using OneJAR.\n"
+
+all: .jarcheck \
 	$(OUTJARS)/$(JAR_AUTOMAN) \
 	$(OUTJARS)/simple_program.jar \
+	$(OUTJARS)/simple_checkbox_program.jar \
 	$(OUTJARS)/anpr.jar \
 	$(OUTJARS)/banana_question.jar \
-	$(OUTJARS)/HowManyThings.jar
+	$(OUTJARS)/HowManyThings.jar \
+	$(OUTJARS)/license_plate_reader.jar
 
-jarcheck:
+.PHONY = automan HowManyThings anpr banana_question license_plate_reader simple_program simple_checkbox_program
+
+# shortcuts
+automan: $(OUTJARS)/$(JAR_AUTOMAN) $(OUTJARS)/deps
+HowManyThings: $(OUTJARS)/HowManyThings.jar
+anpr: $(OUTJARS)/anpr.jar
+banana_question: $(OUTJARS)/banana_question.jar
+license_plate_reader: $(OUTJARS)/license_plate_reader.jar
+simple_program: $(OUTJARS)/simple_program.jar
+simple_checkbox_program: $(OUTJARS)/simple_checkbox_program.jar
+
+.jarcheck:
 ifeq ($(JAR),)
 $(error Must have the "jar" utility installed)
+else
+	touch .jarcheck
 endif
 
-unzipcheck:
+.unzipcheck:
 ifeq ($(UNZIP),)
 $(error Must have the "unzip" utility installed)
+else
+	touch .unzipcheck
 endif
 
-svncheck:
+.svncheck:
 ifeq ($(SVN),)
 $(error Must have the "svn" utility installed)
+else
+	touch .svncheck
 endif
 
-javaccheck:
+.javaccheck:
 ifeq ($(JAVAC),)
 $(error Must have the "javac" utility installed)
+else
+	touch .javaccheck
 endif
 
-patchcheck:
+.patchcheck:
 ifeq ($(PATCH),)
 $(error Must have the "javac" utility installed)
+else
+	touch .patchcheck
 endif
 
 clean:
 	@-rm -rf $(ATEMPDIR) $(OUTJARS)
+	@-rm -f .jarcheck
+	@-rm -f .javaccheck
+	@-rm -f .patchcheck
+	@-rm -f .svncheck
+	@-rm -f .unzipcheck
 
 # AUTOMAN
-$(OUTJARS)/$(JAR_AUTOMAN): $(AUTOMAN_SCALA_SRC) \
+$(OUTJARS)/$(JAR_AUTOMAN) $(OUTJARS)/deps: $(AUTOMAN_SCALA_SRC) \
 	$(AUTOMAN_JAVA_SRC) \
 	$(JARDIR)/mturk-sdk \
 	$(JARDIR)/activeobjects \
@@ -189,28 +233,33 @@ $(OUTJARS)/$(JAR_AUTOMAN): $(AUTOMAN_SCALA_SRC) \
 	$(SCALAC) -classpath $(CP) -d $(CLASSDIR) $(AUTOMAN_SCALA_SRC) $(AUTOMAN_JAVA_SRC)
 	cd $(CLASSDIR); $(JAR) cvf $(AOUTJARS)/$(JAR_AUTOMAN) edu
 	cd $(OUTJARS); $(JAR) i $(JAR_AUTOMAN)
+	mkdir -p $(OUTJARS)/deps
+	cp -Rp $(JARDIR)/* $(OUTJARS)/deps/
 
 # SAMPLE PROGRAMS
 
 # simple_program
 $(OUTJARS)/simple_program.jar: $(OUTJARS)/$(JAR_AUTOMAN) \
-	$(JARDIR)/onejar/$(JAR_ONEJAR) | \
+	$(JARDIR)/onejar/$(JAR_ONEJAR) \
+	apps/simple_program/src/main/scala/simple_program.scala | \
 	$(APPCLASSES)/simple_program \
 	$(APPJARS)/simple_program
 	$(call MAKEAPP,simple_program,simple_program)
 
 # anpr
-$(OUTJARS)/anpr.jar: unzipcheck \
+$(OUTJARS)/anpr.jar: .unzipcheck \
 	$(OUTJARS)/$(JAR_AUTOMAN) \
 	$(JARDIR)/aws-sdk \
-	$(JARDIR)/onejar/$(JAR_ONEJAR) | \
+	$(JARDIR)/onejar/$(JAR_ONEJAR) \
+	apps/anpr/src/main/scala/anpr.scala | \
 	$(APPCLASSES)/anpr \
 	$(APPJARS)/anpr
 	$(call MAKEAPP,anpr,anpr)
 
 # banana question
 $(OUTJARS)/banana_question.jar: $(OUTJARS)/$(JAR_AUTOMAN) \
-	$(JARDIR)/onejar/$(JAR_ONEJAR) | \
+	$(JARDIR)/onejar/$(JAR_ONEJAR) \
+	apps/banana_question/src/main/scala/banana_question.scala | \
 	$(APPCLASSES)/banana_question \
 	$(APPJARS)/banana_question
 	$(call MAKEAPP,banana_question,banana_question)
@@ -219,12 +268,33 @@ $(OUTJARS)/banana_question.jar: $(OUTJARS)/$(JAR_AUTOMAN) \
 $(OUTJARS)/HowManyThings.jar: $(OUTJARS)/$(JAR_AUTOMAN) \
 	$(JARDIR)/aws-sdk \
 	$(JARDIR)/$(DIR_COMMONSIO) \
-	$(JARDIR)/onejar/$(JAR_ONEJAR) | \
+	$(JARDIR)/onejar/$(JAR_ONEJAR) \
+	apps/HowManyThings/src/main/scala/HowManyThings.scala | \
 	$(APPCLASSES)/HowManyThings \
 	$(APPJARS)/HowManyThings \
 	$(JARDIR)/$(DIR_GSEARCH) \
 	$(JARDIR)/$(DIR_IMGSCALR)
 	$(call MAKEAPP,HowManyThings,HowManyThings)
+
+# license_plate_reader (oldparkedcars.com!)
+$(OUTJARS)/license_plate_reader.jar: $(OUTJARS)/$(JAR_AUTOMAN) \
+	$(JARDIR)/aws-sdk \
+	$(JARDIR)/$(DIR_COMMONSIO) \
+	$(JARDIR)/onejar/$(JAR_ONEJAR) \
+	apps/license_plate_reader/src/main/scala/license_plate_reader.scala | \
+	$(APPCLASSES)/license_plate_reader \
+	$(APPJARS)/license_plate_reader \
+	$(JARDIR)/$(DIR_GSEARCH) \
+	$(JARDIR)/$(DIR_IMGSCALR)
+	$(call MAKEAPP,license_plate_reader,license_plate_reader)
+
+# simple_checkbox_program
+$(OUTJARS)/simple_checkbox_program.jar: $(OUTJARS)/$(JAR_AUTOMAN) \
+	$(JARDIR)/onejar/$(JAR_ONEJAR) \
+	apps/simple_checkbox_program/src/main/scala/simple_checkbox_program.scala | \
+	$(APPCLASSES)/simple_checkbox_program \
+	$(APPJARS)/simple_checkbox_program
+	$(call MAKEAPP,simple_checkbox_program,simple_checkbox_program)
 
 ## MTURK SDK
 $(JARDIR)/mturk-sdk: | $(UNPACKDIR)/$(DIR_MTURKSDK)
@@ -291,11 +361,11 @@ $(JARDIR)/$(DIR_GSEARCH): | $(JARDIR) $(CLASSDIR)/gsearch
 	$(JAR) cvf $(JARDIR)/$(DIR_GSEARCH)/$(JAR_GSEARCH) -C $(CLASSDIR) gsearch
 
 # build gsearch using MTurk's JAR deps instead of the supplied JARs
-$(CLASSDIR)/gsearch: javaccheck | $(UNPACKDIR)/$(DIR_GSEARCH) $(JARDIR)/$(DIR_GSON) $(JARDIR)/$(DIR_JUNIT) $(JARDIR)/mturk-sdk
+$(CLASSDIR)/gsearch: .javaccheck | $(UNPACKDIR)/$(DIR_GSEARCH) $(JARDIR)/$(DIR_GSON) $(JARDIR)/$(DIR_JUNIT)/$(JAR_JUNIT) $(JARDIR)/mturk-sdk
 	$(JAVAC) -classpath $(CP) -d $(CLASSDIR) $(GSEARCH_JAVA_SRC)
 
 # fetch and patch gsearch libs
-$(UNPACKDIR)/$(DIR_GSEARCH): patchcheck svncheck | $(UNPACKDIR)
+$(UNPACKDIR)/$(DIR_GSEARCH): .patchcheck .svncheck | $(UNPACKDIR)
 	$(SVN) co $(URL_GSEARCH) $(UNPACKDIR)/$(DIR_GSEARCH)
 	cd $(UNPACKDIR)/$(DIR_GSEARCH)/src/main/gsearch; patch < $(APATCHDIR)/gsearch_client_patch.patch
 
@@ -316,9 +386,7 @@ $(DOWNLOADDIR)/$(ARCH_GSON): | $(DOWNLOADDIR)
 
 ## JUNIT
 # download JUNIT lib to JARDIR
-$(JARDIR)/$(DIR_JUNIT): | $(JARDIR)/$(DIR_JUNIT)
-	# TODO: for some reason, JUnit breaks my download function. Baffling.
-	# curl -L -o $(JARDIR)/$(DIR_JUNIT)/$(ARCH_JUNIT) $(URL_JUNIT)
+$(JARDIR)/$(DIR_JUNIT)/$(JAR_JUNIT): | $(JARDIR)/$(DIR_JUNIT)
 	$(eval $(call DOWNLOAD,$(URL_JUNIT),$(JARDIR)/$(DIR_JUNIT)/$(ARCH_JUNIT)))
 
 ## IMGSCALR
@@ -383,7 +451,5 @@ $(CLASSDIR):
 
 $(DOWNLOADDIR):
 	mkdir -p $(DOWNLOADDIR)
-
-.PHONY : clean jarcheck
 
 #### END MODIFY-AT-YOUR-PERIL ZONE ####

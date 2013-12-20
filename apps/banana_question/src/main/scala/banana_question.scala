@@ -7,7 +7,7 @@ object banana_question extends App {
   val a = MTurkAdapter { mt =>
     mt.access_key_id = opts('key)
     mt.secret_access_key = opts('secret)
-    mt.sandbox_mode = true
+    mt.sandbox_mode = opts('sandbox).toBoolean
   }
 
   def which_one(text: String) = a.RadioButtonQuestion { q =>

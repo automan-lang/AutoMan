@@ -11,7 +11,7 @@ object anpr extends App {
   val a = MTurkAdapter { mt =>
     mt.access_key_id = opts('key)
     mt.secret_access_key = opts('secret)
-    mt.sandbox_mode = true
+    mt.sandbox_mode = opts('sandbox).toBoolean
   }
 
   def get_plate_text(image_url: String) = a.FreeTextQuestion { q =>
