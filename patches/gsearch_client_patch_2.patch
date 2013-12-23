@@ -1,0 +1,21 @@
+--- Client.java	2013-12-23 18:07:27.000000000 -0500
++++ Client.java	2013-12-23 18:06:39.000000000 -0500
+@@ -429,6 +429,18 @@
+ 		
+ 		return r.getResponseData().getResults();
+ 	}
++	
++	public List<Result> searchWebByOffset(String query, int start)
++  {
++      Map<String, String> params = new LinkedHashMap<String, String>();
++
++      params.put("q", query);
++      params.put("start", Integer.toString(start));
++
++      Response r = sendWebSearchRequest(params);
++
++      return r.getResponseData().getResults();
++  }
+ 
+ 	public List<Result> searchBooks(String query)
+ 	{
