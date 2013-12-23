@@ -83,7 +83,7 @@ object Utilities {
                 "\n  If --sandbox is not specified, the default setting is 'true'." +
                 "\n  NOTE: passing key and secret this way will expose your" +
                 "\n  credentials to users on this system."
-    if (args.length != 4) {
+    if (args.length != 4 || args.length != 6) {
       println(usage)
       sys.exit(1)
     }
