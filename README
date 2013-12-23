@@ -11,46 +11,23 @@ currently on our TODO list.
 License
 -------
 
-AutoMan is licensed under the GPLv2, Copyright (C) 2011-2012 The
+AutoMan is licensed under the GPLv2, Copyright (C) 2011-2013 The
 University of Massachusetts, Amherst.
 
-Pre-Built Binary
+Building a JAR
 ----------------
 
-There is a pre-built AutoMan JAR file in the "jar" directory.  This JAR
-includes _all_ of AutoMan's dependencies, as installing all of AutoMan's
-dependencies' dependencies can sometimes be... unpleasant, even with a
-build script.  Anyone wanting to contribute changes to AutoMan's source
-code will need to follow the JAR build instructions below.  Everyone
-else should use this JAR file.
-
-Building the JAR
-----------------
-
-This release incorporates a Buildr script that can build the AutoMan JAR
+This release incorporates a Make script that can build the AutoMan JAR
 for you, including downloading all of AutoMan's dependencies.  The build
 script can also build the sample applications that are located in the
 'apps' directory.  These applications are the ones used in our paper.
 
-Buildr is a build dependency system somewhat like a cross between 'make'
-and Maven.  It is based on the 'rake' program that ships with Ruby.  If
-you already have Ruby and RubyGems installed on your system (comes with
-most Macs), simply issue the following command to install Buildr:
+You can build the AutoMan JAR using the following command:
 
-  sudo gem install buildr
+  make automan
 
-You can build the entire project using the following Buildr command when
-your current working directory is at the root of the AutoMan project
-directory:
-
-  buildr build
-  
-You can build specific applications like:
-
-  buildr build automan:apps:anpr
-  
-Consult the Buildr documentation if you are interested in learning more
-of Buildr's commands (http://buildr.apache.org/).
+If you want to see a list of other targets, e.g., sample applications,
+just type 'make'.
 
 Using AutoMan in Your Project
 -----------------------------
@@ -100,16 +77,33 @@ AutomanMemoDB file.  The format of this database is Apache Derby 10.8.
 More Information
 ----------------
 
-More detailed information is available in a preprint of our paper
-(to appear at OOPSLA 2012):
+More detailed information is available in the following paper,
+published at OOPSLA 2012, included in the repo as AutoMan-OOPSLA2012.pdf.
 
   AutoMan: A Platform for Integrating Human-Based and Digital Computation
   Daniel W. Barowy, Charlie Curtsinger, Emery D. Berger, and Andrew McGregor
 
   http://www.cs.umass.edu/~emery/pubs/res0007-barowy.pdf
-  
-Please contact us if you plan to cite this work as there may be a more
-up-to-date citation.
+
+  The full citation is given below:
+
+@inproceedings{Barowy:2012:API:2384616.2384663,
+ author = {Barowy, Daniel W. and Curtsinger, Charlie and Berger, Emery D. and McGregor, Andrew},
+ title = {{AutoMan}: a platform for integrating human-based and digital computation},
+ booktitle = {Proceedings of the ACM International Conference on Object-Oriented Programming Systems Languages and Applications},
+ series = {OOPSLA '12},
+ year = {2012},
+ isbn = {978-1-4503-1561-6},
+ location = {Tucson, Arizona, USA},
+ pages = {639--654},
+ numpages = {16},
+ url = {http://doi.acm.org/10.1145/2384616.2384663},
+ doi = {10.1145/2384616.2384663},
+ acmid = {2384663},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {crowdsourcing, programming languages, quality control},
+} 
 
 Contact information:
 
@@ -126,3 +120,9 @@ CHANGELOG:
 		• New Automatic Number Plate Recognition (ANPR) app.
 0.2:	Major rewrite to simplify syntax.
 0.1:	First release.
+
+ACKNOWLEDGMENTS:
+----------------
+This material is based upon work supported by the National Science
+Foundation under Grant No. CCF-1144520.
+

@@ -5,12 +5,12 @@ import java.awt.image.BufferedImage
 import java.io.File
 
 object HowManyThings extends App {
-  val opts = Utilities.unsafe_optparse(args)
+  val opts = Utilities.unsafe_optparse(args, "HowManyThings.jar")
 
   val a = MTurkAdapter { mt =>
     mt.access_key_id = opts('key)
     mt.secret_access_key = opts('secret)
-    mt.sandbox_mode = true
+    mt.sandbox_mode = opts('sandbox).toBoolean
   }
 
   def how_many_things(photo_url: String) = a.RadioButtonQuestion { q =>
@@ -87,9 +87,9 @@ object HowManyThings extends App {
     import scala.collection.JavaConverters._
     import gsearch._
 
-    val c = new Client
+    val c: Client = new Client();
     val results: List[Result] = (0 until 1).map { i =>
-      c.searchCustomImages(query, i * 8).asScala.toList
+      c.searchImagesByOffset(query, new java.lang.Integer(i * 8)).asScala.toList
     }.toList.flatten
     results.map { _.getUnescapedUrl }.distinct
   }

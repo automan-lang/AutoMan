@@ -6,12 +6,12 @@ import java.io.File
 import edu.umass.cs.automan.adapters.MTurk._
 
 object license_plate_reader extends App {
-  val opts = Utilities.unsafe_optparse(args)
+  val opts = Utilities.unsafe_optparse(args, "license_plate_reader.jar")
 
   val a = MTurkAdapter { mt =>
     mt.access_key_id = opts('key)
     mt.secret_access_key = opts('secret)
-    mt.sandbox_mode = true
+    mt.sandbox_mode = opts('sandbox).toBoolean
   }
 
   def is_a_car(image_url: String) = a.RadioButtonQuestion { q =>
@@ -77,7 +77,7 @@ object license_plate_reader extends App {
 
     val c = new Client
     val results: List[Result] = (0 until 1).map { i =>
-      c.searchCustomImages(query, i * 8).asScala.toList
+      c.searchImagesByOffset(query, new java.lang.Integer(i * 8)).asScala.toList
     }.toList.flatten
     results.map { _.getUnescapedUrl }.distinct
   }

@@ -5,13 +5,13 @@ import java.io.File
 import edu.umass.cs.automan.adapters.MTurk._
 
 object anpr extends App {
-  val opts = my_optparse(args)
+  val opts = my_optparse(args, "anpr.jar")
   val bucketname = opts('directory).split("/").last.replaceAll("/","").replaceAll("_","")
 
   val a = MTurkAdapter { mt =>
     mt.access_key_id = opts('key)
     mt.secret_access_key = opts('secret)
-    mt.sandbox_mode = true
+    mt.sandbox_mode = opts('sandbox).toBoolean
   }
 
   def get_plate_text(image_url: String) = a.FreeTextQuestion { q =>
@@ -90,8 +90,8 @@ object anpr extends App {
     s3
   }
 
-  def my_optparse(args: Array[String]) : Utilities.OptionMap = {
-    val usage = "Usage: " + Utilities.invoked_as_name + " -k [key] -s [secret] -d [image directory]" +
+  def my_optparse(args: Array[String], invoked_as_name: String) : Utilities.OptionMap = {
+    val usage = "Usage: " + invoked_as_name + " -k [key] -s [secret] -d [image directory]" +
       "\n  NOTE: passing key and secret this way will expose your" +
       "\n  credentials to users on this system."
     if (args.length != 6) {
