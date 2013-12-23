@@ -34,12 +34,47 @@ object CanonicalizeUniversityName extends App {
     }
   }
 
+  private def AllConverted(results: Array[Option[String]]) : Boolean = {
+    results.foldLeft(true)( (acc,resultopt) =>
+      resultopt match {
+        case Some(x) => acc && true
+        case None => false
+      }
+    )
+  }
+
   def Convert(stupid_names: Array[String]) : Array[String] = {
+    // init MTurk backend
     val a = MTurkAdapter { mt =>
       mt.access_key_id = opts('key)
       mt.secret_access_key = opts('secret)
       mt.sandbox_mode = opts('sandbox).toBoolean
     }
+
+    // init Google search API client
+    val c = new gsearch.Client()
+
+    // init results array
+    val results = Array.fill[Option[String]](stupid_names.length)(None)
+
+    // init options for each stupid_name; these come from Google
+    val names_options = new Array[List[String]](stupid_names.length)
+    (0 until stupid_names.length).foreach(i => names_options(i) = List[String]())
+
+    // process until we have all the names
+    do {
+      // for every stupid_name that doesn't have a result, do a Google search
+      // our starting offset is the length of the names_options nested array
+      for (i <- 0 until stupid_names.length) {
+        if (!results(i).isDefined) {
+          val offset = names_options(i).length
+          val data = c.searchWebByOffset(stupid_names(i), offset)
+          
+        }
+      }
+
+    } while (!AllConverted(results))
+
 
     def _am_convert(stupid_name: String, options: List[MTQuestionOption]) = a.RadioButtonQuestion { q =>
       q.text = "Which of the following options is the same as \"$stupid_name\"?"

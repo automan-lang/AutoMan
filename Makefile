@@ -367,7 +367,9 @@ $(CLASSDIR)/gsearch: .javaccheck | $(UNPACKDIR)/$(DIR_GSEARCH) $(JARDIR)/$(DIR_G
 # fetch and patch gsearch libs
 $(UNPACKDIR)/$(DIR_GSEARCH): .patchcheck .svncheck | $(UNPACKDIR)
 	$(SVN) co $(URL_GSEARCH) $(UNPACKDIR)/$(DIR_GSEARCH)
-	cd $(UNPACKDIR)/$(DIR_GSEARCH)/src/main/gsearch; patch < $(APATCHDIR)/gsearch_client_patch.patch
+	cd $(UNPACKDIR)/$(DIR_GSEARCH)/src/main/gsearch; \
+	patch < $(APATCHDIR)/gsearch_client_patch.patch; \
+	patch < $(APATCHDIR)/gsearch_client_patch_2.patch
 
 ## GSON
 # copy GSON libs to JARDIR
