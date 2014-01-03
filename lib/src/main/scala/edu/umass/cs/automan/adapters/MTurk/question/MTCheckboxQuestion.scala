@@ -38,7 +38,7 @@ class MTCheckboxQuestion extends CheckboxQuestion[MTQuestionOption] with MTurkQu
     val x = toXML(dual, true)
     val h = AutomanHIT { a =>
       a.hit_type_id = _hit_type_id
-      a.title = text
+      a.title = title
       a.description = text
       a.keywords = _keywords
       a.question_xml = x

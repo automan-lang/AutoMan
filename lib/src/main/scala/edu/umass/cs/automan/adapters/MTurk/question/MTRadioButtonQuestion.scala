@@ -31,7 +31,7 @@ class MTRadioButtonQuestion extends RadioButtonQuestion[MTQuestionOption] with M
     val x = toXML(false, true)
     val h = AutomanHIT { a =>
       a.hit_type_id = _hit_type_id
-      a.title = text
+      a.title = title
       a.description = text
       a.keywords = _keywords
       a.question_xml = x

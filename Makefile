@@ -30,6 +30,7 @@ ARCH_ONEJAR			:= one-jar-boot-0.97.jar
 ARCH_JUNIT			:= junit-4.11.jar
 ARCH_SCALA			:= scala-2.10.3.tgz
 ARCH_IMGSCALR		:= imgscalr-lib-4.2.zip
+ARCH_DERBY			:= db-derby-10.10.1.1-bin.tar.gz
 
 #### END OK-TO-MODIFY ZONE ####
 
@@ -56,6 +57,7 @@ DIR_SCALA			:= $(patsubst %.tgz,%,$(ARCH_SCALA))
 DIR_AWSSDK		:= $(patsubst %.zip,%,$(ARCH_AWSSDK))
 DIR_JUNIT			:= $(patsubst %.jar,%,$(ARCH_JUNIT))
 DIR_IMGSCALR	:= $(patsubst %.zip,%,$(ARCH_IMGSCALR))
+DIR_DERBY			:= $(patsubst %.tar.gz,%,$(ARCH_DERBY))
 
 ## VERSION STRINGS (DO NOT MODIFY)
 VER_MTURKSDK 	:= $(patsubst java-aws-mturk-%.tar.gz,%,$(ARCH_MTURKSDK))
@@ -66,6 +68,7 @@ VER_ONEJAR		:= $(patsubst one-jar-boot-%.jar,%,$(ARCH_ONEJAR))
 VER_SCALA			:= $(patsubst scala-%.tgz,%,$(ARCH_SCALA))
 VER_JUNIT			:= $(patsubst junit-%.jar,%,$(ARCH_JUNIT))
 VER_IMGSCALR	:= $(patsubst imgscalr-lib-%.zip,%,$(ARCH_IMGSCALR))
+VER_DERBY			:= $(patsubst db-derby-%-bin.tar.gz,%,$(ARCH_DERBY))
 
 ## JARS (DO NOT MODIFY)
 JAR_AUTOMAN		:= automan-${VER_AUTOMAN}.jar
@@ -76,6 +79,7 @@ JAR_ONEJAR		:= $(ARCH_ONEJAR)
 JAR_JUNIT			:= $(ARCH_JUNIT)
 JAR_GSEARCH		:= $(ARCH_GSEARCH).jar
 JAR_IMGSCALR	:= imgscalr-lib-$(VER_IMGSCALR).jar
+JAR_DERBY			:= db-derby-$(VER_DERBY).jar
 
 ## LIBRARY URLS (DO NOT MODIFY)
 URL_MTURKSDK 	:= http://downloads.sourceforge.net/project/mturksdk-java/mturksdk-java/$(VER_MTURKSDK)/$(ARCH_MTURKSDK)
@@ -88,6 +92,7 @@ URL_ONEJAR 		:= https://sourceforge.net/projects/one-jar/files/one-jar/one-jar-$
 URL_JUNIT			:= http://repo1.maven.org/maven2/junit/junit/$(VER_JUNIT)/$(ARCH_JUNIT)
 URL_SCALA			:= http://www.scala-lang.org/files/archive/$(ARCH_SCALA)
 URL_IMGSCALR	:= https://github.com/downloads/thebuzzmedia/imgscalr/$(ARCH_IMGSCALR)
+URL_DERBY			:= http://apache.spinellicreations.com//db/derby/db-derby-10.10.1.1/$(ARCH_DERBY)
 
 ## STATIC VARS (DO NOT MODIFY)
 PREFIX			:= $(strip $(shell pwd))
@@ -229,7 +234,8 @@ $(OUTJARS)/$(JAR_AUTOMAN) $(OUTJARS)/deps: $(AUTOMAN_SCALA_SRC) \
 	$(JARDIR)/scala | \
 	$(JARDIR) \
 	$(CLASSDIR) \
-	$(OUTJARS)
+	$(OUTJARS) \
+	$(JARDIR)/$(DIR_DERBY)/$(JAR_DERBY)
 	$(SCALAC) -classpath $(CP) -d $(CLASSDIR) $(AUTOMAN_SCALA_SRC) $(AUTOMAN_JAVA_SRC)
 	cd $(CLASSDIR); $(JAR) cvf $(AOUTJARS)/$(JAR_AUTOMAN) edu
 	cd $(OUTJARS); $(JAR) i $(JAR_AUTOMAN)
@@ -410,6 +416,21 @@ $(DOWNLOADDIR)/$(ARCH_IMGSCALR): | $(DOWNLOADDIR)
 # fetch One-JAR lib
 $(JARDIR)/onejar/$(JAR_ONEJAR): | $(DOWNLOADDIR) $(JARDIR)/onejar
 	$(eval $(call DOWNLOAD,$(URL_ONEJAR),$(JARDIR)/onejar/$(ARCH_ONEJAR)))
+
+## DERBY
+# copy DERBY JAR to JARDIR
+$(JARDIR)/$(DIR_DERBY)/$(JAR_DERBY): | $(UNPACKDIR)/$(DIR_DERBY) $(JARDIR)
+	mkdir -p $(JARDIR)/$(DIR_DERBY)
+	cp $(UNPACKDIR)/$(DIR_DERBY)/lib/derby.jar $(JARDIR)/$(DIR_DERBY)/$(JAR_DERBY)
+
+# untarball DERBY libs
+$(UNPACKDIR)/$(DIR_DERBY): | $(DOWNLOADDIR)/$(ARCH_DERBY)
+	mkdir -p $(UNPACKDIR)/$(DIR_DERBY)
+	$(TAR) xzvf $(DOWNLOADDIR)/$(ARCH_DERBY) -C $(UNPACKDIR)
+
+# fetch DERBY libs
+$(DOWNLOADDIR)/$(ARCH_DERBY): | $(DOWNLOADDIR)
+	$(eval $(call DOWNLOAD,$(URL_DERBY),$(DOWNLOADDIR)/$(ARCH_DERBY)))
 
 ## SCALA
 # untarball Scala libs
