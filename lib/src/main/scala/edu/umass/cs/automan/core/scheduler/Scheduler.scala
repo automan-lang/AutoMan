@@ -18,12 +18,10 @@ class Scheduler (val question: Question,
 
   def run[A <: Answer]() : A = {
     // check memo DB first
-    val memo_answers = get_memo_answers(false)
-    val memo_dual_answers = get_memo_answers(true)
+    val memo_answers = get_memo_answers(is_dual = false)
+    val memo_dual_answers = get_memo_answers(is_dual = true)
     var last_iteration_timeout = false
     var over_budget = false
-//    var master_timeout = false
-//    val max_replicas = question.max_replicas match { case Some(m) => m; case None => adapter.max_replicas }
     Utilities.DebugLog("Found " + (memo_answers.size + memo_dual_answers.size) + " saved Answers in database.", LogLevel.INFO, LogType.SCHEDULER, question.id)
 
     try {
@@ -33,11 +31,6 @@ class Scheduler (val question: Question,
           // spawn new thunks; in READY state here
           val new_thunks = strategy.spawn(question, last_iteration_timeout) // OverBudgetException should be thrown here
           thunks = new_thunks ::: thunks
-
-          // bomb if we've exceeded our max thunks
-//          if (thunks.size > max_replicas) {
-//            throw ExceedsMaxReplicas("Automan has reached maximum number of allowable thunks.")
-//          }
 
           // before posting, pick answers out of memo DB
           recall(new_thunks, memo_answers, memo_dual_answers)
