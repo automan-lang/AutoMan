@@ -83,14 +83,14 @@ object Utilities {
                 "\n  If --sandbox is not specified, the default setting is 'true'." +
                 "\n  NOTE: passing key and secret this way will expose your" +
                 "\n  credentials to users on this system."
-    if (args.length != 4 || args.length != 6) {
+    if (args.length != 4 && args.length != 6) {
       println(usage)
       sys.exit(1)
     }
     val arglist = args.toList
     val opts = nextOption(Map(),arglist)
     if(!opts.contains('sandbox)) {
-      (opts ++ Map('sandbox -> true)).asInstanceOf[OptionMap];
+      (opts ++ Map('sandbox -> true.toString())).asInstanceOf[OptionMap];
     } else {
       opts
     }

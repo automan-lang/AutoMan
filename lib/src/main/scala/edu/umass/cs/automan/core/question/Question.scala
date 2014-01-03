@@ -13,6 +13,7 @@ abstract class Question {
   protected var _question_timeout_multiplier: Double = 100
   protected var _strategy: Option[Class[ValidationStrategy]] = None
   protected var _text: Option[String] = None
+  protected var _title: Option[String] = None
   protected var _time_value_per_hour: Option[BigDecimal] = None
   protected var _max_replicas: Option[Int] = None
   protected var _wage: BigDecimal = 7.25  // per hour
@@ -51,6 +52,8 @@ abstract class Question {
   def text_=(s: String) { _text = Some(s) }
   def time_value_per_hour: BigDecimal = _time_value_per_hour match { case Some(v) => v; case None => _wage }
   def time_value_per_hour_=(v: BigDecimal) { _time_value_per_hour = Some(v) }
+  def title: String = _title match { case Some(t) => t; case None => title }
+  def title_=(t: String) { _title = Some(t)}
   def max_replicas: Option[Int] = _max_replicas
   def max_replicas_=(m: Int) { _max_replicas = Some(m) }
   def wage: BigDecimal = _wage
