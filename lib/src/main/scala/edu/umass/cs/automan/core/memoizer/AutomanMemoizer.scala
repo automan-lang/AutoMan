@@ -13,7 +13,7 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
   // returns all of the stored answers for a question with a given memo_hash
   def checkDB[Q <: Question](q: Q, dual: Boolean) : List[Answer] = {
     q match {
-      case rbq: RadioButtonQuestion[_] => {
+      case rbq: RadioButtonQuestion => {
         if (!dual) { // There are never any RadioButton duals
           val memos = _manager.find[RadioButtonAnswerMemo,java.lang.Integer](classOf[RadioButtonAnswerMemo], "memoHash = ?", rbq.memo_hash(false))
           memos.map { memo =>
@@ -27,7 +27,7 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
           List[RadioButtonAnswer]()
         }
       }
-      case cbq: CheckboxQuestion[_] => {
+      case cbq: CheckboxQuestion => {
         val memos = _manager.find[CheckboxAnswerMemo,java.lang.Integer](classOf[CheckboxAnswerMemo], "memoHash = ?", cbq.memo_hash(dual))
         memos.map { memo =>
           val r = new CheckboxAnswer(None, memo.getWorkerId, memo.getAnswerValues.split(",").map(str => Symbol(str.drop(1))).toSet)
@@ -89,11 +89,11 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
 
   def deleteAll[Q <: Question](q: Q) {
     q match {
-      case rbq: RadioButtonQuestion[_] => {
+      case rbq: RadioButtonQuestion => {
         val e = _manager.find[RadioButtonAnswerMemo,java.lang.Integer](classOf[RadioButtonAnswerMemo], "memoHash = ?", rbq.memo_hash(false))
         e.foreach(_manager.delete(_))
       }
-      case cbq: CheckboxQuestion[_] => {
+      case cbq: CheckboxQuestion => {
         val e1 = _manager.find[CheckboxAnswerMemo,java.lang.Integer](classOf[CheckboxAnswerMemo], "memoHash = ?", cbq.memo_hash(true))
         val e2 = _manager.find[CheckboxAnswerMemo,java.lang.Integer](classOf[CheckboxAnswerMemo], "memoHash = ?", cbq.memo_hash(false))
         e1.foreach(_manager.delete(_))

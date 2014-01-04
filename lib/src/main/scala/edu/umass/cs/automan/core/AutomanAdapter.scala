@@ -8,10 +8,9 @@ import actors.Future
 import memoizer.{ThunkLogger, AutomanMemoizer}
 import scheduler.Thunk
 import strategy._
-import edu.umass.cs.automan.adapters.MTurk.question.MTQuestionOption
 
-abstract class AutomanAdapter[RBQ <: RadioButtonQuestion[MTQuestionOption],
-                              CBQ <: CheckboxQuestion[MTQuestionOption],
+abstract class AutomanAdapter[RBQ <: RadioButtonQuestion,
+                              CBQ <: CheckboxQuestion,
                               FTQ <: FreeTextQuestion] {
   protected var _budget: BigDecimal = 0.00
   protected var _confidence: Double = 0.95
@@ -68,4 +67,5 @@ abstract class AutomanAdapter[RBQ <: RadioButtonQuestion[MTQuestionOption],
   def locale_=(l: Locale) { _locale = l }
   def schedule(q: RBQ): Future[RadioButtonAnswer]
   def schedule(q: CBQ): Future[CheckboxAnswer]
+  def schedule(q: FTQ): Future[FreeTextAnswer]
 }

@@ -3,7 +3,8 @@ package edu.umass.cs.automan.core.question
 import edu.umass.cs.automan.core.answer.CheckboxAnswer
 import edu.umass.cs.automan.adapters.MTurk.question.MTQuestionOption
 
-abstract class CheckboxQuestion[QO <: QuestionOption] extends Question {
+abstract class CheckboxQuestion extends Question {
+  type QO <: QuestionOption
   protected var _options: List[QO]
   protected var _dual_text: Option[String] = None
 

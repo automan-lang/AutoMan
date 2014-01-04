@@ -1,8 +1,7 @@
 package edu.umass.cs.automan.core.question
 
-import edu.umass.cs.automan.core.answer.RadioButtonAnswer
-
-abstract class RadioButtonQuestion[QO <: QuestionOption] extends Question {
+abstract class RadioButtonQuestion extends Question {
+  type QO <: QuestionOption
   protected var _options: List[QO]
 
   def options: List[QO]

@@ -3,7 +3,7 @@ package edu.umass.cs.automan.adapters.MTurk.question
 import edu.umass.cs.automan.core.answer.RadioButtonAnswer
 import edu.umass.cs.automan.adapters.MTurk.{AutomanHIT, MTurkAdapter}
 import actors.Future
-import edu.umass.cs.automan.core.question.RadioButtonQuestion
+import edu.umass.cs.automan.core.question.{QuestionOption, RadioButtonQuestion}
 import edu.umass.cs.automan.core.scheduler.Thunk
 import com.amazonaws.mturk.requester.Assignment
 import xml.XML
@@ -19,8 +19,9 @@ object MTRadioButtonQuestion {
   }
 }
 
-class MTRadioButtonQuestion extends RadioButtonQuestion[MTQuestionOption] with MTurkQuestion {
-  protected var _options = List[MTQuestionOption]()
+class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
+  type QO = MTQuestionOption
+  protected var _options = List[QO]()
 
   def answer(a: Assignment, is_dual: Boolean): RadioButtonAnswer = {
     // ignore is_dual
@@ -50,8 +51,8 @@ class MTRadioButtonQuestion extends RadioButtonQuestion[MTQuestionOption] with M
     val md = MessageDigest.getInstance("md5")
     new String(Hex.encodeHex(md.digest(toXML(dual, false).toString.getBytes)))
   }
-  def options: List[MTQuestionOption] = _options
-  def options_=(os: List[MTQuestionOption]) { _options = os }
+  def options: List[QO] = _options
+  def options_=(os: List[QO]) { _options = os }
   def fromXML(x: scala.xml.Node) : Symbol = {
     // There should only be a SINGLE answer here, like this:
     //    <Answer>
@@ -63,7 +64,7 @@ class MTRadioButtonQuestion extends RadioButtonQuestion[MTQuestionOption] with M
 
     Symbol((x \\ "Answer" \\ "SelectionIdentifier").text)
   }
-  def randomized_options: List[MTQuestionOption] = {
+  def randomized_options: List[QO] = {
     import edu.umass.cs.automan.core.Utilities
     Utilities.randomPermute(options)
   }

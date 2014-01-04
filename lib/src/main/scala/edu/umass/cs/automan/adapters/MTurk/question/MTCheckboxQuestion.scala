@@ -20,8 +20,9 @@ object MTCheckboxQuestion {
   }
 }
 
-class MTCheckboxQuestion extends CheckboxQuestion[MTQuestionOption] with MTurkQuestion {
-  protected var _options = List[MTQuestionOption]()
+class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
+  type QO = MTQuestionOption
+  protected var _options = List[QO]()
 
   def answer(a: Assignment, is_dual: Boolean): CheckboxAnswer = {
     val ans_symb = fromXML(XML.loadString(a.getAnswer))
@@ -57,12 +58,12 @@ class MTCheckboxQuestion extends CheckboxQuestion[MTQuestionOption] with MTurkQu
     val md = MessageDigest.getInstance("md5")
     new String(Hex.encodeHex(md.digest(toXML(dual, false).toString.getBytes)))
   }
-  def options: List[MTQuestionOption] = _options
-  def options_=(os: List[MTQuestionOption]) { _options = os }
+  def options: List[QO] = _options
+  def options_=(os: List[QO]) { _options = os }
   def fromXML(x: scala.xml.Node) : Set[Symbol] = {
     (x \\ "Answer" \\ "SelectionIdentifier").map{si => Symbol(si.text)}.toSet
   }
-  def randomized_options: List[MTQuestionOption] = {
+  def randomized_options: List[QO] = {
     import edu.umass.cs.automan.core.Utilities
     Utilities.randomPermute(options)
   }
