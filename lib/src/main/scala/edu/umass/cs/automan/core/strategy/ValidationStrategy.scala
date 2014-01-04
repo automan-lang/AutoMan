@@ -28,8 +28,8 @@ abstract class ValidationStrategy {
 
     if (valid_thunks.size == 0) {
       return question match {
-        case rbq:RadioButtonQuestion[_] => new RadioButtonAnswer(None, "invalid", 'invalid)
-        case cbq:CheckboxQuestion[_] => new CheckboxAnswer(None, "invalid", Set('invalid))
+        case rbq:RadioButtonQuestion => new RadioButtonAnswer(None, "invalid", 'invalid)
+        case cbq:CheckboxQuestion => new CheckboxAnswer(None, "invalid", Set('invalid))
         case _ => throw new Exception("Question type not yet supported.")
       }
     }

@@ -75,7 +75,7 @@ class DefaultStrategy extends ValidationStrategy {
 
     // mark some of them as duals if the question is a CheckboxQuestion
     question match {
-      case cbq: CheckboxQuestion[_] => (0 until (new_thunks.size / 2)).foreach{ i => new_thunks(i).is_dual = true }
+      case cbq: CheckboxQuestion => (0 until (new_thunks.size / 2)).foreach{ i => new_thunks(i).is_dual = true }
       case _ => {}
     }
     
