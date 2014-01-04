@@ -5,7 +5,7 @@ import actors.Future
 import edu.umass.cs.automan.core.answer.CheckboxAnswer
 import java.util.UUID
 import xml.XML
-import com.amazonaws.mturk.requester.Assignment
+import com.amazonaws.mturk.requester.{QualificationRequirement, Assignment}
 import edu.umass.cs.automan.core.scheduler.Thunk
 import edu.umass.cs.automan.adapters.MTurk.{AutomanHIT, MTurkAdapter}
 import java.security.MessageDigest
@@ -35,7 +35,7 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
       new CheckboxAnswer(None, a.getWorkerId, ans_symb)
     }
   }
-  def build_hit(ts: List[Thunk], dual: Boolean) : AutomanHIT = {
+  def build_hit(ts: List[Thunk], dual: Boolean, quals: List[QualificationRequirement]) : AutomanHIT = {
     val x = toXML(dual, true)
     val h = AutomanHIT { a =>
       a.hit_type_id = _hit_type_id
@@ -48,6 +48,7 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
       a.maxAssignments = ts.size
       a.cost = ts.head.cost
       a.id = id
+      a.qualifications = quals
     }
     Utilities.DebugLog("Posting XML:\n" + x,LogLevel.INFO,LogType.ADAPTER,id)
     hits = h :: hits
