@@ -15,7 +15,6 @@ abstract class AutomanAdapter[RBQ <: RadioButtonQuestion,
   protected var _budget: BigDecimal = 0.00
   protected var _confidence: Double = 0.95
   protected var _locale: Locale = Locale.getDefault
-//  protected var _max_replicas = 30
   protected var _strategy: Class[_ <: ValidationStrategy] = classOf[DefaultStrategy]
   protected var _memoizer: AutomanMemoizer = _
   protected var _memo_conn_string: String = "jdbc:derby:AutomanMemoDB;create=true"
