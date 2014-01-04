@@ -7,6 +7,8 @@ import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 import question.{HITState, MTRadioButtonQuestion}
 import HITState._
 import java.util.UUID
+import edu.umass.cs.automan.adapters.MTurk.question.HITState
+import scala.Some
 
 object AutomanHIT {
   def apply(init: AutomanHIT => Unit) : AutomanHIT = {
@@ -17,23 +19,24 @@ object AutomanHIT {
 }
 
 class AutomanHIT {
-  var thunk_assignment_map = Map[Thunk,Assignment]()
+  var assignmentDurationInSeconds: Long = _
+  var assignments = List[Assignment]()
+  var autoApprovalDelayInSeconds: Long = 2592000 // AutoMan approves Assns, not the user or MTurk, so mthis is the MTurk MAX
+  var cost: BigDecimal = 0.01
+  var description: String = null
   var hit: HIT = _
   var hit_type_id: Option[String] = None
-  var cost: BigDecimal = 0.01
-  var title: String = null
-  var description: String = null
+  var id: UUID = _
   var keywords = List[String]("automan")
-  var question_xml: xml.Node = _
-  var assignmentDurationInSeconds: Long = _
-  var autoApprovalDelayInSeconds: Long = 2592000 // AutoMan approves Assns, not the user or MTurk, so mthis is the MTurk MAX
   var lifetimeInSeconds: Long = _
   var maxAssignments: Int = 1
+  var qualifications = List[QualificationRequirement]()
+  var question_xml: xml.Node = _
   var requesterAnnotation: String = "automan" // takes an arbitrary string; currently undefined
   var responseGroup = List[String]()
-  var assignments = List[Assignment]()
   var state: HITState = HITState.READY
-  var id: UUID = _
+  var thunk_assignment_map = Map[Thunk,Assignment]()
+  var title: String = null
 
   def cancel(service: RequesterService) {
     if (state != HITState.RESOLVED ) {
@@ -41,10 +44,10 @@ class AutomanHIT {
     }
   }
   // returns a hit type id
-  def post(service: RequesterService, quals: List[QualificationRequirement]) : String = {
-    val htid = hittype(service, cost, quals)
+  def post(service: RequesterService) : String = {
+    val htid = hittype(service, cost, qualifications)
     Utilities.DebugLog("Posting HIT with type: " + htid + " and qualifications: " +
-                       quals.map(_.getQualificationTypeId).foldLeft("")((acc,q) => acc + ", " + q) +
+                       qualifications.map(_.getQualificationTypeId).foldLeft("")((acc,q) => acc + ", " + q) +
                        " and " + maxAssignments + " assignments.",LogLevel.INFO,LogType.ADAPTER,id)
     hit = service.createHIT(null,
                             title,
@@ -57,7 +60,7 @@ class AutomanHIT {
                             lifetimeInSeconds,
                             maxAssignments,
                             requesterAnnotation,
-                            quals.toArray,
+                            qualifications.toArray,
                             responseGroup.toArray)
     state = HITState.RUNNING
     htid

@@ -17,7 +17,7 @@ trait MTurkQuestion {
   protected var _qualifications = List[QualificationRequirement]()
 
   def answer(a: Assignment, is_dual: Boolean): Answer
-  def build_hit(ts: List[Thunk], is_dual: Boolean) : AutomanHIT
+  def build_hit(ts: List[Thunk], is_dual: Boolean, quals: List[QualificationRequirement]) : AutomanHIT
   def hit_for_thunk(t: Thunk) : AutomanHIT = {
     var the_hit: AutomanHIT = null
     hits.foreach { h =>

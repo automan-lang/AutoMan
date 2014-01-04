@@ -3,7 +3,7 @@ package edu.umass.cs.automan.adapters.MTurk.question
 import edu.umass.cs.automan.adapters.MTurk.{AutomanHIT, MTurkAdapter}
 import actors.Future
 import edu.umass.cs.automan.core.scheduler.Thunk
-import com.amazonaws.mturk.requester.Assignment
+import com.amazonaws.mturk.requester.{QualificationRequirement, Assignment}
 import xml.XML
 import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
@@ -34,7 +34,7 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
     val answer = fromXML(XML.loadString(a.getAnswer))
     new FreeTextAnswer(None, a.getWorkerId, _before_filter(answer))
   }
-  def build_hit(ts: List[Thunk], is_dual: Boolean) : AutomanHIT = {
+  def build_hit(ts: List[Thunk], is_dual: Boolean, quals: List[QualificationRequirement]) : AutomanHIT = {
     // we ignore the "dual" option here
     val x = toXML(false, true)
     val h = AutomanHIT { a =>
@@ -48,6 +48,7 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
       a.maxAssignments = ts.size
       a.cost = ts.head.cost
       a.id = id
+      a.qualifications = quals
     }
     Utilities.DebugLog("Posting XML:\n" + x,LogLevel.INFO,LogType.ADAPTER,id)
     hits = h :: hits

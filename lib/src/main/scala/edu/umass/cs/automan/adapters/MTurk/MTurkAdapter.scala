@@ -10,14 +10,12 @@ import memoizer.MTurkAnswerCustomInfo
 import question._
 import edu.umass.cs.automan.core.scheduler.{Scheduler, SchedulerState, Thunk}
 import edu.umass.cs.automan.core.{LogLevel, LogType, Utilities, retry, AutomanAdapter}
-import xml.XML
 import java.util.{UUID, Date}
 import com.amazonaws.mturk.requester._
 import scala.Predef._
-import collection.mutable.Queue
-import edu.umass.cs.automan.core.exception.OverBudgetException
 import edu.umass.cs.automan.core.answer.{FreeTextAnswer, Answer, RadioButtonAnswer, CheckboxAnswer}
-import org.apache.commons.httpclient.protocol.SecureProtocolSocketFactory
+import scala.collection.mutable
+
 
 object MTurkAdapter {
   def apply(init: MTurkAdapter => Unit) : MTurkAdapter = {
@@ -34,12 +32,14 @@ object MTurkAdapter {
 class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuestion,MTFreeTextQuestion] {
   private var _access_key_id: Option[String] = None
   private var _poll_interval_in_s : Int = 30
-  private var _retriable_errors = Set("Server.ServiceUnavailable")
+  private val _retriable_errors = scala.collection.Set("Server.ServiceUnavailable")
   private var _retry_attempts : Int = 10
   private var _retry_delay_millis : Int = 1000
   private var _secret_access_key: Option[String] = None
   private var _service_url : String = ClientConfig.SANDBOX_SERVICE_URL
   private var _service : Option[RequesterService] = None
+  private val _post_queue = new mutable.SynchronizedQueue[(MTurkQuestion,AutomanHIT)]()
+  private val _retrieval_queue = new mutable.SynchronizedQueue[Thunk]()
 
   def CheckboxQuestion(fq: MTCheckboxQuestion => Unit) = MTCheckboxQuestion(fq, this)
   def FreeTextQuestion(fq: MTFreeTextQuestion => Unit) = MTFreeTextQuestion(fq, this)
@@ -90,6 +90,41 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     s
   }
   def post(ts: List[Thunk], dual: Boolean, exclude_worker_ids: List[String]) {
+    val question = question_for_thunks(ts)
+    val mtquestion = question match { case mtq: MTurkQuestion => mtq; case _ => throw new Exception("Impossible.") }
+    val qualify_early = if (question.blacklisted_workers.size > 0) true else false
+    val quals = get_qualifications(mtquestion, ts.head.question.text, qualify_early, question.id)
+
+    // Build HIT and add it to post queue
+    mtquestion match {
+      case rbq: MTRadioButtonQuestion => {
+        if (!dual) {
+          _post_queue += new Tuple2(rbq, rbq.build_hit(ts, is_dual = false, quals))
+        }
+      }
+      case cbq: MTCheckboxQuestion => {
+        _post_queue += new Tuple2(cbq, cbq.build_hit(ts, dual, quals))
+      }
+      case ftq: MTFreeTextQuestion => {
+        _post_queue += new Tuple2(ftq, ftq.build_hit(ts, is_dual = false, quals))
+      }
+      case _ => throw new Exception("Question type not yet supported.  Question class is " + mtquestion.getClass)
+    }
+    ts.foreach { _.state = SchedulerState.RUNNING }
+    _retrieval_queue ++= ts
+  }
+  def process_posts() {
+    // make sure to assign post to mtquestion.hit_type_id
+    while(_post_queue.nonEmpty) {
+      // get next item
+      val (question, hit) = _post_queue.dequeue()
+      hit.post(backend)
+      // sleep
+      Thread.sleep(_retry_delay_millis)
+    }
+  }
+
+  def post_old(ts: List[Thunk], dual: Boolean, exclude_worker_ids: List[String]) {
     val question = question_for_thunks(ts)
     val mtquestion = question match { case mtq: MTurkQuestion => mtq; case _ => throw new Exception("Impossible.") }
     val qualify_early = if (question.blacklisted_workers.size > 0) true else false

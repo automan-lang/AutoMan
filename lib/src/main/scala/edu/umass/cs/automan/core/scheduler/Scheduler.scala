@@ -2,11 +2,11 @@ package edu.umass.cs.automan.core.scheduler
 
 import edu.umass.cs.automan.core.strategy.ValidationStrategy
 import edu.umass.cs.automan.core.memoizer.{ThunkLogger, AutomanMemoizer}
-import edu.umass.cs.automan.core.answer.{CheckboxAnswer, RadioButtonAnswer, Answer}
+import edu.umass.cs.automan.core.answer.Answer
 import collection.mutable.Queue
-import edu.umass.cs.automan.core.question.{CheckboxQuestion, RadioButtonQuestion, Question}
+import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.{LogLevel, LogType, Utilities, AutomanAdapter}
-import edu.umass.cs.automan.core.exception.{ExceedsMaxReplicas, OverBudgetException}
+import edu.umass.cs.automan.core.exception.OverBudgetException
 
 class Scheduler (val question: Question,
                  val adapter: AutomanAdapter[_,_,_],
@@ -17,6 +17,72 @@ class Scheduler (val question: Question,
   var thunks = List[Thunk]()
 
   def run[A <: Answer]() : A = {
+    // check memo DB
+    val memo_answers = (get_memo_answers(is_dual = false), get_memo_answers(is_dual = true))
+    var last_iteration_timeout = false
+    var over_budget = false
+    Utilities.DebugLog("Found " + (memo_answers._1.size + memo_answers._2.size) + " saved Answers in database.", LogLevel.INFO, LogType.SCHEDULER, question.id)
+
+    try {
+      Utilities.DebugLog("Entering scheduling loop...", LogLevel.INFO, LogType.SCHEDULER, question.id)
+      while(!strategy.is_confident) {
+        if (thunks.filter(_.state == SchedulerState.RUNNING).size == 0) {
+          // spawn new thunks; in READY state here
+          val new_thunks = strategy.spawn(question, last_iteration_timeout) // OverBudgetException should be thrown here
+          thunks = new_thunks ::: thunks
+
+          // before posting, pick answers out of memo DB
+          recall(new_thunks, memo_answers._1, memo_answers._2)
+
+          // only post READY state thunks to backend; become RUNNING state here
+          if (!question.dry_run) {
+            post(new_thunks.filter(_.state == SchedulerState.READY))
+          }
+        }
+
+        // ask the backend for answers and memoize_answers
+        // retrieve does NOT block
+        // conditional covers the case where all thunk answers are recalled from memoDB
+        if (running_thunks.size > 0) {
+          // get data
+          val results = if (!question.dry_run) {
+            adapter.retrieve(running_thunks)
+          } else { List[Thunk]() }
+
+          // check for timeout
+          if (results.filter(_.state == SchedulerState.TIMEOUT).size != 0) {
+            last_iteration_timeout = true
+          } else {
+            last_iteration_timeout = false
+          }
+          // saves *recently* RETRIEVED thunks
+          memoize_answers(results)
+        }
+
+        // sleep if necessary
+        if (!strategy.is_confident && incomplete_thunks(thunks).size > 0) Thread.sleep(poll_interval_in_s * 1000)
+      }
+    } catch {
+      case o:OverBudgetException => {
+        Utilities.DebugLog("OverBudgetException.", LogLevel.FATAL, LogType.SCHEDULER, question.id)
+        over_budget = true
+      }
+    }
+    Utilities.DebugLog("Exiting scheduling loop...", LogLevel.INFO, LogType.SCHEDULER, question.id)
+
+    val answer = strategy.select_best(question).asInstanceOf[A]
+    var spent: BigDecimal = 0
+    if (!over_budget) {
+      spent = accept_and_reject(thunks, answer)
+      Utilities.DebugLog("Total spent: " + spent.toString(),LogLevel.INFO, LogType.SCHEDULER, question.id)
+    } else {
+      answer.over_budget = true
+    }
+    answer.final_cost
+    answer
+  }
+
+  def run_old[A <: Answer]() : A = {
     // check memo DB first
     val memo_answers = get_memo_answers(is_dual = false)
     val memo_dual_answers = get_memo_answers(is_dual = true)
