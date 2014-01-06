@@ -236,7 +236,7 @@ $(OUTJARS)/$(JAR_AUTOMAN) $(OUTJARS)/deps: $(AUTOMAN_SCALA_SRC) \
 	$(CLASSDIR) \
 	$(OUTJARS) \
 	$(JARDIR)/$(DIR_DERBY)/$(JAR_DERBY)
-	$(SCALAC) -classpath $(CP) -d $(CLASSDIR) $(AUTOMAN_SCALA_SRC) $(AUTOMAN_JAVA_SRC)
+	$(SCALAC) -unchecked -deprecation -explaintypes -classpath $(CP) -d $(CLASSDIR) $(AUTOMAN_SCALA_SRC) $(AUTOMAN_JAVA_SRC)
 	cd $(CLASSDIR); $(JAR) cvf $(AOUTJARS)/$(JAR_AUTOMAN) edu
 	cd $(OUTJARS); $(JAR) i $(JAR_AUTOMAN)
 	mkdir -p $(OUTJARS)/deps

@@ -5,15 +5,18 @@ import edu.umass.cs.automan.core.memoizer.{ThunkLogger, AutomanMemoizer}
 import edu.umass.cs.automan.core.answer.Answer
 import collection.mutable.Queue
 import edu.umass.cs.automan.core.question.Question
-import edu.umass.cs.automan.core.{LogLevel, LogType, Utilities, AutomanAdapter}
+import edu.umass.cs.automan.core._
+import edu.umass.cs.automan.core.exception.OverBudgetException
 import edu.umass.cs.automan.core.exception.OverBudgetException
 
+case class Post()
+
 class Scheduler (val question: Question,
-                 val adapter: AutomanAdapter[_,_,_],
+                 val adapter: AdapterState,
                  val strategy: ValidationStrategy,
                  val memoizer: AutomanMemoizer,
-                 val thunklog: ThunkLogger,
-                 val poll_interval_in_s: Int) {
+                 val thunklog: ThunkLogger) {
+
   var thunks = List[Thunk]()
 
   def run[A <: Answer]() : A = {
