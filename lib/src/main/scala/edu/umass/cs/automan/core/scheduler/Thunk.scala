@@ -7,10 +7,10 @@ import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 
 class Thunk(val question: Question, val timeout_in_s: Int, val worker_timeout: Int, val cost: BigDecimal, val computation_id: UUID) {
   val created_at: Date = new Date()
-  var _state = SchedulerState.READY
-  var answer : Answer = null
-  var is_dual: Boolean = false
-  var from_memo: Boolean = false
+//  var _state = SchedulerState.READY
+//  var answer : Answer = null
+//  var is_dual: Boolean = false
+//  var from_memo: Boolean = false
   val expires_at : Date = {
     val calendar = Calendar.getInstance()
     calendar.add(Calendar.SECOND, timeout_in_s)
@@ -21,8 +21,8 @@ class Thunk(val question: Question, val timeout_in_s: Int, val worker_timeout: I
     val now = new Date()
     expires_at.before(now)
   }
-  def state: SchedulerState.Value = _state
-  def state_=(s: SchedulerState.Value) { _state = s }
+//  def state: SchedulerState.Value = _state
+//  def state_=(s: SchedulerState.Value) { _state = s }
 
   override def toString = {
     val has_answer = if (answer == null) "no" else "yes"

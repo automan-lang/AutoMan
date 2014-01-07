@@ -25,7 +25,7 @@ class AutomanHIT {
   var cost: BigDecimal = 0.01
   var description: String = null
   var hit: HIT = _
-  var hit_type_id: Option[String] = None
+  var hit_type_id: String = _
   var id: UUID = _
   var keywords = List[String]("automan")
   var lifetimeInSeconds: Long = _
@@ -34,19 +34,17 @@ class AutomanHIT {
   var question_xml: xml.Node = _
   var requesterAnnotation: String = "automan" // takes an arbitrary string; currently undefined
   var responseGroup = List[String]()
-  var state: HITState = HITState.READY
+//  var state: HITState = HITState.READY
   var thunk_assignment_map = Map[Thunk,Assignment]()
   var title: String = null
 
-  def cancel(service: RequesterService) {
-    if (state != HITState.RESOLVED ) {
-      service.forceExpireHIT(hit.getHITId)
-    }
-  }
-  // returns a hit type id
-  def post(service: RequesterService) : String = {
-    val htid = hittype(service, cost, qualifications)
-    Utilities.DebugLog("Posting HIT with type: " + htid + " and qualifications: " +
+//  def cancel(service: RequesterService) {
+//    if (state != HITState.RESOLVED ) {
+//      service.forceExpireHIT(hit.getHITId)
+//    }
+//  }
+  def post(service: RequesterService) : Unit = {
+    Utilities.DebugLog("Posting HIT with type: " + hit_type_id + " and qualifications: " +
                        qualifications.map(_.getQualificationTypeId).foldLeft("")((acc,q) => acc + ", " + q) +
                        " and " + maxAssignments + " assignments.",LogLevel.INFO,LogType.ADAPTER,id)
     hit = service.createHIT(null,
@@ -62,42 +60,25 @@ class AutomanHIT {
                             requesterAnnotation,
                             qualifications.toArray,
                             responseGroup.toArray)
-    state = HITState.RUNNING
-    htid
   }
-  def retrieve(service: RequesterService) : List[Assignment] = {
-    // get new assignments
-    var assns = List[Assignment]()
-    Utilities.DebugLog("Getting assignments...",LogLevel.INFO,LogType.ADAPTER,id)
-    assns = retry(5) {
-      service.getAllAssignmentsForHIT(
-        hit.getHITId, Array(AssignmentStatus.Submitted)
-      ).toList
-    }
-    
-    // we only care about NEW Assignments
-    val new_assns = assns.filter{ a => !assignments.contains(a) }
-
-    // add to our list of Assignments
-    assignments = new_assns ::: assignments
-
-    new_assns
-  }
-  def hittype(service: RequesterService, cost: BigDecimal, quals: List[QualificationRequirement]) : String = {
-    // find the HIT Type if we have one already, otherwise create a new one
-    // new costs are reason enough for a new hit type
-    hit_type_id match {
-      // the user may have defined one
-      case Some(htid) => htid
-      // or they may not care at all
-      // we just need to ask AMT for one
-      case None => {
-        val htid = service.registerHITType(autoApprovalDelayInSeconds, assignmentDurationInSeconds, cost.toDouble, title, keytext, description, quals.toArray)
-        hit_type_id = Some(htid)
-        htid
-      }
-    }
-  }
+//  def retrieve(service: RequesterService) : List[Assignment] = {
+//    // get new assignments
+//    var assns = List[Assignment]()
+//    Utilities.DebugLog("Getting assignments...",LogLevel.INFO,LogType.ADAPTER,id)
+//    assns = retry(5) {
+//      service.getAllAssignmentsForHIT(
+//        hit.getHITId, Array(AssignmentStatus.Submitted)
+//      ).toList
+//    }
+//
+//    // we only care about NEW Assignments
+//    val new_assns = assns.filter{ a => !assignments.contains(a) }
+//
+//    // add to our list of Assignments
+//    assignments = new_assns ::: assignments
+//
+//    new_assns
+//  }
   def keytext : String = keywords.foldLeft(""){ (str, keyword) => {str + ", " + keyword } }
 
   override def toString = {

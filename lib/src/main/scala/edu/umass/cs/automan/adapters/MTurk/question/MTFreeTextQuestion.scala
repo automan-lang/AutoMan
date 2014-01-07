@@ -34,11 +34,11 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
     val answer = fromXML(XML.loadString(a.getAnswer))
     new FreeTextAnswer(None, a.getWorkerId, _before_filter(answer))
   }
-  def build_hit(ts: List[Thunk], is_dual: Boolean, quals: List[QualificationRequirement]) : AutomanHIT = {
+  def build_hit(ts: List[Thunk], is_dual: Boolean, quals: List[QualificationRequirement], hit_type_id: String) : AutomanHIT = {
     // we ignore the "dual" option here
     val x = toXML(false, true)
     val h = AutomanHIT { a =>
-      a.hit_type_id = _hit_type_id
+      a.hit_type_id = hit_type_id
       a.title = title
       a.description = text
       a.keywords = _keywords
@@ -51,8 +51,6 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
       a.qualifications = quals
     }
     Utilities.DebugLog("Posting XML:\n" + x,LogLevel.INFO,LogType.ADAPTER,id)
-    hits = h :: hits
-    hit_thunk_map += (h -> ts)
     h
   }
   def memo_hash(dual: Boolean): String = {
