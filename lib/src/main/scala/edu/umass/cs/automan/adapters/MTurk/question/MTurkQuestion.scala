@@ -8,9 +8,9 @@ import com.amazonaws.mturk.requester.{Assignment, QualificationRequirement}
 trait MTurkQuestion {
   var dequalification : QualificationRequirement = _
   var firstrun: Boolean = true
-  var hits = List[AutomanHIT]()
+//  var hits = List[AutomanHIT]()
   var hit_thunk_map = Map[AutomanHIT,List[Thunk]]()
-  var thunk_assnid_map = Map[Thunk,String]() // maps thunks to assignment ids
+//  var thunk_assnid_map = Map[Thunk,String]() // maps thunks to assignment ids
   protected var _qualified_workers = Map[String,Set[String]]() // (QualificationTypeId -> Set[worker_id])
   protected var _hit_type_id: Option[String] = None
   protected var _keywords = List[String]()

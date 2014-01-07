@@ -7,7 +7,7 @@ import java.util.UUID
 import xml.XML
 import com.amazonaws.mturk.requester.{QualificationRequirement, Assignment}
 import edu.umass.cs.automan.core.scheduler.Thunk
-import edu.umass.cs.automan.adapters.MTurk.{AutomanHIT, MTurkAdapter}
+import edu.umass.cs.automan.adapters.MTurk.{MTurkAdapter, AutomanHIT}
 import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
 import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
@@ -35,10 +35,10 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
       new CheckboxAnswer(None, a.getWorkerId, ans_symb)
     }
   }
-  def build_hit(ts: List[Thunk], dual: Boolean, quals: List[QualificationRequirement]) : AutomanHIT = {
+  def build_hit(ts: List[Thunk], dual: Boolean, quals: List[QualificationRequirement], hit_type_id: String) : AutomanHIT = {
     val x = toXML(dual, true)
     val h = AutomanHIT { a =>
-      a.hit_type_id = _hit_type_id
+      a.hit_type_id = hit_type_id
       a.title = title
       a.description = text
       a.keywords = _keywords
@@ -51,8 +51,6 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
       a.qualifications = quals
     }
     Utilities.DebugLog("Posting XML:\n" + x,LogLevel.INFO,LogType.ADAPTER,id)
-    hits = h :: hits
-    hit_thunk_map += (h -> ts)
     h
   }
   def memo_hash(dual: Boolean): String = {

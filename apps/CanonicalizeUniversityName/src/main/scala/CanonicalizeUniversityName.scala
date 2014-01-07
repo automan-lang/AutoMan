@@ -1,11 +1,9 @@
 import edu.umass.cs.automan.adapters.MTurk.MTurkAdapter
 import edu.umass.cs.automan.adapters.MTurk.question.MTQuestionOption
 import edu.umass.cs.automan.core.answer.RadioButtonAnswer
-import edu.umass.cs.automan.core.question.QuestionOption
 import edu.umass.cs.automan.core.Utilities
 import java.io.{ObjectOutputStream, IOException, FileOutputStream}
 import scala.actors.Future
-import scala.collection.JavaConverters._
 import scala.collection.mutable
 import net.ettinsmoor.{WebResult, Bingerator}
 import scala.xml._

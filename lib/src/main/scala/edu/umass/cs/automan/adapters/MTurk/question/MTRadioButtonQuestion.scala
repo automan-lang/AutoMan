@@ -27,11 +27,11 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
     // ignore is_dual
     new RadioButtonAnswer(None, a.getWorkerId, fromXML(XML.loadString(a.getAnswer)))
   }
-  def build_hit(ts: List[Thunk], is_dual: Boolean, quals: List[QualificationRequirement]) : AutomanHIT = {
+  def build_hit(ts: List[Thunk], is_dual: Boolean, quals: List[QualificationRequirement], hit_type_id: String) : AutomanHIT = {
     // we ignore the "dual" option here
     val x = toXML(false, true)
     val h = AutomanHIT { a =>
-      a.hit_type_id = _hit_type_id
+      a.hit_type_id = hit_type_id
       a.title = title
       a.description = text
       a.keywords = _keywords
@@ -44,8 +44,8 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
       a.qualifications = quals
     }
     Utilities.DebugLog("Posting XML:\n" + x,LogLevel.INFO,LogType.ADAPTER,id)
-    hits = h :: hits
-    hit_thunk_map += (h -> ts)
+//    hits = h :: hits
+//    hit_thunk_map += (h -> ts)
     h
   }
   def memo_hash(dual: Boolean): String = {
