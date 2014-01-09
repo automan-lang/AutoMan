@@ -39,6 +39,8 @@ class AutomanHIT {
     if (state != HITState.RESOLVED ) {
       service.forceExpireHIT(hit.getHITId)
     }
+
+    Thread.sleep(1000)
   }
   // returns a hit type id
   def post(service: RequesterService, quals: List[QualificationRequirement]) : String = {
@@ -60,6 +62,9 @@ class AutomanHIT {
                             quals.toArray,
                             responseGroup.toArray)
     state = HITState.RUNNING
+
+    Thread.sleep(1000)
+
     htid
   }
   def retrieve(service: RequesterService) : List[Assignment] = {
@@ -78,12 +83,14 @@ class AutomanHIT {
     // add to our list of Assignments
     assignments = new_assns ::: assignments
 
+    Thread.sleep(1000)
+
     new_assns
   }
   def hittype(service: RequesterService, cost: BigDecimal, quals: List[QualificationRequirement]) : String = {
     // find the HIT Type if we have one already, otherwise create a new one
     // new costs are reason enough for a new hit type
-    hit_type_id match {
+    val id = hit_type_id match {
       // the user may have defined one
       case Some(htid) => htid
       // or they may not care at all
@@ -94,6 +101,10 @@ class AutomanHIT {
         htid
       }
     }
+
+    Thread.sleep(1000)
+
+    id
   }
   def keytext : String = keywords.foldLeft(""){ (str, keyword) => {str + ", " + keyword } }
 
