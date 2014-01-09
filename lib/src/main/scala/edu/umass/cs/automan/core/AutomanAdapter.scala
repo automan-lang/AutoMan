@@ -17,11 +17,13 @@ abstract class AutomanAdapter[RBQ <: RadioButtonQuestion,
   protected var _locale: Locale = Locale.getDefault
   protected var _strategy: Class[_ <: ValidationStrategy] = classOf[DefaultStrategy]
   protected var _memoizer: AutomanMemoizer = _
-  protected var _memo_conn_string: String = "jdbc:derby:AutomanMemoDB;create=true"
+  protected var _memo_db: String = "AutomanMemoDB"
+  protected def _memo_conn_string: String = "jdbc:derby:" + _memo_db + ";create=true"
   protected var _memo_user: String = ""
   protected var _memo_pass: String = ""
   protected var _thunklog: ThunkLogger = _
-  protected var _thunk_conn_string: String = "jdbc:derby:ThunkLogDB;create=true"
+  protected var _thunk_db: String = "ThunkLogDB"
+  protected var _thunk_conn_string: String = "jdbc:derby:" + _thunk_db + ";create=true"
   protected var _thunk_user: String = ""
   protected var _thunk_pass: String = ""
 

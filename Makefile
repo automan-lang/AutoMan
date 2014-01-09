@@ -22,7 +22,7 @@ VER_AUTOMAN	:= 0.3
 ## ARCHIVE NAMES
 ARCH_MTURKSDK 	:= java-aws-mturk-1.6.2.tar.gz
 ARCH_AWSSDK 		:= aws-java-sdk.zip
-ARCH_ACTIVEOBJ 	:= activeobjects-0.8.2.tar.gz
+ARCH_ACTIVEOBJ 	:= activeobjects-0.9-m17-bin.tar.gz
 ARCH_COMMONSIO	:= commons-io-2.4-bin.tar.gz
 ARCH_GSEARCH		:= gsearch-java-client
 ARCH_GSON				:= google-gson-2.2.4-release.zip
@@ -61,7 +61,7 @@ DIR_DERBY			:= $(patsubst %.tar.gz,%,$(ARCH_DERBY))
 
 ## VERSION STRINGS (DO NOT MODIFY)
 VER_MTURKSDK 	:= $(patsubst java-aws-mturk-%.tar.gz,%,$(ARCH_MTURKSDK))
-VER_ACTIVEOBJ := $(patsubst activeobjects-%.tar.gz,%,$(ARCH_ACTIVEOBJ))
+VER_ACTIVEOBJ := $(patsubst activeobjects-%-bin.tar.gz,%,$(ARCH_ACTIVEOBJ))
 VER_COMMONSIO	:= $(patsubst commons-io-%-bin.tar.gz,%,$(ARCH_COMMONSIO))
 VER_GSON			:= $(patsubst google-gson-%-release.zip,%,$(ARCH_GSON))
 VER_ONEJAR		:= $(patsubst one-jar-boot-%.jar,%,$(ARCH_ONEJAR))
@@ -236,7 +236,7 @@ $(OUTJARS)/$(JAR_AUTOMAN) $(OUTJARS)/deps: $(AUTOMAN_SCALA_SRC) \
 	$(CLASSDIR) \
 	$(OUTJARS) \
 	$(JARDIR)/$(DIR_DERBY)/$(JAR_DERBY)
-	$(SCALAC) -classpath $(CP) -d $(CLASSDIR) $(AUTOMAN_SCALA_SRC) $(AUTOMAN_JAVA_SRC)
+	$(SCALAC) -unchecked -deprecation -explaintypes -classpath $(CP) -d $(CLASSDIR) $(AUTOMAN_SCALA_SRC) $(AUTOMAN_JAVA_SRC)
 	cd $(CLASSDIR); $(JAR) cvf $(AOUTJARS)/$(JAR_AUTOMAN) edu
 	cd $(OUTJARS); $(JAR) i $(JAR_AUTOMAN)
 	mkdir -p $(OUTJARS)/deps
@@ -335,12 +335,12 @@ $(DOWNLOADDIR)/$(ARCH_AWSSDK): | $(DOWNLOADDIR)
 # copy ActiveObjects lib to JARDIR
 $(JARDIR)/activeobjects: | $(UNPACKDIR)/$(DIR_ACTIVEOBJ)
 	mkdir -p $(JARDIR)/activeobjects
-	cp $(UNPACKDIR)/$(DIR_ACTIVEOBJ)/$(JAR_ACTIVEOBJ) $(JARDIR)/activeobjects/
+	cp $(UNPACKDIR)/$(DIR_ACTIVEOBJ)/bin/$(JAR_ACTIVEOBJ) $(JARDIR)/activeobjects/
 
 # untarball ActiveObjects lib
 $(UNPACKDIR)/$(DIR_ACTIVEOBJ): | $(JARDIR) $(DOWNLOADDIR)/$(ARCH_ACTIVEOBJ)
 	mkdir -p $(UNPACKDIR)/$(DIR_ACTIVEOBJ)
-	$(TAR) xzvf $(DOWNLOADDIR)/$(ARCH_ACTIVEOBJ) -C $(UNPACKDIR)
+	$(TAR) xzvf $(DOWNLOADDIR)/$(ARCH_ACTIVEOBJ) -C $(UNPACKDIR)/$(DIR_ACTIVEOBJ)
 
 # fetch ActiveObjects lib
 $(DOWNLOADDIR)/$(ARCH_ACTIVEOBJ): | $(DOWNLOADDIR)

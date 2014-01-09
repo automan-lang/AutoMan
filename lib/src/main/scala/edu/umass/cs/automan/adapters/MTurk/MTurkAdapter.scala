@@ -58,7 +58,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     val sched = new Scheduler(q, this, init_strategy(q), _memoizer, _thunklog, _poll_interval_in_s)
     sched.run[FreeTextAnswer]()
   }
-  def get_qualifications(q: MTurkQuestion, title: String, qualify_early: Boolean, question_id: UUID) : List[QualificationRequirement] = {
+  def get_qualifications(q: MTurkQuestion, title: String, qualify_early: Boolean, question_id: UUID) : List[QualificationRequirement] = synchronized {
     // The first qualification always needs to be the special
     // "dequalification" type so that we may grant it as soon as
     // a worker completes some work.
@@ -80,7 +80,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     }
     q.qualifications
   }
-  def init_strategy(q: Question): ValidationStrategy = {
+  def init_strategy(q: Question): ValidationStrategy = synchronized {
     val s: ValidationStrategy = q.strategy_option match {
       case None => _strategy.newInstance()
       case Some(sclass) => sclass.newInstance()
@@ -89,7 +89,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     s.num_possibilities = q.num_possibilities
     s
   }
-  def post(ts: List[Thunk], dual: Boolean, exclude_worker_ids: List[String]) {
+  def post(ts: List[Thunk], dual: Boolean, exclude_worker_ids: List[String]) : Unit = synchronized {
     val question = question_for_thunks(ts)
     val mtquestion = question match { case mtq: MTurkQuestion => mtq; case _ => throw new Exception("Impossible.") }
     val qualify_early = if (question.blacklisted_workers.size > 0) true else false
@@ -152,7 +152,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
       case _ => throw new Exception("MTurkAdapter can only operate on Thunks for MTurkQuestions.")
     }
   }
-  def cancel(t: Thunk) {
+  def cancel(t: Thunk) : Unit = synchronized {
     t.question match {
       case mtq:MTurkQuestion => {
         mtq.hits.filter{_.state == HITState.RUNNING}.foreach { hit =>
@@ -164,10 +164,10 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
       case _ => throw new Exception("Impossible error.")
     }
   }
-  def accept(t: Thunk) {
+  def accept(t: Thunk) : Unit = {
     t.question match {
       case mtq:MTurkQuestion => {
-        backend.approveAssignment(mtq.thunk_assnid_map(t), "Thanks!")
+        synchronized { backend.approveAssignment(mtq.thunk_assnid_map(t), "Thanks!") }
         t.state = SchedulerState.ACCEPTED
         t.answer match {
           case rba: RadioButtonAnswer => if (!rba.paid) {
@@ -190,10 +190,10 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
       case _ => throw new Exception("Impossible error.")
     }
   }
-  def reject(t: Thunk) {
+  def reject(t: Thunk) : Unit = {
     t.question match {
       case mtq:MTurkQuestion => {
-        backend.rejectAssignment(mtq.thunk_assnid_map(t), "Your answer is incorrect with a probability >" + confidence + ".")
+        synchronized { backend.rejectAssignment(mtq.thunk_assnid_map(t), "Your answer is incorrect with a probability >" + confidence + ".") }
         t.state = SchedulerState.REJECTED
         t.answer match {
           case rba: RadioButtonAnswer => if (!rba.paid) {
@@ -222,14 +222,14 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     val hits = question.hits.filter{_.state == HITState.RUNNING}
 
     // start by granting qualifications
-    grant_qualification_requests(question, auquestion.blacklisted_workers, auquestion.id)
+    synchronized { grant_qualification_requests(question, auquestion.blacklisted_workers, auquestion.id) }
 
     // try grabbing something from each HIT
     hits.foreach { hit =>
       // get running thunks for each HIT
       val hts = Queue[Thunk]()
       hts ++= question.hit_thunk_map(hit).filter{_.state == SchedulerState.RUNNING}
-      val assignments = hit.retrieve(backend)
+      val assignments = synchronized { hit.retrieve(backend) }
 
       Utilities.DebugLog("There are " + assignments.size + " assignments available to process.", LogLevel.INFO, LogType.ADAPTER, auquestion.id)
 
@@ -254,14 +254,14 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
       hit.state = HITState.RESOLVED
     }
   }
-  def process_timeouts(hit: AutomanHIT, ts: List[Thunk]) {
+  def process_timeouts(hit: AutomanHIT, ts: List[Thunk]) = {
     var hitcancelled = false
     ts.filter{_.is_timedout}.foreach { t =>
       Utilities.DebugLog("HIT TIMED OUT.", LogLevel.WARN, LogType.ADAPTER, hit.id)
       t.state = SchedulerState.TIMEOUT
       if (!hitcancelled) {
         Utilities.DebugLog("Force-expiring HIT.", LogLevel.WARN, LogType.ADAPTER, hit.id)
-        hit.cancel(backend)
+        synchronized { hit.cancel(backend) }
         hitcancelled = true
       }
     }
@@ -285,7 +285,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     t.answer.custom_info = Some(new MTurkAnswerCustomInfo(a.getAssignmentId, hit_id).toString)
   }
 
-  def dequalify_worker(q: MTurkQuestion, worker_id: String, question_id: UUID) {
+  def dequalify_worker(q: MTurkQuestion, worker_id: String, question_id: UUID) : Unit = synchronized {
     // grant dequalification Qualification
     // AMT checks whether worker's assigned value == 1; if so, not allowed
     if (q.worker_is_qualified(q.dequalification.getQualificationTypeId, worker_id)) {
@@ -299,7 +299,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
       q.qualify_worker(q.dequalification.getQualificationTypeId, worker_id)
     }
   }
-  def grant_qualification_requests(q: MTurkQuestion, blacklisted_workers: List[String], question_id: UUID) {
+  def grant_qualification_requests(q: MTurkQuestion, blacklisted_workers: List[String], question_id: UUID) : Unit = synchronized {
     // get all requests for all qualifications on this HIT
     val qrs = q.qualifications.map { qual =>
       backend.getAllQualificationRequests(qual.getQualificationTypeId)
@@ -343,7 +343,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
 
   def access_key_id: String = _access_key_id match { case Some(id) => id; case None => "" }
   def access_key_id_=(id: String) { _access_key_id = Some(id) }
-  def get_budget_from_backend(): BigDecimal = {
+  def get_budget_from_backend(): BigDecimal = synchronized {
     _service match {
       case Some(s) => {
         _budget = s.getAccountBalance
@@ -380,7 +380,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     case Some(s) => s
     case None => throw new MTurkAdapterNotInitialized("MTurkAdapter must be initialized before attempting to communicate.")
   }
-  def toClientConfig : ClientConfig = {
+  def toClientConfig : ClientConfig = synchronized {
     import scala.collection.JavaConversions
 
     val _config = new ClientConfig

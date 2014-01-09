@@ -11,7 +11,7 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
   _manager.migrate(classOf[RadioButtonAnswerMemo], classOf[CheckboxAnswerMemo], classOf[FreeTextAnswerMemo])
 
   // returns all of the stored answers for a question with a given memo_hash
-  def checkDB[Q <: Question](q: Q, dual: Boolean) : List[Answer] = {
+  def checkDB[Q <: Question](q: Q, dual: Boolean) : List[Answer] = synchronized {
     q match {
       case rbq: RadioButtonQuestion => {
         if (!dual) { // There are never any RadioButton duals
@@ -50,7 +50,7 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
     }
   }
 
-  def writeAnswer[A <: Answer, Q <: Question](q: Q, a: A, is_dual: Boolean) {
+  def writeAnswer[A <: Answer, Q <: Question](q: Q, a: A, is_dual: Boolean) : Unit = synchronized {
     a match {
       case rba: RadioButtonAnswer => {
         if (!is_dual) {
@@ -87,7 +87,7 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
     }
   }
 
-  def deleteAll[Q <: Question](q: Q) {
+  def deleteAll[Q <: Question](q: Q) : Unit = synchronized {
     q match {
       case rbq: RadioButtonQuestion => {
         val e = _manager.find[RadioButtonAnswerMemo,java.lang.Integer](classOf[RadioButtonAnswerMemo], "memoHash = ?", rbq.memo_hash(false))
