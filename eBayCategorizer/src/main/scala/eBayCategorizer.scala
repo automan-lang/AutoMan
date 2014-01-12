@@ -5,11 +5,8 @@ import edu.umass.cs.automan.core.Utilities
 import edu.umass.cs.automan.adapters.MTurk.question.MTQuestionOption
 import com.ebay.sdk._
 import com.ebay.sdk.call._
-import scala.collection.JavaConverters._
 import com.ebay.soap.eBLBaseComponents.{DetailLevelCodeType, SiteCodeType, CategoryType}
 import scala.collection.mutable
-import edu.umass.cs.automan.core.answer.RadioButtonAnswer
-import scala.actors.Future
 
 object eBayCategorizer extends App {
   val opts = my_optparse(args, "eBayCategorizer")
@@ -27,6 +24,9 @@ object eBayCategorizer extends App {
 
   // get product images from disk
   val files = new java.io.File(opts('imagedir)).listFiles
+
+  // upload to S3
+  val image_urls = files.map { file => UploadImageToS3(file) }
 
   // array that says whether categorization is done
   val catdone = Array.fill[Boolean](files.size)(false)
@@ -47,11 +47,14 @@ object eBayCategorizer extends App {
     taxonomy_choices.foreach { catset => catset.foreach { cat => answer_key += (new Symbol(cat.name) -> cat) } }
 
     // for each not-done product, launch a classification
-    // task using the taxonomy_choices & block until done
+    // task using the taxonomy_choices & block until done;
+    // for done tasks, just propagate the leaf symbol from
+    // the previous step
     val results: Array[Symbol] = (0 until files.size).par.map { i =>
       if (!catdone(i)) {
+        // Run the classifier
         // the "()" and ".value" extract the value from the Future and RadioButtonAnswer respectively
-        Classify(files(i).toString, GetOptions(taxonomy_choices(i)))().value
+        Classify(image_urls(i), GetOptions(taxonomy_choices(i)))().value
       } else {
         new Symbol(product_taxonomies(i).head.id)
       }
@@ -69,15 +72,21 @@ object eBayCategorizer extends App {
 
   println("Done.")
 
+  def UploadImageToS3(image_file: java.io.File) : String = {
+    // TODO: this is just a stub for now
+    image_file.toString
+  }
+
   def GetOptions(choices: Set[CatNode]) : List[MTQuestionOption] = {
     choices.toList.map { node => new MTQuestionOption(new Symbol(node.id), node.name, "") }
   }
 
   def AllDone(completion_arr: Array[Boolean]) = completion_arr.foldLeft(true)((acc, tval) => acc && tval)
 
-  def Classify(image_path: String, options: List[MTQuestionOption]) = a.RadioButtonQuestion { q =>
+  def Classify(image_url: String, options: List[MTQuestionOption]) = a.RadioButtonQuestion { q =>
     q.title = "Please choose the appropriate category for this image"
     q.text = "Please choose the appropriate category for this image"
+    q.image_url = image_url
     q.options = a.Option('none, "None of these categories apply.") :: options
   }
 
