@@ -14,7 +14,7 @@ import scala.collection.JavaConversions._
 object eBayCategorizer extends App {
   val opts = my_optparse(args, "eBayCategorizer")
   val ebay_soap = "https://api.ebay.com/wsapi"
-  val bucket_name = "DBarowyEBayCategorizer"
+  val bucket_name = "dbarowyebaycategorizer"
 
   // init AutoMan for MTurk
   val a = MTurkAdapter { mt =>
