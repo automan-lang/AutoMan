@@ -7,10 +7,12 @@ import com.ebay.sdk._
 import com.ebay.sdk.call._
 import com.ebay.soap.eBLBaseComponents.{DetailLevelCodeType, SiteCodeType, CategoryType}
 import scala.collection.mutable
+import com.amazonaws.services.s3.AmazonS3Client
 
 object eBayCategorizer extends App {
   val opts = my_optparse(args, "eBayCategorizer")
   val ebay_soap = "https://api.ebay.com/wsapi"
+  val bucket_name = "DBarowyEBayCategorizer"
 
   // init AutoMan for MTurk
   val a = MTurkAdapter { mt =>
@@ -26,7 +28,8 @@ object eBayCategorizer extends App {
   val files = new java.io.File(opts('imagedir)).listFiles
 
   // upload to S3
-  val image_urls = files.map { file => UploadImageToS3(file) }
+  val s3client: AmazonS3Client = init_s3()
+  val image_urls = files.map { file => UploadImageToS3(s3client, file) }
 
   // array that says whether categorization is done
   val catdone = Array.fill[Boolean](files.size)(false)
@@ -44,7 +47,7 @@ object eBayCategorizer extends App {
     val answer_key = mutable.Map[Symbol,CatNode]()
 
     // insert each taxonomy choice into the answer key
-    taxonomy_choices.foreach { catset => catset.foreach { cat => answer_key += (new Symbol(cat.name) -> cat) } }
+    taxonomy_choices.foreach { catset => catset.foreach { cat => answer_key += (Symbol(cat.name) -> cat) } }
 
     // for each not-done product, launch a classification
     // task using the taxonomy_choices & block until done;
@@ -56,7 +59,7 @@ object eBayCategorizer extends App {
         // the "()" and ".value" extract the value from the Future and RadioButtonAnswer respectively
         Classify(image_urls(i), GetOptions(taxonomy_choices(i)))().value
       } else {
-        new Symbol(product_taxonomies(i).head.id)
+        Symbol(product_taxonomies(i).head.id)
       }
     }.toArray
 
@@ -72,16 +75,35 @@ object eBayCategorizer extends App {
 
   println("Done.")
 
-  def UploadImageToS3(image_file: java.io.File) : String = {
-    // TODO: this is just a stub for now
-    image_file.toString
+  private def init_s3() : AmazonS3Client = {
+    import com.amazonaws.auth.BasicAWSCredentials
+
+    val awsAccessKey = opts('key)
+    val awsSecretKey = opts('secret)
+    val c = new BasicAWSCredentials(awsAccessKey, awsSecretKey)
+    val s3 = new AmazonS3Client(c)
+    s3.createBucket(bucket_name)
+    s3
   }
 
-  def GetOptions(choices: Set[CatNode]) : List[MTQuestionOption] = {
-    choices.toList.map { node => new MTQuestionOption(new Symbol(node.id), node.name, "") }
+  private def UploadImageToS3(s3client: AmazonS3Client, image_file: java.io.File) : String = {
+    import java.util.Calendar
+    import com.amazonaws.services.s3.model.{PutObjectRequest, CannedAccessControlList}
+
+    // upload
+    s3client.putObject(new PutObjectRequest(bucket_name, image_file.getName, image_file).withCannedAcl(CannedAccessControlList.PublicRead))
+
+    // allow public read access
+    val cal = Calendar.getInstance()
+    cal.add(Calendar.WEEK_OF_YEAR, 2)
+    s3client.generatePresignedUrl(bucket_name, image_file.getName, cal.getTime).toString
   }
 
-  def AllDone(completion_arr: Array[Boolean]) = completion_arr.foldLeft(true)((acc, tval) => acc && tval)
+  private def GetOptions(choices: Set[CatNode]) : List[MTQuestionOption] = {
+    choices.toList.map { node => new MTQuestionOption(Symbol(node.id), node.name, "") }
+  }
+
+  private def AllDone(completion_arr: Array[Boolean]) = completion_arr.foldLeft(true)((acc, tval) => acc && tval)
 
   def Classify(image_url: String, options: List[MTQuestionOption]) = a.RadioButtonQuestion { q =>
     q.title = "Please choose the appropriate category for this image"
