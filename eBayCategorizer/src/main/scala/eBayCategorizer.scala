@@ -26,6 +26,9 @@ object eBayCategorizer extends App {
   // query eBay for product taxonomy
   val root_categories = GetAllEBayCategories()
 
+  // a special CatNode
+  val none = CatNode("none", "None of these categories apply.", Set.empty)
+
   // get product images from disk
   val files = new java.io.File(opts('imagedir)).listFiles
 
@@ -50,9 +53,10 @@ object eBayCategorizer extends App {
   while(!AllDone(catdone)) {
     // make a map from answer symbols back to CatNodes
     val answer_key = mutable.Map[Symbol,CatNode]()
+    answer_key += (Symbol("none") -> CatNode("none", "None of these categories apply.", Set.empty))
 
     // insert each taxonomy choice into the answer key
-    taxonomy_choices.foreach { catset => catset.foreach { cat => answer_key += (Symbol(cat.name) -> cat) } }
+    taxonomy_choices.foreach { catset => catset.foreach { cat => answer_key += (Symbol(cat.id) -> cat) } }
 
     // for each not-done product, launch a classification
     // task using the taxonomy_choices & block until done;
@@ -69,17 +73,16 @@ object eBayCategorizer extends App {
       }
     }.toArray
 
-    // update product taxonomies
-    (0 until files.size).foreach { i => if (!catdone(i)) product_taxonomies(i) = answer_key(results(i)._1) :: product_taxonomies(i) }
-
-    // update confidence values
-    (0 until files.size).foreach { i => if (!catdone(i)) product_confidences(i) = results(i)._2 :: product_confidences(i) }
-
-    // update catdone
-    (0 until files.size).foreach { i => catdone(i) = answer_key(results(i)._1).is_leaf }
-
-    // get the next set of choices
-    (0 until files.size).foreach { i => if (!catdone(i)) taxonomy_choices(i) = answer_key(results(i)._1).Children }
+    (0 until files.size).foreach { i => if (!catdone(i)) {
+      // update product taxonomies
+      product_taxonomies(i) = answer_key(results(i)._1) :: product_taxonomies(i)
+      // update confidence values
+      product_confidences(i) = results(i)._2 :: product_confidences(i)
+      // update catdone
+      catdone(i) = answer_key(results(i)._1).is_leaf
+      // get the next set of choices
+      taxonomy_choices(i) = answer_key(results(i)._1).Children
+    } }
   }
 
   // print output
@@ -131,7 +134,7 @@ object eBayCategorizer extends App {
   }
 
   private def GetOptions(choices: Set[CatNode]) : List[MTQuestionOption] = {
-    choices.toList.map { node => new MTQuestionOption(Symbol(node.id), node.name, "") }
+    new MTQuestionOption(Symbol(none.id), none.name, "") :: choices.toList.map { node => new MTQuestionOption(Symbol(node.id), node.name, "") }
   }
 
   private def AllDone(completion_arr: Array[Boolean]) = completion_arr.foldLeft(true)((acc, tval) => acc && tval)
@@ -140,7 +143,7 @@ object eBayCategorizer extends App {
     q.title = "Please choose the appropriate category for this image"
     q.text = "Please choose the appropriate category for this image"
     q.image_url = image_url
-    q.options = a.Option('none, "None of these categories apply.") :: options
+    q.options = options
   }
 
   private def my_optparse(args: Array[String], invoked_as_name: String) : Utilities.OptionMap = {
