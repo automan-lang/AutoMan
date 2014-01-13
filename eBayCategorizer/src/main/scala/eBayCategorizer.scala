@@ -148,6 +148,7 @@ object eBayCategorizer extends App {
     q.text = "Please choose the appropriate category for this image"
     q.image_url = image_url
     q.options = options
+    q.worker_timeout_in_s = 60
   }
 
   private def my_optparse(args: Array[String], invoked_as_name: String) : Utilities.OptionMap = {
