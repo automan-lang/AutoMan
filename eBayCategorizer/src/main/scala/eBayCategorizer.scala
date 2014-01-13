@@ -87,11 +87,15 @@ object eBayCategorizer extends App {
 
   // print output
   (0 until files.size).foreach { i => println("For file \"" + files(i).toString() +
-                                              "\": " + product_taxonomies(i).reverse.toString() +
-                                              ", confidence = " + product_confidences(i).mkString("+") +
+                                              "\": " + pretty_print_taxonomy(product_taxonomies(i)) +
+                                              ", confidence = " + product_confidences(i).mkString(" * ") +
                                               " = " + product_confidences(i).reduceLeft((acc,c) => acc * c).toString())}
 
   println("Done.")
+
+  private def pretty_print_taxonomy(tax: List[CatNode]) : String = {
+    tax.reverse.map { cn => cn.name}.mkString(" > ")
+  }
 
   private def init_s3() : AmazonS3Client = {
     import com.amazonaws.auth.BasicAWSCredentials
