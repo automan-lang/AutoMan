@@ -8,6 +8,8 @@ import com.ebay.sdk.call._
 import com.ebay.soap.eBLBaseComponents.{DetailLevelCodeType, SiteCodeType, CategoryType}
 import scala.collection.mutable
 import com.amazonaws.services.s3.AmazonS3Client
+import com.amazonaws.services.s3.model.S3ObjectSummary
+import scala.collection.JavaConversions._
 
 object eBayCategorizer extends App {
   val opts = my_optparse(args, "eBayCategorizer")
@@ -38,6 +40,9 @@ object eBayCategorizer extends App {
   // the head of the list is the LAST CATEGORY FOUND
   val product_taxonomies = Array.fill[List[CatNode]](files.size)(List.empty)
 
+  // confidence values
+  val product_confidences = Array.fill[List[Double]](files.size)(List.empty)
+
   // array that stores all of the next choices
   // initialized with the product root categories
   val taxonomy_choices = Array.fill[Set[CatNode]](files.size)(root_categories)
@@ -53,25 +58,35 @@ object eBayCategorizer extends App {
     // task using the taxonomy_choices & block until done;
     // for done tasks, just propagate the leaf symbol from
     // the previous step
-    val results: Array[Symbol] = (0 until files.size).par.map { i =>
+    val results: Array[(Symbol, Double)] = (0 until files.size).par.map { i =>
       if (!catdone(i)) {
         // Run the classifier
+        val f = Classify(image_urls(i), GetOptions(taxonomy_choices(i)))
         // the "()" and ".value" extract the value from the Future and RadioButtonAnswer respectively
-        Classify(image_urls(i), GetOptions(taxonomy_choices(i)))().value
+        (f().value, f().confidence)
       } else {
-        Symbol(product_taxonomies(i).head.id)
+        (Symbol(product_taxonomies(i).head.id), 1.0)
       }
     }.toArray
 
     // update product taxonomies
-    (0 until files.size).foreach { i => if (!catdone(i)) product_taxonomies(i) = answer_key(results(i)) :: product_taxonomies(i) }
+    (0 until files.size).foreach { i => if (!catdone(i)) product_taxonomies(i) = answer_key(results(i)._1) :: product_taxonomies(i) }
+
+    // update confidence values
+    (0 until files.size).foreach { i => if (!catdone(i)) product_confidences(i) = results(i)._2 :: product_confidences(i) }
 
     // update catdone
-    (0 until files.size).foreach { i => catdone(i) = answer_key(results(i)).is_leaf }
+    (0 until files.size).foreach { i => catdone(i) = answer_key(results(i)._1).is_leaf }
 
     // get the next set of choices
-    (0 until files.size).foreach { i => if (!catdone(i)) taxonomy_choices(i) = answer_key(results(i)).Children }
+    (0 until files.size).foreach { i => if (!catdone(i)) taxonomy_choices(i) = answer_key(results(i)._1).Children }
   }
+
+  // print output
+  (0 until files.size).foreach { i => println("For file \"" + files(i).toString() +
+                                              "\": " + product_taxonomies(i).reverse.toString() +
+                                              ", confidence = " + product_confidences(i).mkString("+") +
+                                              " = " + product_confidences(i).reduceLeft((acc,c) => acc * c).toString())}
 
   println("Done.")
 
@@ -82,9 +97,25 @@ object eBayCategorizer extends App {
     val awsSecretKey = opts('secret)
     val c = new BasicAWSCredentials(awsAccessKey, awsSecretKey)
     val s3 = new AmazonS3Client(c)
+
+    // delete bucket and all of its contents before recreating
+    if (s3.doesBucketExist(bucket_name)) {
+      val files: java.util.List[S3ObjectSummary] = s3.listObjects(bucket_name).getObjectSummaries
+      for (file <- files) {
+        s3.deleteObject(bucket_name, file.getKey)
+      }
+      s3.deleteBucket(bucket_name)
+    }
+
+    // create
     s3.createBucket(bucket_name)
     s3
   }
+
+//  void deleteObjectsInFolder(String bucketName, String folderPath) {
+//    for (S3ObjectSummary file : s3.listObjects(bucketName, folderPath).getObjectSummaries())
+//    s3.deleteObject(bucketName, file.getKey())
+//  }
 
   private def UploadImageToS3(s3client: AmazonS3Client, image_file: java.io.File) : String = {
     import java.util.Calendar
@@ -200,7 +231,7 @@ object eBayCategorizer extends App {
           // is this category a root?
           if (cat.getCategoryLevel == 1) {
             // add to _roots
-            val cn = CatNode(id, cat.getCategoryName, false, Set.empty)
+            val cn = CatNode(id, cat.getCategoryName, Set.empty)
             _roots += cn
             cn_opt = Some(cn)
           // if not, add parents
@@ -210,7 +241,7 @@ object eBayCategorizer extends App {
               parents.add(Add(_catids(parent)))
             }
 
-            cn_opt = Some(CatNode(id, cat.getCategoryName, cat.isLeafCategory, parents.toSet))
+            cn_opt = Some(CatNode(id, cat.getCategoryName, parents.toSet))
           }
         }
 
@@ -283,9 +314,10 @@ object eBayCategorizer extends App {
     catobj.GetGraph
   }
 
-  case class CatNode(id: String, name: String, is_leaf: Boolean, parent: Set[CatNode]) {
+  case class CatNode(id: String, name: String, parent: Set[CatNode]) {
     val _children = mutable.Set[CatNode]()
     def addChild(child: CatNode) = _children.add(child)
     def Children = _children.toSet
+    def is_leaf = _children.size == 0
   }
 }
