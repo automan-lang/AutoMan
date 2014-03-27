@@ -15,12 +15,14 @@ object eBayCategorizer extends App {
   val opts = my_optparse(args, "eBayCategorizer")
   val ebay_soap = "https://api.ebay.com/wsapi"
   val bucket_name = "dbarowyebaycategorizer"
+  val max_choices = 5
 
   // init AutoMan for MTurk
   val a = MTurkAdapter { mt =>
     mt.access_key_id = opts('key)
     mt.secret_access_key = opts('secret)
     mt.sandbox_mode = opts('sandbox).toBoolean
+    mt.budget = 75.00
   }
 
   // query eBay for product taxonomy
@@ -45,6 +47,13 @@ object eBayCategorizer extends App {
 
   // confidence values
   val product_confidences = Array.fill[List[Double]](files.size)(List.empty)
+
+  // if there are more than max_choices, split choices into batches
+  // 'none for a batch means "try the next batch"; 'none for a non-batch means
+  // "answer not found"
+  // first Int = number of choices in batch
+  // first Int = offset into taxonomy_choices
+//  val taxonomy_batches = Array.fill[(Int,Int)](files.size)((root_categories.size / max_choices, 0))
 
   // array that stores all of the next choices
   // initialized with the product root categories
@@ -149,6 +158,7 @@ object eBayCategorizer extends App {
     q.image_url = image_url
     q.options = options
     q.worker_timeout_in_s = 60
+    q.dont_reject = true
   }
 
   private def my_optparse(args: Array[String], invoked_as_name: String) : Utilities.OptionMap = {
