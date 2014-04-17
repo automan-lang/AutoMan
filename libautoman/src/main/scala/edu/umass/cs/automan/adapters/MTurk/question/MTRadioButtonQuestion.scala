@@ -2,7 +2,8 @@ package edu.umass.cs.automan.adapters.MTurk.question
 
 import edu.umass.cs.automan.core.answer.RadioButtonAnswer
 import edu.umass.cs.automan.adapters.MTurk.{AutomanHIT, MTurkAdapter}
-import actors.Future
+import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global
 import edu.umass.cs.automan.core.question.{QuestionOption, RadioButtonQuestion}
 import edu.umass.cs.automan.core.scheduler.Thunk
 import com.amazonaws.mturk.requester.Assignment

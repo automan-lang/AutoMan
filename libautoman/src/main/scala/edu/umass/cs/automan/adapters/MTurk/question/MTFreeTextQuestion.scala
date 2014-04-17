@@ -1,14 +1,16 @@
 package edu.umass.cs.automan.adapters.MTurk.question
 
+import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.matching.Regex
 import edu.umass.cs.automan.adapters.MTurk.{AutomanHIT, MTurkAdapter}
-import actors.Future
 import edu.umass.cs.automan.core.scheduler.Thunk
 import com.amazonaws.mturk.requester.Assignment
 import xml.XML
 import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
 import edu.umass.cs.automan.core.question.{FreeTextQuestion, RadioButtonQuestion}
-import util.matching.Regex
+
 import edu.umass.cs.automan.core.answer.{FreeTextAnswer, RadioButtonAnswer}
 import edu.umass.cs.automan.core.strategy.PictureClause
 import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
