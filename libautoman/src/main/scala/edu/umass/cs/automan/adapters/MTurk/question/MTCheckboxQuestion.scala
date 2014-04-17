@@ -1,7 +1,8 @@
 package edu.umass.cs.automan.adapters.MTurk.question
 
 import edu.umass.cs.automan.core.question._
-import actors.Future
+import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global
 import edu.umass.cs.automan.core.answer.CheckboxAnswer
 import java.util.UUID
 import xml.XML

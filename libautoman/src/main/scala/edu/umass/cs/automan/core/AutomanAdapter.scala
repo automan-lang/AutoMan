@@ -4,7 +4,8 @@ import answer._
 import edu.umass.cs.automan.core.question._
 import java.util.Locale
 import java.text.NumberFormat
-import actors.Future
+import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global
 import memoizer.{ThunkLogger, AutomanMemoizer}
 import scheduler.Thunk
 import strategy._

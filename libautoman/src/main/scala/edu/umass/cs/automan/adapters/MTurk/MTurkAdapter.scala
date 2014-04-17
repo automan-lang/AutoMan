@@ -3,8 +3,8 @@ package edu.umass.cs.automan.adapters.MTurk
 import com.amazonaws.mturk.util.ClientConfig
 import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.core.question._
-import actors.Future
-import actors.Futures._
+import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global
 import edu.umass.cs.automan.core.strategy.ValidationStrategy
 import memoizer.MTurkAnswerCustomInfo
 import question._
