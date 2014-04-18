@@ -8,3 +8,7 @@
 jars
 out
 tmp
+target/
+AutomanMemoDB/
+ThunkLogDB/
+derby.log

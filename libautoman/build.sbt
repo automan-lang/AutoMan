@@ -2,7 +2,7 @@ name := "automan"
 
 version := "0.3"
 
-scalaVersion := "2.10.4"
+scalaVersion := Common.ScalaVersion
 
 exportJars := true
 
