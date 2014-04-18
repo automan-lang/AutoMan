@@ -1,4 +1,4 @@
-name := "AutoMan"
+name := "automan"
 
 version := "0.3"
 

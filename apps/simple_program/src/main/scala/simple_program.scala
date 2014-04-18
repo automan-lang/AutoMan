@@ -1,5 +1,7 @@
 import edu.umass.cs.automan.adapters.MTurk._
 import edu.umass.cs.automan.core.Utilities
+import scala.concurrent._
+import scala.concurrent.duration._
 
 object simple_program extends App {
   val opts = Utilities.unsafe_optparse(args, "simple_program.jar")
@@ -20,12 +22,12 @@ object simple_program extends App {
       a.Option('cookie, "Cookie Monster"),
       a.Option('count, "The Count")
     )
-    q.question_timeout_multiplier = 20
   }
 
-  val wo_future = which_one("Which one of these does not belong?")
-  println("answer1 is a " + wo_future())
-  if (wo_future().over_budget) {
+  val future_answer = which_one("Which one of these does not belong?")
+  val answer = Await.result(future_answer, Duration.Inf)
+  println("answer1 is a " + answer)
+  if (answer.over_budget) {
     println("Over budget!")
   }
 }
