@@ -6,6 +6,7 @@ import java.io.File
 import scala.concurrent._
 import scala.concurrent.duration._
 import java.util.UUID
+import net.ettinsmoor.Bingerator
 
 object HowManyThings extends App {
 	// random bucket name
@@ -34,7 +35,7 @@ object HowManyThings extends App {
 	val results = new Bingerator(opts('key)).SearchImages(args(0))
 
   // download each image
-  val images = results.map(_.getImage())
+  val images = results.map(_.getImage)
 
   // resize each image
   val scaled = images.map(resize(_))
@@ -115,9 +116,11 @@ object HowManyThings extends App {
 		import java.io.InputStream
 		import java.util.Properties
 		
+		val file = new FileInputStream("HowManyThings.properties")
+		
 		try {
-			val file = new FileInputStream("HowManyThings.properties")
 			val prop = new Properties()
+			prop.load(file)
 			
 			val key = prop.getProperty("AWSKey")
 			val secret = prop.getProperty("AWSSecret")
@@ -141,7 +144,7 @@ object HowManyThings extends App {
 				  'sandbox -> prop.getProperty("SandboxMode"),
 				  'bingkey -> prop.getProperty("BingKey")) 
 		} finally {
-			file.Close()
+			file.close()
 		}
 	}
 }
