@@ -3,9 +3,16 @@ import edu.umass.cs.automan.adapters.MTurk.MTurkAdapter
 import edu.umass.cs.automan.core.Utilities
 import java.awt.image.BufferedImage
 import java.io.File
+import scala.concurrent._
+import scala.concurrent.duration._
+import java.util.UUID
 
 object HowManyThings extends App {
-  val opts = Utilities.unsafe_optparse(args, "HowManyThings.jar")
+	// random bucket name
+	val bucketname = UUID.randomUUID().toString
+	
+	// read configuration
+	val opts = loadProps()
 
   val a = MTurkAdapter { mt =>
     mt.access_key_id = opts('key)
@@ -24,16 +31,16 @@ object HowManyThings extends App {
   }
 
   // Search for a bunch of images
-  val urls = get_urls(args(0))
+	val results = new Bingerator(opts('key)).SearchImages(args(0))
 
   // download each image
-  val images = urls.map(download_image(_))
+  val images = results.map(_.getImage())
 
   // resize each image
   val scaled = images.map(resize(_))
 
   // store each image in S3
-  val s3client = init_s3("key", "secret")
+  val s3client = init_s3(opts('key), opts('secret))
   val s3_urls = scaled.map{ i => store_in_s3(i, s3client) }
 
   // ask humans for answers
@@ -42,8 +49,9 @@ object HowManyThings extends App {
   }
 
   // print answers
-  answers_urls.foreach { case(a,url) =>
-    println("url: " + url + ", answer: " + a().value)
+  answers_urls.foreach { case(f,url) =>
+	  val a = Await.result(f, Duration.Inf)
+    println("url: " + url + ", answer: " + a.value)
   }
 
   // helper functions
@@ -70,38 +78,14 @@ object HowManyThings extends App {
     outstr
   }
 
-  def download_image(u: String) : BufferedImage = {
-
-    import java.util.UUID
-    import java.net.URL
-    import org.apache.commons.io.FileUtils
-    import javax.imageio.ImageIO
-
-    new File("tmp").mkdir()
-    val f = new File("tmp/" + UUID.randomUUID().toString)
-    FileUtils.copyURLToFile(new URL(u), f)
-    ImageIO.read(f)
-  }
-
-  def get_urls(query: String): List[String] = {
-    import scala.collection.JavaConverters._
-    import gsearch._
-
-    val c: Client = new Client();
-    val results: List[Result] = (0 until 1).map { i =>
-      c.searchImagesByOffset(query, new java.lang.Integer(i * 8)).asScala.toList
-    }.toList.flatten
-    results.map { _.getUnescapedUrl }.distinct
-  }
-
   def store_in_s3(si: File, s3: AmazonS3Client) : String = {
     import java.util.Calendar
     import com.amazonaws.services.s3.model.{PutObjectRequest, CannedAccessControlList}
 
-    s3.putObject(new PutObjectRequest("foo", si.getName, si).withCannedAcl(CannedAccessControlList.PublicRead))
+    s3.putObject(new PutObjectRequest(bucketname, si.getName, si).withCannedAcl(CannedAccessControlList.PublicRead))
     val cal = Calendar.getInstance()
     cal.add(Calendar.WEEK_OF_YEAR, 2)
-    s3.generatePresignedUrl("foo", si.getName, cal.getTime).toString
+    s3.generatePresignedUrl(bucketname, si.getName, cal.getTime).toString
   }
 
   def init_s3(key: String, secret: String) : AmazonS3Client = {
@@ -111,13 +95,12 @@ object HowManyThings extends App {
     val awsSecretKey = secret;
     val c = new BasicAWSCredentials(awsAccessKey, awsSecretKey);
     val s3 = new AmazonS3Client(c)
-    s3.createBucket("foo");
+    s3.createBucket(bucketname);
     s3
   }
 
   def resize(i: BufferedImage): File = {
     import org.imgscalr.Scalr
-    import java.util.UUID
     import javax.imageio.ImageIO
 
     val f = new File("tmp/" + UUID.randomUUID().toString + "_scaled.jpg")
@@ -125,4 +108,40 @@ object HowManyThings extends App {
     ImageIO.write(si, "jpg", f)
     f
   }
+
+	def loadProps() : Map[Symbol,String] = {
+		import java.io.FileInputStream
+		import java.io.IOException
+		import java.io.InputStream
+		import java.util.Properties
+		
+		try {
+			val file = new FileInputStream("HowManyThings.properties")
+			val prop = new Properties()
+			
+			val key = prop.getProperty("AWSKey")
+			val secret = prop.getProperty("AWSSecret")
+			val sandbox = prop.getProperty("SandboxMode")
+			val bingkey = prop.getProperty("BingKey")
+			
+			if (key == null ||
+				  secret == null ||
+				  sandbox == null ||
+				  bingkey == null) {
+					println("Valid HowManyThings.properties keys:\n" +
+						      "AWSKey\t= [AWS key]\n" +
+						      "AWSSecret\t= [AWS secret key]\n" +
+						      "BingKey\t= [Bing key]\n" +
+						      "SandboxMode\t= [true/false]\n")
+					System.exit(1)
+				}
+			
+			Map('key -> prop.getProperty("AWSKey"),
+				  'secret -> prop.getProperty("AWSSecret"),
+				  'sandbox -> prop.getProperty("SandboxMode"),
+				  'bingkey -> prop.getProperty("BingKey")) 
+		} finally {
+			file.Close()
+		}
+	}
 }

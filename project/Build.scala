@@ -6,9 +6,6 @@ object Common {
 }
 
 object HelloBuild extends Build {
-    lazy val root = Project(id = "all",
-                            base = file(".")) aggregate(automan, simple_program, HowManyThings)
-
     lazy val automan = Project(id = "automan",
                            		 base = file("libautoman"))
 
