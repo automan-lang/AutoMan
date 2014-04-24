@@ -1,6 +1,5 @@
 import com.amazonaws.services.s3.AmazonS3Client
 import edu.umass.cs.automan.adapters.MTurk.MTurkAdapter
-import edu.umass.cs.automan.core.Utilities
 import java.awt.image.BufferedImage
 import java.io.File
 import scala.concurrent._
@@ -13,7 +12,7 @@ object HowManyThings extends App {
 	val bucketname = UUID.randomUUID().toString
 	
 	// read configuration
-	val opts = loadProps()
+	val opts = config(args)
 
   val a = MTurkAdapter { mt =>
     mt.access_key_id = opts('key)
@@ -32,7 +31,7 @@ object HowManyThings extends App {
   }
 
   // Search for a bunch of images
-	val results = new Bingerator(opts('key)).SearchImages(args(0))
+	val results = new Bingerator(opts('bingkey)).SearchImages(args(0))
 
   // download each image
   val images = results.map(_.getImage)
@@ -92,11 +91,11 @@ object HowManyThings extends App {
   def init_s3(key: String, secret: String) : AmazonS3Client = {
     import com.amazonaws.auth.BasicAWSCredentials
 
-    val awsAccessKey = key;
-    val awsSecretKey = secret;
-    val c = new BasicAWSCredentials(awsAccessKey, awsSecretKey);
+    val awsAccessKey = key
+    val awsSecretKey = secret
+    val c = new BasicAWSCredentials(awsAccessKey, awsSecretKey)
     val s3 = new AmazonS3Client(c)
-    s3.createBucket(bucketname);
+    s3.createBucket(bucketname)
     s3
   }
 
@@ -104,47 +103,63 @@ object HowManyThings extends App {
     import org.imgscalr.Scalr
     import javax.imageio.ImageIO
 
-    val f = new File("tmp/" + UUID.randomUUID().toString + "_scaled.jpg")
+    val dir = new File("tmp")
+    if (!dir.exists()) { dir.mkdir() }
+
+    val f = new File(dir, UUID.randomUUID().toString + "_scaled.jpg")
     val si = Scalr.resize(i, 1000)
     ImageIO.write(si, "jpg", f)
     f
   }
 
-	def loadProps() : Map[Symbol,String] = {
+  def usage(exitCondition: Int) : Unit = {
+    println("Usage: HowManyThings [search term]")
+    println("You must also provide a file called " +
+            "\"HowManyThings.properties\"\ncontaining the " +
+            "following keys:\n" +
+            "AWSKey\t\t= [AWS key]\n" +
+            "AWSSecret\t= [AWS secret key]\n" +
+            "BingKey\t\t= [Bing key]\n" +
+            "SandboxMode\t= [true/false]\n")
+    System.exit(exitCondition)
+  }
+
+  def getProp(p: java.util.Properties, key: String) : String = {
+    val value = p.getProperty(key)
+    if (value == null) {
+      println("ERROR: key \"" + key + "\" must be set.")
+      usage(1)
+    }
+    value
+  }
+
+	def config(args: Array[String]) : Map[Symbol,String] = {
 		import java.io.FileInputStream
-		import java.io.IOException
-		import java.io.InputStream
 		import java.util.Properties
-		
-		val file = new FileInputStream("HowManyThings.properties")
-		
-		try {
-			val prop = new Properties()
-			prop.load(file)
-			
-			val key = prop.getProperty("AWSKey")
-			val secret = prop.getProperty("AWSSecret")
-			val sandbox = prop.getProperty("SandboxMode")
-			val bingkey = prop.getProperty("BingKey")
-			
-			if (key == null ||
-				  secret == null ||
-				  sandbox == null ||
-				  bingkey == null) {
-					println("Valid HowManyThings.properties keys:\n" +
-						      "AWSKey\t= [AWS key]\n" +
-						      "AWSSecret\t= [AWS secret key]\n" +
-						      "BingKey\t= [Bing key]\n" +
-						      "SandboxMode\t= [true/false]\n")
-					System.exit(1)
-				}
-			
-			Map('key -> prop.getProperty("AWSKey"),
-				  'secret -> prop.getProperty("AWSSecret"),
-				  'sandbox -> prop.getProperty("SandboxMode"),
-				  'bingkey -> prop.getProperty("BingKey")) 
-		} finally {
-			file.close()
-		}
+
+    if (args.length != 1) {
+      println("ERROR: A search term must be provided.")
+      usage(1)
+    }
+
+    try {
+      val file = new FileInputStream("HowManyThings.properties")
+      try {
+        val prop = new Properties()
+        prop.load(file)
+
+        Map('key -> getProp(prop, "AWSKey"),
+          'secret -> getProp(prop, "AWSSecret"),
+          'sandbox -> getProp(prop, "SandboxMode"),
+          'bingkey -> getProp(prop, "BingKey"))
+      } finally {
+        file.close()
+      }
+    } catch {
+      case e: java.io.FileNotFoundException => {
+        usage(1)
+        throw e
+      }
+    }
 	}
 }
