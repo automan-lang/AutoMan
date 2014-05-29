@@ -55,27 +55,35 @@ object HowManyThings extends App {
   }
 
   // helper functions
-  def getTinyURL(url: String): String = {
-    import java.io.{BufferedReader,InputStreamReader}
-    import org.apache.http.impl.client.DefaultHttpClient
-    import org.apache.http.client.methods.HttpGet
+  def getTinyURL(long_url: String) : String = {
+    import java.net.{URLConnection, URL}
+    import java.io.{BufferedReader,InputStream,InputStreamReader}
+    import java.net.URLEncoder
 
-    var outstr: String = ""
-    val htclient = new DefaultHttpClient()
-    val htget = new HttpGet("http://tinyurl.com/api-create.php?url=" + url)
-    val response = htclient.execute(htget)
-    val entity = response.getEntity
-    if (entity != null) {
-      val br = new BufferedReader(new InputStreamReader(entity.getContent))
-      var line: String = ""
-      do {
-        line = br.readLine()
-        if (line != null) {
-          outstr += line
-        }
-      } while (line != null)
+    // URLencode
+    val url_enc = URLEncoder.encode(long_url, "UTF-8")
+
+    val lurl = new URL("http://tinyurl.com/api-create.php?url=" + url_enc)
+
+    // init accumulator
+    val buf = new StringBuilder()
+
+    // issue query and get handle to results
+    val conn: URLConnection = lurl.openConnection()
+    val reader: BufferedReader = new BufferedReader(new InputStreamReader(conn.getInputStream()))
+
+    // read data into buffer
+    var inputLine: String = reader.readLine()
+    while (inputLine != null) {
+      buf.append(inputLine)
+      inputLine = reader.readLine()
     }
-    outstr
+
+    // close handle
+    reader.close()
+
+    // return URL
+    buf.toString()
   }
 
   def store_in_s3(si: File, s3: AmazonS3Client) : String = {

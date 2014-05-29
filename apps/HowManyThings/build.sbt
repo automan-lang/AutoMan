@@ -6,7 +6,9 @@ scalaVersion := Common.ScalaVersion
 
 exportJars := true
 
-libraryDependencies += "com.amazonaws" % "aws-java-sdk" % "1.7.5"
+//libraryDependencies += "com.amazonaws" % "aws-java-sdk" % "1.1.9"
+
+//libraryDependencies += "com.amazonaws" % "aws-java-sdk" % "1.7.5" exclude("org.apache.httpcomponents", "httpclient")
 
 libraryDependencies += "org.imgscalr" % "imgscalr-lib" % "4.2"
 
