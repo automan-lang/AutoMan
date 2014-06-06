@@ -5,7 +5,7 @@ object Common {
   def ScalaVersion = "2.10.4"
 }
 
-object HelloBuild extends Build {
+object AutoManBuild extends Build {
     lazy val automan = Project(id = "automan",
                            		 base = file("libautoman"))
 
