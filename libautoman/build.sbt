@@ -1,3 +1,7 @@
+import com.github.retronym.SbtOneJar._
+
+oneJarSettings
+
 name := "automan"
 
 version := "0.3"
@@ -20,4 +24,5 @@ libraryDependencies += "commons-httpclient" % "commons-httpclient" % "3.1"
 
 libraryDependencies += "log4j" % "log4j" % "1.2.17"
 
-net.virtualvoid.sbt.graph.Plugin.graphSettings
+//net.virtualvoid.sbt.graph.Plugin.graphSettings
+
