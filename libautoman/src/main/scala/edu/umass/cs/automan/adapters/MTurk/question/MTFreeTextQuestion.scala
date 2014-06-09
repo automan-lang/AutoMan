@@ -91,7 +91,7 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
           {
             // if formatted content is specified, use that instead of text field
             _formatted_content match {
-              case Some(x) => x
+              case Some(x) => scala.xml.PCData(x.toString)
               case None => <Text>{ text }</Text>
             }
           }
