@@ -12,15 +12,15 @@ trait MTurkQuestion {
   var hit_thunk_map = Map[AutomanHIT,List[Thunk]]()
   var thunk_assnid_map = Map[Thunk,String]() // maps thunks to assignment ids
   protected var _qualified_workers = Map[String,Set[String]]() // (QualificationTypeId -> Set[worker_id])
-  protected var _formatted_content: Option[scala.xml.Node] = None
+  protected var _formatted_content: Option[scala.xml.NodeSeq] = None
   protected var _hit_type_id: Option[String] = None
   protected var _keywords = List[String]()
   protected var _qualifications = List[QualificationRequirement]()
 
   def answer(a: Assignment, is_dual: Boolean): Answer
   def build_hit(ts: List[Thunk], is_dual: Boolean) : AutomanHIT
-  def formatted_content: Option[scala.xml.Node] = _formatted_content
-  def formatted_content_=(x: Option[scala.xml.Node]) { _formatted_content = x }
+  def formatted_content: scala.xml.NodeSeq = _formatted_content match { case Some(x) => x; case None => scala.xml.NodeSeq.Empty }
+  def formatted_content_=(x: scala.xml.NodeSeq) { _formatted_content = Some(x) }
   def hit_for_thunk(t: Thunk) : AutomanHIT = {
     var the_hit: AutomanHIT = null
     hits.foreach { h =>
