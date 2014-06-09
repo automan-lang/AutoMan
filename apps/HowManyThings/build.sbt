@@ -1,6 +1,12 @@
+packSettings
+
+packMain := Map("HowManyThings" -> "HowManyThings")
+
 name := "HowManyThings"
 
 version := "0.2"
+
+organization := "edu.umass.cs"
 
 scalaVersion := Common.ScalaVersion
 
