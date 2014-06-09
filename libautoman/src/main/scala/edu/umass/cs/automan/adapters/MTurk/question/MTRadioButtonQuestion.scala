@@ -91,7 +91,13 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
               case None => {}
             }
           }
-          <Text>{ text }</Text>
+          {
+          // if formatted content is specified, use that instead of text field
+            _formatted_content match {
+              case Some(x) => x
+              case None => <Text>{ text }</Text>
+            }
+          }
         </QuestionContent>
         <AnswerSpecification>
           <SelectionAnswer>

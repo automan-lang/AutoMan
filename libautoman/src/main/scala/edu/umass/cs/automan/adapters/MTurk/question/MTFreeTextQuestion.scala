@@ -74,21 +74,27 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
         <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
         <QuestionContent>
           {
-          _image_url match {
-            case Some(url) => {
-              <Binary>
-                <MimeType>
-                  <Type>image</Type>
-                  <SubType>png</SubType>
-                </MimeType>
-                <DataURL>{ url }</DataURL>
-                <AltText>{ image_alt_text }</AltText>
-              </Binary>
+            _image_url match {
+              case Some(url) => {
+                <Binary>
+                  <MimeType>
+                    <Type>image</Type>
+                    <SubType>png</SubType>
+                  </MimeType>
+                  <DataURL>{ url }</DataURL>
+                  <AltText>{ image_alt_text }</AltText>
+                </Binary>
+              }
+              case None => {}
             }
-            case None => {}
           }
+          {
+            // if formatted content is specified, use that instead of text field
+            _formatted_content match {
+              case Some(x) => x
+              case None => <Text>{ text }</Text>
+            }
           }
-          <Text>{ text }</Text>
         </QuestionContent>
         <AnswerSpecification>
           {
