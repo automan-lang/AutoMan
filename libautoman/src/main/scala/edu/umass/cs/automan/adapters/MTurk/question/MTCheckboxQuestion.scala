@@ -68,6 +68,7 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
     import edu.umass.cs.automan.core.Utilities
     Utilities.randomPermute(options)
   }
+  // TODO: we're getting rid of question duals, to be replaced with random checkbox pre-fill
   def toXML(is_dual: Boolean, randomize: Boolean) = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
       <Question>
@@ -88,7 +89,13 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
               case None => {}
             }
           }
-          <Text>{ if(is_dual) dual_text else text }</Text>
+          {
+            // if formatted content is specified, use that instead of text field
+            _formatted_content match {
+              case Some(x) => x
+              case None => <Text>{ text }</Text>
+            }
+          }
         </QuestionContent>
         <AnswerSpecification>
           <SelectionAnswer>
