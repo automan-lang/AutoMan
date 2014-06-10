@@ -139,11 +139,13 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
 
             // Retrieve queue
             lockDequeueAndProcess(_retrieve_queue, (rr: RetrieveReq) => {
-              // do request
-              _retrieved_data += (rr -> scheduled_retrieve(rr.ts))
+              rr.synchronized {
+                // do request
+                _retrieved_data += (rr -> scheduled_retrieve(rr.ts))
 
-              // send end-wait notification
-              rr.notifyAll()
+                // send end-wait notification
+                rr.notifyAll()
+              }
             })
 
             // Approve queue
@@ -160,7 +162,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
             Thread.sleep(SHUTDOWN_DELAY_MS)
             // if it's still empty, break
             ifWorkToBeDoneThen (() => {
-              Utilities.DebugLog("No remaining; shutting down thread.", LogLevel.INFO, LogType.ADAPTER, null)
+              Utilities.DebugLog("No work remains; shutting down thread.", LogLevel.INFO, LogType.ADAPTER, null)
               keep_running = false
               _worker_thread = None
             })(() => Unit )
@@ -406,8 +408,10 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     // while loop is because the JVM is
     // permitted to send spurious wakeups
     while(synchronized { !_retrieved_data.contains(req) }) {
-      Utilities.DebugLog("Answer from Adapter not available, putting Scheduler to sleep.", LogLevel.INFO, LogType.ADAPTER, null)
-      req.wait() // block until answer is available
+      req.synchronized {
+        Utilities.DebugLog("Answer from Adapter not available, putting Scheduler to sleep.", LogLevel.INFO, LogType.ADAPTER, null)
+        req.wait() // block until answer is available
+      }
     }
     // return response
     synchronized { _retrieved_data(req) }
