@@ -10,14 +10,11 @@ import memoizer.MTurkAnswerCustomInfo
 import question._
 import edu.umass.cs.automan.core.scheduler.{Scheduler, SchedulerState, Thunk}
 import edu.umass.cs.automan.core.{LogLevel, LogType, Utilities, retry, AutomanAdapter}
-import xml.XML
 import java.util.{UUID, Date}
 import com.amazonaws.mturk.requester._
 import scala.Predef._
 import collection.mutable.Queue
-import edu.umass.cs.automan.core.exception.OverBudgetException
 import edu.umass.cs.automan.core.answer.{FreeTextAnswer, Answer, RadioButtonAnswer, CheckboxAnswer}
-import org.apache.commons.httpclient.protocol.SecureProtocolSocketFactory
 
 object MTurkAdapter {
   def apply(init: MTurkAdapter => Unit) : MTurkAdapter = {
@@ -32,6 +29,11 @@ object MTurkAdapter {
 }
 
 class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuestion,MTFreeTextQuestion] {
+  private val SLEEP_MS = 1000
+  private case class EnqueuedHIT(ts: List[Thunk], dual: Boolean, exclude_worker_ids: List[String])
+  private case class RetrieveReq(ts: List[Thunk])
+  private case class BudgetReq()
+
   private var _access_key_id: Option[String] = None
   private var _poll_interval_in_s : Int = 30
   private var _retriable_errors = Set("Server.ServiceUnavailable")
@@ -40,6 +42,124 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
   private var _secret_access_key: Option[String] = None
   private var _service_url : String = ClientConfig.SANDBOX_SERVICE_URL
   private var _service : Option[RequesterService] = None
+
+  // work queues
+  private var _post_thread: Option[Thread] = None
+  private val _post_queue : Queue[EnqueuedHIT] = new Queue[EnqueuedHIT]()
+  private val _cancel_queue: Queue[Thunk] = new Queue[Thunk]()
+  private val _accept_queue: Queue[Thunk] = new Queue[Thunk]()
+  private val _retrieve_queue: Queue[RetrieveReq] = new Queue[RetrieveReq]()
+  private val _reject_queue: Queue[Thunk] = new Queue[Thunk]()
+
+  // response data
+  private val _retrieved_data = scala.collection.mutable.Map[RetrieveReq, List[Thunk]]()
+
+  private def workToBeDone: Boolean = {
+    _post_queue.synchronized {
+      _cancel_queue.synchronized {
+        _accept_queue.synchronized {
+          _retrieve_queue.synchronized {
+            _reject_queue.synchronized {
+              _post_queue.nonEmpty ||
+              _cancel_queue.nonEmpty ||
+              _accept_queue.nonEmpty ||
+              _retrieve_queue.nonEmpty ||
+              _reject_queue.nonEmpty
+            }
+          }
+        }
+      }
+    }
+  }
+  private def dequeueAndProcess[T](q: Queue[T], f: T => Unit) = {
+    syncCommWait { () =>
+      val t = q.synchronized {
+        if (q.nonEmpty) {
+          Some(q.dequeue())
+        } else {
+          None
+        }
+      }
+      t match {
+        case Some(t) => f(t)
+        case None => Unit
+      }
+    }
+  }
+  private def dequeueAllAndProcess[T](q: Queue[T], f: Seq[T] => Unit) = {
+    syncCommWait { () =>
+      val t = q.synchronized {
+        if (q.nonEmpty) {
+          Some(q.dequeueAll(t => true))
+        } else {
+          None
+        }
+      }
+      t match {
+        case Some(t) => f(t)
+        case None => Unit
+      }
+    }
+  }
+  // communication always syncs on 'this' adapter object
+  // so this methods prevents multiple requests from
+  // happening simultaneous
+  private def syncCommWait[T](f: () => T) : T = {
+    synchronized {
+      val t = f()
+      Thread.sleep(SLEEP_MS)
+      t
+    }
+  }
+  private def threadStart: Option[Thread] = {
+    // double-check that a thread has not been started
+    _post_thread match {
+      case Some(thread) => Some(thread)
+      case None => Some(new Thread(new Runnable() {
+        override def run() {
+          var keep_running = true
+          while (keep_running) {
+            if (workToBeDone) {
+              // Post queue
+              dequeueAndProcess(_post_queue, (eh: EnqueuedHIT) => scheduled_post(eh.ts, eh.dual, eh.exclude_worker_ids))
+
+              // Retrieve queue
+              dequeueAndProcess(_retrieve_queue, (rr: RetrieveReq) => {
+                // synch on request
+                rr.synchronized {
+                  // do request
+                  _retrieved_data.synchronized {
+                    _retrieved_data += (rr -> scheduled_retrieve(rr.ts))
+                  }
+
+                  // send end-wait notification
+                  rr.notifyAll()
+                }
+              })
+
+              // Approve queue
+              dequeueAndProcess(_accept_queue, (t: Thunk) => scheduled_accept(t))
+
+              // Reject queue
+              dequeueAndProcess(_reject_queue, (t: Thunk) => scheduled_reject(t))
+
+              // Cancel queue
+              dequeueAndProcess(_cancel_queue, (t: Thunk) => scheduled_cancel(t))
+
+            } else {
+              // sleep a bit to avoid unnecessary thread startup churn
+              Thread.sleep(SLEEP_MS)
+              // if it's still empty, break
+              if (workToBeDone) {
+                keep_running = false
+              }
+            }
+          }
+          // exit loop & shutdown
+        }
+      }))
+    }
+  }
 
   def CheckboxQuestion(fq: MTCheckboxQuestion => Unit) = MTCheckboxQuestion(fq, this)
   def FreeTextQuestion(fq: MTFreeTextQuestion => Unit) = MTFreeTextQuestion(fq, this)
@@ -58,7 +178,8 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     val sched = new Scheduler(q, this, init_strategy(q), _memoizer, _thunklog, _poll_interval_in_s)
     sched.run[FreeTextAnswer]()
   }
-  def get_qualifications(q: MTurkQuestion, title: String, qualify_early: Boolean, question_id: UUID) : List[QualificationRequirement] = synchronized {
+
+  private def get_qualifications(q: MTurkQuestion, title: String, qualify_early: Boolean, question_id: UUID) : List[QualificationRequirement] = {
     // The first qualification always needs to be the special
     // "dequalification" type so that we may grant it as soon as
     // a worker completes some work.
@@ -89,12 +210,27 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     s.num_possibilities = q.num_possibilities
     s
   }
-  def post(ts: List[Thunk], dual: Boolean, exclude_worker_ids: List[String]) : Unit = synchronized {
+
+  def post(ts: List[Thunk], dual: Boolean, exclude_worker_ids: List[String]) : Unit = {
+    // enqueue
+    _post_queue.synchronized {
+      _post_queue.enqueue(EnqueuedHIT(ts, dual, exclude_worker_ids))
+    }
+
+    // if there's no thread already servicing the queue,
+    // lock on adapter object and start one up
+    _post_thread match {
+      case Some(thread) => Unit // do nothing
+      case None => synchronized { _post_thread = threadStart }
+    }
+  }
+
+  private def scheduled_post(ts: List[Thunk], dual: Boolean, exclude_worker_ids: List[String]) : Unit = {
     val question = question_for_thunks(ts)
     val mtquestion = question match { case mtq: MTurkQuestion => mtq; case _ => throw new Exception("Impossible.") }
     val qualify_early = if (question.blacklisted_workers.size > 0) true else false
     val quals = get_qualifications(mtquestion, ts.head.question.text, qualify_early, question.id)
-    
+
     // Build HIT and post it
     mtquestion match {
       case rbq: MTRadioButtonQuestion => {
@@ -108,7 +244,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
       case ftq: MTFreeTextQuestion => {
         mtquestion.hit_type_id = ftq.build_hit(ts, false).post(backend, quals)
       }
-      case _ => throw new Exception("Question type not yet supported.  Question class is " + mtquestion.getClass)
+      case _ => throw new Exception("Question type not yet supported. Question class is " + mtquestion.getClass)
     }
     ts.foreach { _.state = SchedulerState.RUNNING }
   }
@@ -152,7 +288,13 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
       case _ => throw new Exception("MTurkAdapter can only operate on Thunks for MTurkQuestions.")
     }
   }
-  def cancel(t: Thunk) : Unit = synchronized {
+  def cancel(t: Thunk) : Unit = {
+    // enqueue
+    _cancel_queue.synchronized {
+      _cancel_queue.enqueue(t)
+    }
+  }
+  private def scheduled_cancel(t: Thunk) : Unit = {
     t.question match {
       case mtq:MTurkQuestion => {
         mtq.hits.filter{_.state == HITState.RUNNING}.foreach { hit =>
@@ -165,9 +307,15 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     }
   }
   def accept(t: Thunk) : Unit = {
+    // enqueue
+    _accept_queue.synchronized {
+      _accept_queue.enqueue(t)
+    }
+  }
+  private def scheduled_accept(t: Thunk) : Unit = {
     t.question match {
       case mtq:MTurkQuestion => {
-        synchronized { backend.approveAssignment(mtq.thunk_assnid_map(t), "Thanks!") }
+        backend.approveAssignment(mtq.thunk_assnid_map(t), "Thanks!")
         t.state = SchedulerState.ACCEPTED
         t.answer match {
           case rba: RadioButtonAnswer => if (!rba.paid) {
@@ -191,9 +339,15 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     }
   }
   def reject(t: Thunk) : Unit = {
+    // enqueue
+    _reject_queue.synchronized {
+      _reject_queue.enqueue(t)
+    }
+  }
+  private def scheduled_reject(t: Thunk) : Unit = {
     t.question match {
       case mtq:MTurkQuestion => {
-        synchronized { backend.rejectAssignment(mtq.thunk_assnid_map(t), "Your answer is incorrect with a probability >" + confidence + ".") }
+        backend.rejectAssignment(mtq.thunk_assnid_map(t), "Your answer is incorrect with a probability >" + confidence + ".")
         t.state = SchedulerState.REJECTED
         t.answer match {
           case rba: RadioButtonAnswer => if (!rba.paid) {
@@ -216,20 +370,41 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
       case _ => throw new Exception("Impossible error.")
     }
   }
+
   def retrieve(ts: List[Thunk]) : List[Thunk] = {
+    val req = RetrieveReq(ts)
+
+    // the caller needs to block and wait for answers
+    req.synchronized {
+      // enqueue
+      _retrieve_queue.synchronized {
+        _retrieve_queue.enqueue(req)
+      }
+      // wait for response
+      // while loop is because the JVM is
+      // permitted to send spurious wakeups
+      while(_retrieved_data.synchronized { !_retrieved_data.contains(req) }) {
+        req.wait() // block until answer is available
+      }
+      // return response
+      _retrieved_data.synchronized { _retrieved_data(req) }
+    }
+  }
+
+  def scheduled_retrieve(ts: List[Thunk]) : List[Thunk] = {
     val question = mtquestion_for_thunks(ts)
     val auquestion = question_for_thunks(ts)
     val hits = question.hits.filter{_.state == HITState.RUNNING}
 
     // start by granting qualifications
-    synchronized { grant_qualification_requests(question, auquestion.blacklisted_workers, auquestion.id) }
+    grant_qualification_requests(question, auquestion.blacklisted_workers, auquestion.id)
 
     // try grabbing something from each HIT
     hits.foreach { hit =>
       // get running thunks for each HIT
       val hts = Queue[Thunk]()
       hts ++= question.hit_thunk_map(hit).filter{_.state == SchedulerState.RUNNING}
-      val assignments = synchronized { hit.retrieve(backend) }
+      val assignments = hit.retrieve(backend)
 
       Utilities.DebugLog("There are " + assignments.size + " assignments available to process.", LogLevel.INFO, LogType.ADAPTER, auquestion.id)
 
@@ -261,12 +436,12 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
       t.state = SchedulerState.TIMEOUT
       if (!hitcancelled) {
         Utilities.DebugLog("Force-expiring HIT.", LogLevel.WARN, LogType.ADAPTER, hit.id)
-        synchronized { hit.cancel(backend) }
+        hit.cancel(backend)
         hitcancelled = true
       }
     }
   }
-  def process_assignment(q: MTurkQuestion, a: Assignment, hit_id: String, t: Thunk) {
+  private def process_assignment(q: MTurkQuestion, a: Assignment, hit_id: String, t: Thunk) {
     Utilities.DebugLog("Processing assignment...", LogLevel.WARN, LogType.ADAPTER, t.question.id)
 
     // mark as RETRIEVED
@@ -279,13 +454,13 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     dequalify_worker(q, a.getWorkerId, t.question.id)
 
     // pair assignment with thunk
-    q.thunk_assnid_map += (t -> a.getAssignmentId)
+    q.thunk_assnid_map += (t -> a.getAssignmentId)  // I believe this is a local call
 
     // write custominfo
     t.answer.custom_info = Some(new MTurkAnswerCustomInfo(a.getAssignmentId, hit_id).toString)
   }
 
-  def dequalify_worker(q: MTurkQuestion, worker_id: String, question_id: UUID) : Unit = synchronized {
+  private def dequalify_worker(q: MTurkQuestion, worker_id: String, question_id: UUID) : Unit = {
     // grant dequalification Qualification
     // AMT checks whether worker's assigned value == 1; if so, not allowed
     if (q.worker_is_qualified(q.dequalification.getQualificationTypeId, worker_id)) {
@@ -299,7 +474,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
       q.qualify_worker(q.dequalification.getQualificationTypeId, worker_id)
     }
   }
-  def grant_qualification_requests(q: MTurkQuestion, blacklisted_workers: List[String], question_id: UUID) : Unit = synchronized {
+  private def grant_qualification_requests(q: MTurkQuestion, blacklisted_workers: List[String], question_id: UUID) : Unit = {
     // get all requests for all qualifications on this HIT
     val qrs = q.qualifications.map { qual =>
       backend.getAllQualificationRequests(qual.getQualificationTypeId)
@@ -343,7 +518,13 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
 
   def access_key_id: String = _access_key_id match { case Some(id) => id; case None => "" }
   def access_key_id_=(id: String) { _access_key_id = Some(id) }
-  def get_budget_from_backend(): BigDecimal = synchronized {
+  def get_budget_from_backend(): BigDecimal = {
+    // budget requests are made as soon as is possible
+    syncCommWait { () =>
+      scheduled_get_budget()
+    }
+  }
+  private def scheduled_get_budget(): BigDecimal = {
     _service match {
       case Some(s) => {
         _budget = s.getAccountBalance

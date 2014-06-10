@@ -33,11 +33,11 @@ class Scheduler (val question: Question,
           thunks = new_thunks ::: thunks
 
           // before posting, pick answers out of memo DB
-          recall(new_thunks, memo_answers, memo_dual_answers)
+          recall(new_thunks, memo_answers, memo_dual_answers) // blocks
 
           // only post READY state thunks to backend; become RUNNING state here
           if (!question.dry_run) {
-            post(new_thunks.filter(_.state == SchedulerState.READY))
+            post(new_thunks.filter(_.state == SchedulerState.READY)) // non-blocking
           }
         }
 
@@ -47,7 +47,7 @@ class Scheduler (val question: Question,
         if (running_thunks.size > 0) {
           // get data
           val results = if (!question.dry_run) {
-            adapter.retrieve(running_thunks)
+            adapter.retrieve(running_thunks) // blocks
           } else { List[Thunk]() }
 
           // check for timeout
@@ -57,10 +57,11 @@ class Scheduler (val question: Question,
             last_iteration_timeout = false
           }
           // saves *recently* RETRIEVED thunks
-          memoize_answers(results)
+          memoize_answers(results)  // blocks
         }
 
         // sleep if necessary
+        // TODO: this sleep may no longer be necessary
         if (!strategy.is_confident && incomplete_thunks(thunks).size > 0) Thread.sleep(poll_interval_in_s * 1000)
       }
     } catch {

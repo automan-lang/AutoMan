@@ -94,7 +94,7 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
           {
           // if formatted content is specified, use that instead of text field
             _formatted_content match {
-              case Some(x) => scala.xml.PCData(x.toString)
+              case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString) }</FormattedContent>
               case None => <Text>{ text }</Text>
             }
           }
