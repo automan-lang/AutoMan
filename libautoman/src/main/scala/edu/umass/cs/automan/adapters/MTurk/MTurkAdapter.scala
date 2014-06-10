@@ -30,6 +30,7 @@ object MTurkAdapter {
 
 class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuestion,MTFreeTextQuestion] {
   private val SLEEP_MS = 1000
+  private val SHUTDOWN_DELAY_MS = SLEEP_MS * 10
   private case class EnqueuedHIT(ts: List[Thunk], dual: Boolean, exclude_worker_ids: List[String])
   private case class RetrieveReq(ts: List[Thunk])
   private case class BudgetReq()
@@ -54,39 +55,28 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
   // response data
   private val _retrieved_data = scala.collection.mutable.Map[RetrieveReq, List[Thunk]]()
 
-  private def ifWorkToBeDoneThen[T](f: () => T) : Option[T] = {
-    _post_queue.synchronized {
-      _cancel_queue.synchronized {
-        _accept_queue.synchronized {
-          _retrieve_queue.synchronized {
-            _reject_queue.synchronized {
-              val yes =
-                _post_queue.nonEmpty ||
-                _cancel_queue.nonEmpty ||
-                _accept_queue.nonEmpty ||
-                _retrieve_queue.nonEmpty ||
-                _reject_queue.nonEmpty
-              if (yes) {
-                Some(f())
-              } else {
-                None
-              }
-            }
-          }
-        }
+  private def ifWorkToBeDoneThen[T](when_yes: () => T)(when_no: () => T) : T = {
+    synchronized {
+      val yes =
+        _post_queue.nonEmpty ||
+          _cancel_queue.nonEmpty ||
+          _accept_queue.nonEmpty ||
+          _retrieve_queue.nonEmpty ||
+          _reject_queue.nonEmpty
+      if (yes) {
+        when_yes()
+      } else {
+        when_no()
       }
     }
   }
 
   private def workToBeDone: Boolean = {
-    ifWorkToBeDoneThen(() => Unit) match {
-      case Some(u) => true
-      case None => false
-    }
+    ifWorkToBeDoneThen(() => true)(() => false)
   }
-  private def dequeueAndProcess[T](q: Queue[T], f: T => Unit) = {
+  private def lockDequeueAndProcess[T](q: Queue[T], f: T => Unit) = {
     syncCommWait { () =>
-      val t = q.synchronized {
+      val t = synchronized {
         if (q.nonEmpty) {
           Some(q.dequeue())
         } else {
@@ -101,7 +91,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
   }
   private def dequeueAllAndProcess[T](q: Queue[T], f: Seq[T] => Unit) = {
     syncCommWait { () =>
-      val t = q.synchronized {
+      val t = synchronized {
         if (q.nonEmpty) {
           Some(q.dequeueAll(t => true))
         } else {
@@ -126,8 +116,8 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
   }
   private def initWorkerIfNeeded() : Unit = {
     // if there's no thread already servicing the queue,
-    // lock on adapter object and start one up
-    _worker_thread.synchronized {
+    // lock and start one up
+    synchronized {
       _worker_thread match {
         case Some(thread) => Unit // do nothing
         case None =>
@@ -138,47 +128,42 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     }
   }
   private def initConnectionPoolThread(): Thread = {
+    Utilities.DebugLog("No worker thread; starting one up.", LogLevel.INFO, LogType.ADAPTER, null)
     new Thread(new Runnable() {
       override def run() {
         var keep_running = true
         while (keep_running) {
           if (workToBeDone) {
             // Post queue
-            dequeueAndProcess(_post_queue, (eh: EnqueuedHIT) => scheduled_post(eh.ts, eh.dual, eh.exclude_worker_ids))
+            lockDequeueAndProcess(_post_queue, (eh: EnqueuedHIT) => scheduled_post(eh.ts, eh.dual, eh.exclude_worker_ids))
 
             // Retrieve queue
-            dequeueAndProcess(_retrieve_queue, (rr: RetrieveReq) => {
-              // synch on request
-              rr.synchronized {
-                // do request
-                _retrieved_data.synchronized {
-                  _retrieved_data += (rr -> scheduled_retrieve(rr.ts))
-                }
+            lockDequeueAndProcess(_retrieve_queue, (rr: RetrieveReq) => {
+              // do request
+              _retrieved_data += (rr -> scheduled_retrieve(rr.ts))
 
-                // send end-wait notification
-                rr.notifyAll()
-              }
+              // send end-wait notification
+              rr.notifyAll()
             })
 
             // Approve queue
-            dequeueAndProcess(_accept_queue, (t: Thunk) => scheduled_accept(t))
+            lockDequeueAndProcess(_accept_queue, (t: Thunk) => scheduled_accept(t))
 
             // Reject queue
-            dequeueAndProcess(_reject_queue, (t: Thunk) => scheduled_reject(t))
+            lockDequeueAndProcess(_reject_queue, (t: Thunk) => scheduled_reject(t))
 
             // Cancel queue
-            dequeueAndProcess(_cancel_queue, (t: Thunk) => scheduled_cancel(t))
+            lockDequeueAndProcess(_cancel_queue, (t: Thunk) => scheduled_cancel(t))
 
           } else {
             // sleep a bit to avoid unnecessary thread startup churn
-            Thread.sleep(SLEEP_MS * 10)
+            Thread.sleep(SHUTDOWN_DELAY_MS)
             // if it's still empty, break
-            ifWorkToBeDoneThen { () =>
-              _worker_thread.synchronized {
-                keep_running = false
-                _worker_thread = None
-              }
-            }
+            ifWorkToBeDoneThen (() => {
+              Utilities.DebugLog("No remaining; shutting down thread.", LogLevel.INFO, LogType.ADAPTER, null)
+              keep_running = false
+              _worker_thread = None
+            })(() => Unit )
           }
         } // exit loop
       }
@@ -237,7 +222,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
 
   def post(ts: List[Thunk], dual: Boolean, exclude_worker_ids: List[String]) : Unit = {
     // enqueue
-    _post_queue.synchronized {
+    synchronized {
       _post_queue.enqueue(EnqueuedHIT(ts, dual, exclude_worker_ids))
     }
 
@@ -314,7 +299,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
   }
   def cancel(t: Thunk) : Unit = {
     // enqueue
-    _cancel_queue.synchronized {
+    synchronized {
       _cancel_queue.enqueue(t)
     }
 
@@ -336,7 +321,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
   }
   def accept(t: Thunk) : Unit = {
     // enqueue
-    _accept_queue.synchronized {
+    synchronized {
       _accept_queue.enqueue(t)
     }
 
@@ -372,7 +357,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
   }
   def reject(t: Thunk) : Unit = {
     // enqueue
-    _reject_queue.synchronized {
+    synchronized {
       _reject_queue.enqueue(t)
     }
 
@@ -410,23 +395,22 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
   def retrieve(ts: List[Thunk]) : List[Thunk] = {
     val req = RetrieveReq(ts)
 
+    // enqueue
+    synchronized {
+      _retrieve_queue.enqueue(req)
+    }
+
     initWorkerIfNeeded()
 
-    // the caller needs to block and wait for answers
-    req.synchronized {
-      // enqueue
-      _retrieve_queue.synchronized {
-        _retrieve_queue.enqueue(req)
-      }
-      // wait for response
-      // while loop is because the JVM is
-      // permitted to send spurious wakeups
-      while(_retrieved_data.synchronized { !_retrieved_data.contains(req) }) {
-        req.wait() // block until answer is available
-      }
-      // return response
-      _retrieved_data.synchronized { _retrieved_data(req) }
+    // wait for response
+    // while loop is because the JVM is
+    // permitted to send spurious wakeups
+    while(synchronized { !_retrieved_data.contains(req) }) {
+      Utilities.DebugLog("Answer from Adapter not available, putting Scheduler to sleep.", LogLevel.INFO, LogType.ADAPTER, null)
+      req.wait() // block until answer is available
     }
+    // return response
+    synchronized { _retrieved_data(req) }
   }
 
   def scheduled_retrieve(ts: List[Thunk]) : List[Thunk] = {
