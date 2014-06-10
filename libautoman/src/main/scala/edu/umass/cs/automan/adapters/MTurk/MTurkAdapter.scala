@@ -44,7 +44,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
   private var _service : Option[RequesterService] = None
 
   // work queues
-  private var _post_thread: Option[Thread] = None
+  private var _worker_thread: Option[Thread] = None
   private val _post_queue : Queue[EnqueuedHIT] = new Queue[EnqueuedHIT]()
   private val _cancel_queue: Queue[Thunk] = new Queue[Thunk]()
   private val _accept_queue: Queue[Thunk] = new Queue[Thunk]()
@@ -54,21 +54,34 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
   // response data
   private val _retrieved_data = scala.collection.mutable.Map[RetrieveReq, List[Thunk]]()
 
-  private def workToBeDone: Boolean = {
+  private def ifWorkToBeDoneThen[T](f: () => T) : Option[T] = {
     _post_queue.synchronized {
       _cancel_queue.synchronized {
         _accept_queue.synchronized {
           _retrieve_queue.synchronized {
             _reject_queue.synchronized {
-              _post_queue.nonEmpty ||
-              _cancel_queue.nonEmpty ||
-              _accept_queue.nonEmpty ||
-              _retrieve_queue.nonEmpty ||
-              _reject_queue.nonEmpty
+              val yes =
+                _post_queue.nonEmpty ||
+                _cancel_queue.nonEmpty ||
+                _accept_queue.nonEmpty ||
+                _retrieve_queue.nonEmpty ||
+                _reject_queue.nonEmpty
+              if (yes) {
+                Some(f())
+              } else {
+                None
+              }
             }
           }
         }
       }
+    }
+  }
+
+  private def workToBeDone: Boolean = {
+    ifWorkToBeDoneThen(() => Unit) match {
+      case Some(u) => true
+      case None => false
     }
   }
   private def dequeueAndProcess[T](q: Queue[T], f: T => Unit) = {
@@ -111,54 +124,52 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
       t
     }
   }
-  private def threadStart: Option[Thread] = {
-    // double-check that a thread has not been started
-    _post_thread match {
-      case Some(thread) => Some(thread)
-      case None => Some(new Thread(new Runnable() {
-        override def run() {
-          var keep_running = true
-          while (keep_running) {
-            if (workToBeDone) {
-              // Post queue
-              dequeueAndProcess(_post_queue, (eh: EnqueuedHIT) => scheduled_post(eh.ts, eh.dual, eh.exclude_worker_ids))
+  private def initConnectionPoolThread(): Thread = {
+    new Thread(new Runnable() {
+      override def run() {
+        var keep_running = true
+        while (keep_running) {
+          if (workToBeDone) {
+            // Post queue
+            dequeueAndProcess(_post_queue, (eh: EnqueuedHIT) => scheduled_post(eh.ts, eh.dual, eh.exclude_worker_ids))
 
-              // Retrieve queue
-              dequeueAndProcess(_retrieve_queue, (rr: RetrieveReq) => {
-                // synch on request
-                rr.synchronized {
-                  // do request
-                  _retrieved_data.synchronized {
-                    _retrieved_data += (rr -> scheduled_retrieve(rr.ts))
-                  }
-
-                  // send end-wait notification
-                  rr.notifyAll()
+            // Retrieve queue
+            dequeueAndProcess(_retrieve_queue, (rr: RetrieveReq) => {
+              // synch on request
+              rr.synchronized {
+                // do request
+                _retrieved_data.synchronized {
+                  _retrieved_data += (rr -> scheduled_retrieve(rr.ts))
                 }
-              })
 
-              // Approve queue
-              dequeueAndProcess(_accept_queue, (t: Thunk) => scheduled_accept(t))
+                // send end-wait notification
+                rr.notifyAll()
+              }
+            })
 
-              // Reject queue
-              dequeueAndProcess(_reject_queue, (t: Thunk) => scheduled_reject(t))
+            // Approve queue
+            dequeueAndProcess(_accept_queue, (t: Thunk) => scheduled_accept(t))
 
-              // Cancel queue
-              dequeueAndProcess(_cancel_queue, (t: Thunk) => scheduled_cancel(t))
+            // Reject queue
+            dequeueAndProcess(_reject_queue, (t: Thunk) => scheduled_reject(t))
 
-            } else {
-              // sleep a bit to avoid unnecessary thread startup churn
-              Thread.sleep(SLEEP_MS)
-              // if it's still empty, break
-              if (workToBeDone) {
+            // Cancel queue
+            dequeueAndProcess(_cancel_queue, (t: Thunk) => scheduled_cancel(t))
+
+          } else {
+            // sleep a bit to avoid unnecessary thread startup churn
+            Thread.sleep(SLEEP_MS)
+            // if it's still empty, break
+            ifWorkToBeDoneThen { () =>
+              _worker_thread.synchronized {
                 keep_running = false
+                _worker_thread = None
               }
             }
           }
-          // exit loop & shutdown
-        }
-      }))
-    }
+        } // exit loop
+      }
+    })
   }
 
   def CheckboxQuestion(fq: MTCheckboxQuestion => Unit) = MTCheckboxQuestion(fq, this)
@@ -219,9 +230,14 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
 
     // if there's no thread already servicing the queue,
     // lock on adapter object and start one up
-    _post_thread match {
-      case Some(thread) => Unit // do nothing
-      case None => synchronized { _post_thread = threadStart }
+    _worker_thread.synchronized {
+      _worker_thread match {
+        case Some(thread) => Unit // do nothing
+        case None =>
+          val t = initConnectionPoolThread()
+          _worker_thread = Some(t)
+          t.start()
+      }
     }
 
     // mark thunks as RUNNING so that the scheduler
