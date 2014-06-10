@@ -124,6 +124,19 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
       t
     }
   }
+  private def initWorkerIfNeeded() : Unit = {
+    // if there's no thread already servicing the queue,
+    // lock on adapter object and start one up
+    _worker_thread.synchronized {
+      _worker_thread match {
+        case Some(thread) => Unit // do nothing
+        case None =>
+          val t = initConnectionPoolThread()
+          _worker_thread = Some(t)
+          t.start()
+      }
+    }
+  }
   private def initConnectionPoolThread(): Thread = {
     new Thread(new Runnable() {
       override def run() {
@@ -158,7 +171,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
 
           } else {
             // sleep a bit to avoid unnecessary thread startup churn
-            Thread.sleep(SLEEP_MS)
+            Thread.sleep(SLEEP_MS * 10)
             // if it's still empty, break
             ifWorkToBeDoneThen { () =>
               _worker_thread.synchronized {
@@ -228,17 +241,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
       _post_queue.enqueue(EnqueuedHIT(ts, dual, exclude_worker_ids))
     }
 
-    // if there's no thread already servicing the queue,
-    // lock on adapter object and start one up
-    _worker_thread.synchronized {
-      _worker_thread match {
-        case Some(thread) => Unit // do nothing
-        case None =>
-          val t = initConnectionPoolThread()
-          _worker_thread = Some(t)
-          t.start()
-      }
-    }
+    initWorkerIfNeeded()
 
     // mark thunks as RUNNING so that the scheduler
     // knows to attempt to retrieve their answers later
@@ -314,6 +317,8 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     _cancel_queue.synchronized {
       _cancel_queue.enqueue(t)
     }
+
+    initWorkerIfNeeded()
   }
   private def scheduled_cancel(t: Thunk) : Unit = {
     Utilities.DebugLog(String.format("Cancelling task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
@@ -334,6 +339,8 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     _accept_queue.synchronized {
       _accept_queue.enqueue(t)
     }
+
+    initWorkerIfNeeded()
   }
   private def scheduled_accept(t: Thunk) : Unit = {
     Utilities.DebugLog(String.format("Accepting task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
@@ -368,6 +375,8 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     _reject_queue.synchronized {
       _reject_queue.enqueue(t)
     }
+
+    initWorkerIfNeeded()
   }
   private def scheduled_reject(t: Thunk) : Unit = {
     Utilities.DebugLog(String.format("Rejecting task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
@@ -400,6 +409,8 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
 
   def retrieve(ts: List[Thunk]) : List[Thunk] = {
     val req = RetrieveReq(ts)
+
+    initWorkerIfNeeded()
 
     // the caller needs to block and wait for answers
     req.synchronized {
@@ -458,7 +469,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
       hit.state = HITState.RESOLVED
     }
   }
-  def process_timeouts(hit: AutomanHIT, ts: List[Thunk]) = {
+  private def process_timeouts(hit: AutomanHIT, ts: List[Thunk]) = {
     var hitcancelled = false
     ts.filter{_.is_timedout}.foreach { t =>
       Utilities.DebugLog("HIT TIMED OUT.", LogLevel.WARN, LogType.ADAPTER, hit.id)
@@ -531,11 +542,11 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     }
   }
 
-  def hits_are_running(hits: List[AutomanHIT]) = {
+  private def hits_are_running(hits: List[AutomanHIT]) = {
     hits.filter{_.state == HITState.RUNNING}.size > 0
   }
 
-  def thunks_are_running(ts: List[Thunk]) {
+  private def thunks_are_running(ts: List[Thunk]) {
     // mark timeouts
     ts.filter{_.state == SchedulerState.RUNNING}.foreach { t =>
       if(t.expires_at.before(new Date())) {
