@@ -68,14 +68,19 @@ object Utilities {
   }
 
   def DebugLog(msg: String, level: LogLevel.Value, source: LogType.Value, id: UUID) {
-    val idstr = source match {
-      case LogType.SCHEDULER => "question_id = " + id.toString + ", "
-      case LogType.STRATEGY => "computation_id = " + id.toString + ", "
-      case LogType.ADAPTER => "question_id = " + id.toString + ", "
-      case LogType.MEMOIZER => ""
-    }
+    val idstr =
+      id match {
+        case null => ""
+        case _ =>
+          source match {
+            case LogType.SCHEDULER => "question_id = " + id.toString + ", "
+            case LogType.STRATEGY => "computation_id = " + id.toString + ", "
+            case LogType.ADAPTER => "question_id = " + id.toString + ", "
+            case LogType.MEMOIZER => ""
+          }
+      }
 
-    println(new Date().toString + ": " + level.toString + ": " + source.toString + ": " + idstr +  msg)
+    System.err.println(new Date().toString + ": " + level.toString + ": " + source.toString + ": " + idstr +  msg)
   }
 
   def unsafe_optparse(args: Array[String], invoked_as_name: String) : OptionMap = {

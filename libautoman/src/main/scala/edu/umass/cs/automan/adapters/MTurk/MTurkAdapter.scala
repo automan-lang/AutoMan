@@ -223,9 +223,15 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
       case Some(thread) => Unit // do nothing
       case None => synchronized { _post_thread = threadStart }
     }
+
+    // mark thunks as RUNNING so that the scheduler
+    // knows to attempt to retrieve their answers later
+    ts.foreach { _.state = SchedulerState.RUNNING }
   }
 
   private def scheduled_post(ts: List[Thunk], dual: Boolean, exclude_worker_ids: List[String]) : Unit = {
+    Utilities.DebugLog(String.format("Posting %s tasks.", ts.size.toString()), LogLevel.INFO, LogType.ADAPTER, null)
+
     val question = question_for_thunks(ts)
     val mtquestion = question match { case mtq: MTurkQuestion => mtq; case _ => throw new Exception("Impossible.") }
     val qualify_early = if (question.blacklisted_workers.size > 0) true else false
@@ -246,7 +252,6 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
       }
       case _ => throw new Exception("Question type not yet supported. Question class is " + mtquestion.getClass)
     }
-    ts.foreach { _.state = SchedulerState.RUNNING }
   }
   def mtquestion_for_thunks(ts: List[Thunk]) : MTurkQuestion = {
     // determine which MT question we've been asked about
@@ -295,6 +300,8 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     }
   }
   private def scheduled_cancel(t: Thunk) : Unit = {
+    Utilities.DebugLog(String.format("Cancelling task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
+
     t.question match {
       case mtq:MTurkQuestion => {
         mtq.hits.filter{_.state == HITState.RUNNING}.foreach { hit =>
@@ -313,6 +320,8 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     }
   }
   private def scheduled_accept(t: Thunk) : Unit = {
+    Utilities.DebugLog(String.format("Accepting task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
+
     t.question match {
       case mtq:MTurkQuestion => {
         backend.approveAssignment(mtq.thunk_assnid_map(t), "Thanks!")
@@ -345,6 +354,8 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     }
   }
   private def scheduled_reject(t: Thunk) : Unit = {
+    Utilities.DebugLog(String.format("Rejecting task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
+
     t.question match {
       case mtq:MTurkQuestion => {
         backend.rejectAssignment(mtq.thunk_assnid_map(t), "Your answer is incorrect with a probability >" + confidence + ".")
@@ -392,6 +403,8 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
   }
 
   def scheduled_retrieve(ts: List[Thunk]) : List[Thunk] = {
+    Utilities.DebugLog(String.format("Retrieving %s tasks.", ts.size.toString()), LogLevel.INFO, LogType.ADAPTER, null)
+
     val question = mtquestion_for_thunks(ts)
     val auquestion = question_for_thunks(ts)
     val hits = question.hits.filter{_.state == HITState.RUNNING}
@@ -525,6 +538,8 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     }
   }
   private def scheduled_get_budget(): BigDecimal = {
+    Utilities.DebugLog("Getting budget.", LogLevel.INFO, LogType.ADAPTER, null)
+
     _service match {
       case Some(s) => {
         _budget = s.getAccountBalance
