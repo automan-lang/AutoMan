@@ -161,11 +161,11 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
             // sleep a bit to avoid unnecessary thread startup churn
             Thread.sleep(SHUTDOWN_DELAY_MS)
             // if it's still empty, break
-            ifWorkToBeDoneThen (() => {
+            ifWorkToBeDoneThen (() => Unit /* keep running */)(() => {
               Utilities.DebugLog("No work remains; shutting down thread.", LogLevel.INFO, LogType.ADAPTER, null)
               keep_running = false
               _worker_thread = None
-            })(() => Unit )
+            })
           }
         } // exit loop
       }
@@ -409,7 +409,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     // permitted to send spurious wakeups
     while(synchronized { !_retrieved_data.contains(req) }) {
       req.synchronized {
-        Utilities.DebugLog("Answer from Adapter not available, putting Scheduler to sleep.", LogLevel.INFO, LogType.ADAPTER, null)
+        Utilities.DebugLog("Answer from Adapter not available, putting Question Scheduler to sleep.", LogLevel.INFO, LogType.ADAPTER, null)
         req.wait() // block until answer is available
       }
     }
