@@ -165,6 +165,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
               Utilities.DebugLog("No work remains; shutting down thread.", LogLevel.INFO, LogType.ADAPTER, null)
               keep_running = false
               _worker_thread = None
+              Unit
             })
           }
         } // exit loop
