@@ -4,7 +4,6 @@ import com.amazonaws.mturk.util.ClientConfig
 import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.core.question._
 import scala.concurrent._
-import scala.concurrent.ExecutionContext.Implicits.global
 import edu.umass.cs.automan.core.strategy.ValidationStrategy
 import memoizer.MTurkAnswerCustomInfo
 import question._
@@ -29,6 +28,11 @@ object MTurkAdapter {
 }
 
 class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuestion,MTFreeTextQuestion] {
+  // we need a thread pool more appropriate for lots of long-running I/O
+  private val MAX_PARALLELISM = 1000
+  private val DEFAULT_POOL = new java.util.concurrent.ForkJoinPool(MAX_PARALLELISM)
+  implicit val ec = ExecutionContext.fromExecutor(DEFAULT_POOL)
+
   private val SLEEP_MS = 1000
   private val SHUTDOWN_DELAY_MS = SLEEP_MS * 10
   private case class EnqueuedHIT(ts: List[Thunk], dual: Boolean, exclude_worker_ids: List[String])
@@ -74,20 +78,30 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
   private def workToBeDone: Boolean = {
     ifWorkToBeDoneThen(() => true)(() => false)
   }
-  private def lockDequeueAndProcess[T](q: Queue[T], f: T => Unit) = {
-    syncCommWait { () =>
-      val t = synchronized {
-        if (q.nonEmpty) {
-          Some(q.dequeue())
-        } else {
-          None
-        }
+  // if an item is in the queue, it is dequeued
+  // f is executed inside the lock
+  // g is executed outside the lock
+  private def lockDequeueAndProcessAndThen[T](q: Queue[T], f: T => Unit, g: T => Unit) = {
+    // Dequeue and execute f inside lock
+    val topt: Option[T] = syncCommWait { () =>
+      val t = if (q.nonEmpty) {
+        Some(q.dequeue())
+      } else {
+        None
       }
       t match {
-        case Some(t) => f(t)
-        case None => Unit
+        case Some(th) => f(th); t
+        case None => t
       }
     }
+    // execute g outside lock, if there was an item to dequeue
+    topt match {
+      case Some(t) => g(t)
+      case None => Unit
+    }
+  }
+  private def lockDequeueAndProcess[T](q: Queue[T], f: T => Unit) = {
+    lockDequeueAndProcessAndThen(q, f, (t: T) => Unit /* do nothing */)
   }
   private def dequeueAllAndProcess[T](q: Queue[T], f: Seq[T] => Unit) = {
     syncCommWait { () =>
@@ -149,7 +163,10 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
             })
 
             // Approve queue
-            lockDequeueAndProcess(_accept_queue, (t: Thunk) => scheduled_accept(t))
+            lockDequeueAndProcessAndThen(_accept_queue,
+                                         (t: Thunk) => scheduled_accept(t), // synchronized
+                                         (t: Thunk) => set_paid_status(t)   // not synchronized
+                                        )
 
             // Reject queue
             lockDequeueAndProcess(_reject_queue, (t: Thunk) => scheduled_reject(t))
@@ -159,10 +176,11 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
 
           } else {
             // sleep a bit to avoid unnecessary thread startup churn
+            Utilities.DebugLog("No work remains; sleeping.", LogLevel.INFO, LogType.ADAPTER, null)
             Thread.sleep(SHUTDOWN_DELAY_MS)
             // if it's still empty, break
             ifWorkToBeDoneThen (() => Unit /* keep running */)(() => {
-              Utilities.DebugLog("No work remains; shutting down thread.", LogLevel.INFO, LogType.ADAPTER, null)
+              Utilities.DebugLog("No work remains after sleep; shutting down thread.", LogLevel.INFO, LogType.ADAPTER, null)
               keep_running = false
               _worker_thread = None
               Unit
@@ -337,6 +355,13 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
       case mtq:MTurkQuestion => {
         backend.approveAssignment(mtq.thunk_assnid_map(t), "Thanks!")
         t.state = SchedulerState.ACCEPTED
+      }
+      case _ => throw new Exception("Impossible error.")
+    }
+  }
+  private def set_paid_status(t: Thunk) : Unit = {
+    t.question match {
+      case mtq:MTurkQuestion => {
         t.answer match {
           case rba: RadioButtonAnswer => if (!rba.paid) {
             rba.memo_handle.setPaidStatus(true)
