@@ -1,10 +1,16 @@
 package edu.umass.cs.automan.core.strategy
 
+import java.util
+
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 import edu.umass.cs.automan.core.question.{CheckboxQuestion, Question}
 import edu.umass.cs.automan.core.exception.OverBudgetException
 import edu.umass.cs.automan.core.{LogLevel, LogType, Utilities}
 import java.util.UUID
+
+object DefaultStrategy {
+  val table = new util.HashMap[(Int,Int,Int,Double),Int]()
+}
 
 class DefaultStrategy extends ValidationStrategy {
   Utilities.DebugLog("DEFAULT strategy loaded!",LogLevel.INFO,LogType.STRATEGY,_computation_id)
@@ -93,18 +99,30 @@ class DefaultStrategy extends ValidationStrategy {
   }
   
   def expected_for_agreement(num_possibilities: Int, trials: Int,  max_agr: Int, confidence: Double) : Int = {
-    var to_run = 0
-    var done = false
-    while(!done) {
-      val min_required = MonteCarlo.requiredForAgreement(num_possibilities, trials + to_run, confidence, 1000000)
-      val expected = max_agr + to_run
-      if (min_required < 0 || min_required > expected) {
-        to_run += 1
+    DefaultStrategy.table.synchronized {
+      // check table
+      if (!DefaultStrategy.table.containsKey((num_possibilities, trials, max_agr, confidence))) {
+        // do the computation
+        var to_run = 0
+        var done = false
+        while(!done) {
+          val min_required = MonteCarlo.requiredForAgreement(num_possibilities, trials + to_run, confidence, 1000000)
+          val expected = max_agr + to_run
+          if (min_required < 0 || min_required > expected) {
+            to_run += 1
+          } else {
+            done = true
+          }
+        }
+
+        // insert into table
+        DefaultStrategy.table.put((num_possibilities, trials, max_agr, confidence), to_run)
+
+        to_run
       } else {
-        done = true
+        DefaultStrategy.table.get((num_possibilities, trials, max_agr, confidence))
       }
     }
-    to_run
   }
 
   def choose_starting_n(question: Question) : Int = {
