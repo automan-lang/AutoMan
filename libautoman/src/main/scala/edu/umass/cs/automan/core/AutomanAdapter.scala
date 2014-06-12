@@ -47,6 +47,8 @@ abstract class AutomanAdapter[RBQ <: RadioButtonQuestion,
   def retrieve(ts: List[Thunk]) : List[Thunk]  // returns all thunks passed in
   def strategy = _strategy
   def strategy_=(s: Class[ValidationStrategy]) { _strategy = s }
+  def question_startup_hook(q: Question): Unit = {}
+  def question_shutdown_hook(q: Question): Unit = {}
 
   // Question creation
   def CheckboxQuestion(fq: CBQ => Unit) : Future[CheckboxAnswer]

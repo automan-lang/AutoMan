@@ -38,6 +38,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
   private case class EnqueuedHIT(ts: List[Thunk], dual: Boolean, exclude_worker_ids: List[String])
   private case class RetrieveReq(ts: List[Thunk])
   private case class BudgetReq()
+  private case class DisposeQualsReq(q: MTurkQuestion)
 
   private var _access_key_id: Option[String] = None
   private var _poll_interval_in_s : Int = 30
@@ -55,9 +56,11 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
   private val _accept_queue: Queue[Thunk] = new Queue[Thunk]()
   private val _retrieve_queue: Queue[RetrieveReq] = new Queue[RetrieveReq]()
   private val _reject_queue: Queue[Thunk] = new Queue[Thunk]()
+  private val _dispose_quals_queue: Queue[DisposeQualsReq] = new Queue[DisposeQualsReq]()
 
   // response data
   private val _retrieved_data = scala.collection.mutable.Map[RetrieveReq, List[Thunk]]()
+  private val _disposal_completions = scala.collection.mutable.Set[DisposeQualsReq]()
 
   private def ifWorkToBeDoneThen[T](when_yes: () => T)(when_no: () => T) : T = {
     synchronized {
@@ -182,6 +185,20 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
             // Cancel queue
             while (synchronized { _cancel_queue.nonEmpty }) {
               lockDequeueAndProcess(_cancel_queue, (t: Thunk) => scheduled_cancel(t))
+            }
+
+            // Cleanup qualifications queue
+            while (synchronized { _dispose_quals_queue.nonEmpty }) {
+              lockDequeueAndProcess(_dispose_quals_queue, (qr: DisposeQualsReq) => {
+                qr.synchronized {
+                  // do request
+                  scheduled_cleanup_qualifications(qr.q)
+
+                  // send end-wait notification
+                  _disposal_completions += qr
+                  qr.notifyAll()
+                }
+              })
             }
 
           } else {
@@ -450,7 +467,11 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
       }
     }
     // return response
-    synchronized { _retrieved_data(req) }
+    synchronized {
+      val response = _retrieved_data(req)
+      _retrieved_data.remove(req) // remove response data
+      response
+    }
   }
 
   def scheduled_retrieve(ts: List[Thunk]) : List[Thunk] = {
@@ -599,6 +620,50 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
       case None => {
         throw MTurkAdapterNotInitialized("MTurkAdapter must be initialized before attempting to communicate.")
       }
+    }
+  }
+  override def question_shutdown_hook(q: Question): Unit = {
+    // cleanup qualifications
+    cleanup_qualifications(q)
+  }
+  // call this in each question's shutdown hook
+  private def cleanup_qualifications(q: Question) : Unit = {
+    val req = q match {
+      case mtq:MTurkQuestion => {
+        DisposeQualsReq(mtq)
+      }
+      case _ => throw new Exception("Impossible error.")
+    }
+
+    // enqueue
+    synchronized {
+      _dispose_quals_queue.enqueue(req)
+    }
+
+    initWorkerIfNeeded()
+
+    // wait for response
+    // while loop is because the JVM is
+    // permitted to send spurious wakeups
+    while(synchronized { !_disposal_completions.contains(req) }) {
+      req.synchronized {
+        Utilities.DebugLog("Waiting for Adapter to do cleanup, putting Question Scheduler to sleep.", LogLevel.INFO, LogType.ADAPTER, null)
+        req.wait() // block until answer is available
+      }
+    }
+    // remove from set
+    synchronized { _disposal_completions.remove(req) }
+  }
+  private def scheduled_cleanup_qualifications(q: MTurkQuestion) : Unit = {
+    val s = _service match {
+      case Some(s) => s
+      case None => {
+        throw MTurkAdapterNotInitialized("MTurkAdapter must be initialized before attempting to communicate.")
+      }
+    }
+
+    q.qualifications.foreach { qual =>
+      s.disposeQualificationType(qual.getQualificationTypeId)
     }
   }
   def poll_interval = _poll_interval_in_s
