@@ -26,6 +26,10 @@ class Scheduler (val question: Question,
 
     try {
       Utilities.DebugLog("Entering scheduling loop...", LogLevel.INFO, LogType.SCHEDULER, question.id)
+      // run startup hook
+      if(!question.dry_run) {
+        adapter.question_startup_hook(question)
+      }
       while(!strategy.is_confident) {
         if (thunks.filter(_.state == SchedulerState.RUNNING).size == 0) {
           // spawn new thunks; in READY state here
@@ -63,6 +67,11 @@ class Scheduler (val question: Question,
         // TODO: this sleep may no longer be necessary
         if (!strategy.is_confident && incomplete_thunks(thunks).size > 0) Thread.sleep(poll_interval_in_s * 1000)
       }
+      // run shutdown hook
+      if(!question.dry_run) {
+        adapter.question_shutdown_hook(question)
+      }
+
     } catch {
       case o:OverBudgetException => {
         Utilities.DebugLog("OverBudgetException.", LogLevel.FATAL, LogType.SCHEDULER, question.id)
