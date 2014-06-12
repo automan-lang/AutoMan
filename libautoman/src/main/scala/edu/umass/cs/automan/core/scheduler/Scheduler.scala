@@ -42,7 +42,6 @@ class Scheduler (val question: Question,
         }
 
         // ask the backend for answers and memoize_answers
-        // retrieve does NOT block
         // conditional covers the case where all thunk answers are recalled from memoDB
         if (running_thunks.size > 0) {
           // get data
