@@ -33,7 +33,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
   private val DEFAULT_POOL = new java.util.concurrent.ForkJoinPool(MAX_PARALLELISM)
   implicit val ec = ExecutionContext.fromExecutor(DEFAULT_POOL)
 
-  private val SLEEP_MS = 1000
+  private val SLEEP_MS = 500
   private val SHUTDOWN_DELAY_MS = SLEEP_MS * 10
   private case class EnqueuedHIT(ts: List[Thunk], dual: Boolean, exclude_worker_ids: List[String])
   private case class RetrieveReq(ts: List[Thunk])
@@ -149,9 +149,12 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
         while (keep_running) {
           if (workToBeDone) {
             // Post queue
-            lockDequeueAndProcess(_post_queue, (eh: EnqueuedHIT) => scheduled_post(eh.ts, eh.dual, eh.exclude_worker_ids))
+            while(synchronized { _post_queue.nonEmpty } ) {
+              lockDequeueAndProcess(_post_queue, (eh: EnqueuedHIT) => scheduled_post(eh.ts, eh.dual, eh.exclude_worker_ids))
+            }
 
             // Retrieve queue
+            while (synchronized { _retrieve_queue.nonEmpty } )
             lockDequeueAndProcess(_retrieve_queue, (rr: RetrieveReq) => {
               rr.synchronized {
                 // do request
@@ -163,16 +166,23 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
             })
 
             // Approve queue
-            lockDequeueAndProcessAndThen(_accept_queue,
-                                         (t: Thunk) => scheduled_accept(t), // synchronized
-                                         (t: Thunk) => set_paid_status(t)   // not synchronized
-                                        )
+            while(synchronized { _accept_queue.nonEmpty } ) {
+              lockDequeueAndProcessAndThen(_accept_queue,
+                (t: Thunk) => scheduled_accept(t), // synchronized
+                (t: Thunk) => set_paid_status(t)   // not synchronized
+              )
+            }
 
             // Reject queue
-            lockDequeueAndProcess(_reject_queue, (t: Thunk) => scheduled_reject(t))
+            while (synchronized { _reject_queue.nonEmpty }) {
+              lockDequeueAndProcess(_reject_queue, (t: Thunk) => scheduled_reject(t))
+            }
+
 
             // Cancel queue
-            lockDequeueAndProcess(_cancel_queue, (t: Thunk) => scheduled_cancel(t))
+            while (synchronized { _cancel_queue.nonEmpty }) {
+              lockDequeueAndProcess(_cancel_queue, (t: Thunk) => scheduled_cancel(t))
+            }
 
           } else {
             // sleep a bit to avoid unnecessary thread startup churn

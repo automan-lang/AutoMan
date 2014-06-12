@@ -42,7 +42,7 @@ abstract class Question {
   def question_timeout_in_s: Int = (_worker_timeout_in_s * _question_timeout_multiplier).toInt
   def question_timeout_multiplier_=(t: Double) { _question_timeout_multiplier = t }
   def question_timeout_multiplier: Double = _question_timeout_multiplier
-  def reward : BigDecimal = {
+  def reward : BigDecimal = { // this is what workers actually get paid per-task
     (_wage * _worker_timeout_in_s * (1.0/3600)).setScale(2, math.BigDecimal.RoundingMode.FLOOR)
   }
   def strategy = _strategy match { case Some(vs) => vs; case None => null }
