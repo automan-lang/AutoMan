@@ -57,7 +57,7 @@ abstract class Question {
   def max_replicas: Option[Int] = _max_replicas
   def max_replicas_=(m: Int) { _max_replicas = Some(m) }
   def wage: BigDecimal = _wage
-  def wage_=(w: BigDecimal) { _wage = wage }
+  def wage_=(w: BigDecimal) { _wage = w }
   def worker_timeout_in_s_=(t: Int) { _worker_timeout_in_s = t }
   def worker_timeout_in_s: Int = _worker_timeout_in_s
 }
