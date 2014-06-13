@@ -4,13 +4,13 @@ import edu.umass.cs.automan.core.memoizer.{ThunkMemo, MemoState}
 
 object ThunkTuple {
   private val headers = List(
-    "id" +               // 0
-    "creation_time" +    // 1
-    "completion_time" +  // 2
-    "expiration_date" +  // 3
-    "cost_in_cents" +    // 4
-    "worker_id" +        // 5
-    "computation_id" +   // 6
+    "id",                // 0
+    "creation_time",     // 1
+    "completion_time",   // 2
+    "expiration_date",   // 3
+    "cost_in_cents",     // 4
+    "worker_id",         // 5
+    "computation_id",    // 6
     "state"              // 7
   )
   def fromThunkMemo(thunk_memo: ThunkMemo) : ThunkTuple = {
@@ -28,7 +28,7 @@ object ThunkTuple {
   }
   def header = headers.mkString(",") + String.format("%n")
   def writeHeaderToLog(csv: log.CSV) {
-    csv.addRow(headers: _*)
+    csv.addRow(headers:_*)
   }
 }
 
