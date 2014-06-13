@@ -14,4 +14,7 @@ object AutoManBuild extends Build {
 
 		lazy val HowManyThings = Project(id = "HowManyThings",
                            					  base = file("apps/HowManyThings")) dependsOn(automan)
+
+    lazy val memo_log_reader = Project(id = "memo_log_reader",
+                                      base = file("apps/memo_log_reader")) dependsOn(automan)
 }
