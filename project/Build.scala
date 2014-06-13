@@ -25,4 +25,8 @@ object AutoManBuild extends Build {
     lazy val pay_unpaid_workers = Project(id = "pay_unpaid_workers",
                                           base = file("apps/pay_unpaid_workers")
                                   ) dependsOn automan
+
+    lazy val delete_old_quals = Project(id = "delete_old_quals",
+                                        base = file("apps/delete_old_quals")
+                                ) dependsOn automan
 }

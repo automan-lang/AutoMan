@@ -1,4 +1,4 @@
-import MTurk.SimpleMTurk
+import edu.umass.cs.automan.adapters.MTurk.SimpleMTurk
 import edu.umass.cs.automan.core.memoizer.{ThunkMemo, RadioButtonAnswerMemo}
 import net.java.ao._
 import TupleType._

@@ -1,12 +1,12 @@
-import MTurk.SimpleMTurk
 import com.amazonaws.mturk.requester.AssignmentStatus
+import edu.umass.cs.automan.adapters.MTurk.SimpleMTurk
 import edu.umass.cs.automan.adapters.MTurk.memoizer.MTurkAnswerCustomInfo
 import edu.umass.cs.automan.core.memoizer.{ThunkMemo, RadioButtonAnswerMemo}
 import net.java.ao._
 
 object pay_unpaid_workers extends App {
   if (args.size != 3) {
-    println("Usage: memo_log_reader <access key: string> <secret key: string> <sandbox mode: bool>")
+    println("Usage: pay_unpaid_workers <access key: string> <secret key: string> <sandbox mode: bool>")
   }
   val access_key = args(0)
   val secret_key = args(1)

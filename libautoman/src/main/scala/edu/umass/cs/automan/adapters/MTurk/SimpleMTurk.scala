@@ -1,9 +1,10 @@
-package MTurk
+package edu.umass.cs.automan.adapters.MTurk
 
 import com.amazonaws.mturk.service.axis.RequesterService
 import com.amazonaws.mturk.util.ClientConfig
-import edu.umass.cs.automan.adapters.MTurk.{InvalidSecretKeyException, InvalidKeyIDException, MTurkAdapterNotInitialized}
 
+// this is a simple backend adapter for testing purposes only
+// TODO: make base trait for MTurkAdapter
 class SimpleMTurk(access_key: String, secret_key: String, sandbox_mode: Boolean) {
   private val _retriable_errors = Set("Server.ServiceUnavailable")
   private val _retry_attempts : Int = 10
