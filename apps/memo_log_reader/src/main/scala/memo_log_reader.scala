@@ -4,6 +4,9 @@ import net.java.ao._
 import TupleType._
 
 object memo_log_reader extends App {
+  if (args.size != 5) {
+    println("Usage: memo_log_reader <access key: string> <secret key: string> <sandbox mode: bool> <memo CSV path: string> <thunk CSV path: string>")
+  }
   val access_key = args(0)
   val secret_key = args(1)
   val sandbox_mode = args(2).toBoolean

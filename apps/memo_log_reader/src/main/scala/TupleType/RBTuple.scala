@@ -8,14 +8,14 @@ import scala.util.matching.Regex
 
 object RBTuple {
   private val headers = List(
-    "id" +               // 0
-    "memo_hash" +        // 1
-    "worker_id" +        // 2
-    "paid_status" +      // 3
-    "answer_value" +     // 4
-    "assignment_id" +    // 5
-    "hit_id" +           // 6
-    "image_name" +       // 7
+    "id",                // 0
+    "memo_hash",         // 1
+    "worker_id",         // 2
+    "paid_status",       // 3
+    "answer_value",      // 4
+    "assignment_id",     // 5
+    "hit_id",            // 6
+    "image_name",        // 7
     "reward"             // 8
   )
   def header = headers.mkString(",")
@@ -30,7 +30,7 @@ object RBTuple {
     )
   }
   def writeHeaderToLog(csv: log.CSV) {
-    csv.addRow(headers: _*)
+    csv.addRow(headers:_*)
   }
 }
 
