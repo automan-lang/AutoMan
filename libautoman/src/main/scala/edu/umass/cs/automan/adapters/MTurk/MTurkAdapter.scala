@@ -4,7 +4,7 @@ import com.amazonaws.mturk.util.ClientConfig
 import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.core.question._
 import scala.concurrent._
-import edu.umass.cs.automan.core.strategy.ValidationStrategy
+import edu.umass.cs.automan.core.strategy.ScalarValidationStrategy
 import memoizer.MTurkAnswerCustomInfo
 import question._
 import edu.umass.cs.automan.core.scheduler.{Scheduler, SchedulerState, Thunk}
@@ -12,8 +12,8 @@ import edu.umass.cs.automan.core.{LogLevel, LogType, Utilities, retry, AutomanAd
 import java.util.{UUID, Date}
 import com.amazonaws.mturk.requester._
 import scala.Predef._
-import collection.mutable.Queue
-import edu.umass.cs.automan.core.answer.{FreeTextAnswer, Answer, RadioButtonAnswer, CheckboxAnswer}
+import scala.collection.mutable.Queue
+import edu.umass.cs.automan.core.answer._
 
 object MTurkAdapter {
   def apply(init: MTurkAdapter => Unit) : MTurkAdapter = {
@@ -27,7 +27,13 @@ object MTurkAdapter {
   }
 }
 
-class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuestion,MTFreeTextQuestion] {
+class MTurkAdapter extends AutomanAdapter {
+  // concretize types for MTurk
+  override type RBQ = MTRadioButtonQuestion
+  override type RBDQ = MTRadioButtonDistributionQuestion
+  override type CBQ = MTCheckboxQuestion
+  override type FTQ = MTFreeTextQuestion
+
   // we need a thread pool more appropriate for lots of long-running I/O
   private val MAX_PARALLELISM = 1000
   private val DEFAULT_POOL = new java.util.concurrent.ForkJoinPool(MAX_PARALLELISM)
@@ -221,19 +227,24 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
   def CheckboxQuestion(fq: MTCheckboxQuestion => Unit) = MTCheckboxQuestion(fq, this)
   def FreeTextQuestion(fq: MTFreeTextQuestion => Unit) = MTFreeTextQuestion(fq, this)
   def RadioButtonQuestion(fq: MTRadioButtonQuestion => Unit) = MTRadioButtonQuestion(fq, this)
+  def RadioButtonDistributionQuestion(fq: MTRadioButtonDistributionQuestion => Unit) = MTRadioButtonDistributionQuestion(fq, this)
   def Option(id: Symbol, text: String) = new MTQuestionOption(id, text, "")
   def Option(id: Symbol, text: String, image_url: String) = new MTQuestionOption(id, text, image_url)
-  def schedule(q: MTRadioButtonQuestion): Future[RadioButtonAnswer] = future {
+  def schedule(q: MTRadioButtonQuestion): Future[RadioButtonScalarAnswer] = future {
     val sched = new Scheduler(q, this, init_strategy(q), _memoizer, _thunklog, _poll_interval_in_s)
-    sched.run[RadioButtonAnswer]()
+    sched.run[RadioButtonScalarAnswer]()
   }
-  def schedule(q: MTCheckboxQuestion): Future[CheckboxAnswer] = future {
+  def schedule(q: MTRadioButtonDistributionQuestion): Future[RadioButtonDistributionAnswer] = future {
     val sched = new Scheduler(q, this, init_strategy(q), _memoizer, _thunklog, _poll_interval_in_s)
-    sched.run[CheckboxAnswer]()
+    sched.run[RadioButtonDistributionAnswer]()
   }
-  def schedule(q: MTFreeTextQuestion): Future[FreeTextAnswer] = future {
+  def schedule(q: MTCheckboxQuestion): Future[CheckboxScalarAnswer] = future {
     val sched = new Scheduler(q, this, init_strategy(q), _memoizer, _thunklog, _poll_interval_in_s)
-    sched.run[FreeTextAnswer]()
+    sched.run[CheckboxScalarAnswer]()
+  }
+  def schedule(q: MTFreeTextQuestion): Future[FreeTextScalarAnswer] = future {
+    val sched = new Scheduler(q, this, init_strategy(q), _memoizer, _thunklog, _poll_interval_in_s)
+    sched.run[FreeTextScalarAnswer]()
   }
 
   private def get_qualifications(q: MTurkQuestion, title: String, qualify_early: Boolean, question_id: UUID) : List[QualificationRequirement] = {
@@ -258,8 +269,8 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     }
     q.qualifications
   }
-  def init_strategy(q: Question): ValidationStrategy = synchronized {
-    val s: ValidationStrategy = q.strategy_option match {
+  def init_strategy(q: Question): ScalarValidationStrategy = synchronized {
+    val s: ScalarValidationStrategy = q.strategy_option match {
       case None => _strategy.newInstance()
       case Some(sclass) => sclass.newInstance()
     }
@@ -382,6 +393,7 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
       case mtq:MTurkQuestion => {
         backend.approveAssignment(mtq.thunk_assnid_map(t), "Thanks!")
         t.state = SchedulerState.ACCEPTED
+        // TODO: urgh, worker_id
       }
       case _ => throw new Exception("Impossible error.")
     }
@@ -390,17 +402,17 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
     t.question match {
       case mtq:MTurkQuestion => {
         t.answer match {
-          case rba: RadioButtonAnswer => if (!rba.paid) {
+          case rba: RadioButtonScalarAnswer => if (!rba.paid) {
             rba.memo_handle.setPaidStatus(true)
             rba.memo_handle.save()
             rba.paid = true
           }
-          case cba: CheckboxAnswer => if (!cba.paid) {
+          case cba: CheckboxScalarAnswer => if (!cba.paid) {
             cba.memo_handle.setPaidStatus(true)
             cba.memo_handle.save()
             cba.paid = true
           }
-          case fta: FreeTextAnswer => if (!fta.paid) {
+          case fta: FreeTextScalarAnswer => if (!fta.paid) {
             fta.memo_handle.setPaidStatus(true)
             fta.memo_handle.save()
             fta.paid = true
@@ -426,17 +438,17 @@ class MTurkAdapter extends AutomanAdapter[MTRadioButtonQuestion,MTCheckboxQuesti
         backend.rejectAssignment(mtq.thunk_assnid_map(t), "Your answer is incorrect with a probability >" + confidence + ".")
         t.state = SchedulerState.REJECTED
         t.answer match {
-          case rba: RadioButtonAnswer => if (!rba.paid) {
+          case rba: RadioButtonScalarAnswer => if (!rba.paid) {
             rba.memo_handle.setPaidStatus(true)
             rba.memo_handle.save()
             rba.paid = true
           }
-          case cba: CheckboxAnswer => if (!cba.paid) {
+          case cba: CheckboxScalarAnswer => if (!cba.paid) {
             cba.memo_handle.setPaidStatus(true)
             cba.memo_handle.save()
             cba.paid = true
           }
-          case fta: FreeTextAnswer => if (!fta.paid) {
+          case fta: FreeTextScalarAnswer => if (!fta.paid) {
             fta.memo_handle.setPaidStatus(true)
             fta.memo_handle.save()
             fta.paid = true

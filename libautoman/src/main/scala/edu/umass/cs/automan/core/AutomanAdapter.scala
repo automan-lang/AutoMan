@@ -10,13 +10,15 @@ import memoizer.{ThunkLogger, AutomanMemoizer}
 import scheduler.Thunk
 import strategy._
 
-abstract class AutomanAdapter[RBQ <: RadioButtonQuestion,
-                              CBQ <: CheckboxQuestion,
-                              FTQ <: FreeTextQuestion] {
+abstract class AutomanAdapter {
+  type RBQ <: RadioButtonQuestion                 // answer scalar
+  type RBDQ <: RadioButtonDistributionQuestion    // answer vector
+  type CBQ <: CheckboxQuestion                    // answer scalar
+  type FTQ <: FreeTextQuestion                    // answer scalar
   protected var _budget: BigDecimal = 0.00
   protected var _confidence: Double = 0.95
   protected var _locale: Locale = Locale.getDefault
-  protected var _strategy: Class[_ <: ValidationStrategy] = classOf[DefaultStrategy]
+  protected var _strategy: Class[_ <: ScalarValidationStrategy] = classOf[DefaultScalarStrategy]
   protected var _memoizer: AutomanMemoizer = _
   protected var _memo_db: String = "AutomanMemoDB"
   protected def _memo_conn_string: String = "jdbc:derby:" + _memo_db + ";create=true"
@@ -46,14 +48,15 @@ abstract class AutomanAdapter[RBQ <: RadioButtonQuestion,
   def reject(t: Thunk)
   def retrieve(ts: List[Thunk]) : List[Thunk]  // returns all thunks passed in
   def strategy = _strategy
-  def strategy_=(s: Class[ValidationStrategy]) { _strategy = s }
+  def strategy_=(s: Class[ScalarValidationStrategy]) { _strategy = s }
   def question_startup_hook(q: Question): Unit = {}
   def question_shutdown_hook(q: Question): Unit = {}
 
   // Question creation
-  def CheckboxQuestion(fq: CBQ => Unit) : Future[CheckboxAnswer]
-  def FreeTextQuestion(fq: FTQ => Unit) : Future[FreeTextAnswer]
-  def RadioButtonQuestion(fq: RBQ => Unit) : Future[RadioButtonAnswer]
+  def CheckboxQuestion(fq: CBQ => Unit) : Future[CheckboxScalarAnswer]
+  def FreeTextQuestion(fq: FTQ => Unit) : Future[FreeTextScalarAnswer]
+  def RadioButtonQuestion(fq: RBQ => Unit) : Future[RadioButtonScalarAnswer]
+  def RadioButtonDistributionQuestion(fq: RBDQ => Unit) : Future[RadioButtonDistributionAnswer]
   
   // Option creation
   def Option(id: Symbol, text: String) : QuestionOption
@@ -69,7 +72,8 @@ abstract class AutomanAdapter[RBQ <: RadioButtonQuestion,
   def get_budget_from_backend(): BigDecimal
   def locale: Locale = _locale
   def locale_=(l: Locale) { _locale = l }
-  def schedule(q: RBQ): Future[RadioButtonAnswer]
-  def schedule(q: CBQ): Future[CheckboxAnswer]
-  def schedule(q: FTQ): Future[FreeTextAnswer]
+  def schedule(q: RBQ): Future[RadioButtonScalarAnswer]
+  def schedule(q: RBDQ): Future[RadioButtonDistributionAnswer]
+  def schedule(q: CBQ): Future[CheckboxScalarAnswer]
+  def schedule(q: FTQ): Future[FreeTextScalarAnswer]
 }

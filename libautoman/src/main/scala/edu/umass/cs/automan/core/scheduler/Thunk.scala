@@ -11,12 +11,12 @@ class Thunk(val question: Question, val timeout_in_s: Int, val worker_timeout: I
   var answer : Answer = null
   var is_dual: Boolean = false
   var from_memo: Boolean = false
+  var worker_id: Option[String] = None
   val expires_at : Date = {
     val calendar = Calendar.getInstance()
     calendar.add(Calendar.SECOND, timeout_in_s)
     calendar.getTime
   }
-  def comparator = answer.comparator
   def is_timedout: Boolean = {
     val now = new Date()
     expires_at.before(now)
@@ -26,8 +26,8 @@ class Thunk(val question: Question, val timeout_in_s: Int, val worker_timeout: I
 
   override def toString = {
     val has_answer = if (answer == null) "no" else "yes"
-    val worker_id = if (answer == null) "n/a" else answer.worker_id
-    "Thunk(state: " + state + ", has answer: " + has_answer + ", completed by worker_id: " + worker_id + ")"
+    val wid = if (answer == null) "n/a" else worker_id.toString
+    "Thunk(state: " + state + ", has answer: " + has_answer + ", completed by worker_id: " + wid + ")"
   }
   Utilities.DebugLog("New Thunk, will expire on: " + expires_at.toString, LogLevel.INFO, LogType.SCHEDULER, computation_id)
 }

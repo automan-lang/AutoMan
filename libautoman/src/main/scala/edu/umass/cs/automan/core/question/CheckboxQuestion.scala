@@ -1,6 +1,6 @@
 package edu.umass.cs.automan.core.question
 
-import edu.umass.cs.automan.core.answer.CheckboxAnswer
+import edu.umass.cs.automan.core.answer.CheckboxScalarAnswer
 import edu.umass.cs.automan.adapters.MTurk.question.MTQuestionOption
 
 abstract class CheckboxQuestion extends Question {

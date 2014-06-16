@@ -2,18 +2,18 @@ package edu.umass.cs.automan.core.strategy
 
 import java.util
 
+import edu.umass.cs.automan.core.answer.ScalarAnswer
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 import edu.umass.cs.automan.core.question.{CheckboxQuestion, Question}
 import edu.umass.cs.automan.core.exception.OverBudgetException
 import edu.umass.cs.automan.core.{LogLevel, LogType, Utilities}
-import java.util.UUID
 
-object DefaultStrategy {
+object DefaultScalarStrategy {
   val table = new util.HashMap[(Int,Int,Int,Double),Int]()
 }
 
-class DefaultStrategy extends ValidationStrategy {
-  Utilities.DebugLog("DEFAULT strategy loaded!",LogLevel.INFO,LogType.STRATEGY,_computation_id)
+class DefaultScalarStrategy extends ScalarValidationStrategy {
+  Utilities.DebugLog("DEFAULTSCALAR strategy loaded!",LogLevel.INFO,LogType.STRATEGY,_computation_id)
 
   def current_confidence: Double = {
     val valid_ts = _thunks.filter(t => t.state == SchedulerState.RETRIEVED || t.state == SchedulerState.PROCESSED )
@@ -99,9 +99,9 @@ class DefaultStrategy extends ValidationStrategy {
   }
   
   def expected_for_agreement(num_possibilities: Int, trials: Int,  max_agr: Int, confidence: Double) : Int = {
-    DefaultStrategy.table.synchronized {
+    DefaultScalarStrategy.table.synchronized {
       // check table
-      if (!DefaultStrategy.table.containsKey((num_possibilities, trials, max_agr, confidence))) {
+      if (!DefaultScalarStrategy.table.containsKey((num_possibilities, trials, max_agr, confidence))) {
         // do the computation
         var to_run = 0
         var done = false
@@ -116,11 +116,11 @@ class DefaultStrategy extends ValidationStrategy {
         }
 
         // insert into table
-        DefaultStrategy.table.put((num_possibilities, trials, max_agr, confidence), to_run)
+        DefaultScalarStrategy.table.put((num_possibilities, trials, max_agr, confidence), to_run)
 
         to_run
       } else {
-        DefaultStrategy.table.get((num_possibilities, trials, max_agr, confidence))
+        DefaultScalarStrategy.table.get((num_possibilities, trials, max_agr, confidence))
       }
     }
   }

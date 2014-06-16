@@ -1,10 +1,9 @@
 package edu.umass.cs.automan.adapters.MTurk.question
 
-import edu.umass.cs.automan.core.answer.RadioButtonScalarAnswer
+import edu.umass.cs.automan.core.answer.RadioButtonDistributionAnswer
 import edu.umass.cs.automan.adapters.MTurk.{AutomanHIT, MTurkAdapter}
+import edu.umass.cs.automan.core.question.RadioButtonDistributionQuestion
 import scala.concurrent._
-import scala.concurrent.ExecutionContext.Implicits.global
-import edu.umass.cs.automan.core.question.{QuestionOption, RadioButtonQuestion}
 import edu.umass.cs.automan.core.scheduler.Thunk
 import com.amazonaws.mturk.requester.Assignment
 import xml.XML
@@ -12,21 +11,22 @@ import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
 import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 
-object MTRadioButtonQuestion {
-  def apply(init: MTRadioButtonQuestion => Unit, a: MTurkAdapter) : Future[RadioButtonScalarAnswer] = {
-    val radio_button_question = new MTRadioButtonQuestion
+object MTRadioButtonDistributionQuestion {
+  def apply(init: MTRadioButtonDistributionQuestion => Unit, a: MTurkAdapter) : Future[RadioButtonDistributionAnswer] = {
+    val radio_button_question = new MTRadioButtonDistributionQuestion
     init(radio_button_question)
     a.schedule(radio_button_question)
   }
 }
 
-class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
+class MTRadioButtonDistributionQuestion extends RadioButtonDistributionQuestion with MTurkQuestion {
   type QO = MTQuestionOption
   protected var _options = List[QO]()
 
-  def answer(a: Assignment, is_dual: Boolean): RadioButtonScalarAnswer = {
+  def answer(a: Assignment, is_dual: Boolean): RadioButtonDistributionAnswer = {
     // ignore is_dual
-    new RadioButtonScalarAnswer(None, a.getWorkerId, fromXML(XML.loadString(a.getAnswer)))
+//    new RadioButtonDistributionAnswer(None, a.getWorkerId, fromXML(XML.loadString(a.getAnswer)))
+    throw new NotImplementedError("Answer not yet implemented for distribution questions.")
   }
   def build_hit(ts: List[Thunk], is_dual: Boolean) : AutomanHIT = {
     // we ignore the "dual" option here
@@ -77,26 +77,26 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
         <IsRequired>true</IsRequired>
         <QuestionContent>
           {
-            _image_url match {
-              case Some(url) => {
-                <Binary>
-                  <MimeType>
-                    <Type>image</Type>
-                    <SubType>png</SubType>
-                  </MimeType>
-                  <DataURL>{ url }</DataURL>
-                  <AltText>{ image_alt_text }</AltText>
-                </Binary>
-              }
-              case None => {}
+          _image_url match {
+            case Some(url) => {
+              <Binary>
+                <MimeType>
+                  <Type>image</Type>
+                  <SubType>png</SubType>
+                </MimeType>
+                <DataURL>{ url }</DataURL>
+                <AltText>{ image_alt_text }</AltText>
+              </Binary>
             }
+            case None => {}
+          }
           }
           {
           // if formatted content is specified, use that instead of text field
-            _formatted_content match {
-              case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString) }</FormattedContent>
-              case None => <Text>{ text }</Text>
-            }
+          _formatted_content match {
+            case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString) }</FormattedContent>
+            case None => <Text>{ text }</Text>
+          }
           }
         </QuestionContent>
         <AnswerSpecification>
