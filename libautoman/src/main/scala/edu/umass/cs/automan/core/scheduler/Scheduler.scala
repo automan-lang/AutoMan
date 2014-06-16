@@ -2,14 +2,14 @@ package edu.umass.cs.automan.core.scheduler
 
 import edu.umass.cs.automan.core.strategy.ValidationStrategy
 import edu.umass.cs.automan.core.memoizer.{ThunkLogger, AutomanMemoizer}
-import edu.umass.cs.automan.core.answer.{CheckboxAnswer, RadioButtonAnswer, Answer}
-import collection.mutable.Queue
-import edu.umass.cs.automan.core.question.{CheckboxQuestion, RadioButtonQuestion, Question}
+import edu.umass.cs.automan.core.answer.{Answer, ScalarAnswer}
+import scala.collection.mutable.Queue
+import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.{LogLevel, LogType, Utilities, AutomanAdapter}
-import edu.umass.cs.automan.core.exception.{ExceedsMaxReplicas, OverBudgetException}
+import edu.umass.cs.automan.core.exception.OverBudgetException
 
 class Scheduler (val question: Question,
-                 val adapter: AutomanAdapter[_,_,_],
+                 val adapter: AutomanAdapter,
                  val strategy: ValidationStrategy,
                  val memoizer: AutomanMemoizer,
                  val thunklog: ThunkLogger,
@@ -30,7 +30,7 @@ class Scheduler (val question: Question,
       if(!question.dry_run) {
         adapter.question_startup_hook(question)
       }
-      while(!strategy.is_confident) {
+      while(!strategy.is_done) {
         if (thunks.filter(_.state == SchedulerState.RUNNING).size == 0) {
           // spawn new thunks; in READY state here
           val new_thunks = strategy.spawn(question, last_iteration_timeout) // OverBudgetException should be thrown here
@@ -65,7 +65,7 @@ class Scheduler (val question: Question,
 
         // sleep if necessary
         // TODO: this sleep may no longer be necessary
-        if (!strategy.is_confident && incomplete_thunks(thunks).size > 0) Thread.sleep(poll_interval_in_s * 1000)
+        if (!strategy.is_done && incomplete_thunks(thunks).size > 0) Thread.sleep(poll_interval_in_s * 1000)
       }
       // run shutdown hook
       if(!question.dry_run) {
@@ -80,7 +80,7 @@ class Scheduler (val question: Question,
     }
     Utilities.DebugLog("Exiting scheduling loop...", LogLevel.INFO, LogType.SCHEDULER, question.id)
 
-    val answer = strategy.select_best(question).asInstanceOf[A]
+    val answer = strategy.select_answer(question).asInstanceOf[A]
     var spent: BigDecimal = 0
     if (!over_budget) {
       spent = accept_and_reject(thunks, answer)
@@ -92,29 +92,29 @@ class Scheduler (val question: Question,
     answer
   }
 
-  def get_memo_answers[A <: Answer](is_dual: Boolean) : Queue[A] = {
+  def get_memo_answers[A <: ScalarAnswer](is_dual: Boolean) : Queue[A] = {
     val answers = Queue[A]()
     answers ++= memoizer.checkDB(question, is_dual).map{ a => a.asInstanceOf[A]}
     answers
   }
 
-  // returns total reward
+  // returns total cost
   def accept_and_reject[A <: Answer](ts: List[Thunk], answer: A) : BigDecimal = {
     var spent: BigDecimal = 0
     ts.filter(_.state == SchedulerState.RETRIEVED).foreach { t =>
       if(t.answer.comparator == answer.comparator) {
         Utilities.DebugLog("Accepting thunk with answer: " + t.answer.comparator.toString + " and paying $" + t.cost.toString(), LogLevel.INFO, LogType.SCHEDULER, question.id)
         adapter.accept(t)
-        thunklog.writeThunk(t, SchedulerState.ACCEPTED, t.answer.worker_id)
+        thunklog.writeThunk(t, SchedulerState.ACCEPTED, t.worker_id.get)
         spent += t.cost
       } else if(!t.question.dont_reject) {
         Utilities.DebugLog("Rejecting thunk with incorrect answer: " + t.answer.comparator.toString, LogLevel.INFO, LogType.SCHEDULER, question.id)
         adapter.reject(t)
-        thunklog.writeThunk(t, SchedulerState.REJECTED, t.answer.worker_id)
+        thunklog.writeThunk(t, SchedulerState.REJECTED, t.worker_id.get)
       } else {
         Utilities.DebugLog("Accepting (NOT rejecting) thunk with incorrect answer (if you did not want this, set  Question.dont_reject to false): " + t.answer.comparator.toString, LogLevel.INFO, LogType.SCHEDULER, question.id)
         adapter.accept(t)
-        thunklog.writeThunk(t, SchedulerState.REJECTED, t.answer.worker_id)
+        thunklog.writeThunk(t, SchedulerState.REJECTED, t.worker_id.get)
         spent += t.cost
       }
     }
@@ -160,14 +160,14 @@ class Scheduler (val question: Question,
     }
   }
   def running_thunks = thunks.filter(_.state == SchedulerState.RUNNING)
-  def recall[A <: Answer](ts: List[Thunk], answers: Queue[A], dual_answers: Queue[A]) {
+  def recall[A <: ScalarAnswer](ts: List[Thunk], answers: Queue[A], dual_answers: Queue[A]) {
     ts.filter(_.state == SchedulerState.READY).foreach { t =>
       if (t.is_dual) {
         if(dual_answers.size > 0) {
           Utilities.DebugLog("Pairing thunk with memoized answer.", LogLevel.INFO, LogType.SCHEDULER, question.id)
           t.answer = dual_answers.dequeue()
           t.state = SchedulerState.RETRIEVED
-          t.question.blacklist_worker(t.answer.worker_id)
+          t.question.blacklist_worker(t.worker_id.get)
           adapter.process_custom_info(t, t.answer.custom_info)
         }
       } else {
@@ -175,7 +175,7 @@ class Scheduler (val question: Question,
           Utilities.DebugLog("Pairing thunk with memoized answer.", LogLevel.INFO, LogType.SCHEDULER, question.id)
           t.answer = answers.dequeue()
           t.state = SchedulerState.RETRIEVED
-          t.question.blacklist_worker(t.answer.worker_id)
+          t.question.blacklist_worker(t.worker_id.get)
           adapter.process_custom_info(t, t.answer.custom_info)
         }
       }

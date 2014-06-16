@@ -1,7 +1,7 @@
 package edu.umass.cs.automan.core.question
 
 import java.util.UUID
-import edu.umass.cs.automan.core.strategy.ValidationStrategy
+import edu.umass.cs.automan.core.strategy.ScalarValidationStrategy
 
 abstract class Question {
   protected var _budget: Option[BigDecimal] = None
@@ -11,7 +11,7 @@ abstract class Question {
   protected var _image_url: Option[String] = None
   protected var _worker_timeout_in_s: Int = 30
   protected var _question_timeout_multiplier: Double = 100
-  protected var _strategy: Option[Class[ValidationStrategy]] = None
+  protected var _strategy: Option[Class[ScalarValidationStrategy]] = None
   protected var _text: Option[String] = None
   protected var _title: Option[String] = None
   protected var _time_value_per_hour: Option[BigDecimal] = None
@@ -46,7 +46,7 @@ abstract class Question {
     (_wage * _worker_timeout_in_s * (1.0/3600)).setScale(2, math.BigDecimal.RoundingMode.FLOOR)
   }
   def strategy = _strategy match { case Some(vs) => vs; case None => null }
-  def strategy_=(s: Class[ValidationStrategy]) { _strategy = Some(s) }
+  def strategy_=(s: Class[ScalarValidationStrategy]) { _strategy = Some(s) }
   def strategy_option = _strategy
   def text: String = _text match { case Some(t) => t; case None => "Question not specified." }
   def text_=(s: String) { _text = Some(s) }

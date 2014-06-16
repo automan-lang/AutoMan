@@ -2,7 +2,7 @@ package edu.umass.cs.automan.adapters.MTurk.question
 
 import edu.umass.cs.automan.adapters.MTurk.AutomanHIT
 import edu.umass.cs.automan.core.scheduler.Thunk
-import edu.umass.cs.automan.core.answer.Answer
+import edu.umass.cs.automan.core.answer.{Answer, ScalarAnswer}
 import com.amazonaws.mturk.requester.{Assignment, QualificationRequirement}
 
 trait MTurkQuestion {

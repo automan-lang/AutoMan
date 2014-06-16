@@ -3,7 +3,7 @@ package edu.umass.cs.automan.adapters.MTurk.question
 import edu.umass.cs.automan.core.question._
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
-import edu.umass.cs.automan.core.answer.CheckboxAnswer
+import edu.umass.cs.automan.core.answer.CheckboxScalarAnswer
 import java.util.UUID
 import xml.XML
 import com.amazonaws.mturk.requester.Assignment
@@ -14,7 +14,7 @@ import org.apache.commons.codec.binary.Hex
 import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 
 object MTCheckboxQuestion {
-  def apply(init: MTCheckboxQuestion => Unit, a: MTurkAdapter) : Future[CheckboxAnswer] = {
+  def apply(init: MTCheckboxQuestion => Unit, a: MTurkAdapter) : Future[CheckboxScalarAnswer] = {
     val checkbox_question = new MTCheckboxQuestion
     init(checkbox_question)
     a.schedule(checkbox_question)
@@ -25,15 +25,15 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
   type QO = MTQuestionOption
   protected var _options = List[QO]()
 
-  def answer(a: Assignment, is_dual: Boolean): CheckboxAnswer = {
+  def answer(a: Assignment, is_dual: Boolean): CheckboxScalarAnswer = {
     val ans_symb = fromXML(XML.loadString(a.getAnswer))
     if (is_dual) {
       // get all possible symbols
       val all_symb = options.map{ o => o.question_id }.toSet
       // answer is set difference
-      new CheckboxAnswer(None, a.getWorkerId, all_symb &~ ans_symb)
+      new CheckboxScalarAnswer(None, a.getWorkerId, all_symb &~ ans_symb)
     } else {
-      new CheckboxAnswer(None, a.getWorkerId, ans_symb)
+      new CheckboxScalarAnswer(None, a.getWorkerId, ans_symb)
     }
   }
   def build_hit(ts: List[Thunk], dual: Boolean) : AutomanHIT = {
