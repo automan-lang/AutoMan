@@ -75,7 +75,8 @@ class MTurkAdapter extends AutomanAdapter {
           _cancel_queue.nonEmpty ||
           _accept_queue.nonEmpty ||
           _retrieve_queue.nonEmpty ||
-          _reject_queue.nonEmpty
+          _reject_queue.nonEmpty ||
+          _dispose_quals_queue.nonEmpty
       if (yes) {
         when_yes()
       } else {
@@ -542,11 +543,14 @@ class MTurkAdapter extends AutomanAdapter {
     // convert assignment XML to Answer
     t.answer = q.answer(a, t.is_dual)
 
+    // assign worker_id to thunk now that we know it
+    t.worker_id = Some(a.getWorkerId())
+
     // dequalify worker
     dequalify_worker(q, a.getWorkerId, t.question.id)
 
     // pair assignment with thunk
-    q.thunk_assnid_map += (t -> a.getAssignmentId)  // I believe this is a local call
+    q.thunk_assnid_map += (t -> a.getAssignmentId)  // I believe that .getAssignmentId is just a local getter
 
     // write custominfo
     t.answer.custom_info = Some(new MTurkAnswerCustomInfo(a.getAssignmentId, hit_id).toString)

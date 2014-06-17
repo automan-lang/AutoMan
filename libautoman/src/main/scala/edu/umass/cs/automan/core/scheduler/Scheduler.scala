@@ -168,7 +168,9 @@ class Scheduler (val question: Question,
       if (t.is_dual) {
         if(dual_answers.size > 0) {
           Utilities.DebugLog("Pairing thunk with memoized answer.", LogLevel.INFO, LogType.SCHEDULER, question.id)
-          t.answer = dual_answers.dequeue()
+          val ans = dual_answers.dequeue()
+          t.answer = ans
+          t.worker_id = Some(ans.worker_id)
           t.state = SchedulerState.RETRIEVED
           t.question.blacklist_worker(t.worker_id.get)
           adapter.process_custom_info(t, t.answer.custom_info)
@@ -176,7 +178,9 @@ class Scheduler (val question: Question,
       } else {
         if(answers.size > 0) {
           Utilities.DebugLog("Pairing thunk with memoized answer.", LogLevel.INFO, LogType.SCHEDULER, question.id)
-          t.answer = answers.dequeue()
+          val ans = answers.dequeue()
+          t.answer = ans
+          t.worker_id = Some(ans.worker_id)
           t.state = SchedulerState.RETRIEVED
           t.question.blacklist_worker(t.worker_id.get)
           adapter.process_custom_info(t, t.answer.custom_info)
