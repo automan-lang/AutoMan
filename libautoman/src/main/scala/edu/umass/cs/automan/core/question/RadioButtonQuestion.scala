@@ -1,6 +1,6 @@
 package edu.umass.cs.automan.core.question
 
-abstract class RadioButtonQuestion extends Question {
+abstract class RadioButtonQuestion extends ScalarQuestion {
   type QO <: QuestionOption
   protected var _options: List[QO]
 

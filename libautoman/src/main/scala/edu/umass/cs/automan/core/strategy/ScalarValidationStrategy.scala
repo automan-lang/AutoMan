@@ -2,11 +2,12 @@ package edu.umass.cs.automan.core.strategy
 
 import edu.umass.cs.automan.core.answer.{FreeTextScalarAnswer, CheckboxScalarAnswer, RadioButtonScalarAnswer, ScalarAnswer}
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
-import edu.umass.cs.automan.core.question.{CheckboxQuestion, RadioButtonQuestion, Question}
+import edu.umass.cs.automan.core.question.{ScalarQuestion, CheckboxQuestion, RadioButtonQuestion, Question}
 import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 import java.util.UUID
 
-abstract class ScalarValidationStrategy extends ValidationStrategy {
+abstract class ScalarValidationStrategy[Q <: ScalarQuestion](question: Q)
+  extends ValidationStrategy[Q](question) {
   var _confidence: Double = 0.95
 
   def confidence: Double = _confidence
@@ -14,7 +15,7 @@ abstract class ScalarValidationStrategy extends ValidationStrategy {
   def current_confidence: Double
   def is_confident: Boolean
   def is_done = is_confident
-  def select_answer(question: Question) : ScalarAnswer = {
+  def select_answer : ScalarAnswer = {
     // group by unique symbol specific to each answer type
     val valid_thunks = _thunks.filter{t =>
       t.state == SchedulerState.RETRIEVED ||

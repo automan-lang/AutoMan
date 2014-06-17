@@ -10,13 +10,16 @@ import edu.umass.cs.automan.core.exception.OverBudgetException
 
 class Scheduler (val question: Question,
                  val adapter: AutomanAdapter,
-                 val strategy: ValidationStrategy,
                  val memoizer: AutomanMemoizer,
                  val thunklog: ThunkLogger,
                  val poll_interval_in_s: Int) {
   var thunks = List[Thunk]()
 
   def run[A <: Answer]() : A = {
+    // we need to get the initialized strategy instance from
+    // the Question itself in order to satisfy the type checker
+    val strategy = question.strategy_instance
+
     // check memo DB first
     val memo_answers = get_memo_answers(is_dual = false)
     val memo_dual_answers = get_memo_answers(is_dual = true)
@@ -33,7 +36,7 @@ class Scheduler (val question: Question,
       while(!strategy.is_done) {
         if (thunks.filter(_.state == SchedulerState.RUNNING).size == 0) {
           // spawn new thunks; in READY state here
-          val new_thunks = strategy.spawn(question, last_iteration_timeout) // OverBudgetException should be thrown here
+          val new_thunks = strategy.spawn(last_iteration_timeout) // OverBudgetException should be thrown here
           thunks = new_thunks ::: thunks
 
           // before posting, pick answers out of memo DB
@@ -80,7 +83,7 @@ class Scheduler (val question: Question,
     }
     Utilities.DebugLog("Exiting scheduling loop...", LogLevel.INFO, LogType.SCHEDULER, question.id)
 
-    val answer = strategy.select_answer(question).asInstanceOf[A]
+    val answer = strategy.select_answer.asInstanceOf[A]
     var spent: BigDecimal = 0
     if (!over_budget) {
       spent = accept_and_reject(thunks, answer)

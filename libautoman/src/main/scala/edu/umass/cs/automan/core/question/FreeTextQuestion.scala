@@ -2,7 +2,7 @@ package edu.umass.cs.automan.core.question
 
 import util.matching.Regex
 
-abstract class FreeTextQuestion extends Question {
+abstract class FreeTextQuestion extends ScalarQuestion {
   protected var _pattern_error_text: String = ""
 
   def num_possibilities: BigInt

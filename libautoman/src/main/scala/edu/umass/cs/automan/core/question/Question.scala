@@ -1,17 +1,18 @@
 package edu.umass.cs.automan.core.question
 
 import java.util.UUID
-import edu.umass.cs.automan.core.strategy.ScalarValidationStrategy
+import edu.umass.cs.automan.core.strategy.ValidationStrategy
 
 abstract class Question {
+  type VS <: ValidationStrategy[this.type]
   protected var _budget: Option[BigDecimal] = None
-  protected var _confidence: Option[Double] = None
   protected var _id: UUID = UUID.randomUUID()
   protected var _image_alt_text: Option[String] = None
   protected var _image_url: Option[String] = None
   protected var _worker_timeout_in_s: Int = 30
   protected var _question_timeout_multiplier: Double = 100
-  protected var _strategy: Option[Class[ScalarValidationStrategy]] = None
+  protected var _strategy: Option[Class[VS]] = None
+  protected var _strategy_instance: VS = _
   protected var _text: Option[String] = None
   protected var _title: Option[String] = None
   protected var _time_value_per_hour: Option[BigDecimal] = None
@@ -25,8 +26,6 @@ abstract class Question {
   def blacklisted_workers = _blacklisted_workers
   def budget: BigDecimal = _budget match { case Some(b) => b; case None => 1.00 }
   def budget_=(b: BigDecimal) { _budget = Some(b) }
-  def confidence: Double = _confidence match { case Some(c) => c; case None => 0.95 }
-  def confidence_=(c: Double) { _confidence = Some(c) }
   def dont_reject_=(r: Boolean) { _dont_reject = r }
   def dont_reject: Boolean = _dont_reject
   def dry_run_=(dr: Boolean) { _dry_run = dr }
@@ -37,6 +36,7 @@ abstract class Question {
   def image_alt_text_=(s: String) { _image_alt_text = Some(s) }
   def image_url: String = _image_url match { case Some(x) => x; case None => "" }
   def image_url_=(s: String) { _image_url = Some(s) }
+  private[automan] def init_strategy(): Unit
   def memo_hash(dual: Boolean): String
   def num_possibilities: BigInt
   def question_timeout_in_s: Int = (_worker_timeout_in_s * _question_timeout_multiplier).toInt
@@ -46,8 +46,9 @@ abstract class Question {
     (_wage * _worker_timeout_in_s * (1.0/3600)).setScale(2, math.BigDecimal.RoundingMode.FLOOR)
   }
   def strategy = _strategy match { case Some(vs) => vs; case None => null }
-  def strategy_=(s: Class[ScalarValidationStrategy]) { _strategy = Some(s) }
+  def strategy_=(s: Class[VS]) { _strategy = Some(s) }
   def strategy_option = _strategy
+  private[automan] def strategy_instance = _strategy_instance
   def text: String = _text match { case Some(t) => t; case None => "Question not specified." }
   def text_=(s: String) { _text = Some(s) }
   def time_value_per_hour: BigDecimal = _time_value_per_hour match { case Some(v) => v; case None => _wage }
