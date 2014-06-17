@@ -2,12 +2,12 @@ package edu.umass.cs.automan.core.strategy
 
 import edu.umass.cs.automan.core.answer.{FreeTextScalarAnswer, CheckboxScalarAnswer, RadioButtonScalarAnswer, ScalarAnswer}
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
-import edu.umass.cs.automan.core.question.{ScalarQuestion, CheckboxQuestion, RadioButtonQuestion, Question}
+import edu.umass.cs.automan.core.question._
 import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 import java.util.UUID
 
-abstract class ScalarValidationStrategy[Q <: ScalarQuestion](question: Q)
-  extends ValidationStrategy[Q](question) {
+abstract class ScalarValidationStrategy[Q <: ScalarQuestion, A <: ScalarAnswer](question: Q)
+  extends ValidationStrategy[Q,A](question) {
   var _confidence: Double = 0.95
 
   def confidence: Double = _confidence
@@ -15,22 +15,24 @@ abstract class ScalarValidationStrategy[Q <: ScalarQuestion](question: Q)
   def current_confidence: Double
   def is_confident: Boolean
   def is_done = is_confident
-  def select_answer : ScalarAnswer = {
+  def select_answer : A = {
     // group by unique symbol specific to each answer type
     val valid_thunks = _thunks.filter{t =>
       t.state == SchedulerState.RETRIEVED ||
       t.state == SchedulerState.PROCESSED
     }
 
+    // TODO: this is ugly and I don't remember why it's important
     if (valid_thunks.size == 0) {
       return question match {
-        case rbq:RadioButtonQuestion => new RadioButtonScalarAnswer(None, "invalid", 'invalid)
-        case cbq:CheckboxQuestion => new CheckboxScalarAnswer(None, "invalid", Set('invalid))
+        case rbq:RadioButtonQuestion => new RadioButtonScalarAnswer(None, "invalid", 'invalid).asInstanceOf[A]
+        case ftq:FreeTextQuestion => new FreeTextScalarAnswer(None, "invalid", 'invalid).asInstanceOf[A]
+        case cbq:CheckboxQuestion => new CheckboxScalarAnswer(None, "invalid", Set('invalid)).asInstanceOf[A]
         case _ => throw new Exception("Question type not yet supported.")
       }
     }
 
-    val groups = valid_thunks.groupBy { t => t.answer.asInstanceOf[ScalarAnswer].comparator }
+    val groups = valid_thunks.groupBy { t => t.answer.comparator }
     
     Utilities.DebugLog("Groups = " + groups, LogLevel.INFO, LogType.STRATEGY,_computation_id)
 
@@ -40,12 +42,8 @@ abstract class ScalarValidationStrategy[Q <: ScalarQuestion](question: Q)
     Utilities.DebugLog("Symbol of largest group is " + gsymb, LogLevel.INFO, LogType.STRATEGY,_computation_id)
     Utilities.DebugLog("classOf Thunk.answer is " + groups(gsymb).head.answer.getClass, LogLevel.INFO, LogType.STRATEGY,_computation_id)
 
-    // return an Answer
-    groups(gsymb).head.answer match {
-      case rba: RadioButtonScalarAnswer => new RadioButtonScalarAnswer(Some(current_confidence), "aggregated", rba.value)
-      case cba: CheckboxScalarAnswer => new CheckboxScalarAnswer(Some(current_confidence), "aggregated", cba.values)
-      case fta: FreeTextScalarAnswer => new FreeTextScalarAnswer(Some(current_confidence), "aggregated", fta.value)
-      case _ => throw new Exception("Question type not yet supported.")
-    }
+    // return the top Answer
+    // TODO: can I get rid of the typecast?
+    groups(gsymb).head.answer.final_answer(Some(current_confidence)).asInstanceOf[A]
   }
 }

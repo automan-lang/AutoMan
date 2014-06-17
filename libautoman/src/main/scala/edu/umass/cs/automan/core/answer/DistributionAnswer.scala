@@ -8,4 +8,5 @@ abstract class DistributionAnswer(val worker_id_response_map: Map[String,Symbol]
   override def toString = worker_id_response_map.toString()
   def responses: Bag[Symbol]
   def comparator = 'AlwaysAccept
+  override def final_answer(confidence: Option[Double]): DistributionAnswer
 }
