@@ -6,6 +6,8 @@ import edu.umass.cs.automan.core.strategy.DefaultScalarStrategy
 
 abstract class CheckboxQuestion extends ScalarQuestion {
   type QO <: QuestionOption
+  type A = CheckboxScalarAnswer
+
   protected var _options: List[QO]
   protected var _dual_text: Option[String] = None
 

@@ -1,8 +1,11 @@
 package edu.umass.cs.automan.core.question
 
+import edu.umass.cs.automan.core.answer.FreeTextScalarAnswer
 import util.matching.Regex
 
 abstract class FreeTextQuestion extends ScalarQuestion {
+  type A = FreeTextScalarAnswer
+
   protected var _pattern_error_text: String = ""
 
   def num_possibilities: BigInt

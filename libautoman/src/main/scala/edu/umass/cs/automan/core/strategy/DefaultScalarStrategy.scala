@@ -2,6 +2,7 @@ package edu.umass.cs.automan.core.strategy
 
 import java.util
 
+import edu.umass.cs.automan.core.answer.ScalarAnswer
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 import edu.umass.cs.automan.core.question.{ScalarQuestion, CheckboxQuestion}
 import edu.umass.cs.automan.core.exception.OverBudgetException
@@ -11,7 +12,7 @@ object DefaultScalarStrategy {
   val table = new util.HashMap[(Int,Int,Int,Double),Int]()
 }
 
-class DefaultScalarStrategy[Q <: ScalarQuestion](question: Q) extends ScalarValidationStrategy[Q](question) {
+class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer](question: Q) extends ScalarValidationStrategy[Q,A](question) {
   Utilities.DebugLog("DEFAULTSCALAR strategy loaded!",LogLevel.INFO,LogType.STRATEGY,_computation_id)
 
   def current_confidence: Double = {
@@ -45,12 +46,12 @@ class DefaultScalarStrategy[Q <: ScalarQuestion](question: Q) extends ScalarVali
     if (valid_ts.size == 0) return 0
     valid_ts.groupBy(_.answer.comparator).maxBy{ case(sym,ts) => ts.size }._2.size
   }
-  def spawn(had_timeout: Boolean): List[Thunk] = {
+  def spawn(had_timeout: Boolean): List[Thunk[A]] = {
     // num to spawn
     val num_to_spawn = if (_thunks.filter(_.state == SchedulerState.RUNNING).size == 0) {
       num_to_run(question)
     } else {
-      return List[Thunk]() // Be patient!
+      return List[Thunk[A]]() // Be patient!
     }
 
     // determine duration
@@ -72,7 +73,7 @@ class DefaultScalarStrategy[Q <: ScalarQuestion](question: Q) extends ScalarVali
         Utilities.DebugLog("Over budget. budget_committed = " + _budget_committed + " > budget = " + question.budget, LogLevel.FATAL, LogType.STRATEGY, _computation_id)
         throw OverBudgetException("")
       }
-      val t = new Thunk(question, question.question_timeout_in_s, question.worker_timeout_in_s, question.reward, _computation_id)
+      val t = new Thunk[A](question, question.question_timeout_in_s, question.worker_timeout_in_s, question.reward, _computation_id)
       Utilities.DebugLog("spawned question_id = " + question.id_string,LogLevel.INFO,LogType.STRATEGY,_computation_id)
       t
     }.toList

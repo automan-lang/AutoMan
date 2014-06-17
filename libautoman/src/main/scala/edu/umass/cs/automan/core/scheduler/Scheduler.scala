@@ -1,6 +1,5 @@
 package edu.umass.cs.automan.core.scheduler
 
-import edu.umass.cs.automan.core.strategy.ValidationStrategy
 import edu.umass.cs.automan.core.memoizer.{ThunkLogger, AutomanMemoizer}
 import edu.umass.cs.automan.core.answer.{Answer, ScalarAnswer}
 import scala.collection.mutable.Queue
@@ -13,9 +12,11 @@ class Scheduler (val question: Question,
                  val memoizer: AutomanMemoizer,
                  val thunklog: ThunkLogger,
                  val poll_interval_in_s: Int) {
-  var thunks = List[Thunk]()
+  type A = question.A
 
-  def run[A <: Answer]() : A = {
+  var thunks = List[Thunk[A]]()
+
+  def run() : A = {
     // we need to get the initialized strategy instance from
     // the Question itself in order to satisfy the type checker
     val strategy = question.strategy_instance
@@ -95,14 +96,14 @@ class Scheduler (val question: Question,
     answer
   }
 
-  def get_memo_answers[A <: ScalarAnswer](is_dual: Boolean) : Queue[A] = {
+  def get_memo_answers(is_dual: Boolean) : Queue[A] = {
     val answers = Queue[A]()
     answers ++= memoizer.checkDB(question, is_dual).map{ a => a.asInstanceOf[A]}
     answers
   }
 
   // returns total cost
-  def accept_and_reject[A <: Answer](ts: List[Thunk], answer: A) : BigDecimal = {
+  def accept_and_reject[A](ts: List[Thunk], answer: A) : BigDecimal = {
     var spent: BigDecimal = 0
     ts.filter(_.state == SchedulerState.RETRIEVED).foreach { t =>
       if(t.answer.comparator == answer.comparator) {
@@ -132,27 +133,27 @@ class Scheduler (val question: Question,
     answer.final_cost = spent
     spent
   }
-  def completed_thunks(ts: List[Thunk]) : List[Thunk] = ts.filter( t =>
+  def completed_thunks(ts: List[Thunk[_]]) : List[Thunk[_]] = ts.filter( t =>
     t.state == SchedulerState.PROCESSED &&
     t.state == SchedulerState.RETRIEVED ||
     t.state == SchedulerState.ACCEPTED ||
     t.state == SchedulerState.REJECTED ||
     t.state == SchedulerState.TIMEOUT
   )
-  def incomplete_thunks(ts: List[Thunk]) : List[Thunk] = ts.filter( t =>
+  def incomplete_thunks(ts: List[Thunk[_]]) : List[Thunk[_]] = ts.filter( t =>
     t.state != SchedulerState.PROCESSED &&
     t.state != SchedulerState.RETRIEVED &&
     t.state != SchedulerState.ACCEPTED &&
     t.state != SchedulerState.REJECTED &&
     t.state != SchedulerState.TIMEOUT
   )
-  def memoize_answers(ts: List[Thunk]) {
+  def memoize_answers(ts: List[Thunk[A]]) {
     // save
     ts.filter(_.state == SchedulerState.RETRIEVED).foreach{t =>
       memoizer.writeAnswer(question, t.answer, t.is_dual)
     }
   }
-  def post(ts: List[Thunk]) {
+  def post(ts: List[Thunk[A]]) {
     if (ts.filter(_.is_dual == true).size > 0) {
       Utilities.DebugLog("Posting " + ts.filter(_.is_dual == true).size + " dual = true", LogLevel.INFO, LogType.SCHEDULER, question.id)
       adapter.post(ts.filter(_.is_dual == true), true, question.blacklisted_workers)
@@ -163,7 +164,7 @@ class Scheduler (val question: Question,
     }
   }
   def running_thunks = thunks.filter(_.state == SchedulerState.RUNNING)
-  def recall[A <: ScalarAnswer](ts: List[Thunk], answers: Queue[A], dual_answers: Queue[A]) {
+  def recall(ts: List[Thunk[A]], answers: Queue[A], dual_answers: Queue[A]) {
     ts.filter(_.state == SchedulerState.READY).foreach { t =>
       if (t.is_dual) {
         if(dual_answers.size > 0) {

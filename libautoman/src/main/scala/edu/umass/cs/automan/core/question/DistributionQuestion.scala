@@ -1,9 +1,11 @@
 package edu.umass.cs.automan.core.question
 
+import edu.umass.cs.automan.core.answer.DistributionAnswer
 import edu.umass.cs.automan.core.strategy.{DefaultDistributionStrategy, DistributionValidationStrategy}
 
 abstract class DistributionQuestion extends Question {
   type VS = DistributionValidationStrategy[this.type]
+  type A <: DistributionAnswer
 
   var _num_samples: Int = 30
 

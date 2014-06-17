@@ -14,5 +14,10 @@ class RadioButtonDistributionAnswer(override val worker_id_response_map: Map[Str
         val response = rm._2
         acc.union(Bag(response))
     }
-//  var memo_handle: RadioButtonAnswerMemo = _
+  override def final_answer(confidence: Option[Double]) : RadioButtonDistributionAnswer = {
+    confidence match {
+      case Some(c) => throw new AnswerConfidenceSuppliedException("A final RadioButtonDistributionAnswer should not have a confidence value.")
+      case None => new RadioButtonDistributionAnswer(worker_id_response_map)
+    }
+  }
 }

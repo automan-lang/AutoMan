@@ -1,10 +1,13 @@
 package edu.umass.cs.automan.core.question
 
 import java.util.UUID
+import edu.umass.cs.automan.core.answer.Answer
 import edu.umass.cs.automan.core.strategy.ValidationStrategy
 
 abstract class Question {
-  type VS <: ValidationStrategy[this.type]
+  type A <: Answer
+  type VS <: ValidationStrategy[this.type, A]
+
   protected var _budget: Option[BigDecimal] = None
   protected var _id: UUID = UUID.randomUUID()
   protected var _image_alt_text: Option[String] = None
