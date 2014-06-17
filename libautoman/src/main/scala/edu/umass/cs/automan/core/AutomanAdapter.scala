@@ -18,7 +18,6 @@ abstract class AutomanAdapter {
   protected var _budget: BigDecimal = 0.00
   protected var _confidence: Double = 0.95
   protected var _locale: Locale = Locale.getDefault
-  protected var _strategy: Class[_ <: ScalarValidationStrategy] = classOf[DefaultScalarStrategy]
   protected var _memoizer: AutomanMemoizer = _
   protected var _memo_db: String = "AutomanMemoDB"
   protected def _memo_conn_string: String = "jdbc:derby:" + _memo_db + ";create=true"
@@ -47,8 +46,6 @@ abstract class AutomanAdapter {
   def process_custom_info(t: Thunk, i: Option[String])
   def reject(t: Thunk)
   def retrieve(ts: List[Thunk]) : List[Thunk]  // returns all thunks passed in
-  def strategy = _strategy
-  def strategy_=(s: Class[ScalarValidationStrategy]) { _strategy = s }
   def question_startup_hook(q: Question): Unit = {}
   def question_shutdown_hook(q: Question): Unit = {}
 

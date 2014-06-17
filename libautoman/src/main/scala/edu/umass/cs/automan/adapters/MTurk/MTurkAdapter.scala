@@ -4,7 +4,7 @@ import com.amazonaws.mturk.util.ClientConfig
 import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.core.question._
 import scala.concurrent._
-import edu.umass.cs.automan.core.strategy.ScalarValidationStrategy
+import edu.umass.cs.automan.core.strategy.{ValidationStrategy, ScalarValidationStrategy}
 import memoizer.MTurkAnswerCustomInfo
 import question._
 import edu.umass.cs.automan.core.scheduler.{Scheduler, SchedulerState, Thunk}
@@ -231,19 +231,23 @@ class MTurkAdapter extends AutomanAdapter {
   def Option(id: Symbol, text: String) = new MTQuestionOption(id, text, "")
   def Option(id: Symbol, text: String, image_url: String) = new MTQuestionOption(id, text, image_url)
   def schedule(q: MTRadioButtonQuestion): Future[RadioButtonScalarAnswer] = future {
-    val sched = new Scheduler(q, this, init_strategy(q), _memoizer, _thunklog, _poll_interval_in_s)
+    q.init_strategy()
+    val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
     sched.run[RadioButtonScalarAnswer]()
   }
   def schedule(q: MTRadioButtonDistributionQuestion): Future[RadioButtonDistributionAnswer] = future {
-    val sched = new Scheduler(q, this, init_strategy(q), _memoizer, _thunklog, _poll_interval_in_s)
+    q.init_strategy()
+    val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
     sched.run[RadioButtonDistributionAnswer]()
   }
   def schedule(q: MTCheckboxQuestion): Future[CheckboxScalarAnswer] = future {
-    val sched = new Scheduler(q, this, init_strategy(q), _memoizer, _thunklog, _poll_interval_in_s)
+    q.init_strategy()
+    val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
     sched.run[CheckboxScalarAnswer]()
   }
   def schedule(q: MTFreeTextQuestion): Future[FreeTextScalarAnswer] = future {
-    val sched = new Scheduler(q, this, init_strategy(q), _memoizer, _thunklog, _poll_interval_in_s)
+    q.init_strategy()
+    val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
     sched.run[FreeTextScalarAnswer]()
   }
 
@@ -268,15 +272,6 @@ class MTurkAdapter extends AutomanAdapter {
       q.qualifications = q.dequalification :: q.qualifications
     }
     q.qualifications
-  }
-  def init_strategy(q: Question): ScalarValidationStrategy = synchronized {
-    val s: ScalarValidationStrategy = q.strategy_option match {
-      case None => _strategy.newInstance()
-      case Some(sclass) => sclass.newInstance()
-    }
-    s.confidence = q.confidence
-    s.num_possibilities = q.num_possibilities
-    s
   }
 
   def post(ts: List[Thunk], dual: Boolean, exclude_worker_ids: List[String]) : Unit = {

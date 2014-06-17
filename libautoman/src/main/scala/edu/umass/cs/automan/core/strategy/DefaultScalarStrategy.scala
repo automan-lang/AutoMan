@@ -2,9 +2,8 @@ package edu.umass.cs.automan.core.strategy
 
 import java.util
 
-import edu.umass.cs.automan.core.answer.ScalarAnswer
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
-import edu.umass.cs.automan.core.question.{CheckboxQuestion, Question}
+import edu.umass.cs.automan.core.question.{ScalarQuestion, CheckboxQuestion}
 import edu.umass.cs.automan.core.exception.OverBudgetException
 import edu.umass.cs.automan.core.{LogLevel, LogType, Utilities}
 
@@ -12,7 +11,7 @@ object DefaultScalarStrategy {
   val table = new util.HashMap[(Int,Int,Int,Double),Int]()
 }
 
-class DefaultScalarStrategy extends ScalarValidationStrategy {
+class DefaultScalarStrategy[Q <: ScalarQuestion](question: Q) extends ScalarValidationStrategy[Q](question) {
   Utilities.DebugLog("DEFAULTSCALAR strategy loaded!",LogLevel.INFO,LogType.STRATEGY,_computation_id)
 
   def current_confidence: Double = {
@@ -46,7 +45,7 @@ class DefaultScalarStrategy extends ScalarValidationStrategy {
     if (valid_ts.size == 0) return 0
     valid_ts.groupBy(_.answer.comparator).maxBy{ case(sym,ts) => ts.size }._2.size
   }
-  def spawn(question: Question, had_timeout: Boolean): List[Thunk] = {
+  def spawn(had_timeout: Boolean): List[Thunk] = {
     // num to spawn
     val num_to_spawn = if (_thunks.filter(_.state == SchedulerState.RUNNING).size == 0) {
       num_to_run(question)
@@ -88,7 +87,7 @@ class DefaultScalarStrategy extends ScalarValidationStrategy {
     new_thunks
   }
 
-  def num_to_run(q: Question) : Int = {
+  def num_to_run(q: Q) : Int = {
     val np: Int = if(q.num_possibilities > BigInt(Int.MaxValue)) 1000 else q.num_possibilities.toInt
 
     math.max(expected_for_agreement(np, _thunks.size, max_agree, q.confidence).toDouble,
@@ -125,7 +124,7 @@ class DefaultScalarStrategy extends ScalarValidationStrategy {
     }
   }
 
-  def choose_starting_n(question: Question) : Int = {
+  def choose_starting_n(question: Q) : Int = {
     // at start, we assume that all workers will agree unanimously
     var duplicates_required = 1
 
@@ -139,7 +138,7 @@ class DefaultScalarStrategy extends ScalarValidationStrategy {
     (duplicates_required * pessimism(question)).toInt
   }
 
-  def pessimism(q: Question) = {
+  def pessimism(q: Q) = {
     val p: Double = math.max((q.time_value_per_hour/q.wage).toDouble, 1.0)
     if (p > 1) {
       Utilities.DebugLog("Using pessimistic (expensive) strategy.", LogLevel.INFO, LogType.STRATEGY, _computation_id)
