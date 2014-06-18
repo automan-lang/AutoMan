@@ -1,6 +1,7 @@
 package edu.umass.cs.automan.core.strategy;
 
 import edu.umass.cs.automan.core.LogLevel;
+import edu.umass.cs.automan.core.LogType;
 import edu.umass.cs.automan.core.Utilities;
 
 import java.util.Random;
@@ -91,7 +92,8 @@ public final class MonteCarlo {
 
         // If we found an answer, then return # of trials
         if ((i <= trials) && (odds <= alpha)) {
-            System.out.println("DEBUG: MONTECARLO: " + i + " identical answers required for " + trials + " HITs.");
+            String msg = String.format("MONTECARLO: %s identical answers required for %s tasks", Integer.toString(i), Integer.toString(trials));
+            Utilities.DebugLog(msg, LogLevel.INFO(), LogType.STRATEGY(), null);
             return i;
         // Otherwise
         } else {

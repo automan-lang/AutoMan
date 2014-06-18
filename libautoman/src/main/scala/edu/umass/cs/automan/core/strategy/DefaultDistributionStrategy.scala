@@ -8,10 +8,20 @@ import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 
 class DefaultDistributionStrategy[Q <: DistributionQuestion, A <: ScalarAnswer, B](question: Q, num_samples: Int = 30)
   extends DistributionValidationStrategy[Q,A,B](question) {
+  def outstanding_thunks =
+    _thunks.filter(t =>
+      t.state == SchedulerState.READY ||
+      t.state == SchedulerState.RUNNING ||
+      t.state == SchedulerState.RETRIEVED ||
+      t.state == SchedulerState.ACCEPTED ||
+      t.state == SchedulerState.PROCESSED
+    )
+
   def spawn(had_timeout: Boolean): List[Thunk[A]] = {
     // num to spawn
-    val num_to_spawn = if (_thunks.filter(_.state == SchedulerState.RUNNING).size == 0) {
-      num_samples
+    val num_executing = outstanding_thunks.size
+    val num_to_spawn = if (num_executing < num_samples) {
+      num_samples - num_executing
     } else {
       return List[Thunk[A]]() // Be patient!
     }

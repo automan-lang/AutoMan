@@ -303,6 +303,11 @@ class MTurkAdapter extends AutomanAdapter {
           mtquestion.hit_type_id = rbq.build_hit(ts, false).post(backend, quals)
         }
       }
+      case rbdq: MTRadioButtonDistributionQuestion => {
+        if (!dual) {
+          mtquestion.hit_type_id = rbdq.build_hit(ts, false).post(backend, quals)
+        }
+      }
       case cbq: MTCheckboxQuestion => {
         mtquestion.hit_type_id = cbq.build_hit(ts, dual).post(backend, quals)
       }
