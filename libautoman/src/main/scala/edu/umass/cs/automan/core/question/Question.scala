@@ -5,10 +5,14 @@ import edu.umass.cs.automan.core.answer.Answer
 import edu.umass.cs.automan.core.strategy.ValidationStrategy
 
 abstract class Question {
-  type A <: Answer
-  type VS <: ValidationStrategy[this.type, A]
+  type A <: Answer  // thunk type
+  type B  // future return type (scalar and dist. questions have different return types)
+  type VS <: ValidationStrategy[this.type, A, B]
+
+  class QuestionStillExecutingException extends Exception
 
   protected var _budget: Option[BigDecimal] = None
+  protected var _final_cost: Option[BigDecimal] = None
   protected var _id: UUID = UUID.randomUUID()
   protected var _image_alt_text: Option[String] = None
   protected var _image_url: Option[String] = None
@@ -33,6 +37,11 @@ abstract class Question {
   def dont_reject: Boolean = _dont_reject
   def dry_run_=(dr: Boolean) { _dry_run = dr }
   def dry_run: Boolean = _dry_run
+  def final_cost: BigDecimal = _final_cost match {
+    case Some(c) => c
+    case None => throw new QuestionStillExecutingException
+  }
+  protected[automan] def final_cost_=(c: BigDecimal) { _final_cost = Some(c) }
   def id: UUID = _id
   def id_string: String = _id.toString
   def image_alt_text: String = _image_alt_text match { case Some(x) => x; case None => "" }

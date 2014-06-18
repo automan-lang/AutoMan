@@ -12,7 +12,8 @@ object DefaultScalarStrategy {
   val table = new util.HashMap[(Int,Int,Int,Double),Int]()
 }
 
-class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer](question: Q) extends ScalarValidationStrategy[Q,A](question) {
+class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question: Q)
+  extends ScalarValidationStrategy[Q,A,B](question) {
   Utilities.DebugLog("DEFAULTSCALAR strategy loaded!",LogLevel.INFO,LogType.STRATEGY,_computation_id)
 
   def current_confidence: Double = {
@@ -48,7 +49,7 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer](question: Q)
   }
   def spawn(had_timeout: Boolean): List[Thunk[A]] = {
     // num to spawn
-    val num_to_spawn = if (_thunks.filter(_.state == SchedulerState.RUNNING).size == 0) {
+    val num_to_spawn = if (_thunks.count(_.state == SchedulerState.RUNNING) == 0) {
       num_to_run(question)
     } else {
       return List[Thunk[A]]() // Be patient!
@@ -71,7 +72,7 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer](question: Q)
       _budget_committed += question.reward
       if (_budget_committed > question.budget) {
         Utilities.DebugLog("Over budget. budget_committed = " + _budget_committed + " > budget = " + question.budget, LogLevel.FATAL, LogType.STRATEGY, _computation_id)
-        throw OverBudgetException("")
+        throw OverBudgetException[A](None)
       }
       val t = new Thunk[A](question, question.question_timeout_in_s, question.worker_timeout_in_s, question.reward, _computation_id)
       Utilities.DebugLog("spawned question_id = " + question.id_string,LogLevel.INFO,LogType.STRATEGY,_computation_id)

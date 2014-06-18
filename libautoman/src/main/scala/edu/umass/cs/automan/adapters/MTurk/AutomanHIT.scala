@@ -17,7 +17,7 @@ object AutomanHIT {
 }
 
 class AutomanHIT {
-  var thunk_assignment_map = Map[Thunk,Assignment]()
+  var thunk_assignment_map = Map[Thunk[_],Assignment]()
   var hit: HIT = _
   var hit_type_id: Option[String] = None
   var cost: BigDecimal = 0.01

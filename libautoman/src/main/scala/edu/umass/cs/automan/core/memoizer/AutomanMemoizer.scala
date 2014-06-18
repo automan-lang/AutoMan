@@ -17,20 +17,20 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
         if (!dual) { // There are never any RadioButton duals
           val memos = _manager.find[RadioButtonAnswerMemo,java.lang.Integer](classOf[RadioButtonAnswerMemo], "memoHash = ?", rbq.memo_hash(false))
           memos.map { memo =>
-            val r = new RadioButtonScalarAnswer(None, memo.getWorkerId, Symbol(memo.getAnswerValue.drop(1)) )
+            val r = new RadioButtonAnswer(None, memo.getWorkerId, Symbol(memo.getAnswerValue.drop(1)) )
             r.custom_info = Some(memo.getCustomInfo)
             r.paid = memo.getPaidStatus
             r.memo_handle = memo
             r
           }.toList
         } else {
-          List[RadioButtonScalarAnswer]()
+          List[RadioButtonAnswer]()
         }
       }
       case cbq: CheckboxQuestion => {
         val memos = _manager.find[CheckboxAnswerMemo,java.lang.Integer](classOf[CheckboxAnswerMemo], "memoHash = ?", cbq.memo_hash(dual))
         memos.map { memo =>
-          val r = new CheckboxScalarAnswer(None, memo.getWorkerId, memo.getAnswerValues.split(",").map(str => Symbol(str.drop(1))).toSet)
+          val r = new CheckboxAnswer(None, memo.getWorkerId, memo.getAnswerValues.split(",").map(str => Symbol(str.drop(1))).toSet)
           r.custom_info = Some(memo.getCustomInfo)
           r.paid = memo.getPaidStatus
           r.memo_handle = memo
@@ -40,7 +40,7 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
       case ftq: FreeTextQuestion => {
         val memos = _manager.find[FreeTextAnswerMemo,java.lang.Integer](classOf[FreeTextAnswerMemo], "memoHash = ?", ftq.memo_hash(false))
         memos.map { memo =>
-          val r = new FreeTextScalarAnswer(None, memo.getWorkerId, Symbol(memo.getAnswerValue.drop(1)))
+          val r = new FreeTextAnswer(None, memo.getWorkerId, Symbol(memo.getAnswerValue.drop(1)))
           r.custom_info = Some(memo.getCustomInfo)
           r.paid = memo.getPaidStatus
           r.memo_handle = memo
@@ -52,7 +52,7 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
 
   def writeAnswer[A <: Answer, Q <: Question](q: Q, a: A, is_dual: Boolean) : Unit = synchronized {
     a match {
-      case rba: RadioButtonScalarAnswer => {
+      case rba: RadioButtonAnswer => {
         if (!is_dual) {
           val memo = _manager.create[RadioButtonAnswerMemo,java.lang.Integer](classOf[RadioButtonAnswerMemo])
           memo.setMemoHash(q.memo_hash(false))
@@ -64,7 +64,7 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
           rba.memo_handle = memo
         }
       }
-      case cba: CheckboxScalarAnswer => {
+      case cba: CheckboxAnswer => {
         val memo = _manager.create[CheckboxAnswerMemo,java.lang.Integer](classOf[CheckboxAnswerMemo])
         memo.setMemoHash(q.memo_hash(is_dual))
         memo.setAnswerValues(cba.values.map {ans => ans.toString}.reduceLeft(_ + "," + _))
@@ -74,7 +74,7 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
         memo.save()
         cba.memo_handle = memo
       }
-      case fta: FreeTextScalarAnswer => {
+      case fta: FreeTextAnswer => {
         val memo = _manager.create[FreeTextAnswerMemo,java.lang.Integer](classOf[FreeTextAnswerMemo])
         memo.setMemoHash(q.memo_hash(false))
         memo.setAnswerValue(fta.value.toString())

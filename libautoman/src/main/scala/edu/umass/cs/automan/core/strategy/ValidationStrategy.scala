@@ -1,11 +1,14 @@
 package edu.umass.cs.automan.core.strategy
 
 import edu.umass.cs.automan.core.answer.Answer
-import edu.umass.cs.automan.core.scheduler.Thunk
+import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 import edu.umass.cs.automan.core.question.Question
 import java.util.UUID
 
-abstract class ValidationStrategy[Q <: Question, A <: Answer](question: Q) {
+abstract class ValidationStrategy[Q <: Question, A <: Answer, B](question: Q) {
+  class PrematureValidationCompletionException(methodname: String, classname: String)
+    extends Exception(methodname + " called prematurely in " + classname)
+
   val _computation_id = UUID.randomUUID()
   var _budget_committed: BigDecimal = 0.00
   var _num_possibilities: BigInt = 2
@@ -14,6 +17,12 @@ abstract class ValidationStrategy[Q <: Question, A <: Answer](question: Q) {
   def is_done: Boolean
   def num_possibilities: BigInt = _num_possibilities
   def num_possibilities_=(n: BigInt) { _num_possibilities = n }
-  def select_answer : A
+  protected def retrieved_thunks = _thunks.filter{ t =>
+    t.state == SchedulerState.RETRIEVED ||
+    t.state == SchedulerState.PROCESSED
+  }
+  def select_answer : B
   def spawn(suffered_timeout: Boolean): List[Thunk[A]]
+  def thunks_to_accept: List[Thunk[A]]
+  def thunks_to_reject: List[Thunk[A]]
 }

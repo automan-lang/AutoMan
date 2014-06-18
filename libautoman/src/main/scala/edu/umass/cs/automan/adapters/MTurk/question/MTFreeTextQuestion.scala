@@ -11,12 +11,12 @@ import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
 import edu.umass.cs.automan.core.question.{FreeTextQuestion, RadioButtonQuestion}
 
-import edu.umass.cs.automan.core.answer.{FreeTextScalarAnswer, RadioButtonScalarAnswer}
+import edu.umass.cs.automan.core.answer.{FreeTextAnswer, RadioButtonAnswer}
 import edu.umass.cs.automan.core.strategy.PictureClause
 import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 
 object MTFreeTextQuestion {
-  def apply(init: MTFreeTextQuestion => Unit, a: MTurkAdapter) : Future[FreeTextScalarAnswer] = {
+  def apply(init: MTFreeTextQuestion => Unit, a: MTurkAdapter) : Future[FreeTextAnswer] = {
     val free_text_question = new MTFreeTextQuestion
     init(free_text_question)
     a.schedule(free_text_question)
@@ -31,12 +31,12 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
   protected var _allow_empty: Boolean = false
   protected var _before_filter: Symbol => Symbol = (s) => s
 
-  def answer(a: Assignment, is_dual: Boolean): FreeTextScalarAnswer = {
+  def answer(a: Assignment, is_dual: Boolean): A = {
     // ignore is_dual because FreeTextQuestions have no question duals
     val answer = fromXML(XML.loadString(a.getAnswer))
-    new FreeTextScalarAnswer(None, a.getWorkerId, _before_filter(answer))
+    new FreeTextAnswer(None, a.getWorkerId, _before_filter(answer))
   }
-  def build_hit(ts: List[Thunk], is_dual: Boolean) : AutomanHIT = {
+  def build_hit(ts: List[Thunk[_]], is_dual: Boolean) : AutomanHIT = {
     // we ignore the "dual" option here
     val x = toXML(false, true)
     val h = AutomanHIT { a =>

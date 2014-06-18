@@ -41,8 +41,8 @@ class MTurkAdapter extends AutomanAdapter {
 
   private val SLEEP_MS = 500
   private val SHUTDOWN_DELAY_MS = SLEEP_MS * 10
-  private case class EnqueuedHIT(ts: List[Thunk], dual: Boolean, exclude_worker_ids: List[String])
-  private case class RetrieveReq(ts: List[Thunk])
+  private case class EnqueuedHIT[A](ts: List[Thunk[A]], dual: Boolean, exclude_worker_ids: List[String])
+  private case class RetrieveReq[A](ts: List[Thunk[A]])
   private case class BudgetReq()
   private case class DisposeQualsReq(q: MTurkQuestion)
 
@@ -57,15 +57,15 @@ class MTurkAdapter extends AutomanAdapter {
 
   // work queues
   private var _worker_thread: Option[Thread] = None
-  private val _post_queue : Queue[EnqueuedHIT] = new Queue[EnqueuedHIT]()
-  private val _cancel_queue: Queue[Thunk] = new Queue[Thunk]()
-  private val _accept_queue: Queue[Thunk] = new Queue[Thunk]()
-  private val _retrieve_queue: Queue[RetrieveReq] = new Queue[RetrieveReq]()
-  private val _reject_queue: Queue[Thunk] = new Queue[Thunk]()
+  private val _post_queue : Queue[EnqueuedHIT[_ <: Answer]] = new Queue[EnqueuedHIT[_ <: Answer]]()
+  private val _cancel_queue: Queue[Thunk[_ <: Answer]] = new Queue[Thunk[_ <: Answer]]()
+  private val _accept_queue: Queue[Thunk[_ <: Answer]] = new Queue[Thunk[_ <: Answer]]()
+  private val _retrieve_queue: Queue[RetrieveReq[_ <: Answer]] = new Queue[RetrieveReq[_ <: Answer]]()
+  private val _reject_queue: Queue[Thunk[_ <: Answer]] = new Queue[Thunk[_ <: Answer]]()
   private val _dispose_quals_queue: Queue[DisposeQualsReq] = new Queue[DisposeQualsReq]()
 
   // response data
-  private val _retrieved_data = scala.collection.mutable.Map[RetrieveReq, List[Thunk]]()
+  private val _retrieved_data = scala.collection.mutable.Map[RetrieveReq[_ <: Answer], List[Thunk[_ <: Answer]]]()
   private val _disposal_completions = scala.collection.mutable.Set[DisposeQualsReq]()
 
   private def ifWorkToBeDoneThen[T](when_yes: () => T)(when_no: () => T) : T = {
@@ -160,12 +160,12 @@ class MTurkAdapter extends AutomanAdapter {
           if (workToBeDone) {
             // Post queue
             while(synchronized { _post_queue.nonEmpty } ) {
-              lockDequeueAndProcess(_post_queue, (eh: EnqueuedHIT) => scheduled_post(eh.ts, eh.dual, eh.exclude_worker_ids))
+              lockDequeueAndProcess(_post_queue, (eh: EnqueuedHIT[_]) => scheduled_post(eh.ts, eh.dual, eh.exclude_worker_ids))
             }
 
             // Retrieve queue
             while (synchronized { _retrieve_queue.nonEmpty } )
-            lockDequeueAndProcess(_retrieve_queue, (rr: RetrieveReq) => {
+            lockDequeueAndProcess(_retrieve_queue, (rr: RetrieveReq[_ <: Answer]) => {
               rr.synchronized {
                 // do request
                 _retrieved_data += (rr -> scheduled_retrieve(rr.ts))
@@ -178,20 +178,20 @@ class MTurkAdapter extends AutomanAdapter {
             // Approve queue
             while(synchronized { _accept_queue.nonEmpty } ) {
               lockDequeueAndProcessAndThen(_accept_queue,
-                (t: Thunk) => scheduled_accept(t), // synchronized
-                (t: Thunk) => set_paid_status(t)   // not synchronized
+                (t: Thunk[_ <: Answer]) => scheduled_accept(t), // synchronized
+                (t: Thunk[_ <: Answer]) => set_paid_status(t)   // not synchronized
               )
             }
 
             // Reject queue
             while (synchronized { _reject_queue.nonEmpty }) {
-              lockDequeueAndProcess(_reject_queue, (t: Thunk) => scheduled_reject(t))
+              lockDequeueAndProcess(_reject_queue, (t: Thunk[_ <: Answer]) => scheduled_reject(t))
             }
 
 
             // Cancel queue
             while (synchronized { _cancel_queue.nonEmpty }) {
-              lockDequeueAndProcess(_cancel_queue, (t: Thunk) => scheduled_cancel(t))
+              lockDequeueAndProcess(_cancel_queue, (t: Thunk[_ <: Answer]) => scheduled_cancel(t))
             }
 
             // Cleanup qualifications queue
@@ -225,32 +225,32 @@ class MTurkAdapter extends AutomanAdapter {
     })
   }
 
-  def CheckboxQuestion(fq: MTCheckboxQuestion => Unit) = MTCheckboxQuestion(fq, this)
-  def FreeTextQuestion(fq: MTFreeTextQuestion => Unit) = MTFreeTextQuestion(fq, this)
-  def RadioButtonQuestion(fq: MTRadioButtonQuestion => Unit) = MTRadioButtonQuestion(fq, this)
-  def RadioButtonDistributionQuestion(fq: MTRadioButtonDistributionQuestion => Unit) = MTRadioButtonDistributionQuestion(fq, this)
+  def CheckboxQuestion(q: MTCheckboxQuestion => Unit) = MTCheckboxQuestion(q, this)
+  def FreeTextQuestion(q: MTFreeTextQuestion => Unit) = MTFreeTextQuestion(q, this)
+  def RadioButtonQuestion(q: MTRadioButtonQuestion => Unit) = MTRadioButtonQuestion(q, this)
+  def RadioButtonDistributionQuestion(q: MTRadioButtonDistributionQuestion => Unit) = MTRadioButtonDistributionQuestion(q, this)
   def Option(id: Symbol, text: String) = new MTQuestionOption(id, text, "")
   def Option(id: Symbol, text: String, image_url: String) = new MTQuestionOption(id, text, image_url)
-  def schedule(q: MTRadioButtonQuestion): Future[RadioButtonScalarAnswer] = future {
+  def schedule(q: MTRadioButtonQuestion): Future[RadioButtonAnswer] = future {
     q.init_strategy()
     val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
-    sched.run[RadioButtonScalarAnswer]()
-  }
-  def schedule(q: MTRadioButtonDistributionQuestion): Future[RadioButtonDistributionAnswer] = future {
+    sched.run()
+  }.asInstanceOf[Future[RadioButtonAnswer]]
+  def schedule(q: MTRadioButtonDistributionQuestion): Future[Set[RadioButtonAnswer]] = future {
     q.init_strategy()
     val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
-    sched.run[RadioButtonDistributionAnswer]()
-  }
-  def schedule(q: MTCheckboxQuestion): Future[CheckboxScalarAnswer] = future {
+    sched.run()
+  }.asInstanceOf[Future[Set[RadioButtonAnswer]]]
+  def schedule(q: MTCheckboxQuestion): Future[CheckboxAnswer] = future {
     q.init_strategy()
     val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
-    sched.run[CheckboxScalarAnswer]()
-  }
-  def schedule(q: MTFreeTextQuestion): Future[FreeTextScalarAnswer] = future {
+    sched.run()
+  }.asInstanceOf[Future[CheckboxAnswer]]
+  def schedule(q: MTFreeTextQuestion): Future[FreeTextAnswer] = future {
     q.init_strategy()
     val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
-    sched.run[FreeTextScalarAnswer]()
-  }
+    sched.run()
+  }.asInstanceOf[Future[FreeTextAnswer]]
 
   private def get_qualifications(q: MTurkQuestion, title: String, qualify_early: Boolean, question_id: UUID) : List[QualificationRequirement] = {
     // The first qualification always needs to be the special
@@ -275,7 +275,7 @@ class MTurkAdapter extends AutomanAdapter {
     q.qualifications
   }
 
-  def post(ts: List[Thunk], dual: Boolean, exclude_worker_ids: List[String]) : Unit = {
+  def post[A <: Answer](ts: List[Thunk[A]], dual: Boolean, exclude_worker_ids: List[String]) : Unit = {
     // enqueue
     synchronized {
       _post_queue.enqueue(EnqueuedHIT(ts, dual, exclude_worker_ids))
@@ -288,7 +288,7 @@ class MTurkAdapter extends AutomanAdapter {
     ts.foreach { _.state = SchedulerState.RUNNING }
   }
 
-  private def scheduled_post(ts: List[Thunk], dual: Boolean, exclude_worker_ids: List[String]) : Unit = {
+  private def scheduled_post(ts: List[Thunk[_]], dual: Boolean, exclude_worker_ids: List[String]) : Unit = {
     Utilities.DebugLog(String.format("Posting %s tasks.", ts.size.toString()), LogLevel.INFO, LogType.ADAPTER, null)
 
     val question = question_for_thunks(ts)
@@ -312,14 +312,14 @@ class MTurkAdapter extends AutomanAdapter {
       case _ => throw new Exception("Question type not yet supported. Question class is " + mtquestion.getClass)
     }
   }
-  def mtquestion_for_thunks(ts: List[Thunk]) : MTurkQuestion = {
+  def mtquestion_for_thunks(ts: List[Thunk[_]]) : MTurkQuestion = {
     // determine which MT question we've been asked about
     question_for_thunks(ts) match {
       case mtq: MTurkQuestion => mtq
       case _ => throw new Exception("MTurkAdapter can only operate on Thunks for MTurkQuestions.")
     }
   }
-  def question_for_thunks(ts: List[Thunk]) : Question = {
+  def question_for_thunks(ts: List[Thunk[_]]) : Question = {
     // determine which question we've been asked about
     val tg = ts.groupBy(_.question)
     if(tg.size != 1) {
@@ -328,7 +328,7 @@ class MTurkAdapter extends AutomanAdapter {
     tg.head._1
   }
   // put HIT's AssignmentId back into map or mark as PROCESSED
-  def process_custom_info(t: Thunk, i: Option[String]) {
+  def process_custom_info[A <: Answer](t: Thunk[A], i: Option[String]) {
     val q = question_for_thunks(List(t))
     Utilities.DebugLog("Processing custom info...", LogLevel.INFO, LogType.ADAPTER, q.id)
     t.question match {
@@ -352,7 +352,7 @@ class MTurkAdapter extends AutomanAdapter {
       case _ => throw new Exception("MTurkAdapter can only operate on Thunks for MTurkQuestions.")
     }
   }
-  def cancel(t: Thunk) : Unit = {
+  def cancel[A <: Answer](t: Thunk[A]) : Unit = {
     // enqueue
     synchronized {
       _cancel_queue.enqueue(t)
@@ -360,7 +360,7 @@ class MTurkAdapter extends AutomanAdapter {
 
     initWorkerIfNeeded()
   }
-  private def scheduled_cancel(t: Thunk) : Unit = {
+  private def scheduled_cancel[A](t: Thunk[A]) : Unit = {
     Utilities.DebugLog(String.format("Cancelling task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
     t.question match {
@@ -374,7 +374,7 @@ class MTurkAdapter extends AutomanAdapter {
       case _ => throw new Exception("Impossible error.")
     }
   }
-  def accept(t: Thunk) : Unit = {
+  def accept[A <: Answer](t: Thunk[A]) : Unit = {
     // enqueue
     synchronized {
       _accept_queue.enqueue(t)
@@ -382,7 +382,7 @@ class MTurkAdapter extends AutomanAdapter {
 
     initWorkerIfNeeded()
   }
-  private def scheduled_accept(t: Thunk) : Unit = {
+  private def scheduled_accept[A <: Answer](t: Thunk[A]) : Unit = {
     Utilities.DebugLog(String.format("Accepting task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
     t.question match {
@@ -394,21 +394,21 @@ class MTurkAdapter extends AutomanAdapter {
       case _ => throw new Exception("Impossible error.")
     }
   }
-  private def set_paid_status(t: Thunk) : Unit = {
+  private def set_paid_status[A](t: Thunk[A]) : Unit = {
     t.question match {
       case mtq:MTurkQuestion => {
         t.answer match {
-          case rba: RadioButtonScalarAnswer => if (!rba.paid) {
+          case rba: RadioButtonAnswer => if (!rba.paid) {
             rba.memo_handle.setPaidStatus(true)
             rba.memo_handle.save()
             rba.paid = true
           }
-          case cba: CheckboxScalarAnswer => if (!cba.paid) {
+          case cba: CheckboxAnswer => if (!cba.paid) {
             cba.memo_handle.setPaidStatus(true)
             cba.memo_handle.save()
             cba.paid = true
           }
-          case fta: FreeTextScalarAnswer => if (!fta.paid) {
+          case fta: FreeTextAnswer => if (!fta.paid) {
             fta.memo_handle.setPaidStatus(true)
             fta.memo_handle.save()
             fta.paid = true
@@ -418,7 +418,7 @@ class MTurkAdapter extends AutomanAdapter {
       case _ => throw new Exception("Impossible error.")
     }
   }
-  def reject(t: Thunk) : Unit = {
+  def reject[A <: Answer](t: Thunk[A]) : Unit = {
     // enqueue
     synchronized {
       _reject_queue.enqueue(t)
@@ -426,7 +426,7 @@ class MTurkAdapter extends AutomanAdapter {
 
     initWorkerIfNeeded()
   }
-  private def scheduled_reject(t: Thunk) : Unit = {
+  private def scheduled_reject[A](t: Thunk[A]) : Unit = {
     Utilities.DebugLog(String.format("Rejecting task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
     t.question match {
@@ -434,17 +434,17 @@ class MTurkAdapter extends AutomanAdapter {
         backend.rejectAssignment(mtq.thunk_assnid_map(t), "Your answer is incorrect with a probability >" + confidence + ".")
         t.state = SchedulerState.REJECTED
         t.answer match {
-          case rba: RadioButtonScalarAnswer => if (!rba.paid) {
+          case rba: RadioButtonAnswer => if (!rba.paid) {
             rba.memo_handle.setPaidStatus(true)
             rba.memo_handle.save()
             rba.paid = true
           }
-          case cba: CheckboxScalarAnswer => if (!cba.paid) {
+          case cba: CheckboxAnswer => if (!cba.paid) {
             cba.memo_handle.setPaidStatus(true)
             cba.memo_handle.save()
             cba.paid = true
           }
-          case fta: FreeTextScalarAnswer => if (!fta.paid) {
+          case fta: FreeTextAnswer => if (!fta.paid) {
             fta.memo_handle.setPaidStatus(true)
             fta.memo_handle.save()
             fta.paid = true
@@ -455,7 +455,7 @@ class MTurkAdapter extends AutomanAdapter {
     }
   }
 
-  def retrieve(ts: List[Thunk]) : List[Thunk] = {
+  def retrieve[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]] = {
     val req = RetrieveReq(ts)
 
     // enqueue
@@ -476,13 +476,13 @@ class MTurkAdapter extends AutomanAdapter {
     }
     // return response
     synchronized {
-      val response = _retrieved_data(req)
+      val response = _retrieved_data(req).asInstanceOf[List[Thunk[A]]]
       _retrieved_data.remove(req) // remove response data
       response
     }
   }
 
-  def scheduled_retrieve(ts: List[Thunk]) : List[Thunk] = {
+  def scheduled_retrieve[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]] = {
     Utilities.DebugLog(String.format("Retrieving %s tasks.", ts.size.toString()), LogLevel.INFO, LogType.ADAPTER, null)
 
     val question = mtquestion_for_thunks(ts)
@@ -495,8 +495,8 @@ class MTurkAdapter extends AutomanAdapter {
     // try grabbing something from each HIT
     hits.foreach { hit =>
       // get running thunks for each HIT
-      val hts = Queue[Thunk]()
-      hts ++= question.hit_thunk_map(hit).filter{_.state == SchedulerState.RUNNING}
+      val hts = Queue[Thunk[A]]()
+      hts ++= question.hit_thunk_map(hit).filter{_.state == SchedulerState.RUNNING}.asInstanceOf[List[Thunk[A]]]
       val assignments = hit.retrieve(backend)
 
       Utilities.DebugLog("There are " + assignments.size + " assignments available to process.", LogLevel.INFO, LogType.ADAPTER, auquestion.id)
@@ -515,14 +515,14 @@ class MTurkAdapter extends AutomanAdapter {
     ts
   }
 
-  def mark_hit_complete(hit: AutomanHIT, ts: List[Thunk]) {
+  def mark_hit_complete[A](hit: AutomanHIT, ts: List[Thunk[A]]) {
     if (ts.filter{_.state == SchedulerState.RUNNING}.size == 0) {
       // we're done
       Utilities.DebugLog("HIT is RESOLVED.", LogLevel.INFO, LogType.ADAPTER, hit.id)
       hit.state = HITState.RESOLVED
     }
   }
-  private def process_timeouts(hit: AutomanHIT, ts: List[Thunk]) = {
+  private def process_timeouts[A](hit: AutomanHIT, ts: List[Thunk[A]]) = {
     var hitcancelled = false
     ts.filter{_.is_timedout}.foreach { t =>
       Utilities.DebugLog("HIT TIMED OUT.", LogLevel.WARN, LogType.ADAPTER, hit.id)
@@ -534,14 +534,14 @@ class MTurkAdapter extends AutomanAdapter {
       }
     }
   }
-  private def process_assignment(q: MTurkQuestion, a: Assignment, hit_id: String, t: Thunk) {
+  private def process_assignment[A <: Answer](q: MTurkQuestion, a: Assignment, hit_id: String, t: Thunk[A]) {
     Utilities.DebugLog("Processing assignment...", LogLevel.WARN, LogType.ADAPTER, t.question.id)
 
     // mark as RETRIEVED
     t.state = SchedulerState.RETRIEVED
 
     // convert assignment XML to Answer
-    t.answer = q.answer(a, t.is_dual)
+    t.answer = q.answer(a, t.is_dual).asInstanceOf[A]
 
     // assign worker_id to thunk now that we know it
     t.worker_id = Some(a.getWorkerId())
@@ -602,7 +602,7 @@ class MTurkAdapter extends AutomanAdapter {
     hits.filter{_.state == HITState.RUNNING}.size > 0
   }
 
-  private def thunks_are_running(ts: List[Thunk]) {
+  private def thunks_are_running[A](ts: List[Thunk[A]]) {
     // mark timeouts
     ts.filter{_.state == SchedulerState.RUNNING}.foreach { t =>
       if(t.expires_at.before(new Date())) {

@@ -1,6 +1,6 @@
 package edu.umass.cs.automan.adapters.MTurk.question
 
-import edu.umass.cs.automan.core.answer.RadioButtonScalarAnswer
+import edu.umass.cs.automan.core.answer.RadioButtonAnswer
 import edu.umass.cs.automan.adapters.MTurk.{AutomanHIT, MTurkAdapter}
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -13,7 +13,7 @@ import org.apache.commons.codec.binary.Hex
 import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 
 object MTRadioButtonQuestion {
-  def apply(init: MTRadioButtonQuestion => Unit, a: MTurkAdapter) : Future[RadioButtonScalarAnswer] = {
+  def apply(init: MTRadioButtonQuestion => Unit, a: MTurkAdapter) : Future[RadioButtonAnswer] = {
     val radio_button_question = new MTRadioButtonQuestion
     init(radio_button_question)
     a.schedule(radio_button_question)
@@ -24,11 +24,11 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
   type QO = MTQuestionOption
   protected var _options = List[QO]()
 
-  def answer(a: Assignment, is_dual: Boolean): RadioButtonScalarAnswer = {
+  def answer(a: Assignment, is_dual: Boolean): A = {
     // ignore is_dual
-    new RadioButtonScalarAnswer(None, a.getWorkerId, fromXML(XML.loadString(a.getAnswer)))
+    new RadioButtonAnswer(None, a.getWorkerId, fromXML(XML.loadString(a.getAnswer)))
   }
-  def build_hit(ts: List[Thunk], is_dual: Boolean) : AutomanHIT = {
+  def build_hit(ts: List[Thunk[_]], is_dual: Boolean) : AutomanHIT = {
     // we ignore the "dual" option here
     val x = toXML(false, true)
     val h = AutomanHIT { a =>
