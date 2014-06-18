@@ -48,7 +48,7 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
     valid_ts.groupBy(_.answer.comparator).maxBy{ case(sym,ts) => ts.size }._2.size
   }
   def spawn(had_timeout: Boolean): List[Thunk[A]] = {
-    // num to spawn
+    // num to spawn (don't spawn more if any are running)
     val num_to_spawn = if (_thunks.count(_.state == SchedulerState.RUNNING) == 0) {
       num_to_run(question)
     } else {
@@ -92,11 +92,27 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
   def num_to_run(q: Q) : Int = {
     val np: Int = if(q.num_possibilities > BigInt(Int.MaxValue)) 1000 else q.num_possibilities.toInt
 
-    math.max(expected_for_agreement(np, _thunks.size, max_agree, q.confidence).toDouble,
+    // update # of unique workers
+    _unique_workers = _thunks.map { t => t.worker_id }.distinct.size
+
+    // number needed for agreement, adjusted for programmer time-value
+    val n = math.max(expected_for_agreement(np, _thunks.size, max_agree, q.confidence).toDouble,
              math.min(math.floor(q.budget.toDouble/q.reward.toDouble),
                       math.floor(q.time_value_per_hour.toDouble/q.wage.toDouble)
              )
-    ).toInt
+    )
+
+    // if we aren't using disqualifications, calculate the expected number of
+    // worker reparticipations and inflate n accordingly
+    work_uniqueness match {
+      case Some(u) =>
+        if (q.use_disqualifications) {
+          n.toInt
+        } else {
+          (n / u.toDouble).toInt
+        }
+      case None => n.toInt
+    }
   }
   
   def expected_for_agreement(num_possibilities: Int, trials: Int,  max_agr: Int, confidence: Double) : Int = {

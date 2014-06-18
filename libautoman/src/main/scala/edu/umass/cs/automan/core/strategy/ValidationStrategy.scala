@@ -13,6 +13,7 @@ abstract class ValidationStrategy[Q <: Question, A <: Answer, B](question: Q) {
   var _budget_committed: BigDecimal = 0.00
   var _num_possibilities: BigInt = 2
   var _thunks = List[Thunk[A]]()
+  var _unique_workers = 0
 
   def is_done: Boolean
   def num_possibilities: BigInt = _num_possibilities
@@ -25,4 +26,11 @@ abstract class ValidationStrategy[Q <: Question, A <: Answer, B](question: Q) {
   def spawn(suffered_timeout: Boolean): List[Thunk[A]]
   def thunks_to_accept: List[Thunk[A]]
   def thunks_to_reject: List[Thunk[A]]
+  def work_uniqueness = { // the proportion of work that is done by unique workers
+    if (_thunks.size == 0 || _unique_workers == 0) {
+      None
+    } else {
+      Some(_unique_workers.toDouble / _thunks.size.toDouble)
+    }
+  }
 }
