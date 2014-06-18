@@ -1,10 +1,10 @@
 package edu.umass.cs.automan.core.question
 
-import edu.umass.cs.automan.core.answer.RadioButtonDistributionAnswer
+import edu.umass.cs.automan.core.answer.RadioButtonAnswer
 
 abstract class RadioButtonDistributionQuestion extends DistributionQuestion {
   type QO <: QuestionOption
-  type A = RadioButtonDistributionAnswer
+  type A = Set[RadioButtonAnswer]
 
   protected var _options: List[QO]
 

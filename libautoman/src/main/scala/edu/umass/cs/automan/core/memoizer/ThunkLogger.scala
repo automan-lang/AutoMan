@@ -8,7 +8,7 @@ class ThunkLogger(DBConnString: String, user: String, password: String) {
   private val _manager = new EntityManager(DBConnString, user, password)
   _manager.migrate(classOf[ThunkMemo])
 
-  def writeThunk(t: Thunk, state: SchedulerState.Value, worker_id: String) {
+  def writeThunk(t: Thunk[_], state: SchedulerState.Value, worker_id: String) {
     val tl = _manager.create[ThunkMemo,java.lang.Integer](classOf[ThunkMemo])
     tl.setCompletionTime(new java.util.Date())
     tl.setCostInCents((t.cost * 100).toInt)

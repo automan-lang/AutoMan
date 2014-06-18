@@ -1,10 +1,10 @@
 package edu.umass.cs.automan.core.question
 
-import edu.umass.cs.automan.core.answer.FreeTextScalarAnswer
+import edu.umass.cs.automan.core.answer.FreeTextAnswer
 import util.matching.Regex
 
 abstract class FreeTextQuestion extends ScalarQuestion {
-  type A = FreeTextScalarAnswer
+  type A = FreeTextAnswer
 
   protected var _pattern_error_text: String = ""
 

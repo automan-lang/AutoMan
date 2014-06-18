@@ -6,22 +6,24 @@ import edu.umass.cs.automan.core.answer.{Answer, ScalarAnswer}
 import com.amazonaws.mturk.requester.{Assignment, QualificationRequirement}
 
 trait MTurkQuestion {
+  type A <: Answer
+
   var dequalification : QualificationRequirement = _
   var firstrun: Boolean = true
   var hits = List[AutomanHIT]()
-  var hit_thunk_map = Map[AutomanHIT,List[Thunk]]()
-  var thunk_assnid_map = Map[Thunk,String]() // maps thunks to assignment ids
+  var hit_thunk_map = Map[AutomanHIT,List[Thunk[_]]]()
+  var thunk_assnid_map = Map[Thunk[_],String]() // maps thunks to assignment ids
   protected var _qualified_workers = Map[String,Set[String]]() // (QualificationTypeId -> Set[worker_id])
   protected var _formatted_content: Option[scala.xml.NodeSeq] = None
   protected var _hit_type_id: Option[String] = None
   protected var _keywords = List[String]()
   protected var _qualifications = List[QualificationRequirement]()
 
-  def answer(a: Assignment, is_dual: Boolean): Answer
-  def build_hit(ts: List[Thunk], is_dual: Boolean) : AutomanHIT
+  def answer(a: Assignment, is_dual: Boolean): A
+  def build_hit(ts: List[Thunk[_]], is_dual: Boolean) : AutomanHIT
   def formatted_content: scala.xml.NodeSeq = _formatted_content match { case Some(x) => x; case None => scala.xml.NodeSeq.Empty }
   def formatted_content_=(x: scala.xml.NodeSeq) { _formatted_content = Some(x) }
-  def hit_for_thunk(t: Thunk) : AutomanHIT = {
+  def hit_for_thunk(t: Thunk[_]) : AutomanHIT = {
     var the_hit: AutomanHIT = null
     hits.foreach { h =>
       if (h.thunk_assignment_map.contains(t)) {

@@ -1,13 +1,33 @@
 package edu.umass.cs.automan.core.strategy
 
-import edu.umass.cs.automan.core.answer.DistributionAnswer
-import edu.umass.cs.automan.core.question.{DistributionQuestion, Question}
+import edu.umass.cs.automan.core.answer.ScalarAnswer
+import edu.umass.cs.automan.core.question.DistributionQuestion
+import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 
-abstract class DistributionValidationStrategy[Q <: DistributionQuestion, A <: DistributionAnswer](question: Q)
-  extends ValidationStrategy[Q,A](question) {
+abstract class DistributionValidationStrategy[Q <: DistributionQuestion, A <: ScalarAnswer, B](question: Q)
+  extends ValidationStrategy[Q,A,B](question) {
+
   def is_done = throw new NotImplementedError("DistributionValidationStrategy not yet implemented.")
-  def select_answer(question: Question) : DistributionAnswer = {
-    // TODO
-    throw new NotImplementedError("DistributionValidationStrategy not yet implemented.")
+  override def select_answer: B = {
+    // just return all retrieved answers
+    // asInstanceOf[B] necessary because Scala does not
+    // know that B is always Set[A]
+    retrieved_thunks.map { t => t.answer }.toSet.asInstanceOf[B]
+  }
+  override def thunks_to_accept: List[Thunk[A]] = {
+    val valid_thunks = _thunks.filter(_.state == SchedulerState.RETRIEVED)
+    if (valid_thunks.size == question.num_samples) {
+      valid_thunks
+    } else {
+      throw new PrematureValidationCompletionException("thunks_to_accept", this.getClass.toString)
+    }
+  }
+  override def thunks_to_reject: List[Thunk[A]] = {
+    val valid_thunks = _thunks.filter(_.state == SchedulerState.RETRIEVED)
+    if (valid_thunks.size == question.num_samples) {
+      _thunks.filter(_.state != SchedulerState.RETRIEVED)
+    } else {
+      throw new PrematureValidationCompletionException("thunks_to_accept", this.getClass.toString)
+    }
   }
 }

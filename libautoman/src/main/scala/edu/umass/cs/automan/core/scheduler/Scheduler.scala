@@ -13,14 +13,13 @@ class Scheduler (val question: Question,
                  val thunklog: ThunkLogger,
                  val poll_interval_in_s: Int) {
   type A = question.A
-
+  type B = question.B
+  // we need to get the initialized strategy instance from
+  // the Question itself in order to satisfy the type checker
+  val strategy = question.strategy_instance
   var thunks = List[Thunk[A]]()
 
-  def run() : A = {
-    // we need to get the initialized strategy instance from
-    // the Question itself in order to satisfy the type checker
-    val strategy = question.strategy_instance
-
+  def run() : B = {
     // check memo DB first
     val memo_answers = get_memo_answers(is_dual = false)
     val memo_dual_answers = get_memo_answers(is_dual = true)
@@ -55,7 +54,7 @@ class Scheduler (val question: Question,
           // get data
           val results = if (!question.dry_run) {
             adapter.retrieve(running_thunks) // blocks
-          } else { List[Thunk]() }
+          } else { List[Thunk[A]]() }
 
           // check for timeout
           if (results.filter(_.state == SchedulerState.TIMEOUT).size != 0) {
@@ -64,7 +63,7 @@ class Scheduler (val question: Question,
             last_iteration_timeout = false
           }
           // saves *recently* RETRIEVED thunks
-          memoize_answers(results)  // blocks
+          memoize_answers(results.asInstanceOf[List[Thunk[A]]])  // blocks
         }
 
         // sleep if necessary
@@ -77,23 +76,23 @@ class Scheduler (val question: Question,
       }
 
     } catch {
-      case o:OverBudgetException => {
+      case o:OverBudgetException[_] => {
         Utilities.DebugLog("OverBudgetException.", LogLevel.FATAL, LogType.SCHEDULER, question.id)
         over_budget = true
       }
     }
     Utilities.DebugLog("Exiting scheduling loop...", LogLevel.INFO, LogType.SCHEDULER, question.id)
 
-    val answer = strategy.select_answer.asInstanceOf[A]
+    val answer = strategy.select_answer
     var spent: BigDecimal = 0
     if (!over_budget) {
-      spent = accept_and_reject(thunks, answer)
+      spent = accept_and_reject(thunks, answer.asInstanceOf[B])
       Utilities.DebugLog("Total spent: " + spent.toString(),LogLevel.INFO, LogType.SCHEDULER, question.id)
     } else {
-      answer.over_budget = true
+      throw new OverBudgetException(Some(answer))
     }
-    answer.final_cost
-    answer
+    question.final_cost = spent
+    answer.asInstanceOf[B]
   }
 
   def get_memo_answers(is_dual: Boolean) : Queue[A] = {
@@ -102,37 +101,63 @@ class Scheduler (val question: Question,
     answers
   }
 
-  // returns total cost
-  def accept_and_reject[A](ts: List[Thunk], answer: A) : BigDecimal = {
+  def accept_and_reject(ts: List[Thunk[A]], answer: B) : BigDecimal = {
     var spent: BigDecimal = 0
-    ts.filter(_.state == SchedulerState.RETRIEVED).foreach { t =>
-      if(t.answer.comparator == answer.comparator) {
-        Utilities.DebugLog("Accepting thunk with answer: " + t.answer.comparator.toString + " and paying $" + t.cost.toString(), LogLevel.INFO, LogType.SCHEDULER, question.id)
+    val accepts = strategy.thunks_to_accept
+    val rejects = strategy.thunks_to_reject
+    val cancels = ts.filter(_.state == SchedulerState.RUNNING)
+    val timeouts = ts.filter(_.state == SchedulerState.TIMEOUT)
+
+    // Accept
+    accepts.foreach { t =>
+      Utilities.DebugLog(
+        "Accepting thunk with answer: " + t.answer.toString + " and paying $" +
+          t.cost.toString(), LogLevel.INFO, LogType.SCHEDULER, question.id
+      )
+      adapter.accept(t)
+      thunklog.writeThunk(t, SchedulerState.ACCEPTED, t.worker_id.get)
+      spent += t.cost
+    }
+
+    // Reject
+    if (!question.dont_reject) {
+      rejects.foreach { t =>
+        Utilities.DebugLog(
+          "Rejecting thunk with incorrect answer: " +
+            t.answer.toString, LogLevel.INFO, LogType.SCHEDULER, question.id
+        )
+        adapter.reject(t)
+        thunklog.writeThunk(t, SchedulerState.REJECTED, t.worker_id.get)
+      }
+    } else {
+      // Accept if the user specified "don't reject"
+      rejects.foreach { t =>
+        Utilities.DebugLog(
+          "Accepting (NOT rejecting) thunk with incorrect answer " +
+            "(if you did not want this, set  Question.dont_reject to false): " +
+            t.answer.toString, LogLevel.INFO, LogType.SCHEDULER, question.id
+        )
         adapter.accept(t)
         thunklog.writeThunk(t, SchedulerState.ACCEPTED, t.worker_id.get)
         spent += t.cost
-      } else if(!t.question.dont_reject) {
-        Utilities.DebugLog("Rejecting thunk with incorrect answer: " + t.answer.comparator.toString, LogLevel.INFO, LogType.SCHEDULER, question.id)
-        adapter.reject(t)
-        thunklog.writeThunk(t, SchedulerState.REJECTED, t.worker_id.get)
-      } else {
-        Utilities.DebugLog("Accepting (NOT rejecting) thunk with incorrect answer (if you did not want this, set  Question.dont_reject to false): " + t.answer.comparator.toString, LogLevel.INFO, LogType.SCHEDULER, question.id)
-        adapter.accept(t)
-        thunklog.writeThunk(t, SchedulerState.REJECTED, t.worker_id.get)
-        spent += t.cost
       }
     }
-    ts.filter(_.state == SchedulerState.RUNNING).foreach { t =>
+
+    // Early cancel
+    cancels.foreach { t =>
       Utilities.DebugLog("Cancelling RUNNING thunk...", LogLevel.INFO, LogType.SCHEDULER, question.id)
       adapter.cancel(t)
       thunklog.writeThunk(t, SchedulerState.CANCELLED, null)
     }
-    ts.filter(_.state == SchedulerState.TIMEOUT).foreach { t =>
+
+    // Timeouts
+    timeouts.foreach { t =>
       thunklog.writeThunk(t, SchedulerState.TIMEOUT, null)
     }
-    answer.final_cost = spent
+
     spent
   }
+
   def completed_thunks(ts: List[Thunk[_]]) : List[Thunk[_]] = ts.filter( t =>
     t.state == SchedulerState.PROCESSED &&
     t.state == SchedulerState.RETRIEVED ||

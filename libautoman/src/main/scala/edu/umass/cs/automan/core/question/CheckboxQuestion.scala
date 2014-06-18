@@ -1,12 +1,12 @@
 package edu.umass.cs.automan.core.question
 
-import edu.umass.cs.automan.core.answer.CheckboxScalarAnswer
+import edu.umass.cs.automan.core.answer.CheckboxAnswer
 import edu.umass.cs.automan.adapters.MTurk.question.MTQuestionOption
 import edu.umass.cs.automan.core.strategy.DefaultScalarStrategy
 
 abstract class CheckboxQuestion extends ScalarQuestion {
   type QO <: QuestionOption
-  type A = CheckboxScalarAnswer
+  type A = CheckboxAnswer
 
   protected var _options: List[QO]
   protected var _dual_text: Option[String] = None

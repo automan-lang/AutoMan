@@ -1,18 +1,17 @@
 package edu.umass.cs.automan.adapters.MTurk.question
 
-import edu.umass.cs.automan.core.answer.RadioButtonDistributionAnswer
 import edu.umass.cs.automan.adapters.MTurk.{AutomanHIT, MTurkAdapter}
+import edu.umass.cs.automan.core.answer.RadioButtonAnswer
 import edu.umass.cs.automan.core.question.RadioButtonDistributionQuestion
 import scala.concurrent._
 import edu.umass.cs.automan.core.scheduler.Thunk
 import com.amazonaws.mturk.requester.Assignment
-import xml.XML
 import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
 import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 
 object MTRadioButtonDistributionQuestion {
-  def apply(init: MTRadioButtonDistributionQuestion => Unit, a: MTurkAdapter) : Future[RadioButtonDistributionAnswer] = {
+  def apply(init: MTRadioButtonDistributionQuestion => Unit, a: MTurkAdapter) : Future[Set[RadioButtonAnswer]] = {
     val radio_button_question = new MTRadioButtonDistributionQuestion
     init(radio_button_question)
     a.schedule(radio_button_question)
@@ -21,14 +20,15 @@ object MTRadioButtonDistributionQuestion {
 
 class MTRadioButtonDistributionQuestion extends RadioButtonDistributionQuestion with MTurkQuestion {
   type QO = MTQuestionOption
+
   protected var _options = List[QO]()
 
-  def answer(a: Assignment, is_dual: Boolean): RadioButtonDistributionAnswer = {
+  def answer(a: Assignment, is_dual: Boolean): Set[A] = {
     // ignore is_dual
 //    new RadioButtonDistributionAnswer(None, a.getWorkerId, fromXML(XML.loadString(a.getAnswer)))
     throw new NotImplementedError("Answer not yet implemented for distribution questions.")
   }
-  def build_hit(ts: List[Thunk], is_dual: Boolean) : AutomanHIT = {
+  def build_hit(ts: List[Thunk[_]], is_dual: Boolean) : AutomanHIT = {
     // we ignore the "dual" option here
     val x = toXML(false, true)
     val h = AutomanHIT { a =>
