@@ -41,8 +41,8 @@ class MTurkAdapter extends AutomanAdapter {
 
   private val SLEEP_MS = 500
   private val SHUTDOWN_DELAY_MS = SLEEP_MS * 10
-  private case class EnqueuedHIT[A](ts: List[Thunk[A]], dual: Boolean, exclude_worker_ids: List[String])
-  private case class RetrieveReq[A](ts: List[Thunk[A]])
+  private case class EnqueuedHIT[A <: Answer](ts: List[Thunk[A]], dual: Boolean, exclude_worker_ids: List[String])
+  private case class RetrieveReq[A <: Answer](ts: List[Thunk[A]])
   private case class BudgetReq()
   private case class DisposeQualsReq(q: MTurkQuestion)
 
@@ -360,7 +360,7 @@ class MTurkAdapter extends AutomanAdapter {
 
     initWorkerIfNeeded()
   }
-  private def scheduled_cancel[A](t: Thunk[A]) : Unit = {
+  private def scheduled_cancel[A <: Answer](t: Thunk[A]) : Unit = {
     Utilities.DebugLog(String.format("Cancelling task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
     t.question match {
@@ -394,7 +394,7 @@ class MTurkAdapter extends AutomanAdapter {
       case _ => throw new Exception("Impossible error.")
     }
   }
-  private def set_paid_status[A](t: Thunk[A]) : Unit = {
+  private def set_paid_status[A <: Answer](t: Thunk[A]) : Unit = {
     t.question match {
       case mtq:MTurkQuestion => {
         t.answer match {
@@ -426,7 +426,7 @@ class MTurkAdapter extends AutomanAdapter {
 
     initWorkerIfNeeded()
   }
-  private def scheduled_reject[A](t: Thunk[A]) : Unit = {
+  private def scheduled_reject[A <: Answer](t: Thunk[A]) : Unit = {
     Utilities.DebugLog(String.format("Rejecting task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
     t.question match {
@@ -515,14 +515,14 @@ class MTurkAdapter extends AutomanAdapter {
     ts
   }
 
-  def mark_hit_complete[A](hit: AutomanHIT, ts: List[Thunk[A]]) {
+  def mark_hit_complete[A <: Answer](hit: AutomanHIT, ts: List[Thunk[A]]) {
     if (ts.filter{_.state == SchedulerState.RUNNING}.size == 0) {
       // we're done
       Utilities.DebugLog("HIT is RESOLVED.", LogLevel.INFO, LogType.ADAPTER, hit.id)
       hit.state = HITState.RESOLVED
     }
   }
-  private def process_timeouts[A](hit: AutomanHIT, ts: List[Thunk[A]]) = {
+  private def process_timeouts[A <: Answer](hit: AutomanHIT, ts: List[Thunk[A]]) = {
     var hitcancelled = false
     ts.filter{_.is_timedout}.foreach { t =>
       Utilities.DebugLog("HIT TIMED OUT.", LogLevel.WARN, LogType.ADAPTER, hit.id)
@@ -602,7 +602,7 @@ class MTurkAdapter extends AutomanAdapter {
     hits.filter{_.state == HITState.RUNNING}.size > 0
   }
 
-  private def thunks_are_running[A](ts: List[Thunk[A]]) {
+  private def thunks_are_running[A <: Answer](ts: List[Thunk[A]]) {
     // mark timeouts
     ts.filter{_.state == SchedulerState.RUNNING}.foreach { t =>
       if(t.expires_at.before(new Date())) {

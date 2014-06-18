@@ -10,5 +10,5 @@ abstract class Answer(workerId: String) {
   val worker_id: String = workerId
   def comparator: AnswerValueType
   def final_answer(confidence: Option[Double]): Answer
-  def sameAs[A <: Answer](answer: A): Boolean
+  def sameAs[A <: Answer](answer: A): Boolean = this.comparator == answer.comparator
 }

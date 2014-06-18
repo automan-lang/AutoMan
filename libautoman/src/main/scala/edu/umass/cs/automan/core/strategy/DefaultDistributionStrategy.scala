@@ -43,6 +43,4 @@ class DefaultDistributionStrategy[Q <: DistributionQuestion, A <: ScalarAnswer, 
 
     new_thunks
   }
-
-  override def select_answer: A = throw new NotImplementedError("Wait... working on it!")
 }

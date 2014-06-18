@@ -7,6 +7,7 @@ import com.amazonaws.mturk.requester.{Assignment, QualificationRequirement}
 
 trait MTurkQuestion {
   type A <: Answer
+  type B
 
   var dequalification : QualificationRequirement = _
   var firstrun: Boolean = true

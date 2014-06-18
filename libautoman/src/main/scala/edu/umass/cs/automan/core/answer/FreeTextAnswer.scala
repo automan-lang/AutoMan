@@ -15,5 +15,4 @@ class FreeTextAnswer(conf: Option[Double], worker_id: String, val value: Symbol)
     }
   }
   override def toString = value.toString().drop(1)
-  override def sameAs[A <: FreeTextAnswer](answer: A): Boolean = this.value == answer.value
 }

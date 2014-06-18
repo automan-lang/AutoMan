@@ -15,5 +15,4 @@ class RadioButtonAnswer(conf: Option[Double], worker_id: String, val value: Symb
     }
   }
   override def toString = value.toString().drop(1)
-  override def sameAs[A <: RadioButtonAnswer](answer: A): Boolean = this.value == answer.value
 }
