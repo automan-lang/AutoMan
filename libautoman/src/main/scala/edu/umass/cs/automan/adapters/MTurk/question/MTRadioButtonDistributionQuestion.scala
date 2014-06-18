@@ -10,6 +10,8 @@ import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
 import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 
+import scala.xml.XML
+
 object MTRadioButtonDistributionQuestion {
   def apply(init: MTRadioButtonDistributionQuestion => Unit, a: MTurkAdapter) : Future[Set[RadioButtonAnswer]] = {
     val radio_button_question = new MTRadioButtonDistributionQuestion
@@ -25,8 +27,7 @@ class MTRadioButtonDistributionQuestion extends RadioButtonDistributionQuestion 
 
   def answer(a: Assignment, is_dual: Boolean): A = {
     // ignore is_dual
-//    new RadioButtonDistributionAnswer(None, a.getWorkerId, fromXML(XML.loadString(a.getAnswer)))
-    throw new NotImplementedError("Answer not yet implemented for distribution questions.")
+    new RadioButtonAnswer(None, a.getWorkerId, fromXML(XML.loadString(a.getAnswer)))
   }
   def build_hit(ts: List[Thunk[_]], is_dual: Boolean) : AutomanHIT = {
     // we ignore the "dual" option here

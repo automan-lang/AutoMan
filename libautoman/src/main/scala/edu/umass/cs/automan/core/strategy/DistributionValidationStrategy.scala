@@ -7,7 +7,7 @@ import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 abstract class DistributionValidationStrategy[Q <: DistributionQuestion, A <: ScalarAnswer, B](question: Q)
   extends ValidationStrategy[Q,A,B](question) {
 
-  def is_done = throw new NotImplementedError("DistributionValidationStrategy not yet implemented.")
+  def is_done = retrieved_thunks.size == question.num_samples
   override def select_answer: B = {
     // just return all retrieved answers
     // asInstanceOf[B] necessary because Scala does not
@@ -16,7 +16,7 @@ abstract class DistributionValidationStrategy[Q <: DistributionQuestion, A <: Sc
   }
   override def thunks_to_accept: List[Thunk[A]] = {
     val valid_thunks = _thunks.filter(_.state == SchedulerState.RETRIEVED)
-    if (valid_thunks.size == question.num_samples) {
+    if (retrieved_thunks.size == question.num_samples) {
       valid_thunks
     } else {
       throw new PrematureValidationCompletionException("thunks_to_accept", this.getClass.toString)

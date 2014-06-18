@@ -29,6 +29,11 @@ object AutoManBuild extends Build {
       base = file("apps/simple_program")
     ) dependsOn automan
 
+  lazy val SimpleSurvey =
+    Project(id = "SimpleSurvey",
+      base = file("apps/SimpleSurvey")
+    ) dependsOn automan
+
   lazy val HowManyThings =
     Project(id = "HowManyThings",
       base = file("apps/HowManyThings")
