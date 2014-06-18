@@ -23,14 +23,14 @@ class MTRadioButtonDistributionQuestion extends RadioButtonDistributionQuestion 
 
   protected var _options = List[QO]()
 
-  def answer(a: Assignment, is_dual: Boolean): Set[A] = {
+  def answer(a: Assignment, is_dual: Boolean): A = {
     // ignore is_dual
 //    new RadioButtonDistributionAnswer(None, a.getWorkerId, fromXML(XML.loadString(a.getAnswer)))
     throw new NotImplementedError("Answer not yet implemented for distribution questions.")
   }
   def build_hit(ts: List[Thunk[_]], is_dual: Boolean) : AutomanHIT = {
     // we ignore the "dual" option here
-    val x = toXML(false, true)
+    val x = toXML(is_dual = false, randomize = true)
     val h = AutomanHIT { a =>
       a.hit_type_id = _hit_type_id
       a.title = title

@@ -1,5 +1,6 @@
 import edu.umass.cs.automan.adapters.MTurk._
 import edu.umass.cs.automan.core.Utilities
+import edu.umass.cs.automan.core.exception.OverBudgetException
 import scala.concurrent._
 import scala.concurrent.duration._
 
@@ -24,10 +25,12 @@ object simple_program extends App {
     )
   }
 
-  val future_answer = which_one("Which one of these does not belong?")
-  val answer = Await.result(future_answer, Duration.Inf)
-  println("answer1 is a " + answer)
-  if (answer.over_budget) {
-    println("Over budget!")
+  try {
+    val future_answer = which_one("Which one of these does not belong?")
+    val answer = Await.result(future_answer, Duration.Inf)
+    println("answer1 is a " + answer)
+
+  } catch {
+    case OverBudgetException(e) => println("Over budget!")
   }
 }

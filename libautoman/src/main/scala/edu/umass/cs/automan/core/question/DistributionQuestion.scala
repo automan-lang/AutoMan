@@ -10,7 +10,6 @@ abstract class DistributionQuestion extends Question {
 
   var _num_samples: Int = 30
 
-  def distribution: Set[A]
   private[automan] def init_strategy {
     _strategy_instance = _strategy match {
       case None => new DefaultDistributionStrategy[this.type, A, B](this, _num_samples)

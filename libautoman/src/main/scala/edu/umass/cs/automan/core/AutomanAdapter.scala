@@ -30,10 +30,10 @@ abstract class AutomanAdapter {
   protected var _thunk_pass: String = ""
 
   // getters and setters
-  def accept[A](t: Thunk[A])
+  def accept[A <: Answer](t: Thunk[A])
   def budget: BigDecimal = _budget
   def budget_=(b: BigDecimal) { _budget = b }
-  def cancel[A](t: Thunk[A])
+  def cancel[A <: Answer](t: Thunk[A])
   def confidence: Double = _confidence
   def confidence_=(c: Double) { _confidence = c }
   def memo_init() {
@@ -42,10 +42,10 @@ abstract class AutomanAdapter {
   def thunklog_init() {
     _thunklog = new ThunkLogger(_thunk_conn_string, _thunk_user, _thunk_pass)
   }
-  def post[A](ts: List[Thunk[A]], dual: Boolean, exclude_worker_ids: List[String])
-  def process_custom_info[A](t: Thunk[A], i: Option[String])
-  def reject[A](t: Thunk[A])
-  def retrieve[A](ts: List[Thunk[A]]) : List[Thunk[A]]  // returns all thunks passed in
+  def post[A <: Answer](ts: List[Thunk[A]], dual: Boolean, exclude_worker_ids: List[String])
+  def process_custom_info[A <: Answer](t: Thunk[A], i: Option[String])
+  def reject[A <: Answer](t: Thunk[A])
+  def retrieve[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]]  // returns all thunks passed in
   def question_startup_hook(q: Question): Unit = {}
   def question_shutdown_hook(q: Question): Unit = {}
 

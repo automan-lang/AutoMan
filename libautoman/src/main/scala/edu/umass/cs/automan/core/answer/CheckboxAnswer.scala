@@ -15,5 +15,4 @@ class CheckboxAnswer(conf: Option[Double], worker_id: String, val values: Set[Sy
     }
   }
   override def toString = values.map(_.toString()).reduceLeft(_ + ", " + _)
-  override def sameAs[A <: CheckboxAnswer](answer: A): Boolean = this.values.equals(answer.values)
 }
