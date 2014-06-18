@@ -9,11 +9,11 @@ trait MTurkQuestion {
   type A <: Answer
   type B
 
-  var dequalification : QualificationRequirement = _
-  var firstrun: Boolean = true
-  var hits = List[AutomanHIT]()
-  var hit_thunk_map = Map[AutomanHIT,List[Thunk[_]]]()
-  var thunk_assnid_map = Map[Thunk[_],String]() // maps thunks to assignment ids
+  protected[automan] var disqualification : QualificationRequirement = _
+  protected[automan] var firstrun: Boolean = true
+  protected[automan] var hits = List[AutomanHIT]()
+  protected[automan] var hit_thunk_map = Map[AutomanHIT,List[Thunk[_]]]()
+  protected[automan] var thunk_assnid_map = Map[Thunk[_],String]() // maps thunks to assignment ids
   protected var _qualified_workers = Map[String,Set[String]]() // (QualificationTypeId -> Set[worker_id])
   protected var _formatted_content: Option[scala.xml.NodeSeq] = None
   protected var _hit_type_id: Option[String] = None
@@ -22,7 +22,10 @@ trait MTurkQuestion {
 
   def answer(a: Assignment, is_dual: Boolean): A
   def build_hit(ts: List[Thunk[_]], is_dual: Boolean) : AutomanHIT
-  def formatted_content: scala.xml.NodeSeq = _formatted_content match { case Some(x) => x; case None => scala.xml.NodeSeq.Empty }
+  def formatted_content: scala.xml.NodeSeq = _formatted_content match {
+    case Some(x) => x
+    case None => scala.xml.NodeSeq.Empty
+  }
   def formatted_content_=(x: scala.xml.NodeSeq) { _formatted_content = Some(x) }
   def hit_for_thunk(t: Thunk[_]) : AutomanHIT = {
     var the_hit: AutomanHIT = null

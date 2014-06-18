@@ -28,6 +28,7 @@ abstract class Question {
   protected var _blacklisted_workers = List[String]()
   protected var _dry_run: Boolean = false
   protected var _dont_reject: Boolean = false
+  protected var _use_disqualifications: Boolean = false
 
   def blacklist_worker(worker_id: String) { _blacklisted_workers = worker_id :: _blacklisted_workers }
   def blacklisted_workers = _blacklisted_workers
@@ -49,6 +50,8 @@ abstract class Question {
   def image_url: String = _image_url match { case Some(x) => x; case None => "" }
   def image_url_=(s: String) { _image_url = Some(s) }
   private[automan] def init_strategy(): Unit
+  def max_replicas: Option[Int] = _max_replicas
+  def max_replicas_=(m: Int) { _max_replicas = Some(m) }
   def memo_hash(dual: Boolean): String
   def num_possibilities: BigInt
   def question_timeout_in_s: Int = (_worker_timeout_in_s * _question_timeout_multiplier).toInt
@@ -67,8 +70,8 @@ abstract class Question {
   def time_value_per_hour_=(v: BigDecimal) { _time_value_per_hour = Some(v) }
   def title: String = _title match { case Some(t) => t; case None => text }
   def title_=(t: String) { _title = Some(t)}
-  def max_replicas: Option[Int] = _max_replicas
-  def max_replicas_=(m: Int) { _max_replicas = Some(m) }
+  def use_disqualifications_=(b: Boolean) { _use_disqualifications = b }
+  def use_disqualifications: Boolean = _use_disqualifications
   def wage: BigDecimal = _wage
   def wage_=(w: BigDecimal) { _wage = w }
   def worker_timeout_in_s_=(t: Int) { _worker_timeout_in_s = t }

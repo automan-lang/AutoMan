@@ -261,16 +261,16 @@ class MTurkAdapter extends AutomanAdapter {
       val qual : QualificationType = backend.createQualificationType("AutoMan " + UUID.randomUUID(),
             "automan", "AutoMan automatically generated Qualification (title: " + title + ")")
       val deq = new QualificationRequirement(qual.getQualificationTypeId, Comparator.NotEqualTo, 1, null, false)
-      q.dequalification = deq
+      q.disqualification = deq
       q.firstrun = false
       // we need early qualifications; add anyway
       if (qualify_early) {
         q.qualifications = deq :: q.qualifications
       }
-    } else if (!q.qualifications.contains(q.dequalification)) {
+    } else if (!q.qualifications.contains(q.disqualification)) {
       // add the dequalification to the list of quals if this
       // isn't a first run and it isn't already there
-      q.qualifications = q.dequalification :: q.qualifications
+      q.qualifications = q.disqualification :: q.qualifications
     }
     q.qualifications
   }
@@ -507,7 +507,7 @@ class MTurkAdapter extends AutomanAdapter {
       Utilities.DebugLog("There are " + assignments.size + " assignments available to process.", LogLevel.INFO, LogType.ADAPTER, auquestion.id)
 
       // mark next available thunk as RETRIEVED for each answer
-      assignments.foreach { a => process_assignment(question, a, hit.hit.getHITId, hts.dequeue()) }
+      assignments.foreach { a => process_assignment(question, a, hit.hit.getHITId, hts.dequeue(), auquestion.use_disqualifications) }
 
       // timeout timed out Thunks and the HIT
       process_timeouts(hit, hts.toList)
@@ -539,7 +539,7 @@ class MTurkAdapter extends AutomanAdapter {
       }
     }
   }
-  private def process_assignment[A <: Answer](q: MTurkQuestion, a: Assignment, hit_id: String, t: Thunk[A]) {
+  private def process_assignment[A <: Answer](q: MTurkQuestion, a: Assignment, hit_id: String, t: Thunk[A], use_disq: Boolean) {
     Utilities.DebugLog("Processing assignment...", LogLevel.WARN, LogType.ADAPTER, t.question.id)
 
     // mark as RETRIEVED
@@ -551,8 +551,10 @@ class MTurkAdapter extends AutomanAdapter {
     // assign worker_id to thunk now that we know it
     t.worker_id = Some(a.getWorkerId())
 
-    // dequalify worker
-    dequalify_worker(q, a.getWorkerId, t.question.id)
+    // disqualify worker
+    if (use_disq) {
+      disqualify_worker(q, a.getWorkerId, t.question.id)
+    }
 
     // pair assignment with thunk
     q.thunk_assnid_map += (t -> a.getAssignmentId)  // I believe that .getAssignmentId is just a local getter
@@ -561,18 +563,18 @@ class MTurkAdapter extends AutomanAdapter {
     t.answer.custom_info = Some(new MTurkAnswerCustomInfo(a.getAssignmentId, hit_id).toString)
   }
 
-  private def dequalify_worker(q: MTurkQuestion, worker_id: String, question_id: UUID) : Unit = {
+  private def disqualify_worker(q: MTurkQuestion, worker_id: String, question_id: UUID) : Unit = {
     // grant dequalification Qualification
     // AMT checks whether worker's assigned value == 1; if so, not allowed
-    if (q.worker_is_qualified(q.dequalification.getQualificationTypeId, worker_id)) {
+    if (q.worker_is_qualified(q.disqualification.getQualificationTypeId, worker_id)) {
       // the user may have asked for the dequalification for second-round thunks
       Utilities.DebugLog("Updating worker dequalification for " + worker_id + ".", LogLevel.INFO, LogType.ADAPTER, question_id)
-      backend.updateQualificationScore(q.dequalification.getQualificationTypeId, worker_id, 1)
+      backend.updateQualificationScore(q.disqualification.getQualificationTypeId, worker_id, 1)
     } else {
       // otherwise, just grant it
       Utilities.DebugLog("Dequalifying worker " + worker_id + " from future work.", LogLevel.INFO, LogType.ADAPTER, question_id)
-      backend.assignQualification(q.dequalification.getQualificationTypeId, worker_id, 1, false)
-      q.qualify_worker(q.dequalification.getQualificationTypeId, worker_id)
+      backend.assignQualification(q.disqualification.getQualificationTypeId, worker_id, 1, false)
+      q.qualify_worker(q.disqualification.getQualificationTypeId, worker_id)
     }
   }
   private def grant_qualification_requests(q: MTurkQuestion, blacklisted_workers: List[String], question_id: UUID) : Unit = {
@@ -592,7 +594,7 @@ class MTurkAdapter extends AutomanAdapter {
         backend.rejectQualificationRequest(qr.getQualificationRequestId, "You cannot request this Qualification more than once.")
       } else {
         // grant
-        if (qr.getQualificationTypeId == q.dequalification.getQualificationTypeId) {
+        if (qr.getQualificationTypeId == q.disqualification.getQualificationTypeId) {
           Utilities.DebugLog("Worker " + qr.getSubjectId + " requests one-time qualification; granting.", LogLevel.INFO, LogType.ADAPTER, question_id)
           backend.grantQualification(qr.getQualificationRequestId, 0)
           q.qualify_worker(qr.getQualificationTypeId, qr.getSubjectId)
