@@ -22,12 +22,5 @@ abstract class DistributionValidationStrategy[Q <: DistributionQuestion, A <: Sc
       throw new PrematureValidationCompletionException("thunks_to_accept", this.getClass.toString)
     }
   }
-  override def thunks_to_reject: List[Thunk[A]] = {
-    val valid_thunks = _thunks.filter(_.state == SchedulerState.RETRIEVED)
-    if (valid_thunks.size == question.num_samples) {
-      _thunks.filter(_.state != SchedulerState.RETRIEVED)
-    } else {
-      throw new PrematureValidationCompletionException("thunks_to_accept", this.getClass.toString)
-    }
-  }
+  override def thunks_to_reject: List[Thunk[A]] = List.empty[Thunk[A]] // never reject
 }

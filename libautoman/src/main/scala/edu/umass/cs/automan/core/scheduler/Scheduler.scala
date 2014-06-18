@@ -34,7 +34,7 @@ class Scheduler (val question: Question,
         adapter.question_startup_hook(question)
       }
       while(!strategy.is_done) {
-        if (thunks.filter(_.state == SchedulerState.RUNNING).size == 0) {
+        if (running_thunks.size == 0) {
           // spawn new thunks; in READY state here
           val new_thunks = strategy.spawn(last_iteration_timeout) // OverBudgetException should be thrown here
           thunks = new_thunks ::: thunks
@@ -57,7 +57,7 @@ class Scheduler (val question: Question,
           } else { List[Thunk[A]]() }
 
           // check for timeout
-          if (results.filter(_.state == SchedulerState.TIMEOUT).size != 0) {
+          if (results.count(_.state == SchedulerState.TIMEOUT) != 0) {
             last_iteration_timeout = true
           } else {
             last_iteration_timeout = false
