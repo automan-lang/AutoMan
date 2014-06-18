@@ -1,7 +1,7 @@
 package edu.umass.cs.automan.core.memoizer
 
 import net.java.ao._
-import edu.umass.cs.automan.core.question.{FreeTextQuestion, CheckboxQuestion, RadioButtonQuestion, Question}
+import edu.umass.cs.automan.core.question._
 import edu.umass.cs.automan.core.answer._
 import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 
@@ -15,39 +15,66 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
     q match {
       case rbq: RadioButtonQuestion => {
         if (!dual) { // There are never any RadioButton duals
-          val memos = _manager.find[RadioButtonAnswerMemo,java.lang.Integer](classOf[RadioButtonAnswerMemo], "memoHash = ?", rbq.memo_hash(false))
-          memos.map { memo =>
-            val r = new RadioButtonAnswer(None, memo.getWorkerId, Symbol(memo.getAnswerValue.drop(1)) )
-            r.custom_info = Some(memo.getCustomInfo)
-            r.paid = memo.getPaidStatus
-            r.memo_handle = memo
-            r
-          }.toList
+          deserializeRBQ(rbq)
+        } else {
+          List[RadioButtonAnswer]()
+        }
+      }
+      case rbdq: RadioButtonDistributionQuestion => {
+        if (!dual) { // There are never any RadioButton duals
+          deserializeRBQ(rbdq)
         } else {
           List[RadioButtonAnswer]()
         }
       }
       case cbq: CheckboxQuestion => {
-        val memos = _manager.find[CheckboxAnswerMemo,java.lang.Integer](classOf[CheckboxAnswerMemo], "memoHash = ?", cbq.memo_hash(dual))
-        memos.map { memo =>
-          val r = new CheckboxAnswer(None, memo.getWorkerId, memo.getAnswerValues.split(",").map(str => Symbol(str.drop(1))).toSet)
-          r.custom_info = Some(memo.getCustomInfo)
-          r.paid = memo.getPaidStatus
-          r.memo_handle = memo
-          r
-        }.toList
+        deserializeCBQ(cbq, dual)
       }
       case ftq: FreeTextQuestion => {
-        val memos = _manager.find[FreeTextAnswerMemo,java.lang.Integer](classOf[FreeTextAnswerMemo], "memoHash = ?", ftq.memo_hash(false))
-        memos.map { memo =>
-          val r = new FreeTextAnswer(None, memo.getWorkerId, Symbol(memo.getAnswerValue.drop(1)))
-          r.custom_info = Some(memo.getCustomInfo)
-          r.paid = memo.getPaidStatus
-          r.memo_handle = memo
-          r
-        }.toList
+        deserializeRBQ(ftq)
       }
     }
+  }
+
+  private def deserializeCBQ(cbq: CheckboxQuestion, dual: Boolean) : List[CheckboxAnswer] = {
+    val memos = _manager.find[CheckboxAnswerMemo,java.lang.Integer](classOf[CheckboxAnswerMemo], "memoHash = ?", cbq.memo_hash(dual))
+    memos.map { memo =>
+      val r = new CheckboxAnswer(None, memo.getWorkerId, memo.getAnswerValues.split(",").map(str => Symbol(str.drop(1))).toSet)
+      r.custom_info = Some(memo.getCustomInfo)
+      r.paid = memo.getPaidStatus
+      r.memo_handle = memo
+      r
+    }.toList
+  }
+
+  private def deserializeFTQ(q: Question) : List[FreeTextAnswer] = {
+    val memos = _manager.find[FreeTextAnswerMemo,java.lang.Integer](
+      classOf[FreeTextAnswerMemo],
+      "memoHash = ?",
+      q.memo_hash(false)
+    )
+    memos.map { memo =>
+      val r = new FreeTextAnswer(None, memo.getWorkerId, Symbol(memo.getAnswerValue.drop(1)))
+      r.custom_info = Some(memo.getCustomInfo)
+      r.paid = memo.getPaidStatus
+      r.memo_handle = memo
+      r
+    }.toList
+  }
+
+  private def deserializeRBQ(q: Question) : List[RadioButtonAnswer] = {
+    val memos = _manager.find[RadioButtonAnswerMemo,java.lang.Integer](
+      classOf[RadioButtonAnswerMemo],
+      "memoHash = ?",
+      q.memo_hash(false)
+    )
+    memos.map { memo =>
+      val r = new RadioButtonAnswer(None, memo.getWorkerId, Symbol(memo.getAnswerValue.drop(1)) )
+      r.custom_info = Some(memo.getCustomInfo)
+      r.paid = memo.getPaidStatus
+      r.memo_handle = memo
+      r
+    }.toList
   }
 
   def writeAnswer[A <: Answer, Q <: Question](q: Q, a: A, is_dual: Boolean) : Unit = synchronized {

@@ -3,6 +3,7 @@ package edu.umass.cs.automan.core
 import java.util.{UUID, Date, Calendar}
 import java.util
 
+import scala.reflect.ClassTag
 
 object Utilities {
   type OptionMap = Map[Symbol, String]
@@ -34,7 +35,7 @@ object Utilities {
 
   // borrowed from: http://aperiodic.net/phil/scala/s-99/p25.scala
   def randomPermute1[A](ls: List[A]): List[A] = randomSelect(ls.length, ls)
-  def randomPermute[A: ClassManifest](ls: List[A]): List[A] = {
+  def randomPermute[A: ClassTag](ls: List[A]): List[A] = {
     val rand = new util.Random
     val a = ls.toArray
     for (i <- a.length - 1 to 1 by -1) {
