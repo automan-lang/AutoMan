@@ -17,7 +17,7 @@ abstract class ScalarValidationStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, 
   def is_confident: Boolean
   def is_done = is_confident
   def select_answer : B = {
-    val rt = valid_thunks // only retrieved and memo-recalled; only earliest submission per-worker
+    val rt = completed_workerunique_thunks // only retrieved and memo-recalled; only earliest submission per-worker
 
     // TODO: this is ugly and I don't remember why it's important
     if (rt.size == 0) {

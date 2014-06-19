@@ -15,7 +15,6 @@ object SimpleSurvey extends App {
 
   def which_one(text: String) = a.RadioButtonDistributionQuestion { q =>
     q.num_samples = 60
-    q.budget = 8.00
     q.text = text
     q.options = List(
       a.Option('oscar, "Oscar the Grouch"),
@@ -24,6 +23,7 @@ object SimpleSurvey extends App {
       a.Option('cookie, "Cookie Monster"),
       a.Option('count, "The Count")
     )
+    q.question_timeout_multiplier = 2 // i.e., 1 minute
   }
 
   try {

@@ -7,12 +7,12 @@ import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 abstract class DistributionValidationStrategy[Q <: DistributionQuestion, A <: ScalarAnswer, B](question: Q)
   extends ValidationStrategy[Q,A,B](question) {
 
-  def is_done = valid_thunks.size == question.num_samples
+  def is_done = completed_workerunique_thunks.size >= question.num_samples
   override def select_answer: B = {
     // just return all retrieved answers
     // asInstanceOf[B] necessary because Scala does not
     // know that B is always Set[A]
-    valid_thunks.map { t => t.answer }.toSet.asInstanceOf[B]
+    completed_workerunique_thunks.map { t => t.answer }.toSet.asInstanceOf[B]
   }
   override def thunks_to_accept: List[Thunk[A]] = {
     val valid_thunks = _thunks.filter(_.state == SchedulerState.RETRIEVED)

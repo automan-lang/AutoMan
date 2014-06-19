@@ -19,7 +19,7 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
   Utilities.DebugLog("DEFAULTSCALAR strategy loaded.",LogLevel.INFO,LogType.STRATEGY,_computation_id)
 
   def current_confidence: Double = {
-    val valid_ts = valid_thunks
+    val valid_ts = completed_workerunique_thunks
     if (valid_ts.size == 0) return 0.0 // bail if we have no valid responses
     val biggest_answer = valid_ts.groupBy(_.answer.comparator).maxBy{ case(sym,ts) => ts.size }._2.size
     MonteCarlo.confidenceOfOutcome(_num_possibilities.toInt, _thunks.size, biggest_answer, 1000000)
@@ -29,7 +29,7 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
       Utilities.DebugLog("Have no thunks; confidence is undefined.", LogLevel.INFO, LogType.STRATEGY, _computation_id)
       false
     } else {
-      val valid_ts = valid_thunks
+      val valid_ts = completed_workerunique_thunks
       if (valid_ts.size == 0) return false // bail if we have no valid responses
       val biggest_answer = valid_ts.groupBy(_.answer.comparator).maxBy{ case(sym,ts) => ts.size }._2.size
 
@@ -45,7 +45,7 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
     }
   }
   def max_agree: Int = {
-    val valid_ts = valid_thunks
+    val valid_ts = completed_workerunique_thunks
     if (valid_ts.size == 0) return 0
     valid_ts.groupBy(_.answer.comparator).maxBy{ case(sym,ts) => ts.size }._2.size
   }
@@ -71,15 +71,14 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
 
     // allocate Thunk objects
     val new_thunks = (0 until num_to_spawn).map { i =>
-      _budget_committed += question.reward
-      if (_budget_committed > question.budget) {
-        Utilities.DebugLog("Over budget. budget_committed = " + _budget_committed + " > budget = " + question.budget, LogLevel.FATAL, LogType.STRATEGY, _computation_id)
-        throw OverBudgetException[A](None)
-      }
       val t = new Thunk[A](question, question.question_timeout_in_s, question.worker_timeout_in_s, question.reward, _computation_id)
       Utilities.DebugLog("spawned question_id = " + question.id_string,LogLevel.INFO,LogType.STRATEGY,_computation_id)
       t
     }.toList
+
+    // reserve money for them
+    pay_for_thunks(new_thunks)
+
     _thunks = new_thunks ::: _thunks
 
     // mark some of them as duals if the question is a CheckboxQuestion
@@ -95,8 +94,8 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
     val np: Int = if(q.num_possibilities > BigInt(Int.MaxValue)) 1000 else q.num_possibilities.toInt
 
     // update # of unique workers
-    val unique_workers = _thunks.map { t => t.worker_id }.distinct.size
-    ValidationStrategy.overwrite(q.title, q.text, _computation_id, unique_workers, _thunks.size)
+    val unique_workers = completed_thunks.map { t => t.worker_id }.distinct.size
+    ValidationStrategy.overwrite(q.title, q.text, _computation_id, unique_workers, completed_thunks.size)
 
     // number needed for agreement, adjusted for programmer time-value
     val n = math.max(expected_for_agreement(np, _thunks.size, max_agree, q.confidence).toDouble,

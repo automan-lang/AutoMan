@@ -2,6 +2,7 @@ package edu.umass.cs.automan.core.scheduler
 
 import edu.umass.cs.automan.core.memoizer.{ThunkLogger, AutomanMemoizer}
 import edu.umass.cs.automan.core.answer.{Answer, ScalarAnswer}
+import scala.collection.mutable
 import scala.collection.mutable.Queue
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.{LogLevel, LogType, Utilities, AutomanAdapter}
@@ -23,12 +24,14 @@ class Scheduler (val question: Question,
     // check memo DB first
     val memo_answers = get_memo_answers(is_dual = false)
     val memo_dual_answers = get_memo_answers(is_dual = true)
+    val unpaid_timeouts = new mutable.HashSet[Thunk[A]]()
     var last_iteration_timeout = false
     var over_budget = false
     Utilities.DebugLog("Found " + (memo_answers.size + memo_dual_answers.size) + " saved Answers in database.", LogLevel.INFO, LogType.SCHEDULER, question.id)
 
     try {
       Utilities.DebugLog("Entering scheduling loop...", LogLevel.INFO, LogType.SCHEDULER, question.id)
+      Utilities.DebugLog(String.format("Initial budget set at: %s", Utilities.decimalAsDollars(question.budget)), LogLevel.INFO, LogType.SCHEDULER, question.id)
       // run startup hook
       if(!question.dry_run) {
         adapter.question_startup_hook(question)
@@ -58,6 +61,12 @@ class Scheduler (val question: Question,
 
           // check for timeout
           if (results.count(_.state == SchedulerState.TIMEOUT) != 0) {
+            // unreserve these amounts from our budget
+            val new_timeouts = results.filter{ t =>
+              t.state == SchedulerState.TIMEOUT &&
+              !unpaid_timeouts.contains(t)
+            }
+            strategy.unpay_for_thunks(new_timeouts)
             last_iteration_timeout = true
           } else {
             last_iteration_timeout = false
