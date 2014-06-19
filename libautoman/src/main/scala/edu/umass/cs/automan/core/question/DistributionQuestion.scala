@@ -8,6 +8,8 @@ abstract class DistributionQuestion extends Question {
   type A <: ScalarAnswer
   type B = Set[A]
 
+  override val _is_for_distribution = true
+
   var _num_samples: Int = 30
   // the proportion of workers who will resubmit work
   // that we will have to throw away but pay for anyway.

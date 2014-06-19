@@ -37,7 +37,13 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
   }
 
   private def deserializeCBQ(cbq: CheckboxQuestion, dual: Boolean) : List[CheckboxAnswer] = {
-    val memos = _manager.find[CheckboxAnswerMemo,java.lang.Integer](classOf[CheckboxAnswerMemo], "memoHash = ?", cbq.memo_hash(dual))
+    val clazz = classOf[CheckboxAnswerMemo]
+    val query = Query.select().where(
+      "memoHash = ? AND isForDistribution = ?",
+      cbq.memo_hash(dual),
+      cbq.is_for_distribution: java.lang.Boolean
+    )
+    val memos = _manager.find[CheckboxAnswerMemo,java.lang.Integer](clazz, query)
     memos.map { memo =>
       val r = new CheckboxAnswer(None, memo.getWorkerId, memo.getAnswerValues.split(",").map(str => Symbol(str.drop(1))).toSet)
       r.custom_info = Some(memo.getCustomInfo)
@@ -48,11 +54,13 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
   }
 
   private def deserializeFTQ(q: Question) : List[FreeTextAnswer] = {
-    val memos = _manager.find[FreeTextAnswerMemo,java.lang.Integer](
-      classOf[FreeTextAnswerMemo],
-      "memoHash = ?",
-      q.memo_hash(false)
+    val clazz = classOf[FreeTextAnswerMemo]
+    val query = Query.select().where(
+      "memoHash = ? AND isForDistribution = ?",
+      q.memo_hash(false),
+      q.is_for_distribution: java.lang.Boolean
     )
+    val memos = _manager.find[FreeTextAnswerMemo,java.lang.Integer](clazz, query)
     memos.map { memo =>
       val r = new FreeTextAnswer(None, memo.getWorkerId, Symbol(memo.getAnswerValue.drop(1)))
       r.custom_info = Some(memo.getCustomInfo)
@@ -63,11 +71,13 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
   }
 
   private def deserializeRBQ(q: Question) : List[RadioButtonAnswer] = {
-    val memos = _manager.find[RadioButtonAnswerMemo,java.lang.Integer](
-      classOf[RadioButtonAnswerMemo],
-      "memoHash = ?",
-      q.memo_hash(false)
+    val clazz = classOf[RadioButtonAnswerMemo]
+    val query = Query.select().where(
+      "memoHash = ? AND isForDistribution = ?",
+      q.memo_hash(false),
+      q.is_for_distribution: java.lang.Boolean
     )
+    val memos = _manager.find[RadioButtonAnswerMemo,java.lang.Integer](clazz, query)
     memos.map { memo =>
       val r = new RadioButtonAnswer(None, memo.getWorkerId, Symbol(memo.getAnswerValue.drop(1)) )
       r.custom_info = Some(memo.getCustomInfo)
@@ -87,6 +97,7 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
           a.custom_info match { case Some(ci) => memo.setCustomInfo(ci); case None => { /* do nothing */ }}
           memo.setPaidStatus(rba.paid)
           memo.setWorkerId(rba.worker_id)
+          memo.setIsForDistribution(q.is_for_distribution)
           memo.save()
           rba.memo_handle = memo
         }
@@ -98,6 +109,7 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
         a.custom_info match { case Some(ci) => memo.setCustomInfo(ci); case None => { /* do nothing */ }}
         memo.setPaidStatus(cba.paid)
         memo.setWorkerId(cba.worker_id)
+        memo.setIsForDistribution(q.is_for_distribution)
         memo.save()
         cba.memo_handle = memo
       }
@@ -108,6 +120,7 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
         a.custom_info match { case Some(ci) => memo.setCustomInfo(ci); case None => { /* do nothing */ }}
         memo.setPaidStatus(fta.paid)
         memo.setWorkerId(fta.worker_id)
+        memo.setIsForDistribution(q.is_for_distribution)
         memo.save()
         fta.memo_handle = memo
       }

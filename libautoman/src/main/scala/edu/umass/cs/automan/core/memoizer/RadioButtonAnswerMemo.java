@@ -13,4 +13,6 @@ public interface RadioButtonAnswerMemo extends Entity {
   public void setPaidStatus(Boolean s);
   public String getWorkerId();
   public void setWorkerId(String w);
+  public Boolean getIsForDistribution();
+  public void setIsForDistribution(Boolean b);
 }

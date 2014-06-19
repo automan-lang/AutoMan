@@ -29,6 +29,7 @@ abstract class Question {
   protected var _dry_run: Boolean = false
   protected var _dont_reject: Boolean = false
   protected var _use_disqualifications: Boolean = false
+  protected val _is_for_distribution: Boolean
 
   def blacklist_worker(worker_id: String) { _blacklisted_workers = worker_id :: _blacklisted_workers }
   def blacklisted_workers = _blacklisted_workers
@@ -45,6 +46,7 @@ abstract class Question {
   protected[automan] def final_cost_=(c: BigDecimal) { _final_cost = Some(c) }
   def id: UUID = _id
   def id_string: String = _id.toString
+  protected[core] def is_for_distribution = _is_for_distribution
   def image_alt_text: String = _image_alt_text match { case Some(x) => x; case None => "" }
   def image_alt_text_=(s: String) { _image_alt_text = Some(s) }
   def image_url: String = _image_url match { case Some(x) => x; case None => "" }
