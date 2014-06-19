@@ -1,6 +1,7 @@
 package edu.umass.cs.automan.core
 
-import java.util.{UUID, Date, Calendar}
+import java.text.NumberFormat
+import java.util.{Locale, UUID, Date, Calendar}
 import java.util
 
 import scala.reflect.ClassTag
@@ -111,6 +112,14 @@ object Utilities {
       case option :: tail => println("Unknown option "+option)
       sys.exit(1)
     }
+  }
+
+  def decimalAsDollars(bd: BigDecimal) : String = {
+    val dbudget = bd.setScale(2, BigDecimal.RoundingMode.HALF_EVEN)
+    val nf = NumberFormat.getCurrencyInstance(Locale.getDefault)
+    nf.setMinimumFractionDigits(1)
+    nf.setMaximumFractionDigits(2)
+    nf.format(bd.doubleValue())
   }
 }
 
