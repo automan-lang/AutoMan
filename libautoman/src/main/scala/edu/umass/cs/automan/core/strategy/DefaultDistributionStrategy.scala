@@ -8,15 +8,6 @@ import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 
 class DefaultDistributionStrategy[Q <: DistributionQuestion, A <: ScalarAnswer, B](question: Q, num_samples: Int = 30)
   extends DistributionValidationStrategy[Q,A,B](question) {
-  def outstanding_thunks =
-    // basically, not TIMEOUTs and REJECTs
-    _thunks.filter(t =>
-      t.state == SchedulerState.READY ||
-      t.state == SchedulerState.RUNNING ||
-      t.state == SchedulerState.RETRIEVED ||
-      t.state == SchedulerState.ACCEPTED ||
-      t.state == SchedulerState.PROCESSED
-    )
 
   def num_to_run(q: Q) : Int = {
     val np: Int = if(q.num_possibilities > BigInt(Int.MaxValue)) 1000 else q.num_possibilities.toInt
