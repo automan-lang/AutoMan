@@ -1,5 +1,7 @@
 package edu.umass.cs.automan.adapters.MTurk
 
+import java.text.SimpleDateFormat
+
 import com.amazonaws.mturk.util.ClientConfig
 import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.core.question._
@@ -252,26 +254,37 @@ class MTurkAdapter extends AutomanAdapter {
     sched.run()
   }.asInstanceOf[Future[FreeTextAnswer]]
 
-  private def get_qualifications(q: MTurkQuestion, title: String, qualify_early: Boolean, question_id: UUID) : List[QualificationRequirement] = {
-    // The first qualification always needs to be the special
-    // "dequalification" type so that we may grant it as soon as
-    // a worker completes some work.
-    if (q.firstrun) {
-      Utilities.DebugLog("This is the task's first run; creating dequalification.",LogLevel.INFO,LogType.ADAPTER,question_id)
-      val qual : QualificationType = backend.createQualificationType("AutoMan " + UUID.randomUUID(),
-            "automan", "AutoMan automatically generated Qualification (title: " + title + ")")
-      val deq = new QualificationRequirement(qual.getQualificationTypeId, Comparator.NotEqualTo, 1, null, false)
-      q.disqualification = deq
-      q.firstrun = false
-      // we need early qualifications; add anyway
-      if (qualify_early) {
-        q.qualifications = deq :: q.qualifications
+  private def get_qualifications(q: MTurkQuestion, title: String, qualify_early: Boolean, question_id: UUID, use_disq: Boolean) : List[QualificationRequirement] = {
+    // if we are not using the disqualification mechanism,
+    // just return the user-specified list of qualifications
+    if (use_disq) {
+      // The first qualification always needs to be the special
+      // "dequalification" type so that we may grant it as soon as
+      // a worker completes some work.
+      if (q.firstrun) {
+        // get a simply-formatted date
+        val sdf = new SimpleDateFormat("yyyy-MM-dd:z")
+        val datestr = sdf.format(new Date())
+
+        Utilities.DebugLog("This is the task's first run; creating dequalification.",LogLevel.INFO,LogType.ADAPTER,question_id)
+        val qualtxt = String.format("AutoMan automatically generated Qualification (title: %s, date: %s)", title, datestr)
+        val qual : QualificationType = backend.createQualificationType("AutoMan " + UUID.randomUUID(), "automan", qualtxt)
+        val deq = new QualificationRequirement(qual.getQualificationTypeId, Comparator.NotEqualTo, 1, null, false)
+        q.disqualification = deq
+        q.firstrun = false
+        // we need early qualifications; add anyway
+        if (qualify_early) {
+          q.qualifications = deq :: q.qualifications
+        }
+      } else if (!q.qualifications.contains(q.disqualification)) {
+        // add the dequalification to the list of quals if this
+        // isn't a first run and it isn't already there
+        q.qualifications = q.disqualification :: q.qualifications
       }
-    } else if (!q.qualifications.contains(q.disqualification)) {
-      // add the dequalification to the list of quals if this
-      // isn't a first run and it isn't already there
-      q.qualifications = q.disqualification :: q.qualifications
+    } else if (q.firstrun) {
+      q.firstrun = false // in case this gets used anywhere else
     }
+
     q.qualifications
   }
 
@@ -294,7 +307,7 @@ class MTurkAdapter extends AutomanAdapter {
     val question = question_for_thunks(ts)
     val mtquestion = question match { case mtq: MTurkQuestion => mtq; case _ => throw new Exception("Impossible.") }
     val qualify_early = if (question.blacklisted_workers.size > 0) true else false
-    val quals = get_qualifications(mtquestion, ts.head.question.text, qualify_early, question.id)
+    val quals = get_qualifications(mtquestion, ts.head.question.text, qualify_early, question.id, question.use_disqualifications)
 
     // Build HIT and post it
     mtquestion match {
