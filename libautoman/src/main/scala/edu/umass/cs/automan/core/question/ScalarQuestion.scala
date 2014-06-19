@@ -7,6 +7,8 @@ abstract class ScalarQuestion extends Question {
   type A <: ScalarAnswer
   type VS = ScalarValidationStrategy[this.type, A, B]
 
+  override val _is_for_distribution = false
+
   protected var _confidence: Option[Double] = None
   def confidence: Double = _confidence match { case Some(c) => c; case None => 0.95 }
   def confidence_=(c: Double) { _confidence = Some(c) }
