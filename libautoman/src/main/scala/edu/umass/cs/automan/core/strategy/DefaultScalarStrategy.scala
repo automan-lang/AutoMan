@@ -112,7 +112,7 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
         if (q.use_disqualifications) {
           n.toInt
         } else {
-          (n / u.toDouble).toInt
+          Math.ceil(n / u.toDouble).toInt
         }
       case None => n.toInt
     }
