@@ -115,4 +115,15 @@ abstract class ValidationStrategy[Q <: Question, A <: Answer, B](question: Q) {
     // if a worker completed more than one, take the first
     unique_by_date(completed_thunks)
   }
+
+  protected def outstanding_thunks = {
+    // basically, not TIMEOUTs and REJECTs
+    val outstanding = _thunks.filter(t =>
+      t.state == SchedulerState.READY ||
+      t.state == SchedulerState.RUNNING
+    )
+    // don't count duplicates
+    val completed = completed_workerunique_thunks
+    outstanding ::: completed
+  }
 }

@@ -14,7 +14,7 @@ object SimpleSurvey extends App {
   }
 
   def which_one(text: String) = a.RadioButtonDistributionQuestion { q =>
-    q.num_samples = 3
+    q.num_samples = 6
     q.text = text
     q.options = List(
       a.Option('oscar, "Oscar the Grouch"),
