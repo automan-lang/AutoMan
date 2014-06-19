@@ -17,8 +17,7 @@ abstract class ScalarValidationStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, 
   def is_confident: Boolean
   def is_done = is_confident
   def select_answer : B = {
-    // group by unique symbol specific to each answer type
-    val rt = retrieved_thunks
+    val rt = valid_thunks // only retrieved and memo-recalled; only earliest submission per-worker
 
     // TODO: this is ugly and I don't remember why it's important
     if (rt.size == 0) {
@@ -30,6 +29,7 @@ abstract class ScalarValidationStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, 
       }
     }
 
+    // group by unique symbol specific to each answer type
     val groups = rt.groupBy { t => t.answer.comparator }
     
     Utilities.DebugLog("Groups = " + groups, LogLevel.INFO, LogType.STRATEGY,_computation_id)
@@ -51,7 +51,8 @@ abstract class ScalarValidationStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, 
       case Some(answer) =>
         _thunks
           .filter( _.state == SchedulerState.RETRIEVED )
-          .filter( t => t.answer.sameAs(answer))
+          .filter( t => t.answer.sameAs(answer)) // note that we accept all of a worker's matching submissions
+                                                 // even if we have to accept duplicate submissions
       case None => throw new PrematureValidationCompletionException("thunks_to_accept", this.getClass.toString)
     }
   }

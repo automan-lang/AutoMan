@@ -15,32 +15,32 @@ object delete_old_quals extends App {
   // start up simple MTurk adapter
   private val mturk = new SimpleMTurk(access_key, secret_key, sandbox_mode).setup()
 
-  def getAllHITs(status: ReviewableHITStatus) : List[HIT] = {
-    // get all completed hits
-    var hits = List[HIT]()
-    var pagenum = 1
-    var done = false
-    while (!done) {
-      System.err.print(".")
-      val response = mturk.backend.getReviewableHITs(
-        null,
-        status,
-        SortDirection.Ascending,
-        GetReviewableHITsSortProperty.Enumeration,
-        pagenum,
-        PAGE_SZ
-      )
-      val hitarr = response.getHIT
-      if (hitarr != null) {
-        hits = hitarr.toList ::: hits
-        pagenum += 1
-      } else {
-        done = true
-      }
-    }
-    println()
-    hits
-  }
+//  def getAllHITs(status: ReviewableHITStatus) : List[HIT] = {
+//    // get all completed hits
+//    var hits = List[HIT]()
+//    var pagenum = 1
+//    var done = false
+//    while (!done) {
+//      System.err.print(".")
+//      val response = mturk.backend.getReviewableHITs(
+//        null,
+//        status,
+//        SortDirection.Ascending,
+//        GetReviewableHITsSortProperty.Enumeration,
+//        pagenum,
+//        PAGE_SZ
+//      )
+//      val hitarr = response.getHIT
+//      if (hitarr != null) {
+//        hits = hitarr.toList ::: hits
+//        pagenum += 1
+//      } else {
+//        done = true
+//      }
+//    }
+//    println()
+//    hits
+//  }
 
   def searchQualifications(query: String) : List[QualificationType] = {
     // get all completed hits
@@ -72,8 +72,10 @@ object delete_old_quals extends App {
 
   var i = 0
   searchQualifications(query).foreach { qual =>
+    val qt_title = qual.getDescription
     val qt_id = qual.getQualificationTypeId
-    println("Disposing of qualification type: " + qt_id)
+
+    println("Disposing of qualification type: " + qt_id + " with title: " + qt_title)
     mturk.backend.disposeQualificationType(qt_id)
     i += 1
   }
