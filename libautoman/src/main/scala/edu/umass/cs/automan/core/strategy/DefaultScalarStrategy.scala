@@ -8,16 +8,18 @@ import edu.umass.cs.automan.core.question.{ScalarQuestion, CheckboxQuestion}
 import edu.umass.cs.automan.core.exception.OverBudgetException
 import edu.umass.cs.automan.core.{LogLevel, LogType, Utilities}
 
+import scala.collection.immutable.Iterable
+
 object DefaultScalarStrategy {
   val table = new util.HashMap[(Int,Int,Int,Double),Int]()
 }
 
 class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question: Q)
   extends ScalarValidationStrategy[Q,A,B](question) {
-  Utilities.DebugLog("DEFAULTSCALAR strategy loaded!",LogLevel.INFO,LogType.STRATEGY,_computation_id)
+  Utilities.DebugLog("DEFAULTSCALAR strategy loaded.",LogLevel.INFO,LogType.STRATEGY,_computation_id)
 
   def current_confidence: Double = {
-    val valid_ts = _thunks.filter(t => t.state == SchedulerState.RETRIEVED || t.state == SchedulerState.PROCESSED )
+    val valid_ts = valid_thunks
     if (valid_ts.size == 0) return 0.0 // bail if we have no valid responses
     val biggest_answer = valid_ts.groupBy(_.answer.comparator).maxBy{ case(sym,ts) => ts.size }._2.size
     MonteCarlo.confidenceOfOutcome(_num_possibilities.toInt, _thunks.size, biggest_answer, 1000000)
@@ -27,7 +29,7 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
       Utilities.DebugLog("Have no thunks; confidence is undefined.", LogLevel.INFO, LogType.STRATEGY, _computation_id)
       false
     } else {
-      val valid_ts = _thunks.filter(t => t.state == SchedulerState.RETRIEVED || t.state == SchedulerState.PROCESSED )
+      val valid_ts = valid_thunks
       if (valid_ts.size == 0) return false // bail if we have no valid responses
       val biggest_answer = valid_ts.groupBy(_.answer.comparator).maxBy{ case(sym,ts) => ts.size }._2.size
 
@@ -43,7 +45,7 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
     }
   }
   def max_agree: Int = {
-    val valid_ts = _thunks.filter(t => t.state == SchedulerState.RETRIEVED || t.state == SchedulerState.PROCESSED )
+    val valid_ts = valid_thunks
     if (valid_ts.size == 0) return 0
     valid_ts.groupBy(_.answer.comparator).maxBy{ case(sym,ts) => ts.size }._2.size
   }
@@ -93,7 +95,8 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
     val np: Int = if(q.num_possibilities > BigInt(Int.MaxValue)) 1000 else q.num_possibilities.toInt
 
     // update # of unique workers
-    _unique_workers = _thunks.map { t => t.worker_id }.distinct.size
+    val unique_workers = _thunks.map { t => t.worker_id }.distinct.size
+    ValidationStrategy.overwrite(q.title, q.text, _computation_id, unique_workers, _thunks.size)
 
     // number needed for agreement, adjusted for programmer time-value
     val n = math.max(expected_for_agreement(np, _thunks.size, max_agree, q.confidence).toDouble,
@@ -104,7 +107,7 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
 
     // if we aren't using disqualifications, calculate the expected number of
     // worker reparticipations and inflate n accordingly
-    work_uniqueness match {
+    ValidationStrategy.work_uniqueness(q.title, q.text) match {
       case Some(u) =>
         if (q.use_disqualifications) {
           n.toInt
