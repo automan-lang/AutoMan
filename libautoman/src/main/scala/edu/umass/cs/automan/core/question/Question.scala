@@ -29,6 +29,7 @@ abstract class Question {
   protected var _dry_run: Boolean = false
   protected var _dont_reject: Boolean = false
   protected var _use_disqualifications: Boolean = false
+  protected var _dont_randomize_options: Boolean = false
   protected val _is_for_distribution: Boolean
 
   def blacklist_worker(worker_id: String) { _blacklisted_workers = worker_id :: _blacklisted_workers }
