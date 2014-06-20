@@ -18,9 +18,9 @@ abstract class DistributionValidationStrategy[Q <: DistributionQuestion, A <: Sc
     completed_workerunique_thunks.map { t => t.answer }.toSet.asInstanceOf[B]
   }
   override def thunks_to_accept: List[Thunk[A]] = {
-    val valid_thunks = _thunks.filter(_.state == SchedulerState.RETRIEVED)
-    if (valid_thunks.size >= question.num_samples) {
-      valid_thunks
+    val unaccepted_thunks = _thunks.filter(_.state == SchedulerState.RETRIEVED)
+    if (completed_workerunique_thunks.size >= question.num_samples) {
+      unaccepted_thunks
     } else {
       throw new PrematureValidationCompletionException("thunks_to_accept", this.getClass.toString)
     }
