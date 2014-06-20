@@ -31,7 +31,7 @@ class MTRadioButtonDistributionQuestion extends RadioButtonDistributionQuestion 
   }
   def build_hit(ts: List[Thunk[_]], is_dual: Boolean) : AutomanHIT = {
     // we ignore the "dual" option here
-    val x = toXML(is_dual = false, randomize = true)
+    val x = toXML(is_dual = false, randomize = !_dont_randomize_options)
     val h = AutomanHIT { a =>
       a.hit_type_id = _hit_type_id
       a.title = title
