@@ -26,8 +26,10 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
   protected var _options = List[QO]()
 
   def answer(a: Assignment, is_dual: Boolean): A = {
-    val ans_symb = fromXML(XML.loadString(a.getAnswer))
-    if (is_dual) {
+    val xml = XML.loadString(a.getAnswer)
+    val ans_symb = answerFromXML(xml)
+
+    val ans = if (is_dual) {
       // get all possible symbols
       val all_symb = options.map{ o => o.question_id }.toSet
       // answer is set difference
@@ -35,6 +37,9 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
     } else {
       new CheckboxAnswer(None, a.getWorkerId, ans_symb)
     }
+    ans.accept_time = a.getAcceptTime
+    ans.submit_time = a.getSubmitTime
+    ans
   }
   def build_hit(ts: List[Thunk[_]], dual: Boolean) : AutomanHIT = {
     val x = toXML(dual, true)
@@ -61,7 +66,7 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
   }
   def options: List[QO] = _options
   def options_=(os: List[QO]) { _options = os }
-  def fromXML(x: scala.xml.Node) : Set[Symbol] = {
+  def answerFromXML(x: scala.xml.Node) : Set[Symbol] = {
     (x \\ "Answer" \\ "SelectionIdentifier").map{si => Symbol(si.text)}.toSet
   }
   def randomized_options: List[QO] = {

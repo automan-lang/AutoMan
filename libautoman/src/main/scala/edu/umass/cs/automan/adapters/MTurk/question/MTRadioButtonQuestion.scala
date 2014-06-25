@@ -26,7 +26,10 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
 
   def answer(a: Assignment, is_dual: Boolean): A = {
     // ignore is_dual
-    new RadioButtonAnswer(None, a.getWorkerId, fromXML(XML.loadString(a.getAnswer)))
+    val ans = new RadioButtonAnswer(None, a.getWorkerId, answerFromXML(XML.loadString(a.getAnswer)))
+    ans.accept_time = a.getAcceptTime
+    ans.submit_time = a.getSubmitTime
+    ans
   }
   def build_hit(ts: List[Thunk[_]], is_dual: Boolean) : AutomanHIT = {
     // we ignore the "dual" option here
@@ -54,7 +57,7 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
   }
   def options: List[QO] = _options
   def options_=(os: List[QO]) { _options = os }
-  def fromXML(x: scala.xml.Node) : Symbol = {
+  def answerFromXML(x: scala.xml.Node) : Symbol = {
     // There should only be a SINGLE answer here, like this:
     //    <Answer>
     //      <QuestionIdentifier>721be9fc-c867-42ce-8acd-829e64ae62dd</QuestionIdentifier>

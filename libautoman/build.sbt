@@ -32,6 +32,6 @@ libraryDependencies += "org.apache.velocity" % "velocity" % "1.6.2"
 
 libraryDependencies += "commons-beanutils" % "commons-beanutils-core" % "1.7.0"
 
-libraryDependencies += "io.github.nicolasstucki" %% "multisets" % "0.1"
+crossScalaVersions := Seq("2.8.2", "2.9.2", "2.10.0")
 
 net.virtualvoid.sbt.graph.Plugin.graphSettings
