@@ -1,5 +1,6 @@
 package edu.umass.cs.automan.core.question
 
+import java.io.File
 import java.util.UUID
 import edu.umass.cs.automan.core.answer.Answer
 import edu.umass.cs.automan.core.strategy.ValidationStrategy
@@ -14,6 +15,7 @@ abstract class Question {
   protected var _budget: Option[BigDecimal] = None
   protected var _final_cost: Option[BigDecimal] = None
   protected var _id: UUID = UUID.randomUUID()
+  protected var _image: Option[File] = None
   protected var _image_alt_text: Option[String] = None
   protected var _image_url: Option[String] = None
   protected var _worker_timeout_in_s: Int = 30
@@ -52,6 +54,8 @@ abstract class Question {
   def image_alt_text_=(s: String) { _image_alt_text = Some(s) }
   def image_url: String = _image_url match { case Some(x) => x; case None => "" }
   def image_url_=(s: String) { _image_url = Some(s) }
+  def image: File = _image match { case Some(f) => f; case None => null }
+  def image_=(f: File) { _image = Some(f) }
   private[automan] def init_strategy(): Unit
   def max_replicas: Option[Int] = _max_replicas
   def max_replicas_=(m: Int) { _max_replicas = Some(m) }

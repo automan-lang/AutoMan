@@ -15,7 +15,7 @@ object SimpleSurvey extends App {
 
   def which_one(text: String) = a.RadioButtonDistributionQuestion { q =>
     q.is_likert_scale = true
-    q.num_samples = 6
+    q.num_samples = 2
     q.text = text
     q.options = List(
       a.Option('oscar, "Oscar the Grouch"),
@@ -29,9 +29,15 @@ object SimpleSurvey extends App {
 
   try {
     val future_answer = which_one("Which one of these does not belong?")
-    val answer = Await.result(future_answer, Duration.Inf)
-    println("answer1 is a " + answer)
-
+    val answer_set = Await.result(future_answer, Duration.Inf)
+    answer_set.foreach { answer =>
+      println(String.format("Answer { worker_id = %s, accept_time = %s, submit_time = %s, answer_value = %s }",
+        answer.worker_id,
+        answer.accept_time.toString,
+        answer.submit_time.toString,
+        answer)
+      )
+    }
   } catch {
     case OverBudgetException(e) => println("Over budget!")
   }

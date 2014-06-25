@@ -1,5 +1,6 @@
 package edu.umass.cs.automan.core
 
+import java.io.File
 import java.text.NumberFormat
 import java.util.{Locale, UUID, Date, Calendar}
 import java.util
@@ -120,6 +121,13 @@ object Utilities {
     nf.setMinimumFractionDigits(1)
     nf.setMaximumFractionDigits(2)
     nf.format(bd.doubleValue())
+  }
+
+  def base64Encode(file: File) : String = {
+    import java.nio.file.Files
+    import javax.xml.bind.DatatypeConverter
+
+    DatatypeConverter.printBase64Binary(Files.readAllBytes(file.toPath))
   }
 }
 

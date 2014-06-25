@@ -33,8 +33,10 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
 
   def answer(a: Assignment, is_dual: Boolean): A = {
     // ignore is_dual because FreeTextQuestions have no question duals
-    val answer = fromXML(XML.loadString(a.getAnswer))
-    new FreeTextAnswer(None, a.getWorkerId, _before_filter(answer))
+    val ans = new FreeTextAnswer(None, a.getWorkerId, _before_filter(answerFromXML(XML.loadString(a.getAnswer))))
+    ans.accept_time = a.getAcceptTime
+    ans.submit_time = a.getSubmitTime
+    ans
   }
   def build_hit(ts: List[Thunk[_]], is_dual: Boolean) : AutomanHIT = {
     // we ignore the "dual" option here
@@ -62,7 +64,7 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
   }
   def options: List[MTQuestionOption] = _options
   def options_=(os: List[MTQuestionOption]) { _options = os }
-  def fromXML(x: scala.xml.Node) = {
+  def answerFromXML(x: scala.xml.Node) = {
     Utilities.DebugLog("MTFreeTextQuestion: fromXML:\n" + x.toString,LogLevel.INFO,LogType.ADAPTER,id)
 
     Symbol((x \\ "Answer" \ "FreeText").text)

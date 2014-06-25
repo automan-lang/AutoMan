@@ -1,5 +1,8 @@
 package edu.umass.cs.automan.adapters.MTurk.question
 
+import java.text.SimpleDateFormat
+import java.util.Date
+
 import edu.umass.cs.automan.adapters.MTurk.AutomanHIT
 import edu.umass.cs.automan.core.scheduler.Thunk
 import edu.umass.cs.automan.core.answer.{Answer, ScalarAnswer}
@@ -19,6 +22,7 @@ trait MTurkQuestion {
   protected var _hit_type_id: Option[String] = None
   protected var _keywords = List[String]()
   protected var _qualifications = List[QualificationRequirement]()
+  protected val _mt_date_format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
 
   def answer(a: Assignment, is_dual: Boolean): A
   def build_hit(ts: List[Thunk[_]], is_dual: Boolean) : AutomanHIT
@@ -40,6 +44,12 @@ trait MTurkQuestion {
   def hit_type_id_=(s: String) { _hit_type_id = Some(s) }
   def keywords_=(ks: List[String]) { _keywords = ks }
   def keywords: List[String] = _keywords
+  protected def acceptTimeFromXML(x: scala.xml.Node) : Date = {
+    _mt_date_format.parse((x \\ "AcceptTime").text)
+  }
+  protected def submitTimeFromXML(x: scala.xml.Node) : Date = {
+    _mt_date_format.parse((x \\ "SubmitTime").text)
+  }
   def qualifications_=(qs: List[QualificationRequirement]) { _qualifications = qs }
   def qualifications: List[QualificationRequirement] = _qualifications
   def qualify_worker(qualification_type_id: String, worker_id: String) {
