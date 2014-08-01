@@ -130,6 +130,7 @@ published at OOPSLA 2012, included in the repo as AutoMan-OOPSLA2012.pdf.
 
   The full citation is given below:
 
+```
 @inproceedings{Barowy:2012:API:2384616.2384663,
  author = {Barowy, Daniel W. and Curtsinger, Charlie and Berger, Emery D. and McGregor, Andrew},
  title = {{AutoMan}: a platform for integrating human-based and digital computation},
@@ -146,23 +147,27 @@ published at OOPSLA 2012, included in the repo as AutoMan-OOPSLA2012.pdf.
  publisher = {ACM},
  address = {New York, NY, USA},
  keywords = {crowdsourcing, programming languages, quality control},
-} 
+}
+```
 
 Contact information:
 
   Emery Berger, emery@cs.umass.edu
   Dan Barowy, dbarowy@cs.umass.edu
-  
+
 CHANGELOG:
 ----------
+
+|Version|Notes|
+| --- | --- |
 |0.4|Maintenance release.|
-|   |*Switch to SBT build system. Updates for Scala 2.10.|
+|   |Switch to SBT build system. Updates for Scala 2.10.|
 |0.3|Maintenance release|
-|   |*Buildr Buildfile, including reorganization of project directory.|
+|   |Buildr Buildfile, including reorganization of project directory.|
 |0.2.1|Maintenance release|
-|   |*Update to work with latest MTurk API (1.6.0).|
-|   |*Better log output, including scheduler object logging.|
-|   |*New Automatic Number Plate Recognition (ANPR) app.|
+|   |Update to work with latest MTurk API (1.6.0).|
+|   |Better log output, including scheduler object logging.|
+|   |New Automatic Number Plate Recognition (ANPR) app.|
 |0.2|Major rewrite to simplify syntax.|
 |0.1|First release.|
 
