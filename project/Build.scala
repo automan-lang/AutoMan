@@ -27,23 +27,28 @@ object AutoManBuild extends Build {
           val thunk_db = new File("ThunkLogDB")
           val derby_log = new File("derby.log")
           if (memo_db.exists()) {
-            println(String.format("Removing %s", memo_db.toPath.toString))
+            println(String.format("Removing %s", memo_db.toString))
             Common.DeleteRecursive(memo_db)
           }
           if (thunk_db.exists()) {
-            println(String.format("Removing %s", thunk_db.toPath.toString))
+            println(String.format("Removing %s", thunk_db.toString))
             Common.DeleteRecursive(thunk_db)
           }
           if (derby_log.exists()) {
-            println(String.format("Removing %s", derby_log.toPath.toString))
+            println(String.format("Removing %s", derby_log.toString))
             Common.DeleteRecursive(derby_log)
           }
         }
       )
 
-  lazy val simple_program =
-    Project(id = "simple_program",
+  lazy val SimpleProgram =
+    Project(id = "SimpleProgram",
       base = file("apps/simple_program")
+    ) dependsOn root
+
+  lazy val SimpleCheckboxProgram =
+    Project(id = "SimpleCheckboxProgram",
+      base = file("apps/simple_checkbox_program")
     ) dependsOn root
 
   lazy val SimpleSurvey =
@@ -56,18 +61,18 @@ object AutoManBuild extends Build {
       base = file("apps/HowManyThings")
     ) dependsOn root
 
-  lazy val memo_log_reader =
-    Project(id = "memo_log_reader",
-      base = file("apps/memo_log_reader")
+  lazy val BananaQuestion =
+    Project(id = "BananaQuestion",
+      base = file("apps/banana_question")
     ) dependsOn root
 
-  lazy val pay_unpaid_workers =
-    Project(id = "pay_unpaid_workers",
-      base = file("apps/pay_unpaid_workers")
+  lazy val LicensePlateReader =
+    Project(id = "LicensePlateReader",
+      base = file("apps/license_plate_reader")
     ) dependsOn root
 
-  lazy val delete_old_quals =
-    Project(id = "delete_old_quals",
-      base = file("apps/delete_old_quals")
+  lazy val ANPR =
+    Project(id = "ANPR",
+      base = file("apps/anpr")
     ) dependsOn root
 }

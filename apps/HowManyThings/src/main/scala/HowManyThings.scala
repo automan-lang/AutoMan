@@ -7,6 +7,11 @@ import scala.concurrent.duration._
 import java.util.UUID
 import net.ettinsmoor.Bingerator
 
+// This application counts the number of items in a set of images
+// where the item type is an arbitary type specified by the user.
+// Images are fetched from Bing Image Search using the keyword
+// given by the user.
+// Call this program with no arguments for usage information.
 object HowManyThings extends App {
 	// random bucket name
 	val bucketname = UUID.randomUUID().toString
@@ -50,8 +55,8 @@ object HowManyThings extends App {
 
   // print answers
   answers_urls.foreach { case(f,url) =>
-	  val a = Await.result(f, Duration.Inf)
-    println("url: " + url + ", answer: " + a.value)
+	  val answer = Await.result(f, Duration.Inf).value
+    println("url: " + url + ", answer: " + answer)
   }
 
   // helper functions

@@ -34,4 +34,4 @@ libraryDependencies += "commons-beanutils" % "commons-beanutils-core" % "1.7.0"
 
 libraryDependencies += "edu.umass.cs" % "mturkhitdecoupler_sjs0.5_2.10" % "1.0"
 
-net.virtualvoid.sbt.graph.Plugin.graphSettings
+//net.virtualvoid.sbt.graph.Plugin.graphSettings

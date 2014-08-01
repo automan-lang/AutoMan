@@ -27,7 +27,7 @@ object simple_program extends App {
 
   try {
     val future_answer = which_one("Which one of these does not belong?")
-    val answer = Await.result(future_answer, Duration.Inf)
+    val answer = Await.result(future_answer, Duration.Inf).value
     println("answer1 is a " + answer)
 
   } catch {

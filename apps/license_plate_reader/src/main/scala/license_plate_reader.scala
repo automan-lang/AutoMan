@@ -1,12 +1,15 @@
-import collection.mutable
 import com.amazonaws.services.s3.AmazonS3Client
 import edu.umass.cs.automan.core.Utilities
 import java.awt.image.BufferedImage
 import java.io.File
 import edu.umass.cs.automan.adapters.MTurk._
+import edu.umass.cs.automan.core.Utilities.OptionMap
+import net.ettinsmoor.{ImageResult, Bingerator}
+import scala.concurrent._
+import scala.concurrent.duration._
 
 object license_plate_reader extends App {
-  val opts = Utilities.unsafe_optparse(args, "license_plate_reader.jar")
+  val opts = optparse(args, "license_plate_reader.jar")
 
   val a = MTurkAdapter { mt =>
     mt.access_key_id = opts('key)
@@ -32,56 +35,32 @@ object license_plate_reader extends App {
     q.pattern_error_text = "Answers may only be letters or numeric digits, no more than 8 characters long, no spaces."
   }
 
-  // Search for a bunch of images
-  val urls = get_urls("site:http://www.oldparkedcars.com 1")
-
-  // download each image
-  val images = urls.map(download_image(_))
+  // Search for and fownload a bunch of images
+//  val urls = get_urls("site:http://www.oldparkedcars.com 1")
+  val image_results: Stream[ImageResult] = new Bingerator(opts('bingkey)).SearchImages(args(0))
 
   // resize each image
-  val sc_images: List[File] = images.map(resize(_))
+  val sc_images = image_results.map(ir => resize(ir.getImage))
 
   // store each image in S3
   val s3client: AmazonS3Client = init_s3()
-  val s3_urls: List[String] = sc_images.map{ i => store_in_s3(i, s3client) }
+  val s3_urls = sc_images.map{ i => store_in_s3(i, s3client) }
 
   // Are these pictures of cars with license plates?
   val possible_cars = s3_urls.par.map { url =>
-    if (is_a_car(url)().value == 'yes) Some(url) else None
+    val answer = Await.result(is_a_car(url), Duration.Inf).value
+    if (answer == 'yes) Some(url) else None
   }.flatten
 
   // filter out the bad cars and get plate texts for the good ones
   val plate_texts = possible_cars.par.map { url =>
-    get_plate_text(url)()
+    Await.result(get_plate_text(url), Duration.Inf).value
   }
 
   // print out results
-  plate_texts.foreach { fd => println(fd.value) }
+  plate_texts.foreach { println(_) }
 
   // helper functions
-  def download_image(u: String) : BufferedImage = {
-    import java.util.UUID
-    import java.net.URL
-    import org.apache.commons.io.FileUtils
-    import javax.imageio.ImageIO
-
-    new File("tmp").mkdir()
-    val f = new File("tmp/" + UUID.randomUUID().toString)
-    FileUtils.copyURLToFile(new URL(u), f)
-    ImageIO.read(f)
-  }
-  
-  def get_urls(query: String): List[String] = {
-    import scala.collection.JavaConverters._
-    import gsearch._
-
-    val c = new Client
-    val results: List[Result] = (0 until 1).map { i =>
-      c.searchImagesByOffset(query, new java.lang.Integer(i * 8)).asScala.toList
-    }.toList.flatten
-    results.map { _.getUnescapedUrl }.distinct
-  }
-
   def store_in_s3(si: File, s3: AmazonS3Client) : String = {
     import java.util.Calendar
     import com.amazonaws.services.s3.model.{PutObjectRequest, CannedAccessControlList}
@@ -112,5 +91,23 @@ object license_plate_reader extends App {
     val si = Scalr.resize(i, 1000)
     ImageIO.write(si, "jpg", f)
     f
+  }
+
+  def optparse(args: Array[String], invoked_as_name: String) : OptionMap = {
+    val usage = "Usage: " + invoked_as_name + " -k [key] -s [secret] -b [Bing key] [--sandbox [true|false]]" +
+      "\n  If --sandbox is not specified, the default setting is 'true'." +
+      "\n  NOTE: passing key and secret this way will expose your" +
+      "\n  credentials to users on this system."
+    if (args.length != 6 && args.length != 8) {
+      println(usage)
+      sys.exit(1)
+    }
+    val arglist = args.toList
+    val opts = Utilities.nextOption(Map(),arglist)
+    if(!opts.contains('sandbox)) {
+      (opts ++ Map('sandbox -> true.toString())).asInstanceOf[OptionMap];
+    } else {
+      opts
+    }
   }
 }
