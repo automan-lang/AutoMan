@@ -1,15 +1,17 @@
 packSettings
 
-packMain := Map("anpr -> anpr")
+packMain := Map("anpr" -> "anpr")
 
 name := "ANPR"
 
-version := "0.1"
+version := "0.2"
 
 organization := "edu.umass.cs"
 
-scalaVersion := "2.10.4"
+scalaVersion := Common.ScalaVersion
 
 exportJars := true
+
+libraryDependencies += "com.amazonaws" % "aws-java-sdk" % "1.7.5" exclude("org.apache.httpcomponents", "httpclient")
 
 

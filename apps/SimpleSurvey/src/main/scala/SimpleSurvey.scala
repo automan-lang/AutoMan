@@ -1,5 +1,6 @@
 import edu.umass.cs.automan.adapters.MTurk._
 import edu.umass.cs.automan.core.Utilities
+import edu.umass.cs.automan.core.answer.RadioButtonAnswer
 import edu.umass.cs.automan.core.exception.OverBudgetException
 import scala.concurrent._
 import scala.concurrent.duration._
@@ -31,12 +32,7 @@ object SimpleSurvey extends App {
     val future_answer = which_one("Which one of these does not belong?")
     val answer_set = Await.result(future_answer, Duration.Inf)
     answer_set.foreach { answer =>
-      println(String.format("Answer { worker_id = %s, accept_time = %s, submit_time = %s, answer_value = %s }",
-        answer.worker_id,
-        answer.accept_time.toString,
-        answer.submit_time.toString,
-        answer)
-      )
+      println(s"Answer { worker_id = ${answer.worker_id}, accept_time = ${answer.accept_time.toString}, submit_time = ${answer.submit_time.toString}, answer_value = ${answer.value} }")
     }
   } catch {
     case OverBudgetException(e) => println("Over budget!")
