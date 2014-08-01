@@ -1,5 +1,8 @@
 import edu.umass.cs.automan.adapters.MTurk.MTurkAdapter
 import edu.umass.cs.automan.core.Utilities
+import edu.umass.cs.automan.core.exception.OverBudgetException
+import scala.concurrent._
+import scala.concurrent.duration._
 
 object simple_checkbox_program extends App {
   val opts = Utilities.unsafe_optparse(args, "simple_checkbox_program.jar")
@@ -23,6 +26,12 @@ object simple_checkbox_program extends App {
     )
   }
 
-  val wo_future = which_one("Which of these DO NOT BELONG? (check all that apply)", "Which of these BELONG TOGETHER? (check all that apply)")
-  println("answer1 is a " + wo_future())
+  try {
+    val future_answer = which_one("Which of these DO NOT BELONG? (check all that apply)", "Which of these BELONG TOGETHER? (check all that apply)")
+    val answers: Set[Symbol] = Await.result(future_answer, Duration.Inf).values
+    println("answer1 is a " + answers.map(_.toString).mkString(","))
+
+  } catch {
+    case OverBudgetException(e) => println("Over budget!")
+  }
 }

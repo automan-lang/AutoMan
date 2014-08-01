@@ -1,11 +1,12 @@
 import edu.umass.cs.automan.adapters.MTurk._
 import edu.umass.cs.automan.core.Utilities
+import edu.umass.cs.automan.core.answer.RadioButtonAnswer
 import edu.umass.cs.automan.core.exception.OverBudgetException
 import scala.concurrent._
 import scala.concurrent.duration._
 
-object simple_program extends App {
-  val opts = Utilities.unsafe_optparse(args, "simple_program.jar")
+object SimpleSurvey extends App {
+  val opts = Utilities.unsafe_optparse(args, "SimpleSurvey.jar")
 
   val a = MTurkAdapter { mt =>
     mt.access_key_id = opts('key)
@@ -13,8 +14,9 @@ object simple_program extends App {
     mt.sandbox_mode = opts('sandbox).toBoolean
   }
 
-  def which_one(text: String) = a.RadioButtonQuestion { q =>
-    q.budget = 8.00
+  def which_one(text: String) = a.RadioButtonDistributionQuestion { q =>
+    q.is_likert_scale = true
+    q.num_samples = 2
     q.text = text
     q.options = List(
       a.Option('oscar, "Oscar the Grouch"),
@@ -23,13 +25,15 @@ object simple_program extends App {
       a.Option('cookie, "Cookie Monster"),
       a.Option('count, "The Count")
     )
+    q.question_timeout_multiplier = 2 // i.e., 1 minute
   }
 
   try {
     val future_answer = which_one("Which one of these does not belong?")
-    val answer = Await.result(future_answer, Duration.Inf).value
-    println("answer1 is a " + answer)
-
+    val answer_set = Await.result(future_answer, Duration.Inf)
+    answer_set.foreach { answer =>
+      println(s"Answer { worker_id = ${answer.worker_id}, accept_time = ${answer.accept_time.toString}, submit_time = ${answer.submit_time.toString}, answer_value = ${answer.value} }")
+    }
   } catch {
     case OverBudgetException(e) => println("Over budget!")
   }
