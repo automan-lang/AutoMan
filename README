@@ -1,57 +1,100 @@
-AutoMan: Human-Computation Runtime v0.3
+AutoMan: Human-Computation Runtime v0.4
 ---------------------------------------
 
-This is a preliminary release of AutoMan.  Please report any bugs you
+This is a maintenance release of AutoMan.  Please report any bugs you
 may find to the project maintainer, Dan Barowy <dbarowy@cs.umass.edu>.
-
-Presently, we have only tested AutoMan with Scala programs.  In
-principle, Java can use AutoMan as-is, but adding official support is
-currently on our TODO list.
 
 License
 -------
 
-AutoMan is licensed under the GPLv2, Copyright (C) 2011-2013 The
+AutoMan is licensed under the GPLv2, Copyright (C) 2011-2014 The
 University of Massachusetts, Amherst.
 
 Building a JAR
 ----------------
 
-This release incorporates a Make script that can build the AutoMan JAR
+This release incorporates an SBT build script that can build the AutoMan JAR
 for you, including downloading all of AutoMan's dependencies.  The build
 script can also build the sample applications that are located in the
-'apps' directory.  These applications are the ones used in our paper.
+`apps` directory.  These applications are the ones used in our paper.
 
 You can build the AutoMan JAR using the following command:
 
-  make automan
+    sbt pack
+
+The AutoMan JAR plus all of its dependencies will then be found in the
+`libautoman/target/pack/lib/` folder.
 
 If you want to see a list of other targets, e.g., sample applications,
-just type 'make'.
+just type `sbt projects`.
+
+Maven Artifact Coming Soon!
+---------------------------
+
+We have registered with SonaType as an organization and will be pushing
+AutoMan to the Central Repository soon.  This means that you will simply
+be able to list AutoMan as a dependency in your `build.sbt` and all
+of its dependencies will be handled by SBT.  Stay tuned!
 
 Using AutoMan in Your Project
 -----------------------------
 
 In your source file, import the Mechanical Turk adapter (Scala syntax):
 
-  import edu.umass.cs.automan.adapters.MTurk.MTurkAdapter
+    import edu.umass.cs.automan.adapters.MTurk.MTurkAdapter
 
-After that, initialize the AutoMan runtime with an MTurk config and
-define your tasks.  You may then call those tasks like regular
-functions.  Note that these functions return immediately, as calling
-a human function runs in a separate background thread.
+Due to a change in Scala's concurrency libraries, you should also add:
 
-In order to access data returned by the function, you must call
-apply on the object returned by the function and then access the
-"value" field in the Answer object, as human functions return
-Future[Answer] objects.  E.g.,
+    import scala.concurrent._
+    import scala.concurrent.duration._
 
-  val answer = human_function(args)
-  answer().value
+After that, initialize the AutoMan runtime with an MTurk config:
 
-Please see the collection of sample programs in the "sample_programs"
+    val a = MTurkAdapter { mt =>
+      mt.access_key_id = "my key"
+      mt.secret_access_key = "my secret"
+      mt.sandbox_mode = true
+    }
+
+and then define your tasks:
+
+    def tootsie() = a.RadioButtonQuestion { q =>
+      q.budget = 8.00
+      q.text = "How licks does it take to get to the Tootsie " +
+               "Roll center of a Toosie Pop?"
+      q.options = List(
+        a.Option('one, "One"),
+        a.Option('two, "A-Two"),
+        a.Option('three, "Three! Three!")
+      )
+    }
+
+You may then call those tasks like regular functions.  Note that
+these functions return immediately, as calling a human function execute
+asynchronously in a separate background thread.
+
+In order to access data returned by the function, since that data is
+wrapped in a Scala `Future`, you must call the blocking `Await.result`
+to unbox the `Answer` object returned by the function and then access
+the `value` field in the `Answer` object.  E.g.,
+
+    val future_answer = tootsie()
+    val licks = Await.result(future_answer, Duration.Inf).value
+
+Note: We plan to hide these concurrency operations in a future release.
+
+Please see the collection of sample programs in the `apps`
 directory. This folder contains the programs we used in the technical
-report (see below).
+report (see below).  You can build any one of them by running:
+
+    sbt "project [appname]" pack
+
+Then look in the `apps/[appname]/target/pack/bin` folder for the
+appropriate runner script.  For example, if you want to run the
+`SimpleProgram` application, do:
+
+    sbt "project SimpleProgram" pack
+    apps/simple_program/target/pack/bin/simple_program
 
 Using AutoMan with a Different Crowdsourcing Backend
 ----------------------------------------------------
@@ -112,6 +155,8 @@ Contact information:
   
 CHANGELOG:
 ----------
+0.4:    Maintenance release.
+        • Switch to SBT build system. Updates for Scala 2.10.
 0.3:	Maintenance release.
 		• Buildr Buildfile, including reorganization of project directory.
 0.2.1:	Maintenance release.

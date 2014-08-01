@@ -1,8 +1,9 @@
-import collection.mutable
 import com.amazonaws.services.s3.AmazonS3Client
 import edu.umass.cs.automan.core.Utilities
 import java.io.File
 import edu.umass.cs.automan.adapters.MTurk._
+import scala.concurrent._
+import scala.concurrent.duration._
 
 object anpr extends App {
   val opts = my_optparse(args, "anpr.jar")
@@ -44,8 +45,8 @@ object anpr extends App {
   val url_answer_map = scala.collection.mutable.Map[String,Symbol]()
   val fn_cost_map = scala.collection.mutable.Map[String,BigDecimal]()
   val plate_texts = s3_urls.par.map { url =>
-    val fd = get_plate_text(url)()
-    val answer = fd.value
+    val fd = get_plate_text(url)
+    val answer = Await.result(fd, Duration.Inf).value
     url_answer_map += (url -> answer)
     answer
   }
