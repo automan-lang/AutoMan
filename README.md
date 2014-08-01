@@ -155,16 +155,16 @@ Contact information:
   
 CHANGELOG:
 ----------
-0.4:    Maintenance release.
-        • Switch to SBT build system. Updates for Scala 2.10.
-0.3:	Maintenance release.
-		• Buildr Buildfile, including reorganization of project directory.
-0.2.1:	Maintenance release.
-		• Update to work with latest MTurk API (1.6.0).  
-		• Better log output, including scheduler object logging.
-		• New Automatic Number Plate Recognition (ANPR) app.
-0.2:	Major rewrite to simplify syntax.
-0.1:	First release.
+|0.4|Maintenance release.|
+|   |*Switch to SBT build system. Updates for Scala 2.10.|
+|0.3|Maintenance release|
+|   |*Buildr Buildfile, including reorganization of project directory.|
+|0.2.1|Maintenance release|
+|   |*Update to work with latest MTurk API (1.6.0).|
+|   |*Better log output, including scheduler object logging.|
+|   |*New Automatic Number Plate Recognition (ANPR) app.|
+|0.2|Major rewrite to simplify syntax.|
+|0.1|First release.|
 
 ACKNOWLEDGMENTS:
 ----------------
