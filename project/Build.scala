@@ -2,7 +2,7 @@ import sbt._
 import Keys._
 
 object Common {
-  def ScalaVersion = "2.10.4"
+  def ScalaVersion = "2.11.4"
   def DeleteRecursive(f: File) {
     if (f.isDirectory) {
       for(subf <- f.listFiles()) {

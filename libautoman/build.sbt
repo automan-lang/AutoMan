@@ -12,6 +12,8 @@ exportJars := true
 
 resolvers += "Clojars" at "https://clojars.org/repo"
 
+libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.2"
+
 libraryDependencies += "org.scalatest" % "scalatest_2.10" % "2.0" % "test"
 
 libraryDependencies += "org.apache.derby" % "derby" % "10.10.1.1"
