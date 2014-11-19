@@ -233,22 +233,22 @@ class MTurkAdapter extends AutomanAdapter {
   def RadioButtonDistributionQuestion(q: MTRadioButtonDistributionQuestion => Unit) = MTRadioButtonDistributionQuestion(q, this)
   def Option(id: Symbol, text: String) = new MTQuestionOption(id, text, "")
   def Option(id: Symbol, text: String, image_url: String) = new MTQuestionOption(id, text, image_url)
-  def schedule(q: MTRadioButtonQuestion): Future[RadioButtonAnswer] = future {
+  def schedule(q: MTRadioButtonQuestion): Future[RadioButtonAnswer] = Future {
     q.init_strategy()
     val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
     sched.run()
   }.asInstanceOf[Future[RadioButtonAnswer]]
-  def schedule(q: MTRadioButtonDistributionQuestion): Future[Set[RadioButtonAnswer]] = future {
+  def schedule(q: MTRadioButtonDistributionQuestion): Future[Set[RadioButtonAnswer]] = Future {
     q.init_strategy()
     val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
     sched.run()
   }.asInstanceOf[Future[Set[RadioButtonAnswer]]]
-  def schedule(q: MTCheckboxQuestion): Future[CheckboxAnswer] = future {
+  def schedule(q: MTCheckboxQuestion): Future[CheckboxAnswer] = Future {
     q.init_strategy()
     val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
     sched.run()
   }.asInstanceOf[Future[CheckboxAnswer]]
-  def schedule(q: MTFreeTextQuestion): Future[FreeTextAnswer] = future {
+  def schedule(q: MTFreeTextQuestion): Future[FreeTextAnswer] = Future {
     q.init_strategy()
     val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
     sched.run()
