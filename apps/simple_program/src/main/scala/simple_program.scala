@@ -11,6 +11,7 @@ object simple_program extends App {
     mt.access_key_id = opts('key)
     mt.secret_access_key = opts('secret)
     mt.sandbox_mode = opts('sandbox).toBoolean
+    mt.debug = true
   }
 
   def which_one(text: String) = a.RadioButtonQuestion { q =>

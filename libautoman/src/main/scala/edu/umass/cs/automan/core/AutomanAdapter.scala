@@ -1,9 +1,16 @@
 package edu.umass.cs.automan.core
 
-import answer._
-import edu.umass.cs.automan.core.question._
-import java.util.Locale
 import java.text.NumberFormat
+
+import akka.io.IO
+import spray.can.Http
+import akka.pattern.ask
+import akka.util.Timeout
+import scala.concurrent.duration._
+import java.util.Locale
+import akka.actor.{ActorRef, Props, ActorSystem}
+import edu.umass.cs.automan.core.question._
+import answer._
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 import memoizer.{ThunkLogger, AutomanMemoizer}
@@ -15,8 +22,11 @@ abstract class AutomanAdapter {
   type RBDQ <: RadioButtonDistributionQuestion    // answer vector
   type CBQ <: CheckboxQuestion                    // answer scalar
   type FTQ <: FreeTextQuestion                    // answer scalar
+  protected implicit var _actor_system: ActorSystem = _
   protected var _budget: BigDecimal = 0.00
   protected var _confidence: Double = 0.95
+  protected var _debug_mode: Boolean = false
+  protected var _debugger_actor: ActorRef = _
   protected var _locale: Locale = Locale.getDefault
   protected var _memoizer: AutomanMemoizer = _
   protected var _memo_db: String = "AutomanMemoDB"
@@ -36,6 +46,23 @@ abstract class AutomanAdapter {
   def cancel[A <: Answer](t: Thunk[A])
   def confidence: Double = _confidence
   def confidence_=(c: Double) { _confidence = c }
+  def debug: Boolean = _debug_mode
+  def debug_=(d: Boolean) = { _debug_mode = d }
+  def debugger_init() {
+    if (_debug_mode) {
+      // init actor system
+      _actor_system = ActorSystem("on-spray-can")
+
+      // init debugger actor
+      _debugger_actor = _actor_system.actorOf(Props[DebuggerServer], "debugger-service")
+
+      // set timeout implicit for ? (ask)
+      implicit val timeout = akka.util.Timeout(5.seconds)
+
+      // start a new HTTP server on port 8080 with our service actor as the handler
+      IO(Http) ? Http.Bind(_debugger_actor, interface = "localhost", port = 8080)
+    }
+  }
   def memo_init() {
     _memoizer = new AutomanMemoizer(_memo_conn_string, _memo_user, _memo_pass)
   }
@@ -66,6 +93,7 @@ abstract class AutomanAdapter {
     nf.setMaximumFractionDigits(2)
     nf.format(dbudget.doubleValue())
   }
+
   def get_budget_from_backend(): BigDecimal
   def locale: Locale = _locale
   def locale_=(l: Locale) { _locale = l }

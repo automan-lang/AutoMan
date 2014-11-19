@@ -6,11 +6,10 @@ import com.amazonaws.mturk.util.ClientConfig
 import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.core.question._
 import scala.concurrent._
-import edu.umass.cs.automan.core.strategy.{ValidationStrategy, ScalarValidationStrategy}
 import memoizer.MTurkAnswerCustomInfo
 import question._
 import edu.umass.cs.automan.core.scheduler.{Scheduler, SchedulerState, Thunk}
-import edu.umass.cs.automan.core.{LogLevel, LogType, Utilities, retry, AutomanAdapter}
+import edu.umass.cs.automan.core.{LogLevel, LogType, Utilities, AutomanAdapter}
 import java.util.{UUID, Date}
 import com.amazonaws.mturk.requester._
 import scala.Predef._
@@ -21,7 +20,8 @@ object MTurkAdapter {
   def apply(init: MTurkAdapter => Unit) : MTurkAdapter = {
     val mta = new MTurkAdapter
     init(mta)
-    mta.memo_init()               // starts up Memoizer
+    mta.debugger_init()           // start up Web Debugger if flag is set
+    mta.memo_init()               // start up Memoizer
     mta.thunklog_init()           // start up Thunk Logger
     mta.setup()                   // initializes MTurk SDK
     mta.get_budget_from_backend() // asks MTurk for our current budget
