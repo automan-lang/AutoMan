@@ -34,4 +34,6 @@ object simple_program extends App {
   } catch {
     case OverBudgetException(e) => println("Over budget!")
   }
+
+  a.close()
 }

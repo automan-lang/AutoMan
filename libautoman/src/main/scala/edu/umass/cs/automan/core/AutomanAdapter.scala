@@ -48,27 +48,7 @@ abstract class AutomanAdapter {
   def confidence_=(c: Double) { _confidence = c }
   def debug: Boolean = _debug_mode
   def debug_=(d: Boolean) = { _debug_mode = d }
-  def debugger_init() {
-    if (_debug_mode) {
-      // init actor system
-      _actor_system = ActorSystem("on-spray-can")
 
-      // init debugger actor
-      _debugger_actor = _actor_system.actorOf(Props[DebuggerServer], "debugger-service")
-
-      // set timeout implicit for ? (ask)
-      implicit val timeout = akka.util.Timeout(5.seconds)
-
-      // start a new HTTP server on port 8080 with our service actor as the handler
-      IO(Http) ? Http.Bind(_debugger_actor, interface = "localhost", port = 8080)
-    }
-  }
-  def memo_init() {
-    _memoizer = new AutomanMemoizer(_memo_conn_string, _memo_user, _memo_pass)
-  }
-  def thunklog_init() {
-    _thunklog = new ThunkLogger(_thunk_conn_string, _thunk_user, _thunk_pass)
-  }
   def post[A <: Answer](ts: List[Thunk[A]], dual: Boolean, exclude_worker_ids: List[String])
   def process_custom_info[A <: Answer](t: Thunk[A], i: Option[String])
   def reject[A <: Answer](t: Thunk[A])
@@ -84,6 +64,39 @@ abstract class AutomanAdapter {
   
   // Option creation
   def Option(id: Symbol, text: String) : QuestionOption
+
+  // State management
+  def init() {
+    debugger_init()
+    memo_init()
+    thunklog_init()
+  }
+  def close() = {
+    if (_debug_mode) {
+      _actor_system.shutdown()
+    }
+  }
+  private def debugger_init() {
+    if (_debug_mode) {
+      // init actor system
+      _actor_system = ActorSystem("on-spray-can")
+
+      // init debugger actor
+      _debugger_actor = _actor_system.actorOf(Props[DebuggerServer], "debugger-service")
+
+      // set timeout implicit for ? (ask)
+      implicit val timeout = akka.util.Timeout(5.seconds)
+
+      // start a new HTTP server on port 8080 with our service actor as the handler
+      IO(Http) ? Http.Bind(_debugger_actor, interface = "localhost", port = 8080)
+    }
+  }
+  private def memo_init() {
+    _memoizer = new AutomanMemoizer(_memo_conn_string, _memo_user, _memo_pass)
+  }
+  private def thunklog_init() {
+    _thunklog = new ThunkLogger(_thunk_conn_string, _thunk_user, _thunk_pass)
+  }
 
   // Global backend config
   def budget_formatted = {
