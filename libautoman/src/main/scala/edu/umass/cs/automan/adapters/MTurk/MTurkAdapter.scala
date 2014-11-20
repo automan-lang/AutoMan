@@ -19,10 +19,8 @@ import edu.umass.cs.automan.core.answer._
 object MTurkAdapter {
   def apply(init: MTurkAdapter => Unit) : MTurkAdapter = {
     val mta = new MTurkAdapter
-    init(mta)
-    mta.debugger_init()           // start up Web Debugger if flag is set
-    mta.memo_init()               // start up Memoizer
-    mta.thunklog_init()           // start up Thunk Logger
+    init(mta)                     // assign values to fields in anonymous constructor
+    mta.init()                    // run superclass initializer with values from previous line
     mta.setup()                   // initializes MTurk SDK
     mta.get_budget_from_backend() // asks MTurk for our current budget
     mta
