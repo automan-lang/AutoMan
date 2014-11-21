@@ -17,7 +17,7 @@ libraryDependencies ++= {
   val sprayVer  = "1.3.2"
   Seq(
     "org.scala-lang.modules"     %%  "scala-xml"            % "1.0.2",
-    "org.scalatest"              %%  "scalatest"            % "2.0"    % "test",
+    "org.scalatest"              %%  "scalatest"            % "2.2.1"    % "test",
     "org.apache.derby"           %   "derby"                % "10.10.1.1",
     "net.java.dev.activeobjects" % "activeobjects"          % "0.8.2",
     "commons-codec"              % "commons-codec"          % "1.4",
