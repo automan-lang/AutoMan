@@ -37,7 +37,7 @@ abstract class AutomanAdapter {
   protected var _memo_user: String = ""
   protected var _memo_pass: String = ""
   protected var _poll_interval_in_s : Int = 30
-  protected var _schedulers: List[Scheduler] = List()
+  protected var _debug_schedulers: List[Scheduler] = List()
   protected var _thunklog: ThunkLogger = _
   protected var _thunk_db: String = "ThunkLogDB"
   protected var _thunk_conn_string: String = "jdbc:derby:" + _thunk_db + ";create=true"
@@ -131,14 +131,18 @@ abstract class AutomanAdapter {
     init(q)
     q.init_strategy()
     val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
-    _schedulers = sched :: _schedulers
+    if (_debug_mode) {
+      _debug_schedulers = sched :: _debug_schedulers
+    }
     sched.run().asInstanceOf[A]
   }
   protected def scheduleVector[Q <: Question,A <: Answer](q: Q, init: Q => Unit): Future[Set[A]] = Future {
     init(q)
     q.init_strategy()
     val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
-    _schedulers = sched :: _schedulers
+    if (_debug_mode) {
+      _debug_schedulers = sched :: _debug_schedulers
+    }
     sched.run().asInstanceOf[Set[A]]
   }
 

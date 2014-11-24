@@ -29,7 +29,8 @@ object MTurkAdapter {
 }
 
 class MTurkAdapter extends AutomanAdapter {
-  // concretize types for MTurk
+  // these types provide MTurk implementations for
+  // AutomanAdapter virtual methods
   override type RBQ = MTRadioButtonQuestion
   override type RBDQ = MTRadioButtonDistributionQuestion
   override type CBQ = MTCheckboxQuestion
