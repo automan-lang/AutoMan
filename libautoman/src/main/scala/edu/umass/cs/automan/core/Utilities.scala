@@ -129,6 +129,10 @@ object Utilities {
 
     DatatypeConverter.printBase64Binary(Files.readAllBytes(file.toPath))
   }
+
+  def dateToTimestamp(d: java.util.Date) : Long = {
+    d.getTime() / 1000
+  }
 }
 
 object LogType extends Enumeration {
