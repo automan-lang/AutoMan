@@ -3,6 +3,7 @@ package edu.umass.cs.automan.core
 import java.text.NumberFormat
 
 import akka.io.IO
+import edu.umass.cs.automan.core.debugger.Server
 import spray.can.Http
 import akka.pattern.ask
 import akka.util.Timeout
@@ -82,7 +83,7 @@ abstract class AutomanAdapter {
       _actor_system = ActorSystem("on-spray-can")
 
       // init debugger actor
-      _debugger_actor = _actor_system.actorOf(Props[DebuggerServer], "debugger-service")
+      _debugger_actor = _actor_system.actorOf(Props[Server], "debugger-service")
 
       // set timeout implicit for ? (ask)
       implicit val timeout = akka.util.Timeout(5.seconds)
