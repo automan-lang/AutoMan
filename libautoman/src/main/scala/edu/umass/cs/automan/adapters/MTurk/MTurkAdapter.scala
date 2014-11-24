@@ -4,6 +4,7 @@ import java.text.SimpleDateFormat
 
 import com.amazonaws.mturk.util.ClientConfig
 import com.amazonaws.mturk.service.axis.RequesterService
+import edu.umass.cs.automan.core.debugger.Tasks
 import edu.umass.cs.automan.core.question._
 import scala.concurrent._
 import memoizer.MTurkAnswerCustomInfo
@@ -47,7 +48,6 @@ class MTurkAdapter extends AutomanAdapter {
   private case class DisposeQualsReq(q: MTurkQuestion)
 
   private var _access_key_id: Option[String] = None
-  private var _poll_interval_in_s : Int = 30
   private var _retriable_errors = Set("Server.ServiceUnavailable")
   private var _retry_attempts : Int = 10
   private var _retry_delay_millis : Int = 1000
@@ -130,7 +130,7 @@ class MTurkAdapter extends AutomanAdapter {
   }
   // communication always syncs on 'this' adapter object
   // so this methods prevents multiple requests from
-  // happening simultaneous
+  // happening simultaneously
   private def syncCommWait[T](f: () => T) : T = {
     synchronized {
       val t = f()
@@ -225,33 +225,13 @@ class MTurkAdapter extends AutomanAdapter {
     })
   }
 
-  def CheckboxQuestion(q: MTCheckboxQuestion => Unit) = MTCheckboxQuestion(q, this)
-  def FreeTextQuestion(q: MTFreeTextQuestion => Unit) = MTFreeTextQuestion(q, this)
-  def RadioButtonQuestion(q: MTRadioButtonQuestion => Unit) = MTRadioButtonQuestion(q, this)
-  def RadioButtonDistributionQuestion(q: MTRadioButtonDistributionQuestion => Unit) = MTRadioButtonDistributionQuestion(q, this)
+  protected def RBQFactory() = new MTRadioButtonQuestion
+  protected def CBQFactory() = new MTCheckboxQuestion
+  protected def FTQFactory() = new MTFreeTextQuestion
+  protected def RBDQFactory() = new MTRadioButtonDistributionQuestion
+
   def Option(id: Symbol, text: String) = new MTQuestionOption(id, text, "")
   def Option(id: Symbol, text: String, image_url: String) = new MTQuestionOption(id, text, image_url)
-  def schedule(q: MTRadioButtonQuestion): Future[RadioButtonAnswer] = Future {
-    q.init_strategy()
-    val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
-    sched.run()
-  }.asInstanceOf[Future[RadioButtonAnswer]]
-  def schedule(q: MTRadioButtonDistributionQuestion): Future[Set[RadioButtonAnswer]] = Future {
-    q.init_strategy()
-    val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
-    sched.run()
-  }.asInstanceOf[Future[Set[RadioButtonAnswer]]]
-  def schedule(q: MTCheckboxQuestion): Future[CheckboxAnswer] = Future {
-    q.init_strategy()
-    val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
-    sched.run()
-  }.asInstanceOf[Future[CheckboxAnswer]]
-  def schedule(q: MTFreeTextQuestion): Future[FreeTextAnswer] = Future {
-    q.init_strategy()
-    val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
-    sched.run()
-  }.asInstanceOf[Future[FreeTextAnswer]]
-
   private def get_qualifications(q: MTurkQuestion, title: String, qualify_early: Boolean, question_id: UUID, use_disq: Boolean) : List[QualificationRequirement] = {
     // if we are not using the disqualification mechanism,
     // just return the user-specified list of qualifications
@@ -732,5 +712,11 @@ class MTurkAdapter extends AutomanAdapter {
     _config.setRetryAttempts(_retry_attempts)
     _config.setRetryDelayMillis(_retry_delay_millis)
     _config
+  }
+
+  protected def debug_info : Tasks = {
+    synchronized {
+      throw new NotImplementedError()
+    }
   }
 }

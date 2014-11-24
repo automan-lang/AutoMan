@@ -18,7 +18,7 @@ class Server extends Actor with MyService {
   // this actor only runs our route, but you could add
   // other things here, like request stream processing
   // or timeout handling
-  def receive = runRoute(myRoute)
+  def receive = runRoute(routes)
 }
 
 // this trait defines our service behavior independently from the service actor
@@ -87,7 +87,7 @@ trait MyService extends HttpService {
       )
     )
 
-  val myRoute =
+  val routes =
     path("") {
       get {
         complete {

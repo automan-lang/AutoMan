@@ -14,14 +14,6 @@ import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 
 import scala.xml.XML
 
-object MTRadioButtonDistributionQuestion {
-  def apply(init: MTRadioButtonDistributionQuestion => Unit, a: MTurkAdapter) : Future[Set[RadioButtonAnswer]] = {
-    val radio_button_question = new MTRadioButtonDistributionQuestion
-    init(radio_button_question)
-    a.schedule(radio_button_question)
-  }
-}
-
 class MTRadioButtonDistributionQuestion extends RadioButtonDistributionQuestion with MTurkQuestion {
   type QO = MTQuestionOption
 

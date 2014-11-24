@@ -15,14 +15,6 @@ import edu.umass.cs.automan.core.answer.{FreeTextAnswer, RadioButtonAnswer}
 import edu.umass.cs.automan.core.strategy.PictureClause
 import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 
-object MTFreeTextQuestion {
-  def apply(init: MTFreeTextQuestion => Unit, a: MTurkAdapter) : Future[FreeTextAnswer] = {
-    val free_text_question = new MTFreeTextQuestion
-    init(free_text_question)
-    a.schedule(free_text_question)
-  }
-}
-
 class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
   protected var _options = List[MTQuestionOption]()
   protected var _pattern: Option[String] = None
