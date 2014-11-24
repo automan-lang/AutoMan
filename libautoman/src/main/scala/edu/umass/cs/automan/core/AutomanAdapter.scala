@@ -3,7 +3,7 @@ package edu.umass.cs.automan.core
 import java.text.NumberFormat
 
 import akka.io.IO
-import edu.umass.cs.automan.core.debugger.Server
+import edu.umass.cs.automan.core.debugger.{Tasks, Server}
 import spray.can.Http
 import akka.pattern.ask
 import akka.util.Timeout
@@ -15,10 +15,12 @@ import answer._
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 import memoizer.{ThunkLogger, AutomanMemoizer}
-import scheduler.Thunk
+import edu.umass.cs.automan.core.scheduler.{Scheduler, Thunk}
 import strategy._
 
 abstract class AutomanAdapter {
+  // the precise question type is determined by the subclassing
+  // adapter; answer types are invariant
   type RBQ <: RadioButtonQuestion                 // answer scalar
   type RBDQ <: RadioButtonDistributionQuestion    // answer vector
   type CBQ <: CheckboxQuestion                    // answer scalar
@@ -34,6 +36,8 @@ abstract class AutomanAdapter {
   protected def _memo_conn_string: String = "jdbc:derby:" + _memo_db + ";create=true"
   protected var _memo_user: String = ""
   protected var _memo_pass: String = ""
+  protected var _poll_interval_in_s : Int = 30
+  protected var _schedulers: List[Scheduler] = List()
   protected var _thunklog: ThunkLogger = _
   protected var _thunk_db: String = "ThunkLogDB"
   protected var _thunk_conn_string: String = "jdbc:derby:" + _thunk_db + ";create=true"
@@ -57,11 +61,23 @@ abstract class AutomanAdapter {
   def question_startup_hook(q: Question): Unit = {}
   def question_shutdown_hook(q: Question): Unit = {}
 
-  // Question creation
-  def CheckboxQuestion(fq: CBQ => Unit) : Future[CheckboxAnswer]
-  def FreeTextQuestion(fq: FTQ => Unit) : Future[FreeTextAnswer]
-  def RadioButtonQuestion(fq: RBQ => Unit) : Future[RadioButtonAnswer]
-  def RadioButtonDistributionQuestion(fq: RBDQ => Unit) : Future[Set[RadioButtonAnswer]]
+  // User syntax: Question creation
+  def CheckboxQuestion(init: CBQ => Unit) : Future[CheckboxAnswer] = {
+    val q = CBQFactory()
+    scheduleScalar(q, init)
+  }
+  def FreeTextQuestion(init: FTQ => Unit) : Future[FreeTextAnswer] = {
+    val q = FTQFactory()
+    scheduleScalar(q, init)
+  }
+  def RadioButtonQuestion(init: RBQ => Unit) : Future[RadioButtonAnswer] = {
+    val q = RBQFactory()
+    scheduleScalar(q, init)
+  }
+  def RadioButtonDistributionQuestion(init: RBDQ => Unit) : Future[Set[RadioButtonAnswer]] = {
+    val q = RBDQFactory()
+    scheduleVector(q, init)
+  }
   
   // Option creation
   def Option(id: Symbol, text: String) : QuestionOption
@@ -111,8 +127,27 @@ abstract class AutomanAdapter {
   def get_budget_from_backend(): BigDecimal
   def locale: Locale = _locale
   def locale_=(l: Locale) { _locale = l }
-  def schedule(q: RBQ): Future[RadioButtonAnswer]
-  def schedule(q: RBDQ): Future[Set[RadioButtonAnswer]]
-  def schedule(q: CBQ): Future[CheckboxAnswer]
-  def schedule(q: FTQ): Future[FreeTextAnswer]
+  protected def scheduleScalar[Q <: Question,A <: Answer](q: Q, init: Q => Unit): Future[A] = Future {
+    init(q)
+    q.init_strategy()
+    val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
+    _schedulers = sched :: _schedulers
+    sched.run().asInstanceOf[A]
+  }
+  protected def scheduleVector[Q <: Question,A <: Answer](q: Q, init: Q => Unit): Future[Set[A]] = Future {
+    init(q)
+    q.init_strategy()
+    val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
+    _schedulers = sched :: _schedulers
+    sched.run().asInstanceOf[Set[A]]
+  }
+
+  // subclass instantiators; these are needed because
+  // the JVM erases our type parameters (RBQ) at runtime
+  // and thus 'new RBQ' does not suffice in the DSL call above
+  protected def RBQFactory() : RBQ
+  protected def CBQFactory() : CBQ
+  protected def FTQFactory() : FTQ
+  protected def RBDQFactory() : RBDQ
+  protected def debug_info: Tasks
 }

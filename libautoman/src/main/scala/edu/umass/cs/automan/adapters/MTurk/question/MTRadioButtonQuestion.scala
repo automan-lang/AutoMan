@@ -12,14 +12,6 @@ import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
 import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 
-object MTRadioButtonQuestion {
-  def apply(init: MTRadioButtonQuestion => Unit, a: MTurkAdapter) : Future[RadioButtonAnswer] = {
-    val radio_button_question = new MTRadioButtonQuestion
-    init(radio_button_question)
-    a.schedule(radio_button_question)
-  }
-}
-
 class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
   type QO = MTQuestionOption
   protected var _options = List[QO]()

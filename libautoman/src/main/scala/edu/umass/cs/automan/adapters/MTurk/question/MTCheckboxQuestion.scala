@@ -13,14 +13,6 @@ import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
 import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 
-object MTCheckboxQuestion {
-  def apply(init: MTCheckboxQuestion => Unit, a: MTurkAdapter) : Future[CheckboxAnswer] = {
-    val checkbox_question = new MTCheckboxQuestion
-    init(checkbox_question)
-    a.schedule(checkbox_question)
-  }
-}
-
 class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
   type QO = MTQuestionOption
   protected var _options = List[QO]()
