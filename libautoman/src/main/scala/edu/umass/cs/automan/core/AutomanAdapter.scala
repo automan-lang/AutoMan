@@ -62,22 +62,10 @@ abstract class AutomanAdapter {
   def question_shutdown_hook(q: Question): Unit = {}
 
   // User syntax: Question creation
-  def CheckboxQuestion(init: CBQ => Unit) : Future[CheckboxAnswer] = {
-    val q = CBQFactory()
-    scheduleScalar(q, init)
-  }
-  def FreeTextQuestion(init: FTQ => Unit) : Future[FreeTextAnswer] = {
-    val q = FTQFactory()
-    scheduleScalar(q, init)
-  }
-  def RadioButtonQuestion(init: RBQ => Unit) : Future[RadioButtonAnswer] = {
-    val q = RBQFactory()
-    scheduleScalar(q, init)
-  }
-  def RadioButtonDistributionQuestion(init: RBDQ => Unit) : Future[Set[RadioButtonAnswer]] = {
-    val q = RBDQFactory()
-    scheduleVector(q, init)
-  }
+  def CheckboxQuestion(init: CBQ => Unit)  = scheduleScalar(CBQFactory(), init)
+  def FreeTextQuestion(init: FTQ => Unit)  = scheduleScalar(FTQFactory(), init)
+  def RadioButtonQuestion(init: RBQ => Unit) = scheduleScalar(RBQFactory(), init)
+  def RadioButtonDistributionQuestion(init: RBDQ => Unit) = scheduleVector(RBDQFactory(), init)
   
   // Option creation
   def Option(id: Symbol, text: String) : QuestionOption
