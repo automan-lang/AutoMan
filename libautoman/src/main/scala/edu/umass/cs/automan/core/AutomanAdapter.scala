@@ -44,39 +44,40 @@ abstract class AutomanAdapter {
   protected var _thunk_user: String = ""
   protected var _thunk_pass: String = ""
 
-  // getters and setters
-  def accept[A <: Answer](t: Thunk[A])
+  // user-visible getters and setters
   def budget: BigDecimal = _budget
   def budget_=(b: BigDecimal) { _budget = b }
-  def cancel[A <: Answer](t: Thunk[A])
   def confidence: Double = _confidence
   def confidence_=(c: Double) { _confidence = c }
   def debug: Boolean = _debug_mode
   def debug_=(d: Boolean) = { _debug_mode = d }
+  def locale: Locale = _locale
+  def locale_=(l: Locale) { _locale = l }
 
-  def post[A <: Answer](ts: List[Thunk[A]], dual: Boolean, exclude_worker_ids: List[String])
-  def process_custom_info[A <: Answer](t: Thunk[A], i: Option[String])
-  def reject[A <: Answer](t: Thunk[A])
-  def retrieve[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]]  // returns all thunks passed in
-  def question_startup_hook(q: Question): Unit = {}
-  def question_shutdown_hook(q: Question): Unit = {}
+  // marshaling calls
+  protected def accept[A <: Answer](t: Thunk[A])
+  protected def cancel[A <: Answer](t: Thunk[A])
+  protected def post[A <: Answer](ts: List[Thunk[A]], dual: Boolean, exclude_worker_ids: List[String])
+  protected def process_custom_info[A <: Answer](t: Thunk[A], i: Option[String])
+  protected def reject[A <: Answer](t: Thunk[A])
+  protected def retrieve[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]]  // returns all thunks passed in
+  protected def question_startup_hook(q: Question): Unit = {}
+  protected def question_shutdown_hook(q: Question): Unit = {}
 
-  // User syntax: Question creation
-  def CheckboxQuestion(init: CBQ => Unit)  = scheduleScalar(CBQFactory(), init)
-  def FreeTextQuestion(init: FTQ => Unit)  = scheduleScalar(FTQFactory(), init)
-  def RadioButtonQuestion(init: RBQ => Unit) = scheduleScalar(RBQFactory(), init)
-  def RadioButtonDistributionQuestion(init: RBDQ => Unit) = scheduleVector(RBDQFactory(), init)
-  
-  // Option creation
+  // end-user syntax: Question creation
+  def CheckboxQuestion(init: CBQ => Unit) : Future[CheckboxAnswer] = scheduleScalar(CBQFactory(), init)
+  def FreeTextQuestion(init: FTQ => Unit) : Future[FreeTextAnswer] = scheduleScalar(FTQFactory(), init)
+  def RadioButtonQuestion(init: RBQ => Unit) : Future[RadioButtonAnswer] = scheduleScalar(RBQFactory(), init)
+  def RadioButtonDistributionQuestion(init: RBDQ => Unit) : Future[Set[RadioButtonAnswer]] = scheduleVector(RBDQFactory(), init)
   def Option(id: Symbol, text: String) : QuestionOption
 
-  // State management
-  def init() {
+  // state management
+  protected def init() {
     debugger_init()
     memo_init()
     thunklog_init()
   }
-  def close() = {
+  protected def close() = {
     if (_debug_mode) {
       _actor_system.shutdown()
     }
@@ -104,7 +105,7 @@ abstract class AutomanAdapter {
   }
 
   // Global backend config
-  def budget_formatted = {
+  protected def budget_formatted = {
     val dbudget = _budget.setScale(2, BigDecimal.RoundingMode.HALF_EVEN)
     val nf = NumberFormat.getCurrencyInstance(_locale)
     nf.setMinimumFractionDigits(1)
@@ -112,10 +113,8 @@ abstract class AutomanAdapter {
     nf.format(dbudget.doubleValue())
   }
 
-  def get_budget_from_backend(): BigDecimal
-  def locale: Locale = _locale
-  def locale_=(l: Locale) { _locale = l }
-  protected def scheduleScalar[Q <: Question,A <: Answer](q: Q, init: Q => Unit): Future[A] = Future {
+  protected def get_budget_from_backend(): BigDecimal
+  private def scheduleScalar[Q <: Question,A <: Answer](q: Q, init: Q => Unit): Future[A] = Future {
     init(q)
     q.init_strategy()
     val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
@@ -124,7 +123,7 @@ abstract class AutomanAdapter {
     }
     sched.run().asInstanceOf[A]
   }
-  protected def scheduleVector[Q <: Question,A <: Answer](q: Q, init: Q => Unit): Future[Set[A]] = Future {
+  private def scheduleVector[Q <: Question,A <: Answer](q: Q, init: Q => Unit): Future[Set[A]] = Future {
     init(q)
     q.init_strategy()
     val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
