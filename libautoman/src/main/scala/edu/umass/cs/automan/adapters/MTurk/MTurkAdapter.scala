@@ -69,6 +69,29 @@ class MTurkAdapter extends AutomanAdapter {
   private val _retrieved_data = scala.collection.mutable.Map[RetrieveReq[_ <: Answer], List[Thunk[_ <: Answer]]]()
   private val _disposal_completions = scala.collection.mutable.Set[DisposeQualsReq]()
 
+  // user-visible getters and setters
+  def access_key_id: String = _access_key_id match { case Some(id) => id; case None => "" }
+  def access_key_id_=(id: String) { _access_key_id = Some(id) }
+  def poll_interval = _poll_interval_in_s
+  def poll_interval_=(s: Int) { _poll_interval_in_s = s }
+  def retriable_errors_=(re: Set[String]) { _retriable_errors = re }
+  def retriable_errors = _retry_delay_millis
+  def retry_attempts_=(ra: Int) { _retry_attempts = ra }
+  def retry_attempts = _retry_attempts
+  def retry_delay_millis_=(rdm: Int) { _retry_delay_millis = rdm }
+  def retry_delay_millis = _retry_delay_millis
+  def sandbox_mode = {
+    _service_url == ClientConfig.SANDBOX_SERVICE_URL
+  }
+  def sandbox_mode_=(b: Boolean) {
+    b match {
+      case true => _service_url = ClientConfig.SANDBOX_SERVICE_URL
+      case false => _service_url = ClientConfig.PRODUCTION_SERVICE_URL
+    }
+  }
+  def secret_access_key: String = _secret_access_key match { case Some(s) => s; case None => "" }
+  def secret_access_key_=(s: String) { _secret_access_key = Some(s) }
+
   private def ifWorkToBeDoneThen[T](when_yes: () => T)(when_no: () => T) : T = {
     synchronized {
       val yes =
@@ -233,6 +256,7 @@ class MTurkAdapter extends AutomanAdapter {
 
   def Option(id: Symbol, text: String) = new MTQuestionOption(id, text, "")
   def Option(id: Symbol, text: String, image_url: String) = new MTQuestionOption(id, text, image_url)
+
   private def get_qualifications(q: MTurkQuestion, title: String, qualify_early: Boolean, question_id: UUID, use_disq: Boolean) : List[QualificationRequirement] = {
     // if we are not using the disqualification mechanism,
     // just return the user-specified list of qualifications
@@ -267,7 +291,7 @@ class MTurkAdapter extends AutomanAdapter {
     q.qualifications
   }
 
-  def post[A <: Answer](ts: List[Thunk[A]], dual: Boolean, exclude_worker_ids: List[String]) : Unit = {
+  protected def post[A <: Answer](ts: List[Thunk[A]], dual: Boolean, exclude_worker_ids: List[String]) : Unit = {
     // enqueue
     synchronized {
       _post_queue.enqueue(EnqueuedHIT(ts, dual, exclude_worker_ids))
@@ -309,14 +333,14 @@ class MTurkAdapter extends AutomanAdapter {
       case _ => throw new Exception("Question type not yet supported. Question class is " + mtquestion.getClass)
     }
   }
-  def mtquestion_for_thunks(ts: List[Thunk[_]]) : MTurkQuestion = {
+  private def mtquestion_for_thunks(ts: List[Thunk[_]]) : MTurkQuestion = {
     // determine which MT question we've been asked about
     question_for_thunks(ts) match {
       case mtq: MTurkQuestion => mtq
       case _ => throw new Exception("MTurkAdapter can only operate on Thunks for MTurkQuestions.")
     }
   }
-  def question_for_thunks(ts: List[Thunk[_]]) : Question = {
+  private def question_for_thunks(ts: List[Thunk[_]]) : Question = {
     // determine which question we've been asked about
     val tg = ts.groupBy(_.question)
     if(tg.size != 1) {
@@ -325,7 +349,7 @@ class MTurkAdapter extends AutomanAdapter {
     tg.head._1
   }
   // put HIT's AssignmentId back into map or mark as PROCESSED
-  def process_custom_info[A <: Answer](t: Thunk[A], i: Option[String]) {
+  protected def process_custom_info[A <: Answer](t: Thunk[A], i: Option[String]) {
     val q = question_for_thunks(List(t))
     Utilities.DebugLog("Processing custom info...", LogLevel.INFO, LogType.ADAPTER, q.id)
     t.question match {
@@ -349,7 +373,7 @@ class MTurkAdapter extends AutomanAdapter {
       case _ => throw new Exception("MTurkAdapter can only operate on Thunks for MTurkQuestions.")
     }
   }
-  def cancel[A <: Answer](t: Thunk[A]) : Unit = {
+  protected def cancel[A <: Answer](t: Thunk[A]) : Unit = {
     // enqueue
     synchronized {
       _cancel_queue.enqueue(t)
@@ -371,7 +395,7 @@ class MTurkAdapter extends AutomanAdapter {
       case _ => throw new Exception("Impossible error.")
     }
   }
-  def accept[A <: Answer](t: Thunk[A]) : Unit = {
+  protected def accept[A <: Answer](t: Thunk[A]) : Unit = {
     // enqueue
     synchronized {
       _accept_queue.enqueue(t)
@@ -415,7 +439,7 @@ class MTurkAdapter extends AutomanAdapter {
       case _ => throw new Exception("Impossible error.")
     }
   }
-  def reject[A <: Answer](t: Thunk[A]) : Unit = {
+  protected def reject[A <: Answer](t: Thunk[A]) : Unit = {
     // enqueue
     synchronized {
       _reject_queue.enqueue(t)
@@ -452,7 +476,7 @@ class MTurkAdapter extends AutomanAdapter {
     }
   }
 
-  def retrieve[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]] = {
+  protected def retrieve[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]] = {
     val req = RetrieveReq(ts)
 
     // enqueue
@@ -479,7 +503,7 @@ class MTurkAdapter extends AutomanAdapter {
     }
   }
 
-  def scheduled_retrieve[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]] = {
+  private def scheduled_retrieve[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]] = {
     Utilities.DebugLog(String.format("Retrieving %s tasks.", ts.size.toString()), LogLevel.INFO, LogType.ADAPTER, null)
 
     val question = mtquestion_for_thunks(ts)
@@ -512,7 +536,7 @@ class MTurkAdapter extends AutomanAdapter {
     ts
   }
 
-  def mark_hit_complete[A <: Answer](hit: AutomanHIT, ts: List[Thunk[A]]) {
+  private def mark_hit_complete[A <: Answer](hit: AutomanHIT, ts: List[Thunk[A]]) {
     if (ts.filter{_.state == SchedulerState.RUNNING}.size == 0) {
       // we're done
       Utilities.DebugLog("HIT is RESOLVED.", LogLevel.INFO, LogType.ADAPTER, hit.id)
@@ -611,9 +635,7 @@ class MTurkAdapter extends AutomanAdapter {
     }
   }
 
-  def access_key_id: String = _access_key_id match { case Some(id) => id; case None => "" }
-  def access_key_id_=(id: String) { _access_key_id = Some(id) }
-  def get_budget_from_backend(): BigDecimal = {
+  protected def get_budget_from_backend(): BigDecimal = {
     // budget requests are made as soon as is possible
     syncCommWait { () =>
       scheduled_get_budget()
@@ -632,7 +654,7 @@ class MTurkAdapter extends AutomanAdapter {
       }
     }
   }
-  override def question_shutdown_hook(q: Question): Unit = {
+  protected override def question_shutdown_hook(q: Question): Unit = {
     // cleanup qualifications
     cleanup_qualifications(q)
   }
@@ -676,33 +698,15 @@ class MTurkAdapter extends AutomanAdapter {
       s.disposeQualificationType(qual.getQualificationTypeId)
     }
   }
-  def poll_interval = _poll_interval_in_s
-  def poll_interval_=(s: Int) { _poll_interval_in_s = s }
-  def retriable_errors_=(re: Set[String]) { _retriable_errors = re }
-  def retriable_errors = _retry_delay_millis
-  def retry_attempts_=(ra: Int) { _retry_attempts = ra }
-  def retry_attempts = _retry_attempts
-  def retry_delay_millis_=(rdm: Int) { _retry_delay_millis = rdm }
-  def retry_delay_millis = _retry_delay_millis
-  def sandbox_mode = {
-    _service_url == ClientConfig.SANDBOX_SERVICE_URL
-  }
-  def sandbox_mode_=(b: Boolean) {
-    b match {
-      case true => _service_url = ClientConfig.SANDBOX_SERVICE_URL
-      case false => _service_url = ClientConfig.PRODUCTION_SERVICE_URL
-    }
-  }
-  def secret_access_key: String = _secret_access_key match { case Some(s) => s; case None => "" }
-  def secret_access_key_=(s: String) { _secret_access_key = Some(s) }
-  def setup() {
+
+  private def setup() {
     _service = Some(new RequesterService(this.toClientConfig))
   }
-  def backend: RequesterService = _service match {
+  private def backend: RequesterService = _service match {
     case Some(s) => s
     case None => throw new MTurkAdapterNotInitialized("MTurkAdapter must be initialized before attempting to communicate.")
   }
-  def toClientConfig : ClientConfig = synchronized {
+  private def toClientConfig : ClientConfig = synchronized {
     import scala.collection.JavaConversions
 
     val _config = new ClientConfig
