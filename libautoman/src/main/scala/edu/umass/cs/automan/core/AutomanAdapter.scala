@@ -6,7 +6,6 @@ import akka.io.IO
 import edu.umass.cs.automan.core.debugger.{Tasks, Server}
 import spray.can.Http
 import akka.pattern.ask
-import akka.util.Timeout
 import scala.concurrent.duration._
 import java.util.Locale
 import akka.actor.{ActorRef, Props, ActorSystem}
@@ -16,7 +15,6 @@ import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 import memoizer.{ThunkLogger, AutomanMemoizer}
 import edu.umass.cs.automan.core.scheduler.{Scheduler, Thunk}
-import strategy._
 
 abstract class AutomanAdapter {
   // the precise question type is determined by the subclassing
@@ -26,8 +24,8 @@ abstract class AutomanAdapter {
   type CBQ <: CheckboxQuestion                    // answer scalar
   type FTQ <: FreeTextQuestion                    // answer scalar
   protected implicit var _actor_system: ActorSystem = _
-  protected var _budget: BigDecimal = 0.00
-  protected var _confidence: Double = 0.95
+  protected var _default_budget: BigDecimal = 0.00
+  protected var _default_confidence: Double = 0.95
   protected var _debug_mode: Boolean = false
   protected var _debugger_actor: ActorRef = _
   protected var _locale: Locale = Locale.getDefault
@@ -45,10 +43,10 @@ abstract class AutomanAdapter {
   protected var _thunk_pass: String = ""
 
   // user-visible getters and setters
-  def budget: BigDecimal = _budget
-  def budget_=(b: BigDecimal) { _budget = b }
-  def confidence: Double = _confidence
-  def confidence_=(c: Double) { _confidence = c }
+  def default_budget: BigDecimal = _default_budget
+  def default_budget_=(b: BigDecimal) { _default_budget = b }
+  def default_confidence: Double = _default_confidence
+  def default_confidence_=(c: Double) { _default_confidence = c }
   def debug: Boolean = _debug_mode
   def debug_=(d: Boolean) = { _debug_mode = d }
   def locale: Locale = _locale
@@ -106,7 +104,7 @@ abstract class AutomanAdapter {
 
   // Global backend config
   protected def budget_formatted = {
-    val dbudget = _budget.setScale(2, BigDecimal.RoundingMode.HALF_EVEN)
+    val dbudget = _default_budget.setScale(2, BigDecimal.RoundingMode.HALF_EVEN)
     val nf = NumberFormat.getCurrencyInstance(_locale)
     nf.setMinimumFractionDigits(1)
     nf.setMaximumFractionDigits(2)
