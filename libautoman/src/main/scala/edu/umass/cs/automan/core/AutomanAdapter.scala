@@ -85,8 +85,11 @@ abstract class AutomanAdapter {
       // init actor system
       _actor_system = ActorSystem("on-spray-can")
 
+      // actor properties
+      val props = Props(new Server(this))
+
       // init debugger actor
-      _debugger_actor = _actor_system.actorOf(Props[Server], "debugger-service")
+      _debugger_actor = _actor_system.actorOf(props, "debugger-service")
 
       // set timeout implicit for ? (ask)
       implicit val timeout = akka.util.Timeout(5.seconds)
@@ -138,5 +141,5 @@ abstract class AutomanAdapter {
   protected def CBQFactory() : CBQ
   protected def FTQFactory() : FTQ
   protected def RBDQFactory() : RBDQ
-  protected def debug_info: Tasks
+  def debug_info: Tasks
 }
