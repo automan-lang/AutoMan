@@ -1,12 +1,14 @@
 package edu.umass.cs.automan.adapters.MTurk
 
+import java.util.Date
+
 import com.amazonaws.mturk.util.ClientConfig
 import com.amazonaws.mturk.service.axis.RequesterService
-import edu.umass.cs.automan.core.debugger.Tasks
+import edu.umass.cs.automan.core.debugger._
 import edu.umass.cs.automan.core.question._
 import question._
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
-import edu.umass.cs.automan.core.AutomanAdapter
+import edu.umass.cs.automan.core.{Utilities, AutomanAdapter}
 import edu.umass.cs.automan.core.answer._
 import edu.umass.cs.automan.adapters.MTurk.connectionpool._
 
@@ -74,9 +76,69 @@ class MTurkAdapter extends AutomanAdapter {
 
   protected def accept[A <: Answer](t: Thunk[A]) = run_if_initialized((p: Pool) => p.accept(t))
   protected def cancel[A <: Answer](t: Thunk[A]) = run_if_initialized((p: Pool) => p.cancel(t))
-  protected def debug_info : Tasks = {
+  def debug_info : Tasks = {
     synchronized {
-      throw new NotImplementedError()
+      Tasks(
+        Array(
+          Task(
+            Info(
+              "Test Task",
+              "How many licks does it take to get to the Tootsie Roll center of a Tootsie Pop?",
+              "Mr. Owl wants to know.",
+              "RadioButtonQuestion",
+              Utilities.dateToTimestamp(new Date()),
+              0.95,
+              34.3,
+              24.1,
+              5,
+              7
+            ),
+            Array(
+              PrevTimeout(
+                1,
+                Utilities.dateToTimestamp(new Date()),
+                4,
+                3
+              ),
+              PrevTimeout(
+                2,
+                Utilities.dateToTimestamp(new Date()),
+                4,
+                3
+              )
+            ),
+            Array(
+              CurrentTask(
+                1,
+                Utilities.dateToTimestamp(new Date()),
+                "3"
+              ),
+              CurrentTask(
+                2,
+                Utilities.dateToTimestamp(new Date()),
+                "2"
+              ),
+              CurrentTask(
+                3,
+                Utilities.dateToTimestamp(new Date()),
+                "3"
+              ),
+              CurrentTask(
+                4,
+                Utilities.dateToTimestamp(new Date()),
+                "3"
+              )
+            ),
+            BudgetInfo(
+              0.05,
+              50.00,
+              5.50,
+              0.25,
+              5.25
+            )
+          )
+        )
+      )
     }
   }
   protected def get_budget_from_backend() = run_if_initialized((p: Pool) => p.budget())
