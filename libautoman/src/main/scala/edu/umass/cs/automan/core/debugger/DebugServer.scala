@@ -1,15 +1,14 @@
 package edu.umass.cs.automan.core.debugger
 
-import java.util.Date
 import akka.actor.Actor
 import spray.routing._
-import edu.umass.cs.automan.core.{AutomanAdapter, Utilities}
+import edu.umass.cs.automan.core.AutomanAdapter
 import spray.json._
 import edu.umass.cs.automan.core.debugger.DebugJsonProtocol._
 
 // we don't implement our route structure directly in the service actor because
 // we want to be able to test it independently, without having to spin up an actor
-class Server[T <: AutomanAdapter](a: T) extends Actor with MyService[T] {
+class DebugServer[T <: AutomanAdapter](a: T) extends Actor with DebugService[T] {
   val adapter = a
 
   // the HttpService trait defines only one abstract member, which
@@ -23,7 +22,7 @@ class Server[T <: AutomanAdapter](a: T) extends Actor with MyService[T] {
 }
 
 // this trait defines our service behavior independently from the service actor
-trait MyService[T <: AutomanAdapter] extends HttpService {
+trait DebugService[T <: AutomanAdapter] extends HttpService {
   val adapter: T
 
   val routes =
