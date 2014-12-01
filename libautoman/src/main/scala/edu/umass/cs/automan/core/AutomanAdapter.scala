@@ -3,7 +3,7 @@ package edu.umass.cs.automan.core
 import java.text.NumberFormat
 
 import akka.io.IO
-import edu.umass.cs.automan.core.debugger.{Tasks, Server}
+import edu.umass.cs.automan.core.debugger.{Tasks, DebugServer}
 import spray.can.Http
 import akka.pattern.ask
 import scala.concurrent.duration._
@@ -86,7 +86,7 @@ abstract class AutomanAdapter {
       _actor_system = ActorSystem("on-spray-can")
 
       // actor properties
-      val props = Props(new Server(this))
+      val props = Props(new DebugServer(this))
 
       // init debugger actor
       _debugger_actor = _actor_system.actorOf(props, "debugger-service")
