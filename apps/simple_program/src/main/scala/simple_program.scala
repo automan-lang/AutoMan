@@ -2,6 +2,7 @@ import edu.umass.cs.automan.adapters.MTurk._
 import edu.umass.cs.automan.automan
 import edu.umass.cs.automan.core.Utilities
 import edu.umass.cs.automan.core.exception.OverBudgetException
+import edu.umass.cs.automandebugger.AutomanDebugger
 import scala.concurrent._
 import scala.concurrent.duration._
 
@@ -9,6 +10,7 @@ object simple_program extends App {
   val opts = Utilities.unsafe_optparse(args, "simple_program.jar")
 
   val a = MTurkAdapter { mt =>
+    mt.plugins = List(classOf[AutomanDebugger])
     mt.access_key_id = opts('key)
     mt.secret_access_key = opts('secret)
     mt.sandbox_mode = opts('sandbox).toBoolean

@@ -1,14 +1,7 @@
 package edu.umass.cs.automan.core
 
 import java.text.NumberFormat
-
-import akka.io.IO
-import edu.umass.cs.automan.core.debugger.{Tasks, DebugServer}
-import spray.can.Http
-import akka.pattern.ask
-import scala.concurrent.duration._
 import java.util.Locale
-import akka.actor.{ActorRef, Props, ActorSystem}
 import edu.umass.cs.automan.core.question._
 import answer._
 import scala.concurrent._
@@ -23,19 +16,20 @@ abstract class AutomanAdapter {
   type RBDQ <: RadioButtonDistributionQuestion    // answer vector
   type CBQ <: CheckboxQuestion                    // answer scalar
   type FTQ <: FreeTextQuestion                    // answer scalar
-  protected implicit var _actor_system: ActorSystem = _
+
   protected var _default_budget: BigDecimal = 0.00
   protected var _default_confidence: Double = 0.95
   protected var _debug_mode: Boolean = false
-  protected var _debugger_actor: ActorRef = _
   protected var _locale: Locale = Locale.getDefault
   protected var _memoizer: AutomanMemoizer = _
   protected var _memo_db: String = "AutomanMemoDB"
   protected def _memo_conn_string: String = "jdbc:derby:" + _memo_db + ";create=true"
   protected var _memo_user: String = ""
   protected var _memo_pass: String = ""
+  protected var _plugins: List[Class[_ <: Plugin]] = List.empty
+  protected var _plugins_initialized: List[_ <: Plugin] = List.empty
   protected var _poll_interval_in_s : Int = 30
-  protected var _debug_schedulers: List[Scheduler] = List()
+  protected var _debug_schedulers: List[Scheduler] = List.empty
   protected var _thunklog: ThunkLogger = _
   protected var _thunk_db: String = "ThunkLogDB"
   protected var _thunk_conn_string: String = "jdbc:derby:" + _thunk_db + ";create=true"
@@ -51,6 +45,8 @@ abstract class AutomanAdapter {
   def debug_=(d: Boolean) = { _debug_mode = d }
   def locale: Locale = _locale
   def locale_=(l: Locale) { _locale = l }
+  def plugins: List[Class[_ <: Plugin]] = _plugins
+  def plugins_=(ps: List[Class[_ <: Plugin]]) { _plugins = ps }
 
   // marshaling calls
   protected[automan] def accept[A <: Answer](t: Thunk[A])
@@ -71,32 +67,23 @@ abstract class AutomanAdapter {
 
   // state management
   protected[automan] def init() {
-    debugger_init()
+    plugins_init()
     memo_init()
     thunklog_init()
   }
   protected[automan] def close() = {
-    if (_debug_mode) {
-      _actor_system.shutdown()
+    plugins_shutdown()
+  }
+  private def plugins_init() {
+    // load user-supplied plugins using reflection
+    _plugins_initialized = _plugins.map { clazz =>
+      val instance = clazz.newInstance()
+      instance.startup(this)
+      instance
     }
   }
-  private def debugger_init() {
-    if (_debug_mode) {
-      // init actor system
-      _actor_system = ActorSystem("on-spray-can")
-
-      // actor properties
-      val props = Props(new DebugServer(this))
-
-      // init debugger actor
-      _debugger_actor = _actor_system.actorOf(props, "debugger-service")
-
-      // set timeout implicit for ? (ask)
-      implicit val timeout = akka.util.Timeout(5.seconds)
-
-      // start a new HTTP server on port 8080 with our service actor as the handler
-      IO(Http) ? Http.Bind(_debugger_actor, interface = "localhost", port = 8080)
-    }
+  private def plugins_shutdown(): Unit = {
+    _plugins_initialized.foreach { plugin => plugin.shutdown() }
   }
   private def memo_init() {
     _memoizer = new AutomanMemoizer(_memo_conn_string, _memo_user, _memo_pass)
@@ -141,5 +128,4 @@ abstract class AutomanAdapter {
   protected def CBQFactory() : CBQ
   protected def FTQFactory() : FTQ
   protected def RBDQFactory() : RBDQ
-  def debug_info: Tasks
 }
