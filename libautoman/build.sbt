@@ -40,7 +40,8 @@ libraryDependencies ++= {
     "io.spray"                   %%  "spray-json"           % "1.3.1",
     "com.typesafe.akka"          %%  "akka-actor"           % akkaVer,
     "com.typesafe.akka"          %%  "akka-testkit"         % akkaVer    % "test",
-    "org.specs2"                 %%  "specs2-core"          % "2.3.11" % "test"
+    "org.specs2"                 %%  "specs2-core"          % "2.3.11" % "test",
+    "edu.umass.cs.plasma"        %%  "automandebugger"      % "0.1-SNAPSHOT"
 //  "edu.umass.cs" % "mturkhitdecoupler_sjs0.5_2.10" % "1.0"
   )
 }
