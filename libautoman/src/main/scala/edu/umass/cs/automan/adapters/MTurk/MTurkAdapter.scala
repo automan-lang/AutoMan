@@ -74,8 +74,8 @@ class MTurkAdapter extends AutomanAdapter {
   def Option(id: Symbol, text: String) = new MTQuestionOption(id, text, "")
   def Option(id: Symbol, text: String, image_url: String) = new MTQuestionOption(id, text, image_url)
 
-  protected def accept[A <: Answer](t: Thunk[A]) = run_if_initialized((p: Pool) => p.accept(t))
-  protected def cancel[A <: Answer](t: Thunk[A]) = run_if_initialized((p: Pool) => p.cancel(t))
+  protected[automan] def accept[A <: Answer](t: Thunk[A]) = run_if_initialized((p: Pool) => p.accept(t))
+  protected[automan] def cancel[A <: Answer](t: Thunk[A]) = run_if_initialized((p: Pool) => p.cancel(t))
   def debug_info : Tasks = {
     synchronized {
       Tasks(
@@ -141,8 +141,8 @@ class MTurkAdapter extends AutomanAdapter {
       )
     }
   }
-  protected def get_budget_from_backend() = run_if_initialized((p: Pool) => p.budget())
-  protected def post[A <: Answer](ts: List[Thunk[A]], dual: Boolean, exclude_worker_ids: List[String]) = {
+  protected[automan] def get_budget_from_backend() = run_if_initialized((p: Pool) => p.budget())
+  protected[automan] def post[A <: Answer](ts: List[Thunk[A]], dual: Boolean, exclude_worker_ids: List[String]) = {
     run_if_initialized((p: Pool) => {
       p.post(ts, dual, exclude_worker_ids)
 
@@ -151,12 +151,12 @@ class MTurkAdapter extends AutomanAdapter {
       ts.foreach { _.state = SchedulerState.RUNNING }
     })
   }
-  protected def process_custom_info[A <: Answer](t: Thunk[A], i: Option[String]) =
+  protected[automan] def process_custom_info[A <: Answer](t: Thunk[A], i: Option[String]) =
     run_if_initialized((p: Pool) => p.process_custom_info(t, i))
-  protected def reject[A <: Answer](t: Thunk[A]) = run_if_initialized((p: Pool) => p.reject(t))
-  protected def retrieve[A <: Answer](ts: List[Thunk[A]]) =
+  protected[automan] def reject[A <: Answer](t: Thunk[A]) = run_if_initialized((p: Pool) => p.reject(t))
+  protected[automan] def retrieve[A <: Answer](ts: List[Thunk[A]]) =
     run_if_initialized((p: Pool) => p.retrieve(ts))
-  protected override def question_shutdown_hook(q: Question): Unit = {
+  protected[automan] override def question_shutdown_hook(q: Question): Unit = {
     // cleanup qualifications
     run_if_initialized((p: Pool) => p.cleanup_qualifications(q))
   }
