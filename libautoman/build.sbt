@@ -2,7 +2,7 @@ packSettings
 
 name := "automan"
 
-version := "0.4"
+version := "0.5-SNAPSHOT"
 
 organization := "edu.umass.cs"
 
@@ -34,15 +34,7 @@ libraryDependencies ++= {
     "xerces"                     % "xercesImpl"             % "2.9.1",
     "org.apache.velocity"        % "velocity"               % "1.6.2",
     "commons-beanutils"          % "commons-beanutils-core" % "1.7.0",
-    "io.spray"                   %%  "spray-can"            % sprayVer,
-    "io.spray"                   %%  "spray-routing"        % sprayVer,
-    "io.spray"                   %%  "spray-testkit"        % sprayVer   % "test",
-    "io.spray"                   %%  "spray-json"           % "1.3.1",
-    "com.typesafe.akka"          %%  "akka-actor"           % akkaVer,
-    "com.typesafe.akka"          %%  "akka-testkit"         % akkaVer    % "test",
-    "org.specs2"                 %%  "specs2-core"          % "2.3.11" % "test",
-    "edu.umass.cs.plasma"        %%  "automandebugger"      % "0.1-SNAPSHOT"
-//  "edu.umass.cs" % "mturkhitdecoupler_sjs0.5_2.10" % "1.0"
+    "org.specs2"                 %%  "specs2-core"          % "2.3.11" % "test"
   )
 }
 
