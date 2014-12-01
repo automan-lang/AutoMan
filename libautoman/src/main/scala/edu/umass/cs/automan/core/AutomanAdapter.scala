@@ -53,14 +53,14 @@ abstract class AutomanAdapter {
   def locale_=(l: Locale) { _locale = l }
 
   // marshaling calls
-  protected def accept[A <: Answer](t: Thunk[A])
-  protected def cancel[A <: Answer](t: Thunk[A])
-  protected def post[A <: Answer](ts: List[Thunk[A]], dual: Boolean, exclude_worker_ids: List[String])
-  protected def process_custom_info[A <: Answer](t: Thunk[A], i: Option[String])
-  protected def reject[A <: Answer](t: Thunk[A])
-  protected def retrieve[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]]  // returns all thunks passed in
-  protected def question_startup_hook(q: Question): Unit = {}
-  protected def question_shutdown_hook(q: Question): Unit = {}
+  protected[automan] def accept[A <: Answer](t: Thunk[A])
+  protected[automan] def cancel[A <: Answer](t: Thunk[A])
+  protected[automan] def post[A <: Answer](ts: List[Thunk[A]], dual: Boolean, exclude_worker_ids: List[String])
+  protected[automan] def process_custom_info[A <: Answer](t: Thunk[A], i: Option[String])
+  protected[automan] def reject[A <: Answer](t: Thunk[A])
+  protected[automan] def retrieve[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]]  // returns all thunks passed in
+  protected[automan] def question_startup_hook(q: Question): Unit = {}
+  protected[automan] def question_shutdown_hook(q: Question): Unit = {}
 
   // end-user syntax: Question creation
   def CheckboxQuestion(init: CBQ => Unit) : Future[CheckboxAnswer] = scheduleScalar(CBQFactory(), init)
@@ -70,12 +70,12 @@ abstract class AutomanAdapter {
   def Option(id: Symbol, text: String) : QuestionOption
 
   // state management
-  protected def init() {
+  protected[automan] def init() {
     debugger_init()
     memo_init()
     thunklog_init()
   }
-  protected def close() = {
+  protected[automan] def close() = {
     if (_debug_mode) {
       _actor_system.shutdown()
     }
@@ -106,7 +106,7 @@ abstract class AutomanAdapter {
   }
 
   // Global backend config
-  protected def budget_formatted = {
+  protected[automan] def budget_formatted = {
     val dbudget = _default_budget.setScale(2, BigDecimal.RoundingMode.HALF_EVEN)
     val nf = NumberFormat.getCurrencyInstance(_locale)
     nf.setMinimumFractionDigits(1)
@@ -114,7 +114,7 @@ abstract class AutomanAdapter {
     nf.format(dbudget.doubleValue())
   }
 
-  protected def get_budget_from_backend(): BigDecimal
+  protected[automan] def get_budget_from_backend(): BigDecimal
   private def scheduleScalar[Q <: Question,A <: Answer](q: Q, init: Q => Unit): Future[A] = Future {
     init(q)
     q.init_strategy()
