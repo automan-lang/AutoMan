@@ -10,11 +10,10 @@ object simple_program extends App {
   val opts = Utilities.unsafe_optparse(args, "simple_program.jar")
 
   val a = MTurkAdapter { mt =>
-    mt.plugins = List(classOf[AutomanDebugger])
+    mt.plugins = List(AutomanDebugger.plugin)
     mt.access_key_id = opts('key)
     mt.secret_access_key = opts('secret)
     mt.sandbox_mode = opts('sandbox).toBoolean
-    mt.debug = true
   }
 
   automan(a) {

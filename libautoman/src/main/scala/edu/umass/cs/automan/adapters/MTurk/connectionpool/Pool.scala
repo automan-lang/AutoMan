@@ -15,7 +15,7 @@ import edu.umass.cs.automan.core.{LogLevel, LogType, Utilities}
 import scala.collection.mutable.Queue
 import scala.concurrent.ExecutionContext
 
-class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
+class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
   // we need a thread pool more appropriate for lots of long-running I/O
   private val MAX_PARALLELISM = 1000
   private val DEFAULT_POOL = new java.util.concurrent.ForkJoinPool(MAX_PARALLELISM)
@@ -37,7 +37,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
   // API
   def accept[A <: Answer](t: Thunk[A]) : Unit = {
     // enqueue
-    synchronized {
+    adapter.lock { () =>
       _accept_queue.enqueue(t)
     }
 
@@ -51,7 +51,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
   }
   def cancel[A <: Answer](t: Thunk[A]) : Unit = {
     // enqueue
-    synchronized {
+    adapter.lock { () =>
       _cancel_queue.enqueue(t)
     }
 
@@ -66,7 +66,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
     }
 
     // enqueue
-    synchronized {
+    adapter.lock { () =>
       _dispose_quals_queue.enqueue(req)
     }
 
@@ -75,18 +75,20 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
     // wait for response
     // while loop is because the JVM is
     // permitted to send spurious wakeups
-    while(synchronized { !_disposal_completions.contains(req) }) {
+    while(adapter.lock { () => !_disposal_completions.contains(req) }) {
+      // Note that the purpose of this second lock
+      // is to provide blocking semantics
       req.synchronized {
         Utilities.DebugLog("Waiting for Adapter to do cleanup, putting Question Scheduler to sleep.", LogLevel.INFO, LogType.ADAPTER, null)
         req.wait() // block until answer is available
       }
     }
     // remove from set
-    synchronized { _disposal_completions.remove(req) }
+    adapter.lock { () => _disposal_completions.remove(req) }
   }
   def post[A <: Answer](ts: List[Thunk[A]], dual: Boolean, exclude_worker_ids: List[String]) : Unit = {
     // enqueue
-    synchronized {
+    adapter.lock { () =>
       _post_queue.enqueue(EnqueuedHIT(ts, dual, exclude_worker_ids))
     }
 
@@ -119,7 +121,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
   }
   def reject[A <: Answer](t: Thunk[A]) : Unit = {
     // enqueue
-    synchronized {
+    adapter.lock { () =>
       _reject_queue.enqueue(t)
     }
 
@@ -129,7 +131,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
     val req = RetrieveReq(ts)
 
     // enqueue
-    synchronized {
+    adapter.lock { () =>
       _retrieve_queue.enqueue(req)
     }
 
@@ -138,14 +140,16 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
     // wait for response
     // while loop is because the JVM is
     // permitted to send spurious wakeups
-    while(synchronized { !_retrieved_data.contains(req) }) {
+    while(adapter.lock { () => !_retrieved_data.contains(req) }) {
+      // Note that the purpose of this second lock
+      // is to provide blocking semantics
       req.synchronized {
         Utilities.DebugLog("Answer from Adapter not available, putting Question Scheduler to sleep.", LogLevel.INFO, LogType.ADAPTER, null)
         req.wait() // block until answer is available
       }
     }
     // return response
-    synchronized {
+    adapter.lock { () =>
       val response = _retrieved_data(req).asInstanceOf[List[Thunk[A]]]
       _retrieved_data.remove(req) // remove response data
       response
@@ -153,7 +157,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
   }
 
   private def ifWorkToBeDoneThen[T](when_yes: () => T)(when_no: () => T) : T = {
-    synchronized {
+    adapter.lock { () =>
       val yes =
         _post_queue.nonEmpty ||
           _cancel_queue.nonEmpty ||
@@ -199,7 +203,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
   }
   private def dequeueAllAndProcess[T](q: Queue[T], f: Seq[T] => Unit) = {
     syncCommWait { () =>
-      val t = synchronized {
+      val t = adapter.lock { () =>
         if (q.nonEmpty) {
           Some(q.dequeueAll(t => true))
         } else {
@@ -216,7 +220,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
   // so this methods prevents multiple requests from
   // happening simultaneously
   private def syncCommWait[T](f: () => T) : T = {
-    synchronized {
+    adapter.lock { () =>
       val t = f()
       Thread.sleep(sleep_ms)
       t
@@ -225,7 +229,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
   private def initWorkerIfNeeded() : Unit = {
     // if there's no thread already servicing the queue,
     // lock and start one up
-    synchronized {
+    adapter.lock { () =>
       _worker_thread match {
         case Some(thread) => Unit // do nothing
         case None =>
@@ -243,13 +247,15 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
         while (keep_running) {
           if (workToBeDone) {
             // Post queue
-            while(synchronized { _post_queue.nonEmpty } ) {
+            while(adapter.lock { () => _post_queue.nonEmpty } ) {
               lockDequeueAndProcess(_post_queue, (eh: EnqueuedHIT[_]) => scheduled_post(eh.ts, eh.dual, eh.exclude_worker_ids))
             }
 
             // Retrieve queue
-            while (synchronized { _retrieve_queue.nonEmpty } )
+            while (adapter.lock { () => _retrieve_queue.nonEmpty } )
               lockDequeueAndProcess(_retrieve_queue, (rr: RetrieveReq[_ <: Answer]) => {
+                // this lock provides notifications
+                // for blocked threads
                 rr.synchronized {
                   // do request
                   _retrieved_data += (rr -> scheduled_retrieve(rr.ts))
@@ -260,7 +266,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
               })
 
             // Approve queue
-            while(synchronized { _accept_queue.nonEmpty } ) {
+            while(adapter.lock { () => _accept_queue.nonEmpty } ) {
               lockDequeueAndProcessAndThen(_accept_queue,
                 (t: Thunk[_ <: Answer]) => scheduled_accept(t), // synchronized
                 (t: Thunk[_ <: Answer]) => set_paid_status(t)   // not synchronized
@@ -268,19 +274,21 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
             }
 
             // Reject queue
-            while (synchronized { _reject_queue.nonEmpty }) {
+            while (adapter.lock { () => _reject_queue.nonEmpty }) {
               lockDequeueAndProcess(_reject_queue, (t: Thunk[_ <: Answer]) => scheduled_reject(t))
             }
 
 
             // Cancel queue
-            while (synchronized { _cancel_queue.nonEmpty }) {
+            while (adapter.lock { () => _cancel_queue.nonEmpty }) {
               lockDequeueAndProcess(_cancel_queue, (t: Thunk[_ <: Answer]) => scheduled_cancel(t))
             }
 
             // Cleanup qualifications queue
-            while (synchronized { _dispose_quals_queue.nonEmpty }) {
+            while (adapter.lock { () => _dispose_quals_queue.nonEmpty }) {
               lockDequeueAndProcess(_dispose_quals_queue, (qr: DisposeQualsReq) => {
+                // this lock provides notifications
+                // for blocked threads
                 qr.synchronized {
                   // do request
                   scheduled_cleanup_qualifications(qr.q)
