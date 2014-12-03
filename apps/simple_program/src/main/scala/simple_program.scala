@@ -2,7 +2,7 @@ import edu.umass.cs.automan.adapters.MTurk._
 import edu.umass.cs.automan.automan
 import edu.umass.cs.automan.core.Utilities
 import edu.umass.cs.automan.core.exception.OverBudgetException
-import edu.umass.cs.automandebugger.AutomanDebugger
+import edu.umass.cs.plasma.automandebugger.AutomanDebugger
 import scala.concurrent._
 import scala.concurrent.duration._
 
