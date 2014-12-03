@@ -19,7 +19,6 @@ abstract class AutomanAdapter {
 
   protected var _default_budget: BigDecimal = 0.00
   protected var _default_confidence: Double = 0.95
-  protected var _debug_mode: Boolean = false
   protected var _locale: Locale = Locale.getDefault
   protected var _memoizer: AutomanMemoizer = _
   protected var _memo_db: String = "AutomanMemoDB"
@@ -29,7 +28,7 @@ abstract class AutomanAdapter {
   protected var _plugins: List[Class[_ <: Plugin]] = List.empty
   protected var _plugins_initialized: List[_ <: Plugin] = List.empty
   protected var _poll_interval_in_s : Int = 30
-  protected var _debug_schedulers: List[Scheduler] = List.empty
+  protected var _schedulers: List[Scheduler] = List.empty
   protected var _thunklog: ThunkLogger = _
   protected var _thunk_db: String = "ThunkLogDB"
   protected var _thunk_conn_string: String = "jdbc:derby:" + _thunk_db + ";create=true"
@@ -41,8 +40,6 @@ abstract class AutomanAdapter {
   def default_budget_=(b: BigDecimal) { _default_budget = b }
   def default_confidence: Double = _default_confidence
   def default_confidence_=(c: Double) { _default_confidence = c }
-  def debug: Boolean = _debug_mode
-  def debug_=(d: Boolean) = { _debug_mode = d }
   def locale: Locale = _locale
   def locale_=(l: Locale) { _locale = l }
   def plugins: List[Class[_ <: Plugin]] = _plugins
@@ -57,6 +54,7 @@ abstract class AutomanAdapter {
   protected[automan] def retrieve[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]]  // returns all thunks passed in
   protected[automan] def question_startup_hook(q: Question): Unit = {}
   protected[automan] def question_shutdown_hook(q: Question): Unit = {}
+  protected[automan] def lock[T](fn: () => T) : T = synchronized { fn() }
 
   // end-user syntax: Question creation
   def CheckboxQuestion(init: CBQ => Unit) : Future[CheckboxAnswer] = scheduleScalar(CBQFactory(), init)
@@ -91,6 +89,11 @@ abstract class AutomanAdapter {
   private def thunklog_init() {
     _thunklog = new ThunkLogger(_thunk_conn_string, _thunk_user, _thunk_pass)
   }
+  protected def state_snapshot(): Unit = {
+    lock { () =>
+      // TODO: state snapshot (return type should not be Unit)
+    }
+  }
 
   // Global backend config
   protected[automan] def budget_formatted = {
@@ -106,18 +109,14 @@ abstract class AutomanAdapter {
     init(q)
     q.init_strategy()
     val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
-    if (_debug_mode) {
-      _debug_schedulers = sched :: _debug_schedulers
-    }
+    _schedulers = sched :: _schedulers
     sched.run().asInstanceOf[A]
   }
   private def scheduleVector[Q <: Question,A <: Answer](q: Q, init: Q => Unit): Future[Set[A]] = Future {
     init(q)
     q.init_strategy()
     val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
-    if (_debug_mode) {
-      _debug_schedulers = sched :: _debug_schedulers
-    }
+    _schedulers = sched :: _schedulers
     sched.run().asInstanceOf[Set[A]]
   }
 
