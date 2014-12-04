@@ -11,24 +11,16 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
   _manager.migrate(classOf[RadioButtonAnswerMemo], classOf[CheckboxAnswerMemo], classOf[FreeTextAnswerMemo])
 
   // returns all of the stored answers for a question with a given memo_hash
-  def checkDB[Q <: Question](q: Q, dual: Boolean) : List[ScalarAnswer] = synchronized {
+  def checkDB[Q <: Question](q: Q) : List[ScalarAnswer] = synchronized {
     q match {
       case rbq: RadioButtonQuestion => {
-        if (!dual) { // There are never any RadioButton duals
-          deserializeRBQ(rbq)
-        } else {
-          List[RadioButtonAnswer]()
-        }
+        deserializeRBQ(rbq)
       }
       case rbdq: RadioButtonDistributionQuestion => {
-        if (!dual) { // There are never any RadioButton duals
-          deserializeRBQ(rbdq)
-        } else {
-          List[RadioButtonAnswer]()
-        }
+        deserializeRBQ(rbdq)
       }
       case cbq: CheckboxQuestion => {
-        deserializeCBQ(cbq, dual)
+        deserializeCBQ(cbq)
       }
       case ftq: FreeTextQuestion => {
         deserializeRBQ(ftq)
@@ -36,11 +28,11 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
     }
   }
 
-  private def deserializeCBQ(cbq: CheckboxQuestion, dual: Boolean) : List[CheckboxAnswer] = {
+  private def deserializeCBQ(cbq: CheckboxQuestion) : List[CheckboxAnswer] = {
     val clazz = classOf[CheckboxAnswerMemo]
     val query = Query.select().where(
       "memoHash = ? AND isForDistribution = ?",
-      cbq.memo_hash(dual),
+      cbq.memo_hash,
       cbq.is_for_distribution: java.lang.Boolean
     )
     val memos = _manager.find[CheckboxAnswerMemo,java.lang.Integer](clazz, query)
@@ -57,7 +49,7 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
     val clazz = classOf[FreeTextAnswerMemo]
     val query = Query.select().where(
       "memoHash = ? AND isForDistribution = ?",
-      q.memo_hash(false),
+      q.memo_hash,
       q.is_for_distribution: java.lang.Boolean
     )
     val memos = _manager.find[FreeTextAnswerMemo,java.lang.Integer](clazz, query)
@@ -74,7 +66,7 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
     val clazz = classOf[RadioButtonAnswerMemo]
     val query = Query.select().where(
       "memoHash = ? AND isForDistribution = ?",
-      q.memo_hash(false),
+      q.memo_hash,
       q.is_for_distribution: java.lang.Boolean
     )
     val memos = _manager.find[RadioButtonAnswerMemo,java.lang.Integer](clazz, query)
@@ -87,25 +79,23 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
     }.toList
   }
 
-  def writeAnswer[A <: Answer, Q <: Question](q: Q, a: A, is_dual: Boolean) : Unit = synchronized {
+  def writeAnswer[A <: Answer, Q <: Question](q: Q, a: A) : Unit = synchronized {
     a match {
       case rba: RadioButtonAnswer => {
-        if (!is_dual) {
-          val memo = _manager.create[RadioButtonAnswerMemo,java.lang.Integer](classOf[RadioButtonAnswerMemo])
-          memo.setMemoHash(q.memo_hash(false))
-          memo.setAnswerValue(rba.value.toString())
-          a.custom_info match { case Some(ci) => memo.setCustomInfo(ci); case None => { /* do nothing */ }}
-          memo.setPaidStatus(rba.paid)
-          memo.setWorkerId(rba.worker_id)
-          memo.setIsForDistribution(q.is_for_distribution)
-          memo.save()
-          rba.memo_handle = memo
-        }
+        val memo = _manager.create[RadioButtonAnswerMemo,java.lang.Integer](classOf[RadioButtonAnswerMemo])
+        memo.setMemoHash(q.memo_hash)
+        memo.setAnswerValue(rba.value.toString())
+        a.custom_info match { case Some(ci) => memo.setCustomInfo(ci); case None => { /* do nothing */ }}
+        memo.setPaidStatus(rba.paid)
+        memo.setWorkerId(rba.worker_id)
+        memo.setIsForDistribution(q.is_for_distribution)
+        memo.save()
+        rba.memo_handle = memo
       }
       case cba: CheckboxAnswer => {
         val memo = _manager.create[CheckboxAnswerMemo,java.lang.Integer](classOf[CheckboxAnswerMemo])
-        memo.setMemoHash(q.memo_hash(is_dual))
-        memo.setAnswerValues(cba.values.map {ans => ans.toString}.reduceLeft(_ + "," + _))
+        memo.setMemoHash(q.memo_hash)
+        memo.setAnswerValues(cba.values.map {ans => ans.toString()}.reduceLeft(_ + "," + _))
         a.custom_info match { case Some(ci) => memo.setCustomInfo(ci); case None => { /* do nothing */ }}
         memo.setPaidStatus(cba.paid)
         memo.setWorkerId(cba.worker_id)
@@ -115,7 +105,7 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
       }
       case fta: FreeTextAnswer => {
         val memo = _manager.create[FreeTextAnswerMemo,java.lang.Integer](classOf[FreeTextAnswerMemo])
-        memo.setMemoHash(q.memo_hash(false))
+        memo.setMemoHash(q.memo_hash)
         memo.setAnswerValue(fta.value.toString())
         a.custom_info match { case Some(ci) => memo.setCustomInfo(ci); case None => { /* do nothing */ }}
         memo.setPaidStatus(fta.paid)
@@ -130,17 +120,15 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
   def deleteAll[Q <: Question](q: Q) : Unit = synchronized {
     q match {
       case rbq: RadioButtonQuestion => {
-        val e = _manager.find[RadioButtonAnswerMemo,java.lang.Integer](classOf[RadioButtonAnswerMemo], "memoHash = ?", rbq.memo_hash(false))
+        val e = _manager.find[RadioButtonAnswerMemo,java.lang.Integer](classOf[RadioButtonAnswerMemo], "memoHash = ?", rbq.memo_hash)
         e.foreach(_manager.delete(_))
       }
       case cbq: CheckboxQuestion => {
-        val e1 = _manager.find[CheckboxAnswerMemo,java.lang.Integer](classOf[CheckboxAnswerMemo], "memoHash = ?", cbq.memo_hash(true))
-        val e2 = _manager.find[CheckboxAnswerMemo,java.lang.Integer](classOf[CheckboxAnswerMemo], "memoHash = ?", cbq.memo_hash(false))
-        e1.foreach(_manager.delete(_))
-        e2.foreach(_manager.delete(_))
+        val e = _manager.find[CheckboxAnswerMemo,java.lang.Integer](classOf[CheckboxAnswerMemo], "memoHash = ?", cbq.memo_hash)
+        e.foreach(_manager.delete(_))
       }
       case ftq: FreeTextQuestion => {
-        val e = _manager.find[FreeTextAnswerMemo,java.lang.Integer](classOf[FreeTextAnswerMemo], "memoHash = ?", ftq.memo_hash(false))
+        val e = _manager.find[FreeTextAnswerMemo,java.lang.Integer](classOf[FreeTextAnswerMemo], "memoHash = ?", ftq.memo_hash)
         e.foreach(_manager.delete(_))
       }
     }

@@ -24,8 +24,8 @@ trait MTurkQuestion {
   protected var _qualifications = List[QualificationRequirement]()
   protected val _mt_date_format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
 
-  def answer(a: Assignment, is_dual: Boolean): A
-  def build_hit(ts: List[Thunk[_]], is_dual: Boolean) : AutomanHIT
+  def answer(a: Assignment): A
+  def build_hit(ts: List[Thunk[_]]) : AutomanHIT
   def formatted_content: scala.xml.NodeSeq = _formatted_content match {
     case Some(x) => x
     case None => scala.xml.NodeSeq.Empty
@@ -71,5 +71,5 @@ trait MTurkQuestion {
     // check for membership in worker_id list
     _qualified_workers(qualification_type_id).contains(worker_id)
   }
-  def toXML(is_dual: Boolean, randomize: Boolean) : scala.xml.Node
+  def toXML(randomize: Boolean) : scala.xml.Node
 }

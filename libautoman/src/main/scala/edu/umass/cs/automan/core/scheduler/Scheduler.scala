@@ -22,12 +22,11 @@ class Scheduler (val question: Question,
 
   def run() : B = {
     // check memo DB first
-    val memo_answers = get_memo_answers(is_dual = false)
-    val memo_dual_answers = get_memo_answers(is_dual = true)
+    val memo_answers = get_memo_answers
     val unpaid_timeouts = new mutable.HashSet[Thunk[A]]()
     var last_iteration_timeout = false
     var over_budget = false
-    Utilities.DebugLog("Found " + (memo_answers.size + memo_dual_answers.size) + " saved Answers in database.", LogLevel.INFO, LogType.SCHEDULER, question.id)
+    Utilities.DebugLog("Found " + memo_answers.size + " saved Answers in database.", LogLevel.INFO, LogType.SCHEDULER, question.id)
 
     try {
       Utilities.DebugLog("Entering scheduling loop...", LogLevel.INFO, LogType.SCHEDULER, question.id)
@@ -43,7 +42,7 @@ class Scheduler (val question: Question,
           thunks = new_thunks ::: thunks
 
           // before posting, pick answers out of memo DB
-          recall(new_thunks, memo_answers, memo_dual_answers) // blocks
+          recall(new_thunks, memo_answers) // blocks
 
           // only post READY state thunks to backend; become RUNNING state here
           if (!question.dry_run) {
@@ -104,9 +103,9 @@ class Scheduler (val question: Question,
     answer.asInstanceOf[B]
   }
 
-  def get_memo_answers(is_dual: Boolean) : Queue[A] = {
+  def get_memo_answers : Queue[A] = {
     val answers = Queue[A]()
-    answers ++= memoizer.checkDB(question, is_dual).map{ a => a.asInstanceOf[A]}
+    answers ++= memoizer.checkDB(question).map{ a => a.asInstanceOf[A]}
     answers
   }
 
@@ -184,42 +183,24 @@ class Scheduler (val question: Question,
   def memoize_answers(ts: List[Thunk[A]]) {
     // save
     ts.filter(_.state == SchedulerState.RETRIEVED).foreach{t =>
-      memoizer.writeAnswer(question, t.answer, t.is_dual)
+      memoizer.writeAnswer(question, t.answer)
     }
   }
   def post(ts: List[Thunk[A]]) {
-    if (ts.filter(_.is_dual == true).size > 0) {
-      Utilities.DebugLog("Posting " + ts.filter(_.is_dual == true).size + " dual = true", LogLevel.INFO, LogType.SCHEDULER, question.id)
-      adapter.post(ts.filter(_.is_dual == true), true, question.blacklisted_workers)
-    }
-    if (ts.filter(_.is_dual == false).size > 0) {
-      Utilities.DebugLog("Posting " + ts.filter(_.is_dual == false).size + " dual = false", LogLevel.INFO, LogType.SCHEDULER, question.id)
-      adapter.post(ts.filter(_.is_dual == false), false, question.blacklisted_workers)
-    }
+    Utilities.DebugLog("Posting " + ts.size, LogLevel.INFO, LogType.SCHEDULER, question.id)
+    adapter.post(ts, question.blacklisted_workers)
   }
   def running_thunks = thunks.filter(_.state == SchedulerState.RUNNING)
-  def recall(ts: List[Thunk[A]], answers: Queue[A], dual_answers: Queue[A]) {
+  def recall(ts: List[Thunk[A]], answers: Queue[A]) {
     ts.filter(_.state == SchedulerState.READY).foreach { t =>
-      if (t.is_dual) {
-        if(dual_answers.size > 0) {
-          Utilities.DebugLog("Pairing thunk with memoized answer.", LogLevel.INFO, LogType.SCHEDULER, question.id)
-          val ans = dual_answers.dequeue()
-          t.answer = ans
-          t.worker_id = Some(ans.worker_id)
-          t.state = SchedulerState.RETRIEVED
-          t.question.blacklist_worker(t.worker_id.get)
-          adapter.process_custom_info(t, t.answer.custom_info)
-        }
-      } else {
-        if(answers.size > 0) {
-          Utilities.DebugLog("Pairing thunk with memoized answer.", LogLevel.INFO, LogType.SCHEDULER, question.id)
-          val ans = answers.dequeue()
-          t.answer = ans
-          t.worker_id = Some(ans.worker_id)
-          t.state = SchedulerState.RETRIEVED
-          t.question.blacklist_worker(t.worker_id.get)
-          adapter.process_custom_info(t, t.answer.custom_info)
-        }
+      if(answers.size > 0) {
+        Utilities.DebugLog("Pairing thunk with memoized answer.", LogLevel.INFO, LogType.SCHEDULER, question.id)
+        val ans = answers.dequeue()
+        t.answer = ans
+        t.worker_id = Some(ans.worker_id)
+        t.state = SchedulerState.RETRIEVED
+        t.question.blacklist_worker(t.worker_id.get)
+        adapter.process_custom_info(t, t.answer.custom_info)
       }
     }
   }

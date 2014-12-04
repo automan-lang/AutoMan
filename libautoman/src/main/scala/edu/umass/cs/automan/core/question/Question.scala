@@ -59,7 +59,7 @@ abstract class Question {
   private[automan] def init_strategy(): Unit
   def max_replicas: Option[Int] = _max_replicas
   def max_replicas_=(m: Int) { _max_replicas = Some(m) }
-  def memo_hash(dual: Boolean): String
+  def memo_hash: String
   def num_possibilities: BigInt
   def question_timeout_in_s: Int = (_worker_timeout_in_s * _question_timeout_multiplier).toInt
   def question_timeout_multiplier_=(t: Double) { _question_timeout_multiplier = t }

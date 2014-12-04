@@ -17,24 +17,16 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
   type QO = MTQuestionOption
   protected var _options = List[QO]()
 
-  def answer(a: Assignment, is_dual: Boolean): A = {
+  def answer(a: Assignment): A = {
     val xml = XML.loadString(a.getAnswer)
     val ans_symb = answerFromXML(xml)
-
-    val ans = if (is_dual) {
-      // get all possible symbols
-      val all_symb = options.map{ o => o.question_id }.toSet
-      // answer is set difference
-      new CheckboxAnswer(None, a.getWorkerId, all_symb &~ ans_symb)
-    } else {
-      new CheckboxAnswer(None, a.getWorkerId, ans_symb)
-    }
+    val ans = new CheckboxAnswer(None, a.getWorkerId, ans_symb)
     ans.accept_time = a.getAcceptTime
     ans.submit_time = a.getSubmitTime
     ans
   }
-  def build_hit(ts: List[Thunk[_]], dual: Boolean) : AutomanHIT = {
-    val x = toXML(dual, true)
+  def build_hit(ts: List[Thunk[_]]) : AutomanHIT = {
+    val x = toXML(randomize = !_dont_randomize_options)
     val h = AutomanHIT { a =>
       a.hit_type_id = _hit_type_id
       a.title = title
@@ -52,9 +44,9 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
     hit_thunk_map += (h -> ts)
     h
   }
-  def memo_hash(dual: Boolean): String = {
+  def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
-    new String(Hex.encodeHex(md.digest(toXML(dual, false).toString.getBytes)))
+    new String(Hex.encodeHex(md.digest(toXML(randomize = false).toString().getBytes)))
   }
   def options: List[QO] = _options
   def options_=(os: List[QO]) { _options = os }
@@ -65,8 +57,8 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
     import edu.umass.cs.automan.core.Utilities
     Utilities.randomPermute(options)
   }
-  // TODO: we're getting rid of question duals, to be replaced with random checkbox pre-fill
-  def toXML(is_dual: Boolean, randomize: Boolean) = {
+  // TODO: random checkbox fill
+  def toXML(randomize: Boolean) = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
       <Question>
         <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
@@ -89,7 +81,7 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
           {
             // if formatted content is specified, use that instead of text field
             _formatted_content match {
-              case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString) }</FormattedContent>
+              case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString()) }</FormattedContent>
               case None => <Text>{ text }</Text>
             }
           }

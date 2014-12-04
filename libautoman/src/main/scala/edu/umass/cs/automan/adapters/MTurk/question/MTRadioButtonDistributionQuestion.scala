@@ -19,16 +19,14 @@ class MTRadioButtonDistributionQuestion extends RadioButtonDistributionQuestion 
 
   protected var _options = List[QO]()
 
-  def answer(a: Assignment, is_dual: Boolean): A = {
-    // ignore is_dual
+  def answer(a: Assignment): A = {
     val ans = new RadioButtonAnswer(None, a.getWorkerId, answerFromXML(XML.loadString(a.getAnswer)))
     ans.accept_time = a.getAcceptTime
     ans.submit_time = a.getSubmitTime
     ans
   }
-  def build_hit(ts: List[Thunk[_]], is_dual: Boolean) : AutomanHIT = {
-    // we ignore the "dual" option here
-    val x = toXML(is_dual = false, randomize = !_dont_randomize_options)
+  def build_hit(ts: List[Thunk[_]]) : AutomanHIT = {
+    val x = toXML(randomize = !_dont_randomize_options)
     val h = AutomanHIT { a =>
       a.hit_type_id = _hit_type_id
       a.title = title
@@ -46,9 +44,9 @@ class MTRadioButtonDistributionQuestion extends RadioButtonDistributionQuestion 
     hit_thunk_map += (h -> ts)
     h
   }
-  def memo_hash(dual: Boolean): String = {
+  def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
-    new String(Hex.encodeHex(md.digest(toXML(dual, false).toString.getBytes)))
+    new String(Hex.encodeHex(md.digest(toXML(randomize = false).toString.getBytes)))
   }
   def options: List[QO] = _options
   def options_=(os: List[QO]) { _options = os }
@@ -67,8 +65,7 @@ class MTRadioButtonDistributionQuestion extends RadioButtonDistributionQuestion 
     import edu.umass.cs.automan.core.Utilities
     Utilities.randomPermute(options)
   }
-  def toXML(is_dual: Boolean, randomize: Boolean) : scala.xml.Node = {
-    // is_dual means nothing for this kind of question
+  def toXML(randomize: Boolean) : scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
       <Question>
         <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>

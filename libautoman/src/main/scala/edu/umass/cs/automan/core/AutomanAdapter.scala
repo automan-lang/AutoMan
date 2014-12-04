@@ -48,7 +48,7 @@ abstract class AutomanAdapter {
   // marshaling calls
   protected[automan] def accept[A <: Answer](t: Thunk[A])
   protected[automan] def cancel[A <: Answer](t: Thunk[A])
-  protected[automan] def post[A <: Answer](ts: List[Thunk[A]], dual: Boolean, exclude_worker_ids: List[String])
+  protected[automan] def post[A <: Answer](ts: List[Thunk[A]], exclude_worker_ids: List[String])
   protected[automan] def process_custom_info[A <: Answer](t: Thunk[A], i: Option[String])
   protected[automan] def reject[A <: Answer](t: Thunk[A])
   protected[automan] def retrieve[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]]  // returns all thunks passed in

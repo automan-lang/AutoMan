@@ -14,9 +14,8 @@ object simple_checkbox_program extends App {
     mt.sandbox_mode = opts('sandbox).toBoolean
   }
 
-  def which_one(text: String, dual_text: String) = a.CheckboxQuestion { q =>
+  def which_one(text: String) = a.CheckboxQuestion { q =>
     q.text = text
-    q.dual_text = dual_text
     q.options = List(
       a.Option('oscar, "Oscar the Grouch" /*, "http://tinyurl.com/c6d2s2r" */),
       a.Option('kermit, "Kermit the Frog"/*, "http://tinyurl.com/cujgof6"*/),
@@ -27,7 +26,7 @@ object simple_checkbox_program extends App {
   }
 
   try {
-    val future_answer = which_one("Which of these DO NOT BELONG? (check all that apply)", "Which of these BELONG TOGETHER? (check all that apply)")
+    val future_answer = which_one("Which of these DO NOT BELONG? (check all that apply)")
     val answers: Set[Symbol] = Await.result(future_answer, Duration.Inf).values
     println("answer1 is a " + answers.map(_.toString).mkString(","))
 

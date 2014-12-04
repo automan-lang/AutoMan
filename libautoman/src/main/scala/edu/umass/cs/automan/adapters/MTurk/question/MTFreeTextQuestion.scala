@@ -23,16 +23,14 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
   protected var _allow_empty: Boolean = false
   protected var _before_filter: Symbol => Symbol = (s) => s
 
-  def answer(a: Assignment, is_dual: Boolean): A = {
-    // ignore is_dual because FreeTextQuestions have no question duals
+  def answer(a: Assignment): A = {
     val ans = new FreeTextAnswer(None, a.getWorkerId, _before_filter(answerFromXML(XML.loadString(a.getAnswer))))
     ans.accept_time = a.getAcceptTime
     ans.submit_time = a.getSubmitTime
     ans
   }
-  def build_hit(ts: List[Thunk[_]], is_dual: Boolean) : AutomanHIT = {
-    // we ignore the "dual" option here
-    val x = toXML(false, true)
+  def build_hit(ts: List[Thunk[_]]) : AutomanHIT = {
+    val x = toXML(randomize = false)
     val h = AutomanHIT { a =>
       a.hit_type_id = _hit_type_id
       a.title = title
@@ -50,9 +48,9 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
     hit_thunk_map += (h -> ts)
     h
   }
-  def memo_hash(dual: Boolean): String = {
+  def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
-    new String(Hex.encodeHex(md.digest(toXML(false, false).toString.getBytes)))
+    new String(Hex.encodeHex(md.digest(toXML(randomize = false).toString().getBytes)))
   }
   def options: List[MTQuestionOption] = _options
   def options_=(os: List[MTQuestionOption]) { _options = os }
@@ -61,8 +59,7 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
 
     Symbol((x \\ "Answer" \ "FreeText").text)
   }
-  def toXML(is_dual: Boolean, randomize: Boolean) = {
-    // is_dual means nothing for this kind of question
+  def toXML(randomize: Boolean) = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
       <Question>
         <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
@@ -85,7 +82,7 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
           {
             // if formatted content is specified, use that instead of text field
             _formatted_content match {
-              case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString) }</FormattedContent>
+              case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString()) }</FormattedContent>
               case None => <Text>{ text }</Text>
             }
           }

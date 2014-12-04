@@ -16,16 +16,14 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
   type QO = MTQuestionOption
   protected var _options = List[QO]()
 
-  def answer(a: Assignment, is_dual: Boolean): A = {
-    // ignore is_dual
+  def answer(a: Assignment): A = {
     val ans = new RadioButtonAnswer(None, a.getWorkerId, answerFromXML(XML.loadString(a.getAnswer)))
     ans.accept_time = a.getAcceptTime
     ans.submit_time = a.getSubmitTime
     ans
   }
-  def build_hit(ts: List[Thunk[_]], is_dual: Boolean) : AutomanHIT = {
-    // we ignore the "dual" option here
-    val x = toXML(false, true)
+  def build_hit(ts: List[Thunk[_]]) : AutomanHIT = {
+    val x = toXML(randomize = !_dont_randomize_options)
     val h = AutomanHIT { a =>
       a.hit_type_id = _hit_type_id
       a.title = title
@@ -43,9 +41,9 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
     hit_thunk_map += (h -> ts)
     h
   }
-  def memo_hash(dual: Boolean): String = {
+  def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
-    new String(Hex.encodeHex(md.digest(toXML(dual, false).toString.getBytes)))
+    new String(Hex.encodeHex(md.digest(toXML(randomize = false).toString().getBytes)))
   }
   def options: List[QO] = _options
   def options_=(os: List[QO]) { _options = os }
@@ -55,7 +53,6 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
     //      <QuestionIdentifier>721be9fc-c867-42ce-8acd-829e64ae62dd</QuestionIdentifier>
     //      <SelectionIdentifier>count</SelectionIdentifier>
     //    </Answer>
-
     Utilities.DebugLog("MTRadioButtonQuestion: fromXML:\n" + x.toString,LogLevel.INFO,LogType.ADAPTER,id)
 
     Symbol((x \\ "Answer" \\ "SelectionIdentifier").text)
@@ -64,8 +61,7 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
     import edu.umass.cs.automan.core.Utilities
     Utilities.randomPermute(options)
   }
-  def toXML(is_dual: Boolean, randomize: Boolean) : scala.xml.Node = {
-    // is_dual means nothing for this kind of question
+  def toXML(randomize: Boolean) : scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
       <Question>
         <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
@@ -89,7 +85,7 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
           {
           // if formatted content is specified, use that instead of text field
             _formatted_content match {
-              case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString) }</FormattedContent>
+              case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString()) }</FormattedContent>
               case None => <Text>{ text }</Text>
             }
           }

@@ -86,10 +86,10 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
     // remove from set
     adapter.lock { () => _disposal_completions.remove(req) }
   }
-  def post[A <: Answer](ts: List[Thunk[A]], dual: Boolean, exclude_worker_ids: List[String]) : Unit = {
+  def post[A <: Answer](ts: List[Thunk[A]], exclude_worker_ids: List[String]) : Unit = {
     // enqueue
     adapter.lock { () =>
-      _post_queue.enqueue(EnqueuedHIT(ts, dual, exclude_worker_ids))
+      _post_queue.enqueue(EnqueuedHIT(ts, exclude_worker_ids))
     }
 
     initWorkerIfNeeded()
@@ -248,7 +248,7 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
           if (workToBeDone) {
             // Post queue
             while(adapter.lock { () => _post_queue.nonEmpty } ) {
-              lockDequeueAndProcess(_post_queue, (eh: EnqueuedHIT[_]) => scheduled_post(eh.ts, eh.dual, eh.exclude_worker_ids))
+              lockDequeueAndProcess(_post_queue, (eh: EnqueuedHIT[_]) => scheduled_post(eh.ts, eh.exclude_worker_ids))
             }
 
             // Retrieve queue
@@ -344,7 +344,7 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
       case _ => throw new Exception("Impossible error.")
     }
   }
-  private def scheduled_post(ts: List[Thunk[_]], dual: Boolean, exclude_worker_ids: List[String]) : Unit = {
+  private def scheduled_post(ts: List[Thunk[_]], exclude_worker_ids: List[String]) : Unit = {
     Utilities.DebugLog(String.format("Posting %s tasks.", ts.size.toString()), LogLevel.INFO, LogType.ADAPTER, null)
 
     val question = question_for_thunks(ts)
@@ -355,20 +355,16 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
     // Build HIT and post it
     mtquestion match {
       case rbq: MTRadioButtonQuestion => {
-        if (!dual) {
-          mtquestion.hit_type_id = rbq.build_hit(ts, false).post(backend, quals)
-        }
+        mtquestion.hit_type_id = rbq.build_hit(ts).post(backend, quals)
       }
       case rbdq: MTRadioButtonDistributionQuestion => {
-        if (!dual) {
-          mtquestion.hit_type_id = rbdq.build_hit(ts, false).post(backend, quals)
-        }
+        mtquestion.hit_type_id = rbdq.build_hit(ts).post(backend, quals)
       }
       case cbq: MTCheckboxQuestion => {
-        mtquestion.hit_type_id = cbq.build_hit(ts, dual).post(backend, quals)
+        mtquestion.hit_type_id = cbq.build_hit(ts).post(backend, quals)
       }
       case ftq: MTFreeTextQuestion => {
-        mtquestion.hit_type_id = ftq.build_hit(ts, false).post(backend, quals)
+        mtquestion.hit_type_id = ftq.build_hit(ts).post(backend, quals)
       }
       case _ => throw new Exception("Question type not yet supported. Question class is " + mtquestion.getClass)
     }
@@ -530,10 +526,10 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
     t.state = SchedulerState.RETRIEVED
 
     // convert assignment XML to Answer
-    t.answer = q.answer(a, t.is_dual).asInstanceOf[A]
+    t.answer = q.answer(a).asInstanceOf[A]
 
     // assign worker_id to thunk now that we know it
-    t.worker_id = Some(a.getWorkerId())
+    t.worker_id = Some(a.getWorkerId)
 
     // disqualify worker
     if (use_disq) {

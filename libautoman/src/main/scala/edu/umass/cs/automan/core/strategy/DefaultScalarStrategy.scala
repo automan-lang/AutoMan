@@ -1,6 +1,7 @@
 package edu.umass.cs.automan.core.strategy
 
 import java.util
+import java.util.UUID
 
 import edu.umass.cs.automan.core.answer.ScalarAnswer
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
@@ -71,7 +72,7 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
 
     // allocate Thunk objects
     val new_thunks = (0 until num_to_spawn).map { i =>
-      val t = new Thunk[A](question, question.question_timeout_in_s, question.worker_timeout_in_s, question.reward, _computation_id)
+      val t = new Thunk[A](UUID.randomUUID(), question, question.question_timeout_in_s, question.worker_timeout_in_s, question.reward, _computation_id)
       Utilities.DebugLog("spawned question_id = " + question.id_string,LogLevel.INFO,LogType.STRATEGY,_computation_id)
       t
     }.toList
@@ -80,12 +81,6 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
     pay_for_thunks(new_thunks)
 
     _thunks = new_thunks ::: _thunks
-
-    // mark some of them as duals if the question is a CheckboxQuestion
-    question match {
-      case cbq: CheckboxQuestion => (0 until (new_thunks.size / 2)).foreach{ i => new_thunks(i).is_dual = true }
-      case _ => {}
-    }
     
     new_thunks
   }
