@@ -5,7 +5,8 @@ import java.util.{UUID, Calendar, Date}
 import edu.umass.cs.automan.core.answer.Answer
 import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 
-class Thunk[A <: Answer](val question: Question,
+class Thunk[A <: Answer](val thunk_id: UUID,
+                         val question: Question,
                          val timeout_in_s: Int,
                          val worker_timeout: Int,
                          val cost: BigDecimal,
@@ -13,7 +14,6 @@ class Thunk[A <: Answer](val question: Question,
   val created_at: Date = new Date()
   var _state = SchedulerState.READY
   var answer : A = _
-  var is_dual: Boolean = false
   var from_memo: Boolean = false
   var worker_id: Option[String] = None
   val expires_at : Date = {

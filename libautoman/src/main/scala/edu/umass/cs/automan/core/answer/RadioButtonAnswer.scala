@@ -7,7 +7,7 @@ class RadioButtonAnswer(conf: Option[Double], worker_id: String, val value: Symb
   type AnswerValueType = Symbol
 
   var memo_handle: RadioButtonAnswerMemo = _
-  override def comparator = value  // ignore is_dual
+  override def comparator = value
   override def final_answer(confidence: Option[Double]) : RadioButtonAnswer = {
     confidence match {
       case Some(c) => new RadioButtonAnswer(Some(c), "aggregated", value)

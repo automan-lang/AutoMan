@@ -1,5 +1,7 @@
 package edu.umass.cs.automan.core.strategy
 
+import java.util.UUID
+
 import edu.umass.cs.automan.core.answer.ScalarAnswer
 import edu.umass.cs.automan.core.exception.OverBudgetException
 import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
@@ -51,7 +53,7 @@ class DefaultDistributionStrategy[Q <: DistributionQuestion, A <: ScalarAnswer, 
 
     // allocate Thunk objects
     val new_thunks = (0 until num_to_spawn).map { i =>
-      val t = new Thunk[A](question, question.question_timeout_in_s, question.worker_timeout_in_s, question.reward, _computation_id)
+      val t = new Thunk[A](UUID.randomUUID(), question, question.question_timeout_in_s, question.worker_timeout_in_s, question.reward, _computation_id)
       Utilities.DebugLog("spawned question_id = " + question.id_string,LogLevel.INFO,LogType.STRATEGY,_computation_id)
       t
     }.toList

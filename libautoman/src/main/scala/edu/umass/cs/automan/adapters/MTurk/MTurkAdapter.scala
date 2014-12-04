@@ -76,9 +76,9 @@ class MTurkAdapter extends AutomanAdapter {
   protected[automan] def accept[A <: Answer](t: Thunk[A]) = run_if_initialized((p: Pool) => p.accept(t))
   protected[automan] def cancel[A <: Answer](t: Thunk[A]) = run_if_initialized((p: Pool) => p.cancel(t))
   protected[automan] def get_budget_from_backend() = run_if_initialized((p: Pool) => p.budget())
-  protected[automan] def post[A <: Answer](ts: List[Thunk[A]], dual: Boolean, exclude_worker_ids: List[String]) = {
+  protected[automan] def post[A <: Answer](ts: List[Thunk[A]], exclude_worker_ids: List[String]) = {
     run_if_initialized((p: Pool) => {
-      p.post(ts, dual, exclude_worker_ids)
+      p.post(ts, exclude_worker_ids)
 
       // mark thunks as RUNNING so that the scheduler
       // knows to attempt to retrieve their answers later
