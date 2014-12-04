@@ -78,11 +78,11 @@ class MTurkAdapter extends AutomanAdapter {
   protected[automan] def get_budget_from_backend() = run_if_initialized((p: Pool) => p.budget())
   protected[automan] def post[A <: Answer](ts: List[Thunk[A]], exclude_worker_ids: List[String]) = {
     run_if_initialized((p: Pool) => {
-      p.post(ts, exclude_worker_ids)
-
       // mark thunks as RUNNING so that the scheduler
       // knows to attempt to retrieve their answers later
-      ts.foreach { _.state = SchedulerState.RUNNING }
+      val ts2 = ts.map { _.copy_with_state(SchedulerState.RUNNING) }
+      p.post(ts2, exclude_worker_ids)
+      ts2
     })
   }
   protected[automan] def process_custom_info[A <: Answer](t: Thunk[A], i: Option[String]) =
