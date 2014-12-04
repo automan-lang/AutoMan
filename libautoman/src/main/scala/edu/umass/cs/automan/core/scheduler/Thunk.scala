@@ -10,14 +10,16 @@ class Thunk[A <: Answer](val thunk_id: UUID,
                          val timeout_in_s: Int,
                          val worker_timeout: Int,
                          val cost: BigDecimal,
-                         val computation_id: UUID) {
-  val created_at: Date = new Date()
-  var _state = SchedulerState.READY
-  var answer : A = _
-  var from_memo: Boolean = false
-  var worker_id: Option[String] = None
+                         val computation_id: UUID,
+                         val created_at: Date,
+                         val state: SchedulerState.Value,
+                         val from_memo: Boolean,
+                         val worker_id: Option[String],
+                         val answer: Option[A]
+                        ) {
   val expires_at : Date = {
     val calendar = Calendar.getInstance()
+    calendar.setTime(created_at)
     calendar.add(Calendar.SECOND, timeout_in_s)
     calendar.getTime
   }
@@ -25,12 +27,17 @@ class Thunk[A <: Answer](val thunk_id: UUID,
     val now = new Date()
     expires_at.before(now)
   }
-  def state: SchedulerState.Value = _state
-  def state_=(s: SchedulerState.Value) { _state = s }
+
+  def copy_with_state(s: SchedulerState.Value) = {
+    new Thunk[A](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, s, from_memo, worker_id, answer)
+  }
+  def copy_with_answer(a: A, w: String) = {
+    new Thunk[A](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.RETRIEVED, from_memo, Some(w), Some(a))
+  }
 
   override def toString = {
-    val has_answer = if (answer == null) "no" else "yes"
-    val wid = if (answer == null) "n/a" else worker_id.toString
+    val has_answer = answer match { case Some(_) => "yes"; case None => "no" }
+    val wid = worker_id match { case Some(wid) => wid; case None => "n/a" }
     "Thunk(state: " + state + ", has answer: " + has_answer + ", completed by worker_id: " + wid + ")"
   }
   Utilities.DebugLog("New Thunk, will expire on: " + expires_at.toString, LogLevel.INFO, LogType.SCHEDULER, computation_id)

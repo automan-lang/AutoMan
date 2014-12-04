@@ -20,9 +20,26 @@ class Scheduler (val question: Question,
   val strategy = question.strategy_instance
   var thunks = List[Thunk[A]]()
 
+  def sch_post(last_iteration_timeout: Boolean, memo_answers: Queue[A]) : List[Thunk[A]] = {
+    // spawn new thunks; in READY state here
+    val new_thunks = strategy.spawn(last_iteration_timeout) // OverBudgetException should be thrown here
+
+    // before posting, pick answers out of memo DB
+    val recalled_thunks = recall(new_thunks, memo_answers) // blocks
+
+    // post remaining thunks
+    val posted_thunks = if (!question.dry_run) {
+      post(new_thunks.filter{ t => !recalled_thunks.contains(t.thunk_id)}) // non-blocking
+    } else {
+      List.empty
+    }
+
+    recalled_thunks ::: posted_thunks
+  }
+
   def run() : B = {
     // check memo DB first
-    val memo_answers = get_memo_answers
+    val memo_answers = get_memo_answers()
     val unpaid_timeouts = new mutable.HashSet[Thunk[A]]()
     var last_iteration_timeout = false
     var over_budget = false
@@ -37,16 +54,9 @@ class Scheduler (val question: Question,
       }
       while(!strategy.is_done) {
         if (running_thunks.size == 0) {
-          // spawn new thunks; in READY state here
-          val new_thunks = strategy.spawn(last_iteration_timeout) // OverBudgetException should be thrown here
-          thunks = new_thunks ::: thunks
-
-          // before posting, pick answers out of memo DB
-          recall(new_thunks, memo_answers) // blocks
-
-          // only post READY state thunks to backend; become RUNNING state here
-          if (!question.dry_run) {
-            post(new_thunks.filter(_.state == SchedulerState.READY)) // non-blocking
+          val new_thunks = sch_post(last_iteration_timeout, memo_answers) ::: thunks
+          synchronized {
+            thunks = new_thunks ::: thunks
           }
         }
 
@@ -103,7 +113,7 @@ class Scheduler (val question: Question,
     answer.asInstanceOf[B]
   }
 
-  def get_memo_answers : Queue[A] = {
+  def get_memo_answers() : Queue[A] = {
     val answers = Queue[A]()
     answers ++= memoizer.checkDB(question).map{ a => a.asInstanceOf[A]}
     answers
@@ -186,21 +196,26 @@ class Scheduler (val question: Question,
       memoizer.writeAnswer(question, t.answer)
     }
   }
-  def post(ts: List[Thunk[A]]) {
+  def post(ts: List[Thunk[A]]) : List[Thunk[A]] = {
     Utilities.DebugLog("Posting " + ts.size, LogLevel.INFO, LogType.SCHEDULER, question.id)
     adapter.post(ts, question.blacklisted_workers)
   }
   def running_thunks = thunks.filter(_.state == SchedulerState.RUNNING)
-  def recall(ts: List[Thunk[A]], answers: Queue[A]) {
-    ts.filter(_.state == SchedulerState.READY).foreach { t =>
+  def recall(ts: List[Thunk[A]], answers: Queue[A]) : List[Thunk[A]] = {
+    // sanity check
+    assert(ts.forall(_.state == SchedulerState.READY))
+
+    ts.map { t =>
       if(answers.size > 0) {
         Utilities.DebugLog("Pairing thunk with memoized answer.", LogLevel.INFO, LogType.SCHEDULER, question.id)
-        val ans = answers.dequeue()
-        t.answer = ans
-        t.worker_id = Some(ans.worker_id)
-        t.state = SchedulerState.RETRIEVED
-        t.question.blacklist_worker(t.worker_id.get)
-        adapter.process_custom_info(t, t.answer.custom_info)
+        val answer = answers.dequeue()
+        val worker_id = answer.worker_id
+        val t2 = t.copy_with_answer(answer, worker_id)
+        t2.question.blacklist_worker(worker_id)
+        adapter.process_custom_info(t2, answer.custom_info)
+        t2
+      } else {
+        t
       }
     }
   }
