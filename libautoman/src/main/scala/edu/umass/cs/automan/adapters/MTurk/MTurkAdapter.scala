@@ -1,7 +1,5 @@
 package edu.umass.cs.automan.adapters.MTurk
 
-import java.util.Date
-
 import com.amazonaws.mturk.util.ClientConfig
 import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.core.question._
