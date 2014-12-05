@@ -13,11 +13,11 @@ abstract class ScalarValidationStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, 
 
   def confidence: Double = _confidence
   def confidence_=(c: Double) { _confidence = c }
-  def current_confidence: Double
-  def is_confident: Boolean
-  def is_done = is_confident
-  def select_answer : B = {
-    val rt = completed_workerunique_thunks // only retrieved and memo-recalled; only earliest submission per-worker
+  def current_confidence(thunks: List[Thunk[A]]) : Double
+  def is_confident(thunks: List[Thunk[A]]) : Boolean
+  def is_done(thunks: List[Thunk[A]]) = is_confident(thunks)
+  def select_answer(thunks: List[Thunk[A]]) : B = {
+    val rt = completed_workerunique_thunks(thunks) // only retrieved and memo-recalled; only earliest submission per-worker
 
     // TODO: this is ugly and I don't remember why it's important
     if (rt.size == 0) {
@@ -41,15 +41,14 @@ abstract class ScalarValidationStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, 
     Utilities.DebugLog("classOf Thunk.answer is " + groups(gsymb).head.answer.getClass, LogLevel.INFO, LogType.STRATEGY,_computation_id)
 
     // return the top Answer
-    // TODO: can I get rid of the typecast?
-    _selected_answer = Some(groups(gsymb).head.answer.get.final_answer(Some(current_confidence)).asInstanceOf[A])
+    _selected_answer = Some(groups(gsymb).head.answer.get.final_answer(Some(current_confidence(thunks))).asInstanceOf[A])
     _selected_answer.get.asInstanceOf[B]
   }
 
-  override def thunks_to_accept: List[Thunk[A]] = {
+  override def thunks_to_accept(thunks: List[Thunk[A]]): List[Thunk[A]] = {
     _selected_answer match {
       case Some(answer) =>
-        _thunks
+        thunks
           .filter( _.state == SchedulerState.RETRIEVED )
           .filter( t => t.answer.get.sameAs(answer)) // note that we accept all of a worker's matching submissions
                                                  // even if we have to accept duplicate submissions
@@ -57,10 +56,10 @@ abstract class ScalarValidationStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, 
     }
   }
 
-  override def thunks_to_reject: List[Thunk[A]] = {
+  override def thunks_to_reject(thunks: List[Thunk[A]]): List[Thunk[A]] = {
     _selected_answer match {
       case Some(answer) =>
-        _thunks
+        thunks
           .filter( _.state == SchedulerState.RETRIEVED )
           .filter( t => !t.answer.get.sameAs(answer))
       case None => throw new PrematureValidationCompletionException("thunks_to_reject", this.getClass.toString)

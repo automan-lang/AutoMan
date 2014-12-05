@@ -19,23 +19,23 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
   extends ScalarValidationStrategy[Q,A,B](question) {
   Utilities.DebugLog("DEFAULTSCALAR strategy loaded.",LogLevel.INFO,LogType.STRATEGY,_computation_id)
 
-  def current_confidence: Double = {
-    val valid_ts = completed_workerunique_thunks
+  def current_confidence(thunks: List[Thunk[A]]): Double = {
+    val valid_ts = completed_workerunique_thunks(thunks)
     if (valid_ts.size == 0) return 0.0 // bail if we have no valid responses
     val biggest_answer = valid_ts.groupBy(_.answer.get.comparator).maxBy{ case(sym,ts) => ts.size }._2.size
-    MonteCarlo.confidenceOfOutcome(_num_possibilities.toInt, _thunks.size, biggest_answer, 1000000)
+    MonteCarlo.confidenceOfOutcome(_num_possibilities.toInt, thunks.size, biggest_answer, 1000000)
   }
-  def is_confident: Boolean = {
-    if (_thunks.size == 0) {
+  def is_confident(thunks: List[Thunk[A]]): Boolean = {
+    if (thunks.size == 0) {
       Utilities.DebugLog("Have no thunks; confidence is undefined.", LogLevel.INFO, LogType.STRATEGY, _computation_id)
       false
     } else {
-      val valid_ts = completed_workerunique_thunks
+      val valid_ts = completed_workerunique_thunks(thunks)
       if (valid_ts.size == 0) return false // bail if we have no valid responses
       val biggest_answer = valid_ts.groupBy(_.answer.get.comparator).maxBy{ case(sym,ts) => ts.size }._2.size
 
       // TODO: MonteCarlo simulator needs to take BigInts!
-      val min_agree = MonteCarlo.requiredForAgreement(_num_possibilities.toInt, _thunks.size, _confidence, 1000000)
+      val min_agree = MonteCarlo.requiredForAgreement(_num_possibilities.toInt, thunks.size, _confidence, 1000000)
       if (biggest_answer >= min_agree) {
         Utilities.DebugLog("Reached or exceeded alpha = " + (1 - _confidence).toString, LogLevel.INFO, LogType.STRATEGY, _computation_id)
         true
@@ -45,15 +45,15 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
       }
     }
   }
-  def max_agree: Int = {
-    val valid_ts = completed_workerunique_thunks
+  def max_agree(thunks: List[Thunk[A]]) : Int = {
+    val valid_ts = completed_workerunique_thunks(thunks)
     if (valid_ts.size == 0) return 0
     valid_ts.groupBy(_.answer.get.comparator).maxBy{ case(sym,ts) => ts.size }._2.size
   }
-  def spawn(had_timeout: Boolean): List[Thunk[A]] = {
+  def spawn(thunks: List[Thunk[A]], had_timeout: Boolean): List[Thunk[A]] = {
     // num to spawn (don't spawn more if any are running)
-    val num_to_spawn = if (_thunks.count(_.state == SchedulerState.RUNNING) == 0) {
-      num_to_run(question)
+    val num_to_spawn = if (thunks.count(_.state == SchedulerState.RUNNING) == 0) {
+      num_to_run(thunks, question)
     } else {
       return List[Thunk[A]]() // Be patient!
     }
@@ -91,20 +91,18 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
     // reserve money for them
     pay_for_thunks(new_thunks)
 
-    _thunks = new_thunks ::: _thunks
-    
     new_thunks
   }
 
-  def num_to_run(q: Q) : Int = {
+  def num_to_run(thunks: List[Thunk[A]], q: Q) : Int = {
     val np: Int = if(q.num_possibilities > BigInt(Int.MaxValue)) 1000 else q.num_possibilities.toInt
 
     // update # of unique workers
-    val unique_workers = completed_thunks.map { t => t.worker_id }.distinct.size
-    ValidationStrategy.overwrite(q.title, q.text, _computation_id, unique_workers, completed_thunks.size)
+    val unique_workers = completed_thunks(thunks).map { t => t.worker_id }.distinct.size
+    ValidationStrategy.overwrite(q.title, q.text, _computation_id, unique_workers, completed_thunks(thunks).size)
 
     // number needed for agreement, adjusted for programmer time-value
-    val n = math.max(expected_for_agreement(np, _thunks.size, max_agree, q.confidence).toDouble,
+    val n = math.max(expected_for_agreement(np, thunks.size, max_agree(thunks), q.confidence).toDouble,
              math.min(math.floor(q.budget.toDouble/q.reward.toDouble),
                       math.floor(q.time_value_per_hour.toDouble/q.wage.toDouble)
              )
