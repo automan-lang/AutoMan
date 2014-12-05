@@ -29,11 +29,12 @@ class Scheduler (val question: Question,
     // before posting, pick answers out of memo DB
     val recalled_thunks = recall(new_thunks, memo_answers) // blocks
 
+    // remaining new thunks
+    val rem_new_thunks = new_thunks.filter{ t => recalled_thunks.forall(_.thunk_id != t.thunk_id)}
+
     // post remaining thunks
     val posted_thunks = if (!question.dry_run) {
-      post(new_thunks.filter{ t =>
-        recalled_thunks.forall(_.thunk_id != t.thunk_id)
-      }) // non-blocking
+      post(rem_new_thunks) // non-blocking
     } else {
       List.empty
     }
@@ -218,8 +219,8 @@ class Scheduler (val question: Question,
     // sanity check
     assert(ts.forall(_.state == SchedulerState.READY))
 
-    ts.map { t =>
-      if(answers.size > 0) {
+    if (answers.size > 0) {
+      ts.take(answers.size).map { t =>
         Utilities.DebugLog("Pairing thunk with memoized answer.", LogLevel.INFO, LogType.SCHEDULER, question.id)
         val answer = answers.dequeue()
         val worker_id = answer.worker_id
@@ -227,9 +228,9 @@ class Scheduler (val question: Question,
         t2.question.blacklist_worker(worker_id)
         adapter.process_custom_info(t2, answer.custom_info)
         t2
-      } else {
-        t
       }
+    } else {
+      List.empty
     }
   }
 }
