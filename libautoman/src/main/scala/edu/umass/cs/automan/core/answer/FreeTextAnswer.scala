@@ -5,6 +5,7 @@ import edu.umass.cs.automan.core.memoizer.FreeTextAnswerMemo
 class FreeTextAnswer(conf: Option[Double], worker_id: String, val value: Symbol)
   extends ScalarAnswer(conf, worker_id) {
   type AnswerValueType = Symbol
+  type AnswerMemoType = FreeTextAnswerMemo
 
   var memo_handle: FreeTextAnswerMemo = _
   override def comparator = value

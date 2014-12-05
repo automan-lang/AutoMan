@@ -22,7 +22,7 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
   def current_confidence: Double = {
     val valid_ts = completed_workerunique_thunks
     if (valid_ts.size == 0) return 0.0 // bail if we have no valid responses
-    val biggest_answer = valid_ts.groupBy(_.answer.comparator).maxBy{ case(sym,ts) => ts.size }._2.size
+    val biggest_answer = valid_ts.groupBy(_.answer.get.comparator).maxBy{ case(sym,ts) => ts.size }._2.size
     MonteCarlo.confidenceOfOutcome(_num_possibilities.toInt, _thunks.size, biggest_answer, 1000000)
   }
   def is_confident: Boolean = {
@@ -32,7 +32,7 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
     } else {
       val valid_ts = completed_workerunique_thunks
       if (valid_ts.size == 0) return false // bail if we have no valid responses
-      val biggest_answer = valid_ts.groupBy(_.answer.comparator).maxBy{ case(sym,ts) => ts.size }._2.size
+      val biggest_answer = valid_ts.groupBy(_.answer.get.comparator).maxBy{ case(sym,ts) => ts.size }._2.size
 
       // TODO: MonteCarlo simulator needs to take BigInts!
       val min_agree = MonteCarlo.requiredForAgreement(_num_possibilities.toInt, _thunks.size, _confidence, 1000000)
@@ -48,7 +48,7 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
   def max_agree: Int = {
     val valid_ts = completed_workerunique_thunks
     if (valid_ts.size == 0) return 0
-    valid_ts.groupBy(_.answer.comparator).maxBy{ case(sym,ts) => ts.size }._2.size
+    valid_ts.groupBy(_.answer.get.comparator).maxBy{ case(sym,ts) => ts.size }._2.size
   }
   def spawn(had_timeout: Boolean): List[Thunk[A]] = {
     // num to spawn (don't spawn more if any are running)
@@ -72,7 +72,18 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
 
     // allocate Thunk objects
     val new_thunks = (0 until num_to_spawn).map { i =>
-      val t = new Thunk[A](UUID.randomUUID(), question, question.question_timeout_in_s, question.worker_timeout_in_s, question.reward, _computation_id)
+      val t = new Thunk[A](UUID.randomUUID(),
+        question,
+        question.question_timeout_in_s,
+        question.worker_timeout_in_s,
+        question.reward,
+        _computation_id,
+        new java.util.Date(),
+        SchedulerState.READY,
+        false,
+        None,
+        None
+      )
       Utilities.DebugLog("spawned question_id = " + question.id_string,LogLevel.INFO,LogType.STRATEGY,_computation_id)
       t
     }.toList

@@ -31,8 +31,8 @@ class Thunk[A <: Answer](val thunk_id: UUID,
   def copy_with_state(s: SchedulerState.Value) = {
     new Thunk[A](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, s, from_memo, worker_id, answer)
   }
-  def copy_with_answer(a: A, w: String) = {
-    new Thunk[A](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.RETRIEVED, from_memo, Some(w), Some(a))
+  def copy_with_answer(ans: A, wrk_id: String) = {
+    new Thunk[A](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.RETRIEVED, from_memo, Some(wrk_id), Some(ans))
   }
   def copy_with_timeout() = {
     new Thunk[A](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.TIMEOUT, from_memo, worker_id, answer)
@@ -45,6 +45,9 @@ class Thunk[A <: Answer](val thunk_id: UUID,
   }
   def copy_with_accept() = {
     new Thunk[A](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.ACCEPTED, from_memo, worker_id, answer)
+  }
+  def copy_with_reject() = {
+    new Thunk[A](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.REJECTED, from_memo, worker_id, answer)
   }
 
   override def toString = {

@@ -5,6 +5,7 @@ import edu.umass.cs.automan.core.memoizer.CheckboxAnswerMemo
 class CheckboxAnswer(conf: Option[Double], worker_id: String, val values: Set[Symbol])
   extends ScalarAnswer(conf, worker_id) {
   type AnswerValueType = Set[Symbol]
+  type AnswerMemoType = CheckboxAnswerMemo
 
   var memo_handle: CheckboxAnswerMemo = _
   override def comparator = values

@@ -53,7 +53,18 @@ class DefaultDistributionStrategy[Q <: DistributionQuestion, A <: ScalarAnswer, 
 
     // allocate Thunk objects
     val new_thunks = (0 until num_to_spawn).map { i =>
-      val t = new Thunk[A](UUID.randomUUID(), question, question.question_timeout_in_s, question.worker_timeout_in_s, question.reward, _computation_id)
+      val t = new Thunk[A](UUID.randomUUID(),
+                           question,
+                           question.question_timeout_in_s,
+                           question.worker_timeout_in_s,
+                           question.reward,
+                           _computation_id,
+                           new java.util.Date(),
+                           SchedulerState.READY,
+                           false,
+                           None,
+                           None
+                          )
       Utilities.DebugLog("spawned question_id = " + question.id_string,LogLevel.INFO,LogType.STRATEGY,_computation_id)
       t
     }.toList
