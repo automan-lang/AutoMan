@@ -6,5 +6,6 @@ import edu.umass.cs.automan.core.scheduler.Thunk
 
 protected[MTurk] case class EnqueuedHIT[A <: Answer](ts: List[Thunk[A]], exclude_worker_ids: List[String])
 protected[MTurk] case class RetrieveReq[A <: Answer](ts: List[Thunk[A]])
+protected[MTurk] case class CancelReq[A <: Answer](t: Thunk[A])
 protected[MTurk] case class BudgetReq()
 protected[MTurk] case class DisposeQualsReq(q: MTurkQuestion)

@@ -1,5 +1,7 @@
 package edu.umass.cs.automan.core.scheduler
 
+import java.util.UUID
+
 import edu.umass.cs.automan.core.memoizer.{ThunkLogger, AutomanMemoizer}
 import edu.umass.cs.automan.core.answer.{Answer, ScalarAnswer}
 import scala.collection.mutable
@@ -18,7 +20,7 @@ class Scheduler (val question: Question,
   // we need to get the initialized strategy instance from
   // the Question itself in order to satisfy the type checker
   val strategy = question.strategy_instance
-  var thunks = List[Thunk[A]]()
+  var thunks = scala.collection.immutable.Map[UUID,Thunk[A]]()
 
   def sch_post(last_iteration_timeout: Boolean, memo_answers: Queue[A]) : List[Thunk[A]] = {
     // spawn new thunks; in READY state here
@@ -29,7 +31,9 @@ class Scheduler (val question: Question,
 
     // post remaining thunks
     val posted_thunks = if (!question.dry_run) {
-      post(new_thunks.filter{ t => !recalled_thunks.contains(t.thunk_id)}) // non-blocking
+      post(new_thunks.filter{ t =>
+        recalled_thunks.forall(_.thunk_id != t.thunk_id)
+      }) // non-blocking
     } else {
       List.empty
     }
@@ -54,21 +58,28 @@ class Scheduler (val question: Question,
       }
       while(!strategy.is_done) {
         if (running_thunks.size == 0) {
-          val new_thunks = sch_post(last_iteration_timeout, memo_answers) ::: thunks
-          synchronized {
-            thunks = new_thunks ::: thunks
-          }
+          val new_thunks = sch_post(last_iteration_timeout, memo_answers)
+
+          // atomically update thunk map
+          thunks = thunks ++ new_thunks.map(t => t.thunk_id -> t).toMap
         }
 
         // ask the backend for answers and memoize_answers
         // conditional covers the case where all thunk answers are recalled from memoDB
         if (running_thunks.size > 0) {
           // get data
-          val results = if (!question.dry_run) {
-            adapter.retrieve(running_thunks) // blocks
-          } else { List[Thunk[A]]() }
+          // TODO: adapter.retrieve() also cancels timed-out thunks, which violates single-responsibility
+          val results =
+            if (!question.dry_run) {
+              adapter.retrieve(running_thunks) // blocks
+            } else {
+              List.empty
+            }
 
-          // check for timeout
+          // atomically update thunk list with new copy
+          thunks = results.foldLeft(thunks){ (acc, t) => acc + (t.thunk_id -> t) }
+
+          // check for timed-out thunks
           if (results.count(_.state == SchedulerState.TIMEOUT) != 0) {
             // unreserve these amounts from our budget
             val new_timeouts = results.filter{ t =>
@@ -200,7 +211,7 @@ class Scheduler (val question: Question,
     Utilities.DebugLog("Posting " + ts.size, LogLevel.INFO, LogType.SCHEDULER, question.id)
     adapter.post(ts, question.blacklisted_workers)
   }
-  def running_thunks = thunks.filter(_.state == SchedulerState.RUNNING)
+  def running_thunks = thunks.values.filter(_.state == SchedulerState.RUNNING).toList
   def recall(ts: List[Thunk[A]], answers: Queue[A]) : List[Thunk[A]] = {
     // sanity check
     assert(ts.forall(_.state == SchedulerState.READY))

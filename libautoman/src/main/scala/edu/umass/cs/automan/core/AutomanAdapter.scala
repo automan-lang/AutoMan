@@ -47,14 +47,13 @@ abstract class AutomanAdapter {
 
   // marshaling calls
   protected[automan] def accept[A <: Answer](t: Thunk[A])
-  protected[automan] def cancel[A <: Answer](t: Thunk[A])
+  protected[automan] def cancel[A <: Answer](t: Thunk[A]) : Thunk[A]
   protected[automan] def post[A <: Answer](ts: List[Thunk[A]], exclude_worker_ids: List[String]) : List[Thunk[A]]
   protected[automan] def process_custom_info[A <: Answer](t: Thunk[A], i: Option[String])
   protected[automan] def reject[A <: Answer](t: Thunk[A])
   protected[automan] def retrieve[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]]  // returns all thunks passed in
   protected[automan] def question_startup_hook(q: Question): Unit = {}
   protected[automan] def question_shutdown_hook(q: Question): Unit = {}
-  protected[automan] def lock[T](fn: () => T) : T = synchronized { fn() }
 
   // end-user syntax: Question creation
   def CheckboxQuestion(init: CBQ => Unit) : Future[CheckboxAnswer] = scheduleScalar(CBQFactory(), init)
@@ -90,9 +89,7 @@ abstract class AutomanAdapter {
     _thunklog = new ThunkLogger(_thunk_conn_string, _thunk_user, _thunk_pass)
   }
   protected def state_snapshot(): Unit = {
-    lock { () =>
       // TODO: state snapshot (return type should not be Unit)
-    }
   }
 
   // Global backend config

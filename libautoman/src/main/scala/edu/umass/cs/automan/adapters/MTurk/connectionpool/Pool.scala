@@ -12,10 +12,11 @@ import edu.umass.cs.automan.core.answer.{FreeTextAnswer, CheckboxAnswer, RadioBu
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 import edu.umass.cs.automan.core.{LogLevel, LogType, Utilities}
+import scala.collection.mutable
 import scala.collection.mutable.Queue
 import scala.concurrent.ExecutionContext
 
-class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
+class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
   // we need a thread pool more appropriate for lots of long-running I/O
   private val MAX_PARALLELISM = 1000
   private val DEFAULT_POOL = new java.util.concurrent.ForkJoinPool(MAX_PARALLELISM)
@@ -24,7 +25,7 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
   // work queues
   private var _worker_thread: Option[Thread] = None
   private val _post_queue : Queue[EnqueuedHIT[_ <: Answer]] = new Queue[EnqueuedHIT[_ <: Answer]]()
-  private val _cancel_queue: Queue[Thunk[_ <: Answer]] = new Queue[Thunk[_ <: Answer]]()
+  private val _cancel_queue: Queue[CancelReq[_ <: Answer]] = new Queue[CancelReq[_ <: Answer]]()
   private val _accept_queue: Queue[Thunk[_ <: Answer]] = new Queue[Thunk[_ <: Answer]]()
   private val _retrieve_queue: Queue[RetrieveReq[_ <: Answer]] = new Queue[RetrieveReq[_ <: Answer]]()
   private val _reject_queue: Queue[Thunk[_ <: Answer]] = new Queue[Thunk[_ <: Answer]]()
@@ -32,12 +33,13 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
 
   // response data
   private val _retrieved_data = scala.collection.mutable.Map[RetrieveReq[_ <: Answer], List[Thunk[_ <: Answer]]]()
+  private val _cancelled_thunks = scala.collection.mutable.Map[CancelReq[_ <: Answer], Thunk[_ <: Answer]]()
   private val _disposal_completions = scala.collection.mutable.Set[DisposeQualsReq]()
 
   // API
   def accept[A <: Answer](t: Thunk[A]) : Unit = {
     // enqueue
-    adapter.lock { () =>
+    synchronized {
       _accept_queue.enqueue(t)
     }
 
@@ -49,14 +51,36 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
       scheduled_get_budget()
     }
   }
-  def cancel[A <: Answer](t: Thunk[A]) : Unit = {
+
+  def cancel[A <: Answer](t: Thunk[A]) : Thunk[A] = {
+    val req = CancelReq(t)
+
     // enqueue
-    adapter.lock { () =>
-      _cancel_queue.enqueue(t)
+    synchronized {
+      _cancel_queue.enqueue(req)
     }
 
     initWorkerIfNeeded()
+
+    // wait for response
+    // while loop is because the JVM is
+    // permitted to send spurious wakeups
+    while(synchronized { !_cancel_queue.contains(req) }) {
+      // Note that the purpose of this second lock
+      // is to provide blocking semantics
+      req.synchronized {
+        Utilities.DebugLog("Cancellation response not available, putting Question Scheduler to sleep.", LogLevel.INFO, LogType.ADAPTER, null)
+        req.wait() // block until cancelled thunk is available
+      }
+    }
+    // return cancelled thunk
+    synchronized {
+      val t = _cancelled_thunks(req).asInstanceOf[Thunk[A]]
+      _cancelled_thunks.remove(req) // remove cancelled thunk
+      t
+    }
   }
+
   def cleanup_qualifications(q: Question) : Unit = {
     val req = q match {
       case mtq:MTurkQuestion => {
@@ -66,7 +90,7 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
     }
 
     // enqueue
-    adapter.lock { () =>
+    synchronized {
       _dispose_quals_queue.enqueue(req)
     }
 
@@ -75,7 +99,7 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
     // wait for response
     // while loop is because the JVM is
     // permitted to send spurious wakeups
-    while(adapter.lock { () => !_disposal_completions.contains(req) }) {
+    while(synchronized { !_disposal_completions.contains(req) }) {
       // Note that the purpose of this second lock
       // is to provide blocking semantics
       req.synchronized {
@@ -84,25 +108,25 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
       }
     }
     // remove from set
-    adapter.lock { () => _disposal_completions.remove(req) }
+    synchronized { _disposal_completions.remove(req) }
   }
   def post[A <: Answer](ts: List[Thunk[A]], exclude_worker_ids: List[String]) : Unit = {
     // enqueue
-    adapter.lock { () =>
+    synchronized {
       _post_queue.enqueue(EnqueuedHIT(ts, exclude_worker_ids))
     }
 
     initWorkerIfNeeded()
   }
   // put HIT's AssignmentId back into map or mark as PROCESSED
-  def process_custom_info[A <: Answer](t: Thunk[A], i: Option[String]) {
+  def process_custom_info[A <: Answer](t: Thunk[A], i: Option[String]) : Thunk[A] = {
     val q = question_for_thunks(List(t))
     Utilities.DebugLog("Processing custom info...", LogLevel.INFO, LogType.ADAPTER, q.id)
     t.question match {
       case mtq: MTurkQuestion => {
-        if (!t.answer.paid) {
+        if (!t.answer.get.paid) {
           Utilities.DebugLog("Answer is not paid for; leaving thunk as RETRIEVED.", LogLevel.INFO, LogType.ADAPTER, q.id)
-          val info = t.answer.custom_info match {
+          val info = t.answer.get.custom_info match {
             case Some(str) => {
               val ci = new MTurkAnswerCustomInfo
               ci.parse(str)
@@ -111,9 +135,10 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
             case None => throw new Exception("Invalid memo entry.")
           }
           mtq.thunk_assnid_map += (t -> info.assignment_id)
+          t
         } else {
           Utilities.DebugLog("Answer was previously paid for; marking thunk as PROCESSED.", LogLevel.INFO, LogType.ADAPTER, q.id)
-          t.state = SchedulerState.PROCESSED
+          t.copy_with_processed()
         }
       }
       case _ => throw new Exception("MTurkAdapter can only operate on Thunks for MTurkQuestions.")
@@ -121,7 +146,7 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
   }
   def reject[A <: Answer](t: Thunk[A]) : Unit = {
     // enqueue
-    adapter.lock { () =>
+    synchronized {
       _reject_queue.enqueue(t)
     }
 
@@ -131,7 +156,7 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
     val req = RetrieveReq(ts)
 
     // enqueue
-    adapter.lock { () =>
+    synchronized {
       _retrieve_queue.enqueue(req)
     }
 
@@ -140,7 +165,7 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
     // wait for response
     // while loop is because the JVM is
     // permitted to send spurious wakeups
-    while(adapter.lock { () => !_retrieved_data.contains(req) }) {
+    while(synchronized { !_retrieved_data.contains(req) }) {
       // Note that the purpose of this second lock
       // is to provide blocking semantics
       req.synchronized {
@@ -149,15 +174,15 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
       }
     }
     // return response
-    adapter.lock { () =>
-      val response = _retrieved_data(req).asInstanceOf[List[Thunk[A]]]
+    synchronized {
+      val responses = _retrieved_data(req).asInstanceOf[List[Thunk[A]]]
       _retrieved_data.remove(req) // remove response data
-      response
+      responses
     }
   }
 
   private def ifWorkToBeDoneThen[T](when_yes: () => T)(when_no: () => T) : T = {
-    adapter.lock { () =>
+    synchronized {
       val yes =
         _post_queue.nonEmpty ||
           _cancel_queue.nonEmpty ||
@@ -203,7 +228,7 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
   }
   private def dequeueAllAndProcess[T](q: Queue[T], f: Seq[T] => Unit) = {
     syncCommWait { () =>
-      val t = adapter.lock { () =>
+      val t = synchronized {
         if (q.nonEmpty) {
           Some(q.dequeueAll(t => true))
         } else {
@@ -220,7 +245,7 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
   // so this methods prevents multiple requests from
   // happening simultaneously
   private def syncCommWait[T](f: () => T) : T = {
-    adapter.lock { () =>
+    synchronized {
       val t = f()
       Thread.sleep(sleep_ms)
       t
@@ -229,7 +254,7 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
   private def initWorkerIfNeeded() : Unit = {
     // if there's no thread already servicing the queue,
     // lock and start one up
-    adapter.lock { () =>
+    synchronized {
       _worker_thread match {
         case Some(thread) => Unit // do nothing
         case None =>
@@ -247,12 +272,12 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
         while (keep_running) {
           if (workToBeDone) {
             // Post queue
-            while(adapter.lock { () => _post_queue.nonEmpty } ) {
+            while(synchronized { _post_queue.nonEmpty } ) {
               lockDequeueAndProcess(_post_queue, (eh: EnqueuedHIT[_]) => scheduled_post(eh.ts, eh.exclude_worker_ids))
             }
 
             // Retrieve queue
-            while (adapter.lock { () => _retrieve_queue.nonEmpty } )
+            while (synchronized { _retrieve_queue.nonEmpty } )
               lockDequeueAndProcess(_retrieve_queue, (rr: RetrieveReq[_ <: Answer]) => {
                 // this lock provides notifications
                 // for blocked threads
@@ -266,7 +291,7 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
               })
 
             // Approve queue
-            while(adapter.lock { () => _accept_queue.nonEmpty } ) {
+            while(synchronized { _accept_queue.nonEmpty } ) {
               lockDequeueAndProcessAndThen(_accept_queue,
                 (t: Thunk[_ <: Answer]) => scheduled_accept(t), // synchronized
                 (t: Thunk[_ <: Answer]) => set_paid_status(t)   // not synchronized
@@ -274,18 +299,26 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
             }
 
             // Reject queue
-            while (adapter.lock { () => _reject_queue.nonEmpty }) {
+            while (synchronized { _reject_queue.nonEmpty }) {
               lockDequeueAndProcess(_reject_queue, (t: Thunk[_ <: Answer]) => scheduled_reject(t))
             }
 
-
             // Cancel queue
-            while (adapter.lock { () => _cancel_queue.nonEmpty }) {
-              lockDequeueAndProcess(_cancel_queue, (t: Thunk[_ <: Answer]) => scheduled_cancel(t))
-            }
+            while (synchronized { _cancel_queue.nonEmpty } )
+              lockDequeueAndProcess(_cancel_queue, (cr: CancelReq[_ <: Answer]) => {
+                // this lock provides notifications
+                // for blocked threads
+                cr.synchronized {
+                  // do request
+                  _cancelled_thunks += (cr -> scheduled_cancel(cr.t))
+
+                  // send end-wait notification
+                  cr.notifyAll()
+                }
+              })
 
             // Cleanup qualifications queue
-            while (adapter.lock { () => _dispose_quals_queue.nonEmpty }) {
+            while (synchronized { _dispose_quals_queue.nonEmpty }) {
               lockDequeueAndProcess(_dispose_quals_queue, (qr: DisposeQualsReq) => {
                 // this lock provides notifications
                 // for blocked threads
@@ -329,7 +362,7 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
       case _ => throw new Exception("Impossible error.")
     }
   }
-  private def scheduled_cancel[A <: Answer](t: Thunk[A]) : Unit = {
+  private def scheduled_cancel[A <: Answer](t: Thunk[A]) : Thunk[A] = {
     Utilities.DebugLog(String.format("Cancelling task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
     t.question match {
@@ -338,8 +371,7 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
           backend.forceExpireHIT(hit.hit.getHITId)
           hit.state = HITState.RESOLVED
         }
-        // TODO: Why isn't this t.state = SchedulerState.CANCELLED?
-        t.state = SchedulerState.REJECTED
+        t.copy_with_cancellation()
       }
       case _ => throw new Exception("Impossible error.")
     }
@@ -411,26 +443,31 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
     grant_qualification_requests(question, auquestion.blacklisted_workers, auquestion.id)
 
     // try grabbing something from each HIT
-    hits.foreach { hit =>
+    val ts2 = hits.map { hit =>
       // get running thunks for each HIT
       val hts = Queue[Thunk[A]]()
       hts ++= question.hit_thunk_map(hit).filter{_.state == SchedulerState.RUNNING}.asInstanceOf[List[Thunk[A]]]
-      val assignments = hit.retrieve(backend)
+      val assignments: List[Assignment] = hit.retrieve(backend)
 
       Utilities.DebugLog("There are " + assignments.size + " assignments available to process.", LogLevel.INFO, LogType.ADAPTER, auquestion.id)
 
       // mark next available thunk as RETRIEVED for each answer
-      assignments.foreach { a => process_assignment(question, a, hit.hit.getHITId, hts.dequeue(), auquestion.use_disqualifications) }
+      val answered_ts = assignments.map { a => process_assignment(question, a, hit.hit.getHITId, hts.dequeue(), auquestion.use_disqualifications) }
 
       // timeout timed out Thunks and the HIT
-      process_timeouts(hit, hts.toList)
+      // since hts is a queue, and we dequeued answered thunks in
+      // in the previous call, hts does not include answered thunks
+      val unanswered_ts = process_timeouts(hit, hts.toList)
 
       // check to see if we need to continue running this HIT
-      mark_hit_complete(hit, hts.toList)
-    }
+      mark_hit_complete(hit, unanswered_ts)
 
-    Utilities.DebugLog(ts.count{_.state == SchedulerState.RETRIEVED} + " thunks marked RETRIEVED.", LogLevel.INFO, LogType.ADAPTER, auquestion.id)
-    ts
+      // return all answered and unanswered hits
+      answered_ts ::: unanswered_ts
+    }.flatten
+
+    Utilities.DebugLog(ts2.count{_.state == SchedulerState.RETRIEVED} + " thunks marked RETRIEVED.", LogLevel.INFO, LogType.ADAPTER, auquestion.id)
+    ts2
   }
   private def scheduled_get_budget(): BigDecimal = {
     Utilities.DebugLog("Getting budget.", LogLevel.INFO, LogType.ADAPTER, null)
@@ -507,29 +544,34 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
       hit.state = HITState.RESOLVED
     }
   }
-  private def process_timeouts[A <: Answer](hit: AutomanHIT, ts: List[Thunk[A]]) = {
+  private def process_timeouts[A <: Answer](hit: AutomanHIT, ts: List[Thunk[A]]) : List[Thunk[A]] = {
     var hitcancelled = false
-    ts.filter{_.is_timedout}.foreach { t =>
-      Utilities.DebugLog("HIT TIMED OUT.", LogLevel.WARN, LogType.ADAPTER, hit.id)
-      t.state = SchedulerState.TIMEOUT
-      if (!hitcancelled) {
-        Utilities.DebugLog("Force-expiring HIT.", LogLevel.WARN, LogType.ADAPTER, hit.id)
-        hit.cancel(backend)
-        hitcancelled = true
+    ts.map { t =>
+      if (t.is_timedout) {
+        Utilities.DebugLog("HIT TIMED OUT.", LogLevel.WARN, LogType.ADAPTER, hit.id)
+        val t2 = t.copy_with_timeout()
+        if (!hitcancelled) {
+          Utilities.DebugLog("Force-expiring HIT.", LogLevel.WARN, LogType.ADAPTER, hit.id)
+          hit.cancel(backend)
+          hitcancelled = true
+        }
+        t2
+      } else {
+        t
       }
     }
   }
-  private def process_assignment[A <: Answer](q: MTurkQuestion, a: Assignment, hit_id: String, t: Thunk[A], use_disq: Boolean) {
+  private def process_assignment[A <: Answer](q: MTurkQuestion, a: Assignment, hit_id: String, t: Thunk[A], use_disq: Boolean) : Thunk[A] = {
     Utilities.DebugLog("Processing assignment...", LogLevel.WARN, LogType.ADAPTER, t.question.id)
 
-    // mark as RETRIEVED
-    t.state = SchedulerState.RETRIEVED
+    // convert answer from XML
+    val answer = q.answer(a).asInstanceOf[A]
 
-    // convert assignment XML to Answer
-    t.answer = q.answer(a).asInstanceOf[A]
+    // write custominfo
+    answer.custom_info = Some(new MTurkAnswerCustomInfo(a.getAssignmentId, hit_id).toString)
 
-    // assign worker_id to thunk now that we know it
-    t.worker_id = Some(a.getWorkerId)
+    // new thunk
+    val t2 = t.copy_with_answer(answer, a.getWorkerId)
 
     // disqualify worker
     if (use_disq) {
@@ -537,10 +579,9 @@ class Pool(adapter: MTurkAdapter, backend: RequesterService, sleep_ms: Int, shut
     }
 
     // pair assignment with thunk
-    q.thunk_assnid_map += (t -> a.getAssignmentId)  // I believe that .getAssignmentId is just a local getter
+    q.thunk_assnid_map += (t2 -> a.getAssignmentId)  // I believe that .getAssignmentId is just a local getter
 
-    // write custominfo
-    t.answer.custom_info = Some(new MTurkAnswerCustomInfo(a.getAssignmentId, hit_id).toString)
+    t2
   }
 
   private def set_paid_status[A <: Answer](t: Thunk[A]) : Unit = {
