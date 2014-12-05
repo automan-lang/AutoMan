@@ -46,7 +46,7 @@ abstract class AutomanAdapter {
   def plugins_=(ps: List[Class[_ <: Plugin]]) { _plugins = ps }
 
   // marshaling calls
-  protected[automan] def accept[A <: Answer](t: Thunk[A])
+  protected[automan] def accept[A <: Answer](t: Thunk[A]) : Thunk[A]
   protected[automan] def cancel[A <: Answer](t: Thunk[A]) : Thunk[A]
   protected[automan] def post[A <: Answer](ts: List[Thunk[A]], exclude_worker_ids: List[String]) : List[Thunk[A]]
   protected[automan] def process_custom_info[A <: Answer](t: Thunk[A], i: Option[String])
