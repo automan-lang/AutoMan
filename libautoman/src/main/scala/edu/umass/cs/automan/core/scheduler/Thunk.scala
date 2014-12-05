@@ -43,6 +43,9 @@ class Thunk[A <: Answer](val thunk_id: UUID,
   def copy_with_cancellation() = {
     new Thunk[A](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.CANCELLED, from_memo, worker_id, answer)
   }
+  def copy_with_accept() = {
+    new Thunk[A](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.ACCEPTED, from_memo, worker_id, answer)
+  }
 
   override def toString = {
     val has_answer = answer match { case Some(_) => "yes"; case None => "no" }
