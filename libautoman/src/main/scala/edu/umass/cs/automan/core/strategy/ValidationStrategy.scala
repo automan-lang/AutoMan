@@ -65,16 +65,14 @@ abstract class ValidationStrategy[Q <: Question, A <: Answer, B](question: Q) {
   val _computation_id = UUID.randomUUID()
   var _budget_committed: BigDecimal = 0.00
   var _num_possibilities: BigInt = 2
-  var _thunks = List[Thunk[A]]()
-//  var _unique_workers = 0
 
-  def is_done: Boolean
+  def is_done(thunks: List[Thunk[A]]) : Boolean
   def num_possibilities: BigInt = _num_possibilities
   def num_possibilities_=(n: BigInt) { _num_possibilities = n }
-  def select_answer : B
-  def spawn(suffered_timeout: Boolean): List[Thunk[A]]
-  def thunks_to_accept: List[Thunk[A]]
-  def thunks_to_reject: List[Thunk[A]]
+  def select_answer(thunks: List[Thunk[A]]) : B
+  def spawn(thunks: List[Thunk[A]], suffered_timeout: Boolean): List[Thunk[A]]
+  def thunks_to_accept(thunks: List[Thunk[A]]): List[Thunk[A]]
+  def thunks_to_reject(thunks: List[Thunk[A]]): List[Thunk[A]]
   def pay_for_thunks(ts: List[Thunk[A]]) {
     ts.foreach { t =>
       _budget_committed += question.reward
@@ -100,9 +98,9 @@ abstract class ValidationStrategy[Q <: Question, A <: Answer, B](question: Q) {
     }.toList
   }
 
-  protected def completed_thunks = {
+  protected def completed_thunks(thunks: List[Thunk[A]]) = {
     // thunks should be
-    _thunks.filter(t =>
+    thunks.filter(t =>
       t.state == SchedulerState.RETRIEVED ||  // retrieved from MTurk
         t.state == SchedulerState.PROCESSED ||  // OR recalled from a memo DB
         t.state == SchedulerState.ACCEPTED      // OR accepted
@@ -111,19 +109,19 @@ abstract class ValidationStrategy[Q <: Question, A <: Answer, B](question: Q) {
 
   // thunks that have either been retrieved from memo
   // or pulled from backend; and no more than one per worker
-  protected def completed_workerunique_thunks = {
+  protected def completed_workerunique_thunks(thunks: List[Thunk[A]]) = {
     // if a worker completed more than one, take the first
-    unique_by_date(completed_thunks)
+    unique_by_date(completed_thunks(thunks))
   }
 
-  protected def outstanding_thunks = {
+  protected def outstanding_thunks(thunks: List[Thunk[A]]) = {
     // basically, not TIMEOUTs and REJECTs
-    val outstanding = _thunks.filter(t =>
+    val outstanding = thunks.filter(t =>
       t.state == SchedulerState.READY ||
       t.state == SchedulerState.RUNNING
     )
     // don't count duplicates
-    val completed = completed_workerunique_thunks
+    val completed = completed_workerunique_thunks(thunks)
     outstanding ::: completed
   }
 }

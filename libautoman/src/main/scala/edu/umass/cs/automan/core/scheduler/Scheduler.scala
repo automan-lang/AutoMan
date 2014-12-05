@@ -22,9 +22,9 @@ class Scheduler (val question: Question,
   val strategy = question.strategy_instance
   var thunks = scala.collection.immutable.Map[UUID,Thunk[A]]()
 
-  def sch_post(last_iteration_timeout: Boolean, memo_answers: Queue[A]) : List[Thunk[A]] = {
+  def post_new_thunks(thunks: List[Thunk[A]], last_iteration_timeout: Boolean, memo_answers: Queue[A]) : List[Thunk[A]] = {
     // spawn new thunks; in READY state here
-    val new_thunks = strategy.spawn(last_iteration_timeout) // OverBudgetException should be thrown here
+    val new_thunks = strategy.spawn(thunks, last_iteration_timeout) // OverBudgetException should be thrown here
 
     // before posting, pick answers out of memo DB
     val recalled_thunks = recall(new_thunks, memo_answers) // blocks
@@ -33,7 +33,7 @@ class Scheduler (val question: Question,
     val rem_new_thunks = new_thunks.filter{ t => recalled_thunks.forall(_.thunk_id != t.thunk_id)}
 
     // post remaining thunks
-    val posted_thunks = if (!question.dry_run) {
+    val posted_thunks = if (!question.dry_run && rem_new_thunks.size > 0) {
       post(rem_new_thunks) // non-blocking
     } else {
       List.empty
@@ -57,9 +57,9 @@ class Scheduler (val question: Question,
       if(!question.dry_run) {
         adapter.question_startup_hook(question)
       }
-      while(!strategy.is_done) {
+      while(!strategy.is_done(thunks.values.toList)) {
         if (running_thunks.size == 0) {
-          val new_thunks = sch_post(last_iteration_timeout, memo_answers)
+          val new_thunks = post_new_thunks(thunks.values.toList, last_iteration_timeout, memo_answers)
 
           // atomically update thunk map
           thunks = thunks ++ new_thunks.map(t => t.thunk_id -> t).toMap
@@ -69,7 +69,7 @@ class Scheduler (val question: Question,
         // conditional covers the case where all thunk answers are recalled from memoDB
         if (running_thunks.size > 0) {
           // get data
-          // TODO: adapter.retrieve() also cancels timed-out thunks, which violates single-responsibility
+          // TODO fix: adapter.retrieve() also cancels timed-out thunks, which violates single-responsibility
           val results =
             if (!question.dry_run) {
               adapter.retrieve(running_thunks) // blocks
@@ -98,7 +98,7 @@ class Scheduler (val question: Question,
 
         // sleep if necessary
         // TODO: this sleep may no longer be necessary
-        if (!strategy.is_done && incomplete_thunks(thunks).size > 0) Thread.sleep(poll_interval_in_s * 1000)
+        if (!strategy.is_done(thunks.values.toList) && incomplete_thunks(thunks).size > 0) Thread.sleep(poll_interval_in_s * 1000)
       }
       // run shutdown hook
       if(!question.dry_run) {
@@ -113,7 +113,7 @@ class Scheduler (val question: Question,
     }
     Utilities.DebugLog("Exiting scheduling loop...", LogLevel.INFO, LogType.SCHEDULER, question.id)
 
-    val answer = strategy.select_answer
+    val answer = strategy.select_answer(thunks.values.toList)
     var spent: BigDecimal = 0
     if (!over_budget) {
       spent = accept_and_reject(thunks, answer.asInstanceOf[B])
@@ -133,8 +133,8 @@ class Scheduler (val question: Question,
 
   def accept_and_reject(ts: Map[UUID, Thunk[A]], answer: B) : BigDecimal = {
     var spent: BigDecimal = 0
-    val accepts = strategy.thunks_to_accept
-    val rejects = strategy.thunks_to_reject
+    val accepts = strategy.thunks_to_accept(ts.values.toList)
+    val rejects = strategy.thunks_to_reject(ts.values.toList)
     val cancels = ts.values.filter(_.state == SchedulerState.CANCELLED)
     val timeouts = ts.values.filter(_.state == SchedulerState.TIMEOUT)
 

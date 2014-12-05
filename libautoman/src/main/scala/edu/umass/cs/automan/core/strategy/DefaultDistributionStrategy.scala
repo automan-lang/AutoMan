@@ -11,15 +11,15 @@ import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 class DefaultDistributionStrategy[Q <: DistributionQuestion, A <: ScalarAnswer, B](question: Q, num_samples: Int = 30)
   extends DistributionValidationStrategy[Q,A,B](question) {
 
-  def num_to_run(q: Q) : Int = {
+  def num_to_run(thunks: List[Thunk[A]], q: Q) : Int = {
     val np: Int = if(q.num_possibilities > BigInt(Int.MaxValue)) 1000 else q.num_possibilities.toInt
 
     // update # of unique workers
-    val unique_workers = completed_thunks.map { t => t.worker_id }.distinct.size
-    ValidationStrategy.overwrite(q.title, q.text, _computation_id, unique_workers, completed_thunks.size)
+    val unique_workers = completed_thunks(thunks).map { t => t.worker_id }.distinct.size
+    ValidationStrategy.overwrite(q.title, q.text, _computation_id, unique_workers, completed_thunks(thunks).size)
 
     // additional number needed to reach num_samples
-    val n = Math.max(num_samples - outstanding_thunks.size, 0)
+    val n = Math.max(num_samples - outstanding_thunks(thunks).size, 0)
 
     // if we aren't using disqualifications, calculate the expected number of
     // worker reparticipations and inflate n accordingly
@@ -36,11 +36,11 @@ class DefaultDistributionStrategy[Q <: DistributionQuestion, A <: ScalarAnswer, 
 
   // the distribution strategy only adjusts the numbers of thunks;
   // it never adjusts timeouts or rewards
-  def spawn(had_timeout: Boolean): List[Thunk[A]] = {
+  def spawn(thunks: List[Thunk[A]], had_timeout: Boolean): List[Thunk[A]] = {
     // this will not wait for the end of a round to spawn new tasks
     // (although the scheduler may)
-    val num_to_spawn = if (outstanding_thunks.size < num_samples) {
-      num_to_run(question)
+    val num_to_spawn = if (outstanding_thunks(thunks).size < num_samples) {
+      num_to_run(thunks, question)
     } else {
       return List[Thunk[A]]() // Be patient!
     }
@@ -71,8 +71,6 @@ class DefaultDistributionStrategy[Q <: DistributionQuestion, A <: ScalarAnswer, 
 
     // reserve money for them
     pay_for_thunks(new_thunks)
-
-    _thunks = new_thunks ::: _thunks
 
     new_thunks
   }

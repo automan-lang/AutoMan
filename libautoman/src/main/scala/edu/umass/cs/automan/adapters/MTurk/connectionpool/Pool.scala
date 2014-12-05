@@ -34,28 +34,21 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
   // response data
   private val _accepted_thunks = scala.collection.mutable.Map[AcceptReq[_ <: Answer], Thunk[_ <: Answer]]()
   private val _cancelled_thunks = scala.collection.mutable.Map[CancelReq[_ <: Answer], Thunk[_ <: Answer]]()
-  private val _disposal_completions = scala.collection.mutable.Set[DisposeQualsReq]()
+  private val _disposal_completions = scala.collection.mutable.Map[DisposeQualsReq,Unit]()
   private val _rejected_thunks = scala.collection.mutable.Map[RejectReq[_ <: Answer], Thunk[_ <: Answer]]()
   private val _retrieved_data = scala.collection.mutable.Map[RetrieveReq[_ <: Answer], List[Thunk[_ <: Answer]]]()
 
-  def enqueue_request(req: Message) = {
-    // enqueue
-    val queue = synchronized {
-      req match {
-        case ar: AcceptReq[_] => _accept_queue.enqueue(ar); _accept_queue
-        case cr: CancelReq[_] => _cancel_queue.enqueue(cr); _cancel_queue
-        case dr: DisposeQualsReq => _dispose_quals_queue.enqueue(dr); _dispose_quals_queue
-        case rj: RejectReq[_] => _reject_queue.enqueue(rj); _reject_queue
-        case rr: RetrieveReq[_] => _retrieve_queue.enqueue(rr); _retrieve_queue
-      }
+  def enqueue_request[M <: Message, T](req: M, to_queue: mutable.Queue[M], receive_map: mutable.Map[M,T]) = {
+    // put job in queue
+    synchronized {
+      to_queue.enqueue(req)
     }
 
     initWorkerIfNeeded()
-
     // wait for response
     // while loop is because the JVM is
     // permitted to send spurious wakeups
-    while(synchronized { !queue.contains(req) }) {
+    while(synchronized { !receive_map.contains(req) }) {
       // Note that the purpose of this second lock
       // is to provide blocking semantics
       req.synchronized {
@@ -64,36 +57,17 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
       }
     }
 
-    // return cancelled thunk
+    // return output
     synchronized {
-      req match {
-        case ar: AcceptReq[_] =>
-          val ret = _accepted_thunks(ar)
-          _accepted_thunks.remove(ar)
-          ret
-        case cr: CancelReq[_] =>
-          val ret = _cancelled_thunks(cr)
-          _cancelled_thunks.remove(cr)
-          ret
-        case dr: DisposeQualsReq =>
-          val ret = _disposal_completions(dr)
-          _disposal_completions.remove(dr)
-          ret
-        case rj: RejectReq[_] =>
-          val ret = _rejected_thunks(rj)
-          _rejected_thunks.remove(rj)
-          ret
-        case rr: RetrieveReq[_] =>
-          val ret = _retrieved_data(rr)
-          _retrieved_data.remove(rr)
-          ret
-      }
+      val ret = receive_map(req)
+      receive_map.remove(req)
+      ret
     }
   }
 
   // API
   def accept[A <: Answer](t: Thunk[A]) : Thunk[A] = {
-    enqueue_request(AcceptReq(t)).asInstanceOf[Thunk[A]]
+    enqueue_request(AcceptReq(t), _accept_queue, _accepted_thunks).asInstanceOf[Thunk[A]]
   }
   def budget(): BigDecimal = {
     // budget requests are made as soon as is possible (not queued)
@@ -102,12 +76,12 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
     }
   }
   def cancel[A <: Answer](t: Thunk[A]) : Thunk[A] = {
-    enqueue_request(CancelReq(t)).asInstanceOf[Thunk[A]]
+    enqueue_request(CancelReq(t), _cancel_queue, _cancelled_thunks).asInstanceOf[Thunk[A]]
   }
   def cleanup_qualifications(q: Question) : Unit = {
     val req = q match {
       case mtq:MTurkQuestion => {
-        enqueue_request(DisposeQualsReq(mtq))
+        enqueue_request(DisposeQualsReq(mtq), _dispose_quals_queue, _disposal_completions)
       }
       case _ => throw new Exception("Impossible error.")
     }
@@ -147,10 +121,10 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
     }
   }
   def reject[A <: Answer](t: Thunk[A]) : Thunk[A] = {
-    enqueue_request(RejectReq(t)).asInstanceOf[Thunk[A]]
+    enqueue_request(RejectReq(t), _reject_queue, _rejected_thunks).asInstanceOf[Thunk[A]]
   }
   def retrieve[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]] = {
-    enqueue_request(RetrieveReq(ts)).asInstanceOf[List[Thunk[A]]]
+    enqueue_request(RetrieveReq(ts), _retrieve_queue, _retrieved_data).asInstanceOf[List[Thunk[A]]]
   }
 
   private def ifWorkToBeDoneThen[T](when_yes: () => T)(when_no: () => T) : T = {
@@ -324,7 +298,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
                   scheduled_cleanup_qualifications(qr.q)
 
                   // send end-wait notification
-                  _disposal_completions += qr
+                  _disposal_completions += (qr -> Unit)
                   qr.notifyAll()
                 }
               })
@@ -456,7 +430,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
     }.flatten
 
     Utilities.DebugLog(ts2.count{_.state == SchedulerState.RETRIEVED} + " thunks marked RETRIEVED.", LogLevel.INFO, LogType.ADAPTER, auquestion.id)
-    ts2
+    ts2.filterNot(_.state == SchedulerState.RUNNING)
   }
   private def scheduled_get_budget(): BigDecimal = {
     Utilities.DebugLog("Getting budget.", LogLevel.INFO, LogType.ADAPTER, null)
