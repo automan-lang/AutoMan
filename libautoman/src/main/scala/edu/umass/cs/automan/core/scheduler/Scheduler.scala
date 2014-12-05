@@ -130,12 +130,12 @@ class Scheduler (val question: Question,
     answers
   }
 
-  def accept_and_reject(ts: List[Thunk[A]], answer: B) : BigDecimal = {
+  def accept_and_reject(ts: Map[UUID, Thunk[A]], answer: B) : BigDecimal = {
     var spent: BigDecimal = 0
     val accepts = strategy.thunks_to_accept
     val rejects = strategy.thunks_to_reject
-    val cancels = ts.filter(_.state == SchedulerState.RUNNING)
-    val timeouts = ts.filter(_.state == SchedulerState.TIMEOUT)
+    val cancels = ts.values.filter(_.state == SchedulerState.CANCELLED)
+    val timeouts = ts.values.filter(_.state == SchedulerState.TIMEOUT)
 
     // Accept
     accepts.foreach { t =>
@@ -143,8 +143,8 @@ class Scheduler (val question: Question,
         "Accepting thunk with answer: " + t.answer.toString + " and paying $" +
           t.cost.toString(), LogLevel.INFO, LogType.SCHEDULER, question.id
       )
-      adapter.accept(t)
-      thunklog.writeThunk(t, SchedulerState.ACCEPTED, t.worker_id.get)
+      val t2 = adapter.accept(t)
+      thunklog.writeThunk(t2, SchedulerState.ACCEPTED, t2.worker_id.get)
       spent += t.cost
     }
 
@@ -155,8 +155,8 @@ class Scheduler (val question: Question,
           "Rejecting thunk with incorrect answer: " +
             t.answer.toString, LogLevel.INFO, LogType.SCHEDULER, question.id
         )
-        adapter.reject(t)
-        thunklog.writeThunk(t, SchedulerState.REJECTED, t.worker_id.get)
+        val t2 = adapter.reject(t)
+        thunklog.writeThunk(t2, SchedulerState.REJECTED, t2.worker_id.get)
       }
     } else {
       // Accept if the user specified "don't reject"
@@ -166,9 +166,9 @@ class Scheduler (val question: Question,
             "(if you did not want this, set  Question.dont_reject to false): " +
             t.answer.toString, LogLevel.INFO, LogType.SCHEDULER, question.id
         )
-        adapter.accept(t)
-        thunklog.writeThunk(t, SchedulerState.ACCEPTED, t.worker_id.get)
-        spent += t.cost
+        val t2 = adapter.accept(t)
+        thunklog.writeThunk(t2, SchedulerState.ACCEPTED, t2.worker_id.get)
+        spent += t2.cost
       }
     }
 
@@ -187,24 +187,26 @@ class Scheduler (val question: Question,
     spent
   }
 
-  def completed_thunks(ts: List[Thunk[_]]) : List[Thunk[_]] = ts.filter( t =>
+  def completed_thunks(ts: Map[UUID,Thunk[A]]) : List[Thunk[A]] = ts.values.filter( t =>
     t.state == SchedulerState.PROCESSED &&
     t.state == SchedulerState.RETRIEVED ||
     t.state == SchedulerState.ACCEPTED ||
     t.state == SchedulerState.REJECTED ||
-    t.state == SchedulerState.TIMEOUT
-  )
-  def incomplete_thunks(ts: List[Thunk[_]]) : List[Thunk[_]] = ts.filter( t =>
+    t.state == SchedulerState.TIMEOUT  ||
+    t.state == SchedulerState.CANCELLED
+  ).toList
+  def incomplete_thunks(ts: Map[UUID,Thunk[A]]) : List[Thunk[A]] = ts.values.filter( t =>
     t.state != SchedulerState.PROCESSED &&
     t.state != SchedulerState.RETRIEVED &&
     t.state != SchedulerState.ACCEPTED &&
     t.state != SchedulerState.REJECTED &&
-    t.state != SchedulerState.TIMEOUT
-  )
+    t.state != SchedulerState.TIMEOUT &&
+    t.state != SchedulerState.CANCELLED
+  ).toList
   def memoize_answers(ts: List[Thunk[A]]) {
     // save
-    ts.filter(_.state == SchedulerState.RETRIEVED).foreach{t =>
-      memoizer.writeAnswer(question, t.answer)
+    ts.filter(_.state == SchedulerState.RETRIEVED).foreach {t =>
+      memoizer.writeAnswer(question, t.answer.get)
     }
   }
   def post(ts: List[Thunk[A]]) : List[Thunk[A]] = {

@@ -1,14 +1,17 @@
 package edu.umass.cs.automan.core.answer
 
 import java.util.Calendar
+import edu.umass.cs.automan.core.memoizer.AnswerMemo
 
 abstract class Answer(workerId: String) {
   class AnswerConfidenceMissingException(msg: String) extends Exception(msg)
   class AnswerConfidenceSuppliedException(msg: String) extends Exception(msg)
   type AnswerValueType
+  type AnswerMemoType <: AnswerMemo
 
   var custom_info: Option[String] = None
   var paid: Boolean = false
+  var memo_handle: AnswerMemoType
   val worker_id: String = workerId
   var _accept_time: Calendar = Calendar.getInstance();
   var _submit_time: Calendar = Calendar.getInstance();

@@ -30,7 +30,7 @@ abstract class ScalarValidationStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, 
     }
 
     // group by unique symbol specific to each answer type
-    val groups = rt.groupBy { t => t.answer.comparator }
+    val groups = rt.groupBy { t => t.answer.get.comparator }
     
     Utilities.DebugLog("Groups = " + groups, LogLevel.INFO, LogType.STRATEGY,_computation_id)
 
@@ -42,7 +42,7 @@ abstract class ScalarValidationStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, 
 
     // return the top Answer
     // TODO: can I get rid of the typecast?
-    _selected_answer = Some(groups(gsymb).head.answer.final_answer(Some(current_confidence)).asInstanceOf[A])
+    _selected_answer = Some(groups(gsymb).head.answer.get.final_answer(Some(current_confidence)).asInstanceOf[A])
     _selected_answer.get.asInstanceOf[B]
   }
 
@@ -51,7 +51,7 @@ abstract class ScalarValidationStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, 
       case Some(answer) =>
         _thunks
           .filter( _.state == SchedulerState.RETRIEVED )
-          .filter( t => t.answer.sameAs(answer)) // note that we accept all of a worker's matching submissions
+          .filter( t => t.answer.get.sameAs(answer)) // note that we accept all of a worker's matching submissions
                                                  // even if we have to accept duplicate submissions
       case None => throw new PrematureValidationCompletionException("thunks_to_accept", this.getClass.toString)
     }
@@ -62,7 +62,7 @@ abstract class ScalarValidationStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, 
       case Some(answer) =>
         _thunks
           .filter( _.state == SchedulerState.RETRIEVED )
-          .filter( t => !t.answer.sameAs(answer))
+          .filter( t => !t.answer.get.sameAs(answer))
       case None => throw new PrematureValidationCompletionException("thunks_to_reject", this.getClass.toString)
     }
   }

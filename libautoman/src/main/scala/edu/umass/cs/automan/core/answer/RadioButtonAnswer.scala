@@ -5,6 +5,7 @@ import edu.umass.cs.automan.core.memoizer.RadioButtonAnswerMemo
 class RadioButtonAnswer(conf: Option[Double], worker_id: String, val value: Symbol)
   extends ScalarAnswer(conf: Option[Double], worker_id: String) {
   type AnswerValueType = Symbol
+  type AnswerMemoType = RadioButtonAnswerMemo
 
   var memo_handle: RadioButtonAnswerMemo = _
   override def comparator = value

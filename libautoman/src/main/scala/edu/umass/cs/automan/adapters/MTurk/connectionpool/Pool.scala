@@ -28,13 +28,14 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
   private val _dispose_quals_queue: Queue[DisposeQualsReq] = Queue.empty
   private val _post_queue : Queue[EnqueuedHIT[_ <: Answer]] = Queue.empty
   private val _retrieve_queue: Queue[RetrieveReq[_ <: Answer]] = Queue.empty
-  private val _reject_queue: Queue[Thunk[_ <: Answer]] = Queue.empty
+  private val _reject_queue: Queue[RejectReq[_ <: Answer]] = Queue.empty
   private var _worker_thread: Option[Thread] = None
 
   // response data
   private val _accepted_thunks = scala.collection.mutable.Map[AcceptReq[_ <: Answer], Thunk[_ <: Answer]]()
   private val _cancelled_thunks = scala.collection.mutable.Map[CancelReq[_ <: Answer], Thunk[_ <: Answer]]()
   private val _disposal_completions = scala.collection.mutable.Set[DisposeQualsReq]()
+  private val _rejected_thunks = scala.collection.mutable.Map[RejectReq[_ <: Answer], Thunk[_ <: Answer]]()
   private val _retrieved_data = scala.collection.mutable.Map[RetrieveReq[_ <: Answer], List[Thunk[_ <: Answer]]]()
 
   def enqueue_request(req: Message) = {
@@ -44,6 +45,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
         case ar: AcceptReq[_] => _accept_queue.enqueue(ar); _accept_queue
         case cr: CancelReq[_] => _cancel_queue.enqueue(cr); _cancel_queue
         case dr: DisposeQualsReq => _dispose_quals_queue.enqueue(dr); _dispose_quals_queue
+        case rj: RejectReq[_] => _reject_queue.enqueue(rj); _reject_queue
         case rr: RetrieveReq[_] => _retrieve_queue.enqueue(rr); _retrieve_queue
       }
     }
@@ -76,6 +78,10 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
         case dr: DisposeQualsReq =>
           val ret = _disposal_completions(dr)
           _disposal_completions.remove(dr)
+          ret
+        case rj: RejectReq[_] =>
+          val ret = _rejected_thunks(rj)
+          _rejected_thunks.remove(rj)
           ret
         case rr: RetrieveReq[_] =>
           val ret = _retrieved_data(rr)
@@ -140,13 +146,8 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
       case _ => throw new Exception("MTurkAdapter can only operate on Thunks for MTurkQuestions.")
     }
   }
-  def reject[A <: Answer](t: Thunk[A]) : Unit = {
-    // enqueue
-    synchronized {
-      _reject_queue.enqueue(t)
-    }
-
-    initWorkerIfNeeded()
+  def reject[A <: Answer](t: Thunk[A]) : Thunk[A] = {
+    enqueue_request(RejectReq(t)).asInstanceOf[Thunk[A]]
   }
   def retrieve[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]] = {
     enqueue_request(RetrieveReq(ts)).asInstanceOf[List[Thunk[A]]]
@@ -235,6 +236,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
       }
     }
   }
+
   private def initConnectionPoolThread(): Thread = {
     Utilities.DebugLog("No worker thread; starting one up.", LogLevel.INFO, LogType.ADAPTER, null)
     new Thread(new Runnable() {
@@ -261,21 +263,44 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
                 }
               })
 
-            // Approve queue
-            while(synchronized { _accept_queue.nonEmpty } ) {
-              lockDequeueAndProcessAndThen(_accept_queue,
-                (t: Thunk[_ <: Answer]) => scheduled_accept(t), // synchronized
-                (t: Thunk[_ <: Answer]) => set_paid_status(t)   // not synchronized
-              )
+            // Accept queue
+            while (synchronized { _accept_queue.nonEmpty } ) {
+              lockDequeueAndProcess(_accept_queue, (ar: AcceptReq[_ <: Answer]) => {
+                // this lock provides notifications
+                // for blocked threads
+                ar.synchronized {
+                  // do request
+                  val accepted_thunk = scheduled_accept(ar.t)
+
+                  // set paid status in answer
+                  set_paid_status(accepted_thunk)
+
+                  // store response thunk
+                  _accepted_thunks += (ar -> accepted_thunk)
+
+                  // send end-wait notification
+                  ar.notifyAll()
+                }
+              })
             }
 
             // Reject queue
-            while (synchronized { _reject_queue.nonEmpty }) {
-              lockDequeueAndProcess(_reject_queue, (t: Thunk[_ <: Answer]) => scheduled_reject(t))
+            while (synchronized { _reject_queue.nonEmpty } ) {
+              lockDequeueAndProcess(_reject_queue, (rj: RejectReq[_ <: Answer]) => {
+                // this lock provides notifications
+                // for blocked threads
+                rj.synchronized {
+                  // do request
+                  _rejected_thunks += (rj -> scheduled_reject(rj.t))
+
+                  // send end-wait notification
+                  rj.notifyAll()
+                }
+              })
             }
 
             // Cancel queue
-            while (synchronized { _cancel_queue.nonEmpty } )
+            while (synchronized { _cancel_queue.nonEmpty } ) {
               lockDequeueAndProcess(_cancel_queue, (cr: CancelReq[_ <: Answer]) => {
                 // this lock provides notifications
                 // for blocked threads
@@ -287,6 +312,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
                   cr.notifyAll()
                 }
               })
+            }
 
             // Cleanup qualifications queue
             while (synchronized { _dispose_quals_queue.nonEmpty }) {
@@ -327,8 +353,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
     t.question match {
       case mtq:MTurkQuestion => {
         backend.approveAssignment(mtq.thunk_assnid_map(t), "Thanks!")
-        t.state = SchedulerState.ACCEPTED
-        // TODO: urgh, worker_id
+        t.copy_with_accept()
       }
       case _ => throw new Exception("Impossible error.")
     }
@@ -372,7 +397,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
       case _ => throw new Exception("Question type not yet supported. Question class is " + mtquestion.getClass)
     }
   }
-  private def scheduled_reject[A <: Answer](t: Thunk[A]) : Unit = {
+  private def scheduled_reject[A <: Answer](t: Thunk[A]) : Thunk[A] = {
     Utilities.DebugLog(String.format("Rejecting task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
     t.question match {
@@ -381,24 +406,17 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
         //       the old call needed to go because distribution questions do
         //       do not come with a confidence value.
         backend.rejectAssignment(mtq.thunk_assnid_map(t), "Your answer is incorrect.")
-        t.state = SchedulerState.REJECTED
-        t.answer match {
-          case rba: RadioButtonAnswer => if (!rba.paid) {
-            rba.memo_handle.setPaidStatus(true)
-            rba.memo_handle.save()
-            rba.paid = true
-          }
-          case cba: CheckboxAnswer => if (!cba.paid) {
-            cba.memo_handle.setPaidStatus(true)
-            cba.memo_handle.save()
-            cba.paid = true
-          }
-          case fta: FreeTextAnswer => if (!fta.paid) {
-            fta.memo_handle.setPaidStatus(true)
-            fta.memo_handle.save()
-            fta.paid = true
-          }
+        val t2 = t.copy_with_reject()
+
+        assert(t2.answer != None)
+        val ans = t2.answer.get
+
+        if (!ans.paid) {
+          ans.memo_handle.setPaidStatus(true)
+          ans.memo_handle.save()
+          ans.paid = true
         }
+        t2
       }
       case _ => throw new Exception("Impossible error.")
     }
@@ -558,22 +576,12 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
   private def set_paid_status[A <: Answer](t: Thunk[A]) : Unit = {
     t.question match {
       case mtq:MTurkQuestion => {
-        t.answer match {
-          case rba: RadioButtonAnswer => if (!rba.paid) {
-            rba.memo_handle.setPaidStatus(true)
-            rba.memo_handle.save()
-            rba.paid = true
-          }
-          case cba: CheckboxAnswer => if (!cba.paid) {
-            cba.memo_handle.setPaidStatus(true)
-            cba.memo_handle.save()
-            cba.paid = true
-          }
-          case fta: FreeTextAnswer => if (!fta.paid) {
-            fta.memo_handle.setPaidStatus(true)
-            fta.memo_handle.save()
-            fta.paid = true
-          }
+        assert(t.answer != None)
+        val ans = t.answer.get
+        if (!ans.paid) {
+          ans.memo_handle.setPaidStatus(true)
+          ans.memo_handle.save()
+          ans.paid = true
         }
       }
       case _ => throw new Exception("Impossible error.")
