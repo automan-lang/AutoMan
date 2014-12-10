@@ -1,7 +1,7 @@
 package edu.umass.cs.automan.core
 
 import java.text.NumberFormat
-import java.util.Locale
+import java.util.{UUID, Locale}
 import edu.umass.cs.automan.core.question._
 import answer._
 import scala.concurrent._
@@ -88,8 +88,11 @@ abstract class AutomanAdapter {
   private def thunklog_init() {
     _thunklog = new ThunkLogger(_thunk_conn_string, _thunk_user, _thunk_pass)
   }
-  protected def state_snapshot(): Unit = {
-      // TODO: state snapshot (return type should not be Unit)
+  def state_snapshot(): Map[UUID, List[Thunk[_]]] = {
+    // we have to explicitly tell Scala that Thunk's type parameter
+    // does not matter here, otherwise it does not know how to flatten
+    val tlist: List[(Iterable[Thunk[_]])] = _schedulers.map { s => s.thunks.values }
+    tlist.flatten.groupBy { t => t.computation_id }
   }
 
   // Global backend config
