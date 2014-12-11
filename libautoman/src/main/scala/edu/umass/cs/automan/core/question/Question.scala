@@ -3,6 +3,8 @@ package edu.umass.cs.automan.core.question
 import java.io.File
 import java.util.UUID
 import edu.umass.cs.automan.core.answer.Answer
+import edu.umass.cs.automan.core.info.QuestionType
+import QuestionType.QuestionType
 import edu.umass.cs.automan.core.strategy.ValidationStrategy
 
 abstract class Question {
@@ -64,6 +66,7 @@ abstract class Question {
   def question_timeout_in_s: Int = (_worker_timeout_in_s * _question_timeout_multiplier).toInt
   def question_timeout_multiplier_=(t: Double) { _question_timeout_multiplier = t }
   def question_timeout_multiplier: Double = _question_timeout_multiplier
+  def question_type: QuestionType
   def reward : BigDecimal = { // this is what workers actually get paid per-task
     (_wage * _worker_timeout_in_s * (1.0/3600)).setScale(2, math.BigDecimal.RoundingMode.FLOOR)
   }

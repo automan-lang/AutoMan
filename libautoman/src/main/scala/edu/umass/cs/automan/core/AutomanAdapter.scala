@@ -2,6 +2,7 @@ package edu.umass.cs.automan.core
 
 import java.text.NumberFormat
 import java.util.{UUID, Locale}
+import edu.umass.cs.automan.core.info.{StateInfo, QuestionInfo}
 import edu.umass.cs.automan.core.question._
 import answer._
 import scala.concurrent._
@@ -17,7 +18,7 @@ abstract class AutomanAdapter {
   type CBQ <: CheckboxQuestion                    // answer scalar
   type FTQ <: FreeTextQuestion                    // answer scalar
 
-  protected var _default_budget: BigDecimal = 0.00
+  protected var _default_budget: BigDecimal = 5.00
   protected var _default_confidence: Double = 0.95
   protected var _locale: Locale = Locale.getDefault
   protected var _memoizer: AutomanMemoizer = _
@@ -36,8 +37,8 @@ abstract class AutomanAdapter {
   protected var _thunk_pass: String = ""
 
   // user-visible getters and setters
-  def default_budget: BigDecimal = _default_budget
-  def default_budget_=(b: BigDecimal) { _default_budget = b }
+  def budget: BigDecimal = _default_budget
+  def budget_=(b: BigDecimal) { _default_budget = b }
   def default_confidence: Double = _default_confidence
   def default_confidence_=(c: Double) { _default_confidence = c }
   def locale: Locale = _locale
@@ -88,11 +89,8 @@ abstract class AutomanAdapter {
   private def thunklog_init() {
     _thunklog = new ThunkLogger(_thunk_conn_string, _thunk_user, _thunk_pass)
   }
-  def state_snapshot(): Map[UUID, List[Thunk[_]]] = {
-    // we have to explicitly tell Scala that Thunk's type parameter
-    // does not matter here, otherwise it does not know how to flatten
-    val tlist: List[(Iterable[Thunk[_]])] = _schedulers.map { s => s.thunks.values }
-    tlist.flatten.groupBy { t => t.computation_id }
+  def state_snapshot(): StateInfo = {
+    StateInfo(budget, _schedulers.flatMap { s => s.state })
   }
 
   // Global backend config

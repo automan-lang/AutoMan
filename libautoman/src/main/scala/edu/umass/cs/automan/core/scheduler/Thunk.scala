@@ -15,8 +15,22 @@ class Thunk[A <: Answer](val thunk_id: UUID,
                          val state: SchedulerState.Value,
                          val from_memo: Boolean,
                          val worker_id: Option[String],
-                         val answer: Option[A]
+                         val answer: Option[A],
+                         val completed_at: Option[Date]
                         ) {
+  def this(thunk_id: UUID,
+       question: Question,
+       timeout_in_s: Int,
+       worker_timeout: Int,
+       cost: BigDecimal,
+       computation_id: UUID,
+       created_at: Date,
+       state: SchedulerState.Value,
+       from_memo: Boolean,
+       worker_id: Option[String],
+       answer: Option[A]) {
+    this(thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, state, from_memo, worker_id, answer, None)
+  }
   val expires_at : Date = {
     val calendar = Calendar.getInstance()
     calendar.setTime(created_at)
@@ -27,29 +41,30 @@ class Thunk[A <: Answer](val thunk_id: UUID,
     val now = new Date()
     expires_at.before(now)
   }
-
-  def copy_with_state(s: SchedulerState.Value) = {
-    new Thunk[A](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, s, from_memo, worker_id, answer)
+  def copy_as_running() = {
+    new Thunk[A](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.RUNNING, from_memo, worker_id, answer)
   }
   def copy_with_answer(ans: A, wrk_id: String) = {
-    new Thunk[A](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.RETRIEVED, from_memo, Some(wrk_id), Some(ans))
+    new Thunk[A](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.RETRIEVED, from_memo, Some(wrk_id), Some(ans), Some(new Date()))
   }
-  def copy_with_timeout() = {
-    new Thunk[A](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.TIMEOUT, from_memo, worker_id, answer)
+  def copy_as_timeout() = {
+    new Thunk[A](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.TIMEOUT, from_memo, worker_id, answer, Some(new Date()))
   }
-  def copy_with_processed() = {
+  def copy_as_processed() = {
+    assert(completed_at != None)
     new Thunk[A](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.PROCESSED, from_memo, worker_id, answer)
   }
-  def copy_with_cancellation() = {
-    new Thunk[A](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.CANCELLED, from_memo, worker_id, answer)
+  def copy_as_cancelled() = {
+    new Thunk[A](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.CANCELLED, from_memo, worker_id, answer, Some(new Date()))
   }
-  def copy_with_accept() = {
+  def copy_as_accepted() = {
+    assert(completed_at != None)
     new Thunk[A](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.ACCEPTED, from_memo, worker_id, answer)
   }
-  def copy_with_reject() = {
+  def copy_as_rejected() = {
+    assert(completed_at != None)
     new Thunk[A](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.REJECTED, from_memo, worker_id, answer)
   }
-
   override def toString = {
     val has_answer = answer match { case Some(_) => "yes"; case None => "no" }
     val wid = worker_id match { case Some(wid) => wid; case None => "n/a" }

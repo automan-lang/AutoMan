@@ -114,7 +114,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
           t
         } else {
           Utilities.DebugLog("Answer was previously paid for; marking thunk as PROCESSED.", LogLevel.INFO, LogType.ADAPTER, q.id)
-          t.copy_with_processed()
+          t.copy_as_processed()
         }
       }
       case _ => throw new Exception("MTurkAdapter can only operate on Thunks for MTurkQuestions.")
@@ -327,7 +327,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
     t.question match {
       case mtq:MTurkQuestion => {
         backend.approveAssignment(mtq.thunk_assnid_map(t), "Thanks!")
-        t.copy_with_accept()
+        t.copy_as_accepted()
       }
       case _ => throw new Exception("Impossible error.")
     }
@@ -341,7 +341,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
           backend.forceExpireHIT(hit.hit.getHITId)
           hit.state = HITState.RESOLVED
         }
-        t.copy_with_cancellation()
+        t.copy_as_cancelled()
       }
       case _ => throw new Exception("Impossible error.")
     }
@@ -380,7 +380,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
         //       the old call needed to go because distribution questions do
         //       do not come with a confidence value.
         backend.rejectAssignment(mtq.thunk_assnid_map(t), "Your answer is incorrect.")
-        val t2 = t.copy_with_reject()
+        val t2 = t.copy_as_rejected()
 
         assert(t2.answer != None)
         val ans = t2.answer.get
@@ -512,7 +512,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
     ts.map { t =>
       if (t.is_timedout) {
         Utilities.DebugLog("HIT TIMED OUT.", LogLevel.WARN, LogType.ADAPTER, hit.id)
-        val t2 = t.copy_with_timeout()
+        val t2 = t.copy_as_timeout()
         if (!hitcancelled) {
           Utilities.DebugLog("Force-expiring HIT.", LogLevel.WARN, LogType.ADAPTER, hit.id)
           hit.cancel(backend)
