@@ -78,7 +78,7 @@ class MTurkAdapter extends AutomanAdapter {
     run_if_initialized((p: Pool) => {
       // mark thunks as RUNNING so that the scheduler
       // knows to attempt to retrieve their answers later
-      val ts2 = ts.map { _.copy_with_state(SchedulerState.RUNNING) }
+      val ts2 = ts.map { _.copy_as_running() }
       p.post(ts2, exclude_worker_ids)
       ts2
     })
