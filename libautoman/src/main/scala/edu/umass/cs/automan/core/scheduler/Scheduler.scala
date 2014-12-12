@@ -159,7 +159,6 @@ class Scheduler (val question: Question,
             }
 
           // atomically update thunk list with new results
-          // TODO: bugfix: this call reassigns new answers to previously-answered thunks
           _thunks = _thunks ++ results.map { t => t.thunk_id -> t }
 
           // check for timed-out thunks
