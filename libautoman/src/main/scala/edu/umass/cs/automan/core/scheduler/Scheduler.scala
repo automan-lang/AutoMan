@@ -55,24 +55,25 @@ class Scheduler (val question: Question,
     // if the user happens to ask for state
     // before the scheduler has done anything,
     // return None
-    _total_needed match {
-      case Some(num_needed) => {
-        // make a snapshot
-        val my_thunks: Map[UUID, Thunk[A]] = _thunks
+    synchronized {
+      _total_needed match {
+        case Some(num_needed) => {
+          // make a snapshot
+          val my_thunks: Map[UUID, Thunk[A]] = _thunks
 
 
-        // find the oldest thunk
-        val oldest_thunk = my_thunks.values.toArray.sortWith {
-          (a, b) =>
-            a.created_at.compareTo(b.created_at) < 0
-        }.head
+          // find the oldest thunk
+          val oldest_thunk = my_thunks.values.toArray.sortWith {
+            (a, b) =>
+              a.created_at.compareTo(b.created_at) < 0
+          }.head
 
-        val conf = question match {
-          case s: ScalarQuestion => s.confidence
-          case _ => 1.0
-        }
+          val conf = question match {
+            case s: ScalarQuestion => s.confidence
+            case _ => 1.0
+          }
 
-        Some(
+          Some(
             new QuestionInfo(
               question.id,
               question.title,
@@ -88,13 +89,14 @@ class Scheduler (val question: Question,
               question.dont_reject,
               _epochs
             )
-        )
+          )
+        }
+        case None => None
       }
-      case None => None
     }
   }
 
-  private def archiveEpoch(ts: List[Thunk[A]], total_needed: Int, have: Int) : EpochInfo = {
+  private def archiveEpoch(ts: List[Thunk[A]], needed_agreement: Int, largest_agreement: Int) : EpochInfo = {
     // make sure that all thunks are completed
     assert(ts.count(_.completed_at == None) == 0)
 
@@ -105,7 +107,7 @@ class Scheduler (val question: Question,
     val end_time = ts.sortWith((a,b) => a.completed_at.get.compareTo(b.completed_at.get) > 0).head.created_at
 
     // create epoch object
-    EpochInfo(start_time, end_time, ts, total_needed, have)
+    EpochInfo(start_time, end_time, ts, needed_agreement, largest_agreement)
   }
 
   private def largestAnswerGroup(ts: List[Thunk[A]]) : Int = {
@@ -129,20 +131,22 @@ class Scheduler (val question: Question,
       }
       while(!_strategy.is_done(_thunks.values.toList)) {
         if (running_thunks(_thunks).size == 0) {
-          val old_needed = _total_needed match { case Some(n) => n; case None => 0 }
+          synchronized {
+            val old_needed = _total_needed match { case Some(n) => n; case None => 0 }
 
-          val new_thunks = post_new_thunks(_thunks.values.toList, last_iteration_timeout, memo_answers)
+            val new_thunks = post_new_thunks(_thunks.values.toList, last_iteration_timeout, memo_answers)
 
-          // this marks the beginning of a new epoch;
-          // archive last epoch thunks to EpochInfo
-          // and replace current thunk list
-          if (_current_epoch_thunks.size != 0) {
-            _epochs = archiveEpoch(_current_epoch_thunks, old_needed, largestAnswerGroup(_thunks.values.toList)) :: _epochs
+            // this marks the beginning of a new epoch;
+            // archive last epoch thunks to EpochInfo
+            // and replace current thunk list
+            if (_current_epoch_thunks.size != 0) {
+              _epochs = archiveEpoch(_current_epoch_thunks, old_needed, largestAnswerGroup(_thunks.values.toList)) :: _epochs
+            }
+
+            // update thunk data structures
+            _current_epoch_thunks = new_thunks
+            _thunks = _thunks ++ new_thunks.map { t => t.thunk_id -> t}
           }
-          _current_epoch_thunks = new_thunks
-
-          // atomically update thunk map
-          _thunks = _thunks ++ new_thunks.map {t => t.thunk_id -> t }
         }
 
         // ask the backend for answers and memoize_answers
@@ -152,14 +156,16 @@ class Scheduler (val question: Question,
           // TODO fix: adapter.retrieve() also cancels timed-out thunks, which violates single-responsibility
           val results =
             if (!question.dry_run) {
-              val what_am_i = running_thunks(_thunks)
               adapter.retrieve(running_thunks(_thunks)) // blocks
             } else {
               List.empty
             }
 
-          // atomically update thunk list with new results
-          _thunks = _thunks ++ results.map { t => t.thunk_id -> t }
+          // atomically update thunk data structures with new results
+          synchronized {
+            _thunks = _thunks ++ results.map { t => t.thunk_id -> t}
+            _current_epoch_thunks = _current_epoch_thunks.map { t => _thunks(t.thunk_id)}
+          }
 
           // check for timed-out thunks
           if (results.count(_.state == SchedulerState.TIMEOUT) != 0) {
@@ -179,7 +185,7 @@ class Scheduler (val question: Question,
 
         // sleep if necessary
         // TODO: this sleep may no longer be necessary
-        if (!_strategy.is_done(_thunks.values.toList) && incomplete_thunks(_thunks).size > 0) Thread.sleep(poll_interval_in_s * 1000)
+//        if (!_strategy.is_done(_thunks.values.toList) && incomplete_thunks(_thunks).size > 0) Thread.sleep(poll_interval_in_s * 1000)
       }
       // run shutdown hook
       if(!question.dry_run) {
@@ -194,16 +200,18 @@ class Scheduler (val question: Question,
     }
     Utilities.DebugLog("Exiting scheduling loop...", LogLevel.INFO, LogType.SCHEDULER, question.id)
 
-    val answer = _strategy.select_answer(_thunks.values.toList)
+    synchronized {
+      val answer = _strategy.select_answer(_thunks.values.toList)
 
-    if (!over_budget) {
-      _spent = accept_and_reject(_thunks, answer.asInstanceOf[B])
-      Utilities.DebugLog("Total spent: " + _spent.toString(),LogLevel.INFO, LogType.SCHEDULER, question.id)
-    } else {
-      throw new OverBudgetException(Some(answer))
+      if (!over_budget) {
+        _spent = accept_and_reject(_thunks, answer.asInstanceOf[B])
+        Utilities.DebugLog("Total spent: " + _spent.toString(), LogLevel.INFO, LogType.SCHEDULER, question.id)
+      } else {
+        throw new OverBudgetException(Some(answer))
+      }
+      question.final_cost = _spent
+      answer.asInstanceOf[B]
     }
-    question.final_cost = _spent
-    answer.asInstanceOf[B]
   }
 
   def get_memo_answers() : Queue[A] = {
