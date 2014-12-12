@@ -20,8 +20,8 @@ class Scheduler (val question: Question,
   type B = question.B
   // we need to get the initialized strategy instance from
   // the Question itself in order to satisfy the type checker
-  val strategy = question.strategy_instance
-  var thunks = scala.collection.immutable.Map[UUID,Thunk[A]]()
+  private val _strategy = question.strategy_instance
+  private var _thunks = scala.collection.immutable.Map[UUID,Thunk[A]]()
   private var _total_needed : Option[Int] = None
   private var _spent: BigDecimal = 0
   private var _epochs: List[EpochInfo] = List.empty
@@ -31,7 +31,7 @@ class Scheduler (val question: Question,
     val num_answers = answered_thunks(thunks).size
 
     // spawn new thunks; in READY state here
-    val new_thunks = strategy.spawn(thunks, last_iteration_timeout) // OverBudgetException should be thrown here
+    val new_thunks = _strategy.spawn(thunks, last_iteration_timeout) // OverBudgetException should be thrown here
 
     _total_needed = Some(new_thunks.size + num_answers)
 
@@ -58,7 +58,7 @@ class Scheduler (val question: Question,
     _total_needed match {
       case Some(num_needed) => {
         // make a snapshot
-        val my_thunks: Map[UUID, Thunk[A]] = thunks
+        val my_thunks: Map[UUID, Thunk[A]] = _thunks
 
 
         // find the oldest thunk
@@ -127,39 +127,40 @@ class Scheduler (val question: Question,
       if(!question.dry_run) {
         adapter.question_startup_hook(question)
       }
-      while(!strategy.is_done(thunks.values.toList)) {
-        if (running_thunks.size == 0) {
+      while(!_strategy.is_done(_thunks.values.toList)) {
+        if (running_thunks(_thunks).size == 0) {
           val old_needed = _total_needed match { case Some(n) => n; case None => 0 }
 
-          val new_thunks = post_new_thunks(thunks.values.toList, last_iteration_timeout, memo_answers)
+          val new_thunks = post_new_thunks(_thunks.values.toList, last_iteration_timeout, memo_answers)
 
           // this marks the beginning of a new epoch;
           // archive last epoch thunks to EpochInfo
           // and replace current thunk list
           if (_current_epoch_thunks.size != 0) {
-            _epochs = archiveEpoch(_current_epoch_thunks, old_needed, largestAnswerGroup(thunks.values.toList)) :: _epochs
+            _epochs = archiveEpoch(_current_epoch_thunks, old_needed, largestAnswerGroup(_thunks.values.toList)) :: _epochs
           }
           _current_epoch_thunks = new_thunks
 
           // atomically update thunk map
-          thunks = thunks ++ new_thunks.map {t => t.thunk_id -> t }
+          _thunks = _thunks ++ new_thunks.map {t => t.thunk_id -> t }
         }
 
         // ask the backend for answers and memoize_answers
         // conditional covers the case where all thunk answers are recalled from memoDB
-        if (running_thunks.size > 0) {
+        if (running_thunks(_thunks).size > 0) {
           // get data
           // TODO fix: adapter.retrieve() also cancels timed-out thunks, which violates single-responsibility
           val results =
             if (!question.dry_run) {
-              adapter.retrieve(running_thunks) // blocks
+              val what_am_i = running_thunks(_thunks)
+              adapter.retrieve(running_thunks(_thunks)) // blocks
             } else {
               List.empty
             }
 
           // atomically update thunk list with new results
-          // TODO: bugfix: this call overwrites previous results with RUNNING tasks!
-          thunks = thunks ++ results.map { t => t.thunk_id -> t }
+          // TODO: bugfix: this call reassigns new answers to previously-answered thunks
+          _thunks = _thunks ++ results.map { t => t.thunk_id -> t }
 
           // check for timed-out thunks
           if (results.count(_.state == SchedulerState.TIMEOUT) != 0) {
@@ -168,7 +169,7 @@ class Scheduler (val question: Question,
               t.state == SchedulerState.TIMEOUT &&
               !unpaid_timeouts.contains(t)
             }
-            strategy.unpay_for_thunks(new_timeouts)
+            _strategy.unpay_for_thunks(new_timeouts)
             last_iteration_timeout = true
           } else {
             last_iteration_timeout = false
@@ -179,7 +180,7 @@ class Scheduler (val question: Question,
 
         // sleep if necessary
         // TODO: this sleep may no longer be necessary
-        if (!strategy.is_done(thunks.values.toList) && incomplete_thunks(thunks).size > 0) Thread.sleep(poll_interval_in_s * 1000)
+        if (!_strategy.is_done(_thunks.values.toList) && incomplete_thunks(_thunks).size > 0) Thread.sleep(poll_interval_in_s * 1000)
       }
       // run shutdown hook
       if(!question.dry_run) {
@@ -194,10 +195,10 @@ class Scheduler (val question: Question,
     }
     Utilities.DebugLog("Exiting scheduling loop...", LogLevel.INFO, LogType.SCHEDULER, question.id)
 
-    val answer = strategy.select_answer(thunks.values.toList)
+    val answer = _strategy.select_answer(_thunks.values.toList)
 
     if (!over_budget) {
-      _spent = accept_and_reject(thunks, answer.asInstanceOf[B])
+      _spent = accept_and_reject(_thunks, answer.asInstanceOf[B])
       Utilities.DebugLog("Total spent: " + _spent.toString(),LogLevel.INFO, LogType.SCHEDULER, question.id)
     } else {
       throw new OverBudgetException(Some(answer))
@@ -214,8 +215,8 @@ class Scheduler (val question: Question,
 
   def accept_and_reject(ts: Map[UUID, Thunk[A]], answer: B) : BigDecimal = {
     var spent: BigDecimal = 0
-    val accepts = strategy.thunks_to_accept(ts.values.toList)
-    val rejects = strategy.thunks_to_reject(ts.values.toList)
+    val accepts = _strategy.thunks_to_accept(ts.values.toList)
+    val rejects = _strategy.thunks_to_reject(ts.values.toList)
     val cancels = ts.values.filter(_.state == SchedulerState.CANCELLED)
     val timeouts = ts.values.filter(_.state == SchedulerState.TIMEOUT)
 
@@ -301,7 +302,7 @@ class Scheduler (val question: Question,
     Utilities.DebugLog("Posting " + ts.size, LogLevel.INFO, LogType.SCHEDULER, question.id)
     adapter.post(ts, question.blacklisted_workers)
   }
-  def running_thunks = thunks.values.filter(_.state == SchedulerState.RUNNING).toList
+  def running_thunks(ts: Map[UUID,Thunk[A]]) = ts.values.filter(_.state == SchedulerState.RUNNING).toList
   def recall(ts: List[Thunk[A]], answers: Queue[A]) : List[Thunk[A]] = {
     // sanity check
     assert(ts.forall(_.state == SchedulerState.READY))
