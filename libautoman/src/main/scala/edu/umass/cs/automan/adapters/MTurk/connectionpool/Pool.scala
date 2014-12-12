@@ -405,16 +405,17 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
     // start by granting qualifications
     grant_qualification_requests(question, auquestion.blacklisted_workers, auquestion.id)
 
-    // try grabbing something from each HIT
+    // eagerly grab assignments for every known HIT
     val ts2 = hits.map { hit =>
-      // get running thunks for each HIT
+      // for each HIT, ensure that we use the correct thunk
+      // by looking in the hit_thunk_map
       val hts = Queue[Thunk[A]]()
-      hts ++= question.hit_thunk_map(hit).filter{_.state == SchedulerState.RUNNING}.asInstanceOf[List[Thunk[A]]]
-      val assignments: List[Assignment] = hit.retrieve(backend)
+      hts ++= question.hit_thunk_map(hit).filter(ts.contains(_)).asInstanceOf[List[Thunk[A]]]
+      val assignments: List[Assignment] = hit.retrieve(backend) // finally, do MTurk call
 
       Utilities.DebugLog("There are " + assignments.size + " assignments available to process.", LogLevel.INFO, LogType.ADAPTER, auquestion.id)
 
-      // mark next available thunk as RETRIEVED for each answer
+      // for every available thunk-answer pairing, mark thunk as RETRIEVED
       val answered_ts = assignments.map { a => process_assignment(question, a, hit.hit.getHITId, hts.dequeue(), auquestion.use_disqualifications) }
 
       // timeout timed out Thunks and the HIT
@@ -425,7 +426,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
       // check to see if we need to continue running this HIT
       mark_hit_complete(hit, unanswered_ts)
 
-      // return all answered and unanswered hits
+      // return updated thunks (both answered and unanswered)
       answered_ts ::: unanswered_ts
     }.flatten
 
