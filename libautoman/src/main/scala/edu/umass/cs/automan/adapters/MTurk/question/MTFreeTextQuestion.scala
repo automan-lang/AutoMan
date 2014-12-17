@@ -1,27 +1,23 @@
 package edu.umass.cs.automan.adapters.MTurk.question
 
-import scala.concurrent._
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.matching.Regex
-import edu.umass.cs.automan.adapters.MTurk.{AutomanHIT, MTurkAdapter}
+import edu.umass.cs.automan.adapters.MTurk.AutomanHIT
 import edu.umass.cs.automan.core.scheduler.Thunk
 import com.amazonaws.mturk.requester.Assignment
 import xml.XML
 import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
-import edu.umass.cs.automan.core.question.{FreeTextQuestion, RadioButtonQuestion}
-
-import edu.umass.cs.automan.core.answer.{FreeTextAnswer, RadioButtonAnswer}
+import edu.umass.cs.automan.core.question.FreeTextQuestion
+import edu.umass.cs.automan.core.answer.FreeTextAnswer
 import edu.umass.cs.automan.core.strategy.PictureClause
 import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 
 class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
+  protected var _allow_empty: Boolean = false
+  protected var _before_filter: Symbol => Symbol = (s) => s
   protected var _options = List[MTQuestionOption]()
   protected var _pattern: Option[String] = None
   protected var _internal_pattern: Option[String] = None
   protected var _num_possibilities: BigInt = 1000
-  protected var _allow_empty: Boolean = false
-  protected var _before_filter: Symbol => Symbol = (s) => s
 
   def answer(a: Assignment): A = {
     val ans = new FreeTextAnswer(None, a.getWorkerId, _before_filter(answerFromXML(XML.loadString(a.getAnswer))))
@@ -107,7 +103,6 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
     </QuestionForm>
   }
   def num_possibilities: BigInt = _num_possibilities
-
   def num_possibilities_=(n: BigInt) { _num_possibilities = n }
   def allow_empty_pattern_=(ae: Boolean) { _allow_empty = ae }
   def allow_empty_pattern: Boolean = _allow_empty
@@ -122,7 +117,6 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
       }
     }
   }
-  def regex: Regex = _pattern match { case Some(p) => new Regex(p); case None => "".r }
   def before_filter_=(f: Symbol => Symbol) { _before_filter = f }
   def before_filter: Symbol => Symbol = _before_filter
 }
