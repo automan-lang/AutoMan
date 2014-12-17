@@ -57,7 +57,7 @@ class MTRadioButtonDistributionQuestion extends RadioButtonDistributionQuestion 
     //      <SelectionIdentifier>count</SelectionIdentifier>
     //    </Answer>
 
-    Utilities.DebugLog("MTRadioButtonQuestion: fromXML:\n" + x.toString,LogLevel.INFO,LogType.ADAPTER,id)
+    Utilities.DebugLog("MTRadioButtonDistributionQuestion: fromXML:\n" + x.toString,LogLevel.INFO,LogType.ADAPTER,id)
 
     Symbol((x \\ "Answer" \\ "SelectionIdentifier").text)
   }
