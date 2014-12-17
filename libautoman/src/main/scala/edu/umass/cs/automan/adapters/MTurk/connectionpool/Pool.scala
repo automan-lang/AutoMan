@@ -368,6 +368,9 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
       case ftq: MTFreeTextQuestion => {
         mtquestion.hit_type_id = ftq.build_hit(ts).post(backend, quals)
       }
+      case ftdq: MTFreeTextDistributionQuestion => {
+        mtquestion.hit_type_id = ftdq.build_hit(ts).post(backend, quals)
+      }
       case _ => throw new Exception("Question type not yet supported. Question class is " + mtquestion.getClass)
     }
   }
