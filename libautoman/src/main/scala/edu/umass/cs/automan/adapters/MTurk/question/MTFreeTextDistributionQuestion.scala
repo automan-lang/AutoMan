@@ -31,7 +31,6 @@ class MTFreeTextDistributionQuestion extends FreeTextDistributionQuestion with M
     //      <QuestionIdentifier>721be9fc-c867-42ce-8acd-829e64ae62dd</QuestionIdentifier>
     //      <SelectionIdentifier>count</SelectionIdentifier>
     //    </Answer>
-
     Utilities.DebugLog("MTFreeTextDistributionQuestion: fromXML:\n" + x.toString,LogLevel.INFO,LogType.ADAPTER,id)
 
     Symbol((x \\ "Answer" \\ "SelectionIdentifier").text)

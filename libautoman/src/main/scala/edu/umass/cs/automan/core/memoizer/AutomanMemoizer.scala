@@ -25,6 +25,9 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
       case ftq: FreeTextQuestion => {
         deserializeRBQ(ftq)
       }
+      case ftdq: FreeTextDistributionQuestion => {
+        deserializeFTQ(ftdq)
+      }
     }
   }
 
