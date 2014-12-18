@@ -53,10 +53,6 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
   def answerFromXML(x: scala.xml.Node) : Set[Symbol] = {
     (x \\ "Answer" \\ "SelectionIdentifier").map{si => Symbol(si.text)}.toSet
   }
-  def randomized_options: List[QO] = {
-    import edu.umass.cs.automan.core.Utilities
-    Utilities.randomPermute(options)
-  }
   // TODO: random checkbox fill
   def toXML(randomize: Boolean) = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
@@ -95,4 +91,5 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
       </Question>
     </QuestionForm>
   }
+  override def randomized_options: List[QO] = Utilities.randomPermute(options)
 }
