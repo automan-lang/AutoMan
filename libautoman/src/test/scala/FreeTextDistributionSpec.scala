@@ -6,36 +6,39 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import java.util.UUID
 
-class FreeTextQuestionSpec extends FlatSpec with Matchers {
-  "A FreeTextQuestion" should "return a single correct answer when given 2 identical answers" in {
+class FreeTextDistributionSpec extends FlatSpec with Matchers {
+  "A FreeTextDistributionSpec" should "return at least n answers" in {
+    // define mock answers
+    val mock_answers = List('three, 'three, 'Three, Symbol("3"), 'four, 'one, 'three, Symbol("2"))
+
+    val n = mock_answers.size - 1
+
     // init Mock backend
     val ma = MockAdapter()
-
-    // define mock answers
-    val mock_answer = 'three
-    val mock_answers = List(mock_answer, mock_answer)
 
     // explicitly set confidence
     val target_confidence = 0.95
 
     // define simple FreeText question & mock answers
-    def AskEm(question: String) = ma.FreeTextQuestion { q =>
+    def AskEm(question: String) = ma.FreeTextDistributionQuestion { q =>
       q.mock_answers = mock_answers.map(new FreeTextAnswer(None, UUID.randomUUID().toString, _)).toSet
-      q.confidence = target_confidence
+      q.num_samples = n
       q.text = question
       q.title = question
     }
 
     // run AutoMan
-    val answer = automan(ma) {
+    val answers = automan(ma) {
       val future_answer = AskEm("How many licks does it take to get to the Tootsie Roll Center of a Tootsie Pop?")
       Await.result(future_answer, Duration.Inf)
     }
 
-    // ensure that mock_answers == answers
-    answer.value should be theSameInstanceAs mock_answer
+    // ensure that all answers are in mock_answers
+    answers.foreach { ans =>
+      mock_answers.contains(ans.value) should be (true)
+    }
 
-    // ensure that the confidence meets the user's bound
-    answer.confidence should be >= target_confidence
+    // ensure that the number of samples is correct
+    answers.size should be (n)
   }
 }
