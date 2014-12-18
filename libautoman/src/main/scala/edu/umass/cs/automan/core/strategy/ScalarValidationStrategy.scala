@@ -37,8 +37,8 @@ abstract class ScalarValidationStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, 
     // find the grouping symbol of the largest group
     val gsymb = groups.maxBy { case(opt, as) => as.size }._1
 
-    Utilities.DebugLog("Symbol of largest group is " + gsymb, LogLevel.INFO, LogType.STRATEGY,_computation_id)
-    Utilities.DebugLog("classOf Thunk.answer is " + groups(gsymb).head.answer.getClass, LogLevel.INFO, LogType.STRATEGY,_computation_id)
+    Utilities.DebugLog("Most popular answer is " + gsymb, LogLevel.INFO, LogType.STRATEGY,_computation_id)
+    Utilities.DebugLog("classOf Thunk.answer is " + groups(gsymb).head.answer.get.getClass, LogLevel.INFO, LogType.STRATEGY,_computation_id)
 
     // return the top Answer
     _selected_answer = Some(groups(gsymb).head.answer.get.final_answer(Some(current_confidence(thunks))).asInstanceOf[A])

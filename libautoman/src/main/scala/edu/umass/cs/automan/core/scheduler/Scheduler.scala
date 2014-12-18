@@ -13,8 +13,8 @@ import edu.umass.cs.automan.core.exception.OverBudgetException
 
 class Scheduler (val question: Question,
                  val adapter: AutomanAdapter,
-                 val memoizer: AutomanMemoizer,
-                 val thunklog: ThunkLogger,
+                 val memoizer: Option[AutomanMemoizer],
+                 val thunklog: Option[ThunkLogger],
                  val poll_interval_in_s: Int) {
   type A = question.A
   type B = question.B
@@ -216,7 +216,10 @@ class Scheduler (val question: Question,
 
   def get_memo_answers() : Queue[A] = {
     val answers = Queue[A]()
-    answers ++= memoizer.checkDB(question).map{ a => a.asInstanceOf[A]}
+    answers ++= (memoizer match {
+      case Some(m) => m.checkDB(question).map{ a => a.asInstanceOf[A]}
+      case None => List()
+    })
     answers
   }
 
@@ -230,11 +233,14 @@ class Scheduler (val question: Question,
     // Accept
     accepts.foreach { t =>
       Utilities.DebugLog(
-        "Accepting thunk with answer: " + t.answer.toString + " and paying $" +
+        "Accepting thunk " + t.thunk_id +  " with answer \"" + t.answer.get.toString + "\" and paying $" +
           t.cost.toString(), LogLevel.INFO, LogType.SCHEDULER, question.id
       )
       val t2 = adapter.accept(t)
-      thunklog.writeThunk(t2, SchedulerState.ACCEPTED, t2.worker_id.get)
+      thunklog match {
+        case Some(tl) => tl.writeThunk(t2, SchedulerState.ACCEPTED, t2.worker_id.get)
+        case None => Unit
+      }
       spent += t.cost
     }
 
@@ -242,36 +248,48 @@ class Scheduler (val question: Question,
     if (!question.dont_reject) {
       rejects.foreach { t =>
         Utilities.DebugLog(
-          "Rejecting thunk with incorrect answer: " +
-            t.answer.toString, LogLevel.INFO, LogType.SCHEDULER, question.id
+          "Rejecting thunk " + t.thunk_id + " with incorrect answer \"" +
+            t.answer.get.toString + "\"", LogLevel.INFO, LogType.SCHEDULER, question.id
         )
         val t2 = adapter.reject(t)
-        thunklog.writeThunk(t2, SchedulerState.REJECTED, t2.worker_id.get)
+        thunklog match {
+          case Some(tl) => tl.writeThunk(t2, SchedulerState.REJECTED, t2.worker_id.get)
+          case None => Unit
+        }
       }
     } else {
       // Accept if the user specified "don't reject"
       rejects.foreach { t =>
         Utilities.DebugLog(
-          "Accepting (NOT rejecting) thunk with incorrect answer " +
-            "(if you did not want this, set  Question.dont_reject to false): " +
-            t.answer.toString, LogLevel.INFO, LogType.SCHEDULER, question.id
+          "Accepting (NOT rejecting) thunk " + t.thunk_id + " with incorrect answer \"" +
+            t.answer.get.toString + "\". If you did not want this, set Question.dont_reject to false.",
+          LogLevel.INFO, LogType.SCHEDULER, question.id
         )
         val t2 = adapter.accept(t)
-        thunklog.writeThunk(t2, SchedulerState.ACCEPTED, t2.worker_id.get)
+        thunklog match {
+          case Some(tl) => tl.writeThunk(t2, SchedulerState.ACCEPTED, t2.worker_id.get)
+          case None => Unit
+        }
         spent += t2.cost
       }
     }
 
     // Early cancel
     cancels.foreach { t =>
-      Utilities.DebugLog("Cancelling RUNNING thunk...", LogLevel.INFO, LogType.SCHEDULER, question.id)
+      Utilities.DebugLog("Cancelling RUNNING thunk " + t.thunk_id + "...", LogLevel.INFO, LogType.SCHEDULER, question.id)
       adapter.cancel(t)
-      thunklog.writeThunk(t, SchedulerState.CANCELLED, null)
+      thunklog match {
+        case Some(tl) => tl.writeThunk(t, SchedulerState.CANCELLED, null)
+        case None => Unit
+      }
     }
 
     // Timeouts
     timeouts.foreach { t =>
-      thunklog.writeThunk(t, SchedulerState.TIMEOUT, null)
+      thunklog match {
+        case Some(tl) => tl.writeThunk(t, SchedulerState.TIMEOUT, null)
+        case None => Unit
+      }
     }
 
     spent
@@ -301,12 +319,16 @@ class Scheduler (val question: Question,
   ).toList
   def memoize_answers(ts: List[Thunk[A]]) {
     // save
-    ts.filter(_.state == SchedulerState.RETRIEVED).foreach {t =>
-      memoizer.writeAnswer(question, t.answer.get)
+    memoizer match {
+      case Some(m) =>
+        ts.filter(_.state == SchedulerState.RETRIEVED).foreach {t =>
+          m.writeAnswer(question, t.answer.get)
+        }
+      case None => Unit
     }
   }
   def post(ts: List[Thunk[A]]) : List[Thunk[A]] = {
-    Utilities.DebugLog("Posting " + ts.size, LogLevel.INFO, LogType.SCHEDULER, question.id)
+    Utilities.DebugLog("Posting " + ts.size + " tasks.", LogLevel.INFO, LogType.SCHEDULER, question.id)
     adapter.post(ts, question.blacklisted_workers)
   }
   def running_thunks(ts: Map[UUID,Thunk[A]]) = ts.values.filter(_.state == SchedulerState.RUNNING).toList
@@ -316,8 +338,8 @@ class Scheduler (val question: Question,
 
     if (answers.size > 0) {
       ts.take(answers.size).map { t =>
-        Utilities.DebugLog("Pairing thunk with memoized answer.", LogLevel.INFO, LogType.SCHEDULER, question.id)
         val answer = answers.dequeue()
+        Utilities.DebugLog("Pairing thunk " + t.thunk_id + " with memoized answer \"" + answer.toString + "\".", LogLevel.INFO, LogType.SCHEDULER, question.id)
         val worker_id = answer.worker_id
         val t2 = t.copy_with_answer(answer, worker_id)
         t2.question.blacklist_worker(worker_id)

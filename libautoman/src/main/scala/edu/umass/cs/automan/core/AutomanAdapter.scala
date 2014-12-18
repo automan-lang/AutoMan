@@ -22,7 +22,7 @@ abstract class AutomanAdapter {
   protected var _default_budget: BigDecimal = 5.00
   protected var _default_confidence: Double = 0.95
   protected var _locale: Locale = Locale.getDefault
-  protected var _memoizer: AutomanMemoizer = _
+  protected var _memoizer: Option[AutomanMemoizer] = None
   protected var _memo_db: String = "AutomanMemoDB"
   protected def _memo_conn_string: String = "jdbc:derby:" + _memo_db + ";create=true"
   protected var _memo_user: String = ""
@@ -31,11 +31,12 @@ abstract class AutomanAdapter {
   protected var _plugins_initialized: List[_ <: Plugin] = List.empty
   protected var _poll_interval_in_s : Int = 30
   protected var _schedulers: List[Scheduler] = List.empty
-  protected var _thunklog: ThunkLogger = _
+  protected var _thunklog: Option[ThunkLogger] = None
   protected var _thunk_db: String = "ThunkLogDB"
   protected var _thunk_conn_string: String = "jdbc:derby:" + _thunk_db + ";create=true"
   protected var _thunk_user: String = ""
   protected var _thunk_pass: String = ""
+  protected var _use_memoization: Boolean = true
 
   // user-visible getters and setters
   def budget: BigDecimal = _default_budget
@@ -46,6 +47,8 @@ abstract class AutomanAdapter {
   def locale_=(l: Locale) { _locale = l }
   def plugins: List[Class[_ <: Plugin]] = _plugins
   def plugins_=(ps: List[Class[_ <: Plugin]]) { _plugins = ps }
+  def use_memoization = _use_memoization
+  def use_memoization_=(um: Boolean) { _use_memoization = um }
 
   // marshaling calls
   protected[automan] def accept[A <: Answer](t: Thunk[A]) : Thunk[A]
@@ -68,8 +71,10 @@ abstract class AutomanAdapter {
   // state management
   protected[automan] def init() {
     plugins_init()
-    memo_init()
-    thunklog_init()
+    if (_use_memoization) {
+      memo_init()
+      thunklog_init()
+    }
   }
   protected[automan] def close() = {
     plugins_shutdown()
@@ -86,10 +91,10 @@ abstract class AutomanAdapter {
     _plugins_initialized.foreach { plugin => plugin.shutdown() }
   }
   private def memo_init() {
-    _memoizer = new AutomanMemoizer(_memo_conn_string, _memo_user, _memo_pass)
+    _memoizer = Some(new AutomanMemoizer(_memo_conn_string, _memo_user, _memo_pass))
   }
   private def thunklog_init() {
-    _thunklog = new ThunkLogger(_thunk_conn_string, _thunk_user, _thunk_pass)
+    _thunklog = Some(new ThunkLogger(_thunk_conn_string, _thunk_user, _thunk_pass))
   }
   def state_snapshot(): StateInfo = {
     StateInfo(budget, _schedulers.flatMap { s => s.state })

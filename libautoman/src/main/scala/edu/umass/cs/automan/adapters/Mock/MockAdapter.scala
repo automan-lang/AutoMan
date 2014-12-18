@@ -15,9 +15,11 @@ object MockAdapter {
   }
 }
 
+// note that the default is NOT to use memoization in testing
 class MockAdapter extends AutomanAdapter {
-  private var _state : MockState = _
   private var _mock_budget : BigDecimal = 0.00
+  private var _state : MockState = _
+  _use_memoization = false
 
   // setters and getters
   override def budget_=(b: BigDecimal) { _mock_budget = b }
