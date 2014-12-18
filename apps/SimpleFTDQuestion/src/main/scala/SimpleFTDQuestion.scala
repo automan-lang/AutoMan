@@ -1,10 +1,11 @@
 import edu.umass.cs.automan.adapters.MTurk.MTurkAdapter
+import edu.umass.cs.automan.automan
 import edu.umass.cs.automan.core.Utilities
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 object SimpleFTDQuestion extends App {
-  val opts = Utilities.unsafe_optparse(args, "DieAntwoord.scala")
+  val opts = Utilities.unsafe_optparse(args, "SimpleFTDQuestion.scala")
 
   // init MTurk backend
   val a = MTurkAdapter { mt =>
@@ -19,8 +20,10 @@ object SimpleFTDQuestion extends App {
     q.text = question
   }
 
-  val future_answers = AskIt("How many licks does it take to get to the Tootsie Roll Center of a Tootsie Pop?")
-  val answers = Await.result(future_answers, Duration.Inf)
+  val answers = automan(a) {
+    val future_answers = AskIt("How many licks does it take to get to the Tootsie Roll Center of a Tootsie Pop?")
+    Await.result(future_answers, Duration.Inf)
+  }
 
-  answers.map { answer => println("Answer: " + answer.toString()) }
+  answers.map { answer => println("Answer: " + answer.toString())}
 }
