@@ -51,6 +51,11 @@ object AutoManBuild extends Build {
       base = file("apps/simple_checkbox_program")
     ) dependsOn root
 
+  lazy val SimpleFTDQuestion =
+    Project(id = "SimpleFTDQuestion",
+      base = file("apps/SimpleFTDQuestion")
+    ) dependsOn root
+
   lazy val SimpleSurvey =
     Project(id = "SimpleSurvey",
       base = file("apps/SimpleSurvey")

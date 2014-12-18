@@ -15,7 +15,7 @@ abstract class DistributionValidationStrategy[Q <: DistributionQuestion, A <: Sc
     // just return all retrieved answers
     // asInstanceOf[B] necessary because Scala does not
     // know that B is always Set[A]
-    completed_workerunique_thunks(thunks).map { t => t.answer }.toSet.asInstanceOf[B]
+    completed_workerunique_thunks(thunks).map { t => t.answer.get }.toSet.asInstanceOf[B]
   }
   override def thunks_to_accept(thunks: List[Thunk[A]]): List[Thunk[A]] = {
     val unaccepted_thunks = thunks.filter(_.state == SchedulerState.RETRIEVED)

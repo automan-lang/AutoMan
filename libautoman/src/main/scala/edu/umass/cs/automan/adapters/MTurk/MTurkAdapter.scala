@@ -85,7 +85,7 @@ class MTurkAdapter extends AutomanAdapter {
       ts2
     })
   }
-  protected[automan] def process_custom_info[A <: Answer](t: Thunk[A], i: Option[String]) =
+  protected[automan] def process_custom_info[A <: Answer](t: Thunk[A], i: Option[String]) : Thunk[A] =
     run_if_initialized((p: Pool) => p.process_custom_info(t, i))
   protected[automan] def reject[A <: Answer](t: Thunk[A]) = run_if_initialized((p: Pool) => p.reject(t))
   protected[automan] def retrieve[A <: Answer](ts: List[Thunk[A]]) =
