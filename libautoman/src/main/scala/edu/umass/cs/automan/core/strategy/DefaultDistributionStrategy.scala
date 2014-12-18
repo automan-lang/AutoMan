@@ -61,9 +61,7 @@ class DefaultDistributionStrategy[Q <: DistributionQuestion, A <: ScalarAnswer, 
                            _computation_id,
                            new java.util.Date(),
                            SchedulerState.READY,
-                           false,
-                           None,
-                           None
+                           false
                           )
       Utilities.DebugLog("spawned question_id = " + question.id_string,LogLevel.INFO,LogType.STRATEGY,_computation_id)
       t
