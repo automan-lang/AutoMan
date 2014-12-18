@@ -322,7 +322,6 @@ class Scheduler (val question: Question,
         val t2 = t.copy_with_answer(answer, worker_id)
         t2.question.blacklist_worker(worker_id)
         adapter.process_custom_info(t2, answer.custom_info)
-        t2
       }
     } else {
       List.empty

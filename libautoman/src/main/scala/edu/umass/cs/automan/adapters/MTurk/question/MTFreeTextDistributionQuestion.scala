@@ -33,7 +33,7 @@ class MTFreeTextDistributionQuestion extends FreeTextDistributionQuestion with M
     //    </Answer>
     Utilities.DebugLog("MTFreeTextDistributionQuestion: fromXML:\n" + x.toString,LogLevel.INFO,LogType.ADAPTER,id)
 
-    Symbol((x \\ "Answer" \\ "SelectionIdentifier").text)
+    Symbol((x \\ "Answer" \\ "FreeText").text)
   }
   def build_hit(ts: List[Thunk[_]]) : AutomanHIT = {
     val x = toXML(randomize = !_dont_randomize_options)

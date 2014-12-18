@@ -2,7 +2,6 @@ package edu.umass.cs.automan.core.question
 
 import edu.umass.cs.automan.core.answer.FreeTextAnswer
 import edu.umass.cs.automan.core.info.QuestionType
-import util.matching.Regex
 
 abstract class FreeTextDistributionQuestion extends DistributionQuestion {
   type A = FreeTextAnswer

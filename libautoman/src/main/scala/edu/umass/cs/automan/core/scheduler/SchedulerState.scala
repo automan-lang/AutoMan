@@ -4,7 +4,7 @@ object SchedulerState extends Enumeration {
   type SchedulerState = Value
   val READY, // OK to execute
       RUNNING, // task has been sent to crowdsourcing backend
-      RETRIEVED, // answer has been retrieved
+      RETRIEVED, // answer has been retrieved from backend
       ACCEPTED, // answer has been paid for
       REJECTED, // answer is incorrect (and will not be paid for)
       PROCESSED, // answer was accepted/rejected in previous execution (for memo-recalled Thunks)
