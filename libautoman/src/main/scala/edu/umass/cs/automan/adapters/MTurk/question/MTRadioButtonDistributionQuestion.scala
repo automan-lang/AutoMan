@@ -17,8 +17,6 @@ import scala.xml.XML
 class MTRadioButtonDistributionQuestion extends RadioButtonDistributionQuestion with MTurkQuestion {
   type QO = MTQuestionOption
 
-  protected var _options = List[QO]()
-
   def answer(a: Assignment): A = {
     val ans = new RadioButtonAnswer(None, a.getWorkerId, answerFromXML(XML.loadString(a.getAnswer)))
     ans.accept_time = a.getAcceptTime
@@ -48,8 +46,6 @@ class MTRadioButtonDistributionQuestion extends RadioButtonDistributionQuestion 
     val md = MessageDigest.getInstance("md5")
     new String(Hex.encodeHex(md.digest(toXML(randomize = false).toString.getBytes)))
   }
-  def options: List[QO] = _options
-  def options_=(os: List[QO]) { _options = os }
   def answerFromXML(x: scala.xml.Node) : Symbol = {
     // There should only be a SINGLE answer here, like this:
     //    <Answer>
@@ -60,10 +56,6 @@ class MTRadioButtonDistributionQuestion extends RadioButtonDistributionQuestion 
     Utilities.DebugLog("MTRadioButtonDistributionQuestion: fromXML:\n" + x.toString,LogLevel.INFO,LogType.ADAPTER,id)
 
     Symbol((x \\ "Answer" \\ "SelectionIdentifier").text)
-  }
-  def randomized_options: List[QO] = {
-    import edu.umass.cs.automan.core.Utilities
-    Utilities.randomPermute(options)
   }
   def toXML(randomize: Boolean) : scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
@@ -103,4 +95,5 @@ class MTRadioButtonDistributionQuestion extends RadioButtonDistributionQuestion 
       </Question>
     </QuestionForm>
   }
+  override def randomized_options: List[QO] = Utilities.randomPermute(options)
 }

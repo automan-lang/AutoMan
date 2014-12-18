@@ -14,10 +14,7 @@ import org.apache.commons.codec.binary.Hex
 import scala.xml.XML
 
 class MTFreeTextDistributionQuestion extends FreeTextDistributionQuestion with MTurkQuestion {
-  protected var _allow_empty: Boolean = false
   protected var _before_filter: Symbol => Symbol = (s) => s
-  protected var _num_possibilities: BigInt = 1000
-  protected var _pattern: Option[String] = None
 
   def answer(a: Assignment): A = {
     val ans = new FreeTextAnswer(None, a.getWorkerId, _before_filter(answerFromXML(XML.loadString(a.getAnswer))))
@@ -57,19 +54,6 @@ class MTFreeTextDistributionQuestion extends FreeTextDistributionQuestion with M
   def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
     new String(Hex.encodeHex(md.digest(toXML(randomize = false).toString.getBytes)))
-  }
-  def num_possibilities: BigInt = _num_possibilities
-  def num_possibilities_=(n: BigInt) { _num_possibilities = n }
-  def pattern: String = _pattern match { case Some(p) => p; case None => ".*" }
-  def pattern_=(p: String) {
-    PictureClause(p, _allow_empty) match {
-      case (regex, count) => {
-        _pattern = Some(regex)
-        // the following odd calculation exists to prevent overflow
-        // in MonteCarlo simulator; 1/1000 are sufficiently low odds
-        _num_possibilities = if (count > 1000) 1000 else count
-      }
-    }
   }
   def toXML(randomize: Boolean) = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">

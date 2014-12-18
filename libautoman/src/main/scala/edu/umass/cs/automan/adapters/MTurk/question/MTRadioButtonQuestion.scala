@@ -57,10 +57,6 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
 
     Symbol((x \\ "Answer" \\ "SelectionIdentifier").text)
   }
-  def randomized_options: List[QO] = {
-    import edu.umass.cs.automan.core.Utilities
-    Utilities.randomPermute(options)
-  }
   def toXML(randomize: Boolean) : scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
       <Question>
@@ -99,4 +95,5 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
       </Question>
     </QuestionForm>
   }
+  override def randomized_options: List[QO] = Utilities.randomPermute(options)
 }
