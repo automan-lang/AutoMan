@@ -31,7 +31,7 @@ class CheckboxDistributionSpec extends FlatSpec with Matchers {
       Set(spongebob.question_id, kermit.question_id)
     )
 
-    val n = mock_answers.size - 1
+    val n = mock_answers.size
 
     // init Mock backend
     val ma = MockAdapter()
