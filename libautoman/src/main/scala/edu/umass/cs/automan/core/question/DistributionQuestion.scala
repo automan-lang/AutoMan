@@ -9,6 +9,7 @@ abstract class DistributionQuestion extends Question {
   type B = Set[A]
 
   override val _is_for_distribution = true
+  protected var _num_possibilities: BigInt = 1000
 
   var _num_samples: Int = 30
   // the proportion of workers who will resubmit work
@@ -29,6 +30,8 @@ abstract class DistributionQuestion extends Question {
     // so the number is adjusted upward some
     case None => (reward * num_samples) / (1 - PROP_RETURNING_WORKERS)
   }
+  def num_possibilities: BigInt = _num_possibilities
+  def num_possibilities_=(n: BigInt) { _num_possibilities = n }
   def num_samples_=(n: Int) { _num_samples = n }
   def num_samples: Int = _num_samples
 }

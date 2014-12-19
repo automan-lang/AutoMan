@@ -27,17 +27,20 @@ class MockAdapter extends AutomanAdapter {
 
   // associated question types
   override type CBQ = MockCheckboxQuestion
-  override type FTDQ = MockFreeTextDistributionQuestion
+  override type CBDQ = MockCheckboxDistributionQuestion
   override type FTQ = MockFreeTextQuestion
-  override type RBDQ = MockRadioButtonDistributionQuestion
+  override type FTDQ = MockFreeTextDistributionQuestion
   override type RBQ = MockRadioButtonQuestion
+  override type RBDQ = MockRadioButtonDistributionQuestion
+
 
   // type factories
   override protected def CBQFactory(): CBQ = new MockCheckboxQuestion
-  override protected def FTDQFactory(): FTDQ = new MockFreeTextDistributionQuestion
+  override protected def CBDQFactory(): CBDQ = new MockCheckboxDistributionQuestion
   override protected def FTQFactory(): FTQ = new MockFreeTextQuestion
-  override protected def RBDQFactory(): RBDQ = new MockRadioButtonDistributionQuestion
+  override protected def FTDQFactory(): FTDQ = new MockFreeTextDistributionQuestion
   override protected def RBQFactory(): RBQ = new MockRadioButtonQuestion
+  override protected def RBDQFactory(): RBDQ = new MockRadioButtonDistributionQuestion
 
   // DSL
   def Option(id: Symbol, text: String) = MockOption(id, text)

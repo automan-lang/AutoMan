@@ -11,13 +11,14 @@ import memoizer.{ThunkLogger, AutomanMemoizer}
 import edu.umass.cs.automan.core.scheduler.{Scheduler, Thunk}
 
 abstract class AutomanAdapter {
-  // the precise question type is determined by the subclassing
-  // adapter; answer types are invariant
-  type RBQ <: RadioButtonQuestion                 // answer scalar
-  type RBDQ <: RadioButtonDistributionQuestion    // answer vector
+  // question types are determined by adapter implementations
+  // answer types are invariant
   type CBQ <: CheckboxQuestion                    // answer scalar
+  type CBDQ <: CheckboxDistributionQuestion       // answer vector
   type FTQ <: FreeTextQuestion                    // answer scalar
   type FTDQ <: FreeTextDistributionQuestion       // answer vector
+  type RBQ <: RadioButtonQuestion                 // answer scalar
+  type RBDQ <: RadioButtonDistributionQuestion    // answer vector
 
   protected var _default_budget: BigDecimal = 5.00
   protected var _default_confidence: Double = 0.95
@@ -62,6 +63,7 @@ abstract class AutomanAdapter {
 
   // end-user syntax: Question creation
   def CheckboxQuestion(init: CBQ => Unit) : Future[CheckboxAnswer] = scheduleScalar(CBQFactory(), init)
+  def CheckboxDistributionQuestion(init: CBDQ => Unit) : Future[Set[CheckboxAnswer]] = scheduleVector(CBDQFactory(), init)
   def FreeTextQuestion(init: FTQ => Unit) : Future[FreeTextAnswer] = scheduleScalar(FTQFactory(), init)
   def FreeTextDistributionQuestion(init: FTDQ => Unit) : Future[Set[FreeTextAnswer]] = scheduleVector(FTDQFactory(), init)
   def RadioButtonQuestion(init: RBQ => Unit) : Future[RadioButtonAnswer] = scheduleScalar(RBQFactory(), init)
@@ -128,9 +130,11 @@ abstract class AutomanAdapter {
   // subclass instantiators; these are needed because
   // the JVM erases our type parameters (RBQ) at runtime
   // and thus 'new RBQ' does not suffice in the DSL call above
-  protected def RBQFactory() : RBQ
   protected def CBQFactory() : CBQ
+  protected def CBDQFactory() : CBDQ
   protected def FTQFactory() : FTQ
   protected def FTDQFactory() : FTDQ
+  protected def RBQFactory() : RBQ
   protected def RBDQFactory() : RBDQ
+
 }

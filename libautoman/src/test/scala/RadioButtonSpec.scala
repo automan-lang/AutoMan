@@ -39,7 +39,7 @@ class RadioButtonSpec extends FlatSpec with Matchers {
     // get question object reference
     var q_obj : RadioButtonQuestion = null
 
-    // define simple FreeText question & mock answers
+    // define simple RadioButton question & mock answers
     def AskEm(question: String) = ma.RadioButtonQuestion { q =>
       q.mock_answers = mock_answers.map(new RadioButtonAnswer(None, UUID.randomUUID().toString, _))
       q.confidence = target_confidence
