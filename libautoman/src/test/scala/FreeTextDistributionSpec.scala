@@ -19,7 +19,7 @@ class FreeTextDistributionSpec extends FlatSpec with Matchers {
     // explicitly set confidence
     val target_confidence = 0.95
 
-    // define simple FreeText question & mock answers
+    // define simple FreeText distribution question & mock answers
     def AskEm(question: String) = ma.FreeTextDistributionQuestion { q =>
       q.mock_answers = mock_answers.map(new FreeTextAnswer(None, UUID.randomUUID().toString, _))
       q.num_samples = n

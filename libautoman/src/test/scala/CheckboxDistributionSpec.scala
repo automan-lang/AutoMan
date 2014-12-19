@@ -3,14 +3,14 @@ import java.util.UUID
 import edu.umass.cs.automan.adapters.Mock.MockAdapter
 import edu.umass.cs.automan.adapters.Mock.question.MockOption
 import edu.umass.cs.automan.automan
-import edu.umass.cs.automan.core.answer.{CheckboxAnswer, RadioButtonAnswer}
-import edu.umass.cs.automan.core.question.CheckboxQuestion
+import edu.umass.cs.automan.core.answer.CheckboxAnswer
+import edu.umass.cs.automan.core.question.CheckboxDistributionQuestion
 import org.scalatest.{Matchers, FlatSpec}
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class CheckboxQuestionSpec extends FlatSpec with Matchers {
-  "A CheckboxQuestionSpec" should "return the most popular answer with the correct confidence and cost" in {
+class CheckboxDistributionSpec extends FlatSpec with Matchers {
+  "A CheckboxDistributionSpec" should "return at least n answers and cost n*reward" in {
     // define options
     val cookiemonster = MockOption('cookiemonster, "Cookie Monster")
     val oscar = MockOption('oscar, "Oscar the Grouch")
@@ -26,23 +26,23 @@ class CheckboxQuestionSpec extends FlatSpec with Matchers {
       Set(spongebob.question_id),
       Set(kermit.question_id, spongebob.question_id),
       Set(spongebob.question_id, kermit.question_id),
+      Set(thecount.question_id, kermit.question_id, spongebob.question_id, oscar.question_id),
       Set(spongebob.question_id, kermit.question_id),
       Set(spongebob.question_id, kermit.question_id)
     )
 
+    val n = mock_answers.size - 1
+
     // init Mock backend
     val ma = MockAdapter()
 
-    // explicitly set confidence
-    val target_confidence = 0.95
+    // question object
+    var q_obj : CheckboxDistributionQuestion = null
 
-    // get question object reference
-    var q_obj : CheckboxQuestion = null
-
-    // define simple Checkbox question & mock answers
-    def AskEm(question: String) = ma.CheckboxQuestion { q =>
+    // define simple Checkbox distribution question & mock answers
+    def AskEm(question: String) = ma.CheckboxDistributionQuestion { q =>
       q.mock_answers = mock_answers.map(new CheckboxAnswer(None, UUID.randomUUID().toString, _))
-      q.confidence = target_confidence
+      q.num_samples = n
       q.text = question
       q.title = question
       q.options = options.toList
@@ -50,18 +50,20 @@ class CheckboxQuestionSpec extends FlatSpec with Matchers {
     }
 
     // run AutoMan
-    val answer = automan(ma) {
-      val future_answer = AskEm("Which one of these does not belong?")
+    val answers = automan(ma) {
+      val future_answer = AskEm("Which characters do you know?")
       Await.result(future_answer, Duration.Inf)
     }
 
-    // ensure that mock_answers == answers
-    (answer.values == Set(spongebob.question_id, kermit.question_id)) should be (true)
+    // ensure that all answers are in mock_answers
+    answers.foreach { ans =>
+      mock_answers.contains(ans.values) should be (true)
+    }
 
-    // ensure that the confidence meets the user's bound
-    answer.confidence should be >= target_confidence
+    // ensure that the number of samples is correct
+    answers.size should be (n)
 
-    // we know that the correct amount is 5 * $0.06; is that what we paid?
-    q_obj.final_cost should be (BigDecimal("0.18"))
+    // ensure that we paid the correct amount
+    q_obj.final_cost should be (q_obj.reward * BigDecimal(n))
   }
 }

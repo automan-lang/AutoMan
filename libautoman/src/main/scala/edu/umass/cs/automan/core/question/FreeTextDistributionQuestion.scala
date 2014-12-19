@@ -8,12 +8,9 @@ abstract class FreeTextDistributionQuestion extends DistributionQuestion {
   type A = FreeTextAnswer
 
   protected var _allow_empty: Boolean = false
-  protected var _num_possibilities: BigInt = 1000
   protected var _pattern: Option[String] = None
   protected var _pattern_error_text: String = ""
 
-  def num_possibilities: BigInt = _num_possibilities
-  def num_possibilities_=(n: BigInt) { _num_possibilities = n }
   def pattern: String = _pattern match { case Some(p) => p; case None => ".*" }
   def pattern_=(p: String) {
     PictureClause(p, _allow_empty) match {

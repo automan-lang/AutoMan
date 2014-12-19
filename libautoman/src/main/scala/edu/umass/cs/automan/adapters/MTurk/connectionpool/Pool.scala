@@ -365,6 +365,9 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
       case cbq: MTCheckboxQuestion => {
         mtquestion.hit_type_id = cbq.build_hit(ts).post(backend, quals)
       }
+      case cbdq: MTCheckboxDistributionQuestion => {
+        mtquestion.hit_type_id = cbdq.build_hit(ts).post(backend, quals)
+      }
       case ftq: MTFreeTextQuestion => {
         mtquestion.hit_type_id = ftq.build_hit(ts).post(backend, quals)
       }

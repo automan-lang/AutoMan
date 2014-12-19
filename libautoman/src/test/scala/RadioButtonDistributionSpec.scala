@@ -38,7 +38,7 @@ class RadioButtonDistributionSpec extends FlatSpec with Matchers {
     // question object
     var q_obj : RadioButtonDistributionQuestion = null
 
-    // define simple FreeText question & mock answers
+    // define simple RadioButton distribution question & mock answers
     def AskEm(question: String) = ma.RadioButtonDistributionQuestion { q =>
       q.mock_answers = mock_answers.map(new RadioButtonAnswer(None, UUID.randomUUID().toString, _))
       q.num_samples = n

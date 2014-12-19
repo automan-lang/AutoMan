@@ -22,6 +22,9 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
       case cbq: CheckboxQuestion => {
         deserializeCBQ(cbq)
       }
+      case cbdq: CheckboxDistributionQuestion => {
+        deserializeCBQ(cbdq)
+      }
       case ftq: FreeTextQuestion => {
         deserializeRBQ(ftq)
       }
@@ -31,12 +34,12 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
     }
   }
 
-  private def deserializeCBQ(cbq: CheckboxQuestion) : List[CheckboxAnswer] = {
+  private def deserializeCBQ(q: Question) : List[CheckboxAnswer] = {
     val clazz = classOf[CheckboxAnswerMemo]
     val query = Query.select().where(
       "memoHash = ? AND isForDistribution = ?",
-      cbq.memo_hash,
-      cbq.is_for_distribution: java.lang.Boolean
+      q.memo_hash,
+      q.is_for_distribution: java.lang.Boolean
     )
     val memos = _manager.find[CheckboxAnswerMemo,java.lang.Integer](clazz, query)
     memos.map { memo =>
