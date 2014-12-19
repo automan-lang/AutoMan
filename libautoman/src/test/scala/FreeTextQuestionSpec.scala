@@ -20,7 +20,7 @@ class FreeTextQuestionSpec extends FlatSpec with Matchers {
 
     // define simple FreeText question & mock answers
     def AskEm(question: String) = ma.FreeTextQuestion { q =>
-      q.mock_answers = mock_answers.map(new FreeTextAnswer(None, UUID.randomUUID().toString, _)).toSet
+      q.mock_answers = mock_answers.map(new FreeTextAnswer(None, UUID.randomUUID().toString, _))
       q.confidence = target_confidence
       q.text = question
       q.title = question
