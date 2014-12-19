@@ -57,6 +57,7 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
 
     Symbol((x \\ "Answer" \\ "SelectionIdentifier").text)
   }
+  // TODO: random checkbox fill
   def toXML(randomize: Boolean) : scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
       <Question>
