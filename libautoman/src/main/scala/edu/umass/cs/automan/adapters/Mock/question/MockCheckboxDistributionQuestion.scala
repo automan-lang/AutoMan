@@ -7,7 +7,7 @@ import edu.umass.cs.automan.core.answer.CheckboxAnswer
 import edu.umass.cs.automan.core.question.CheckboxDistributionQuestion
 import org.apache.commons.codec.binary.Hex
 
-class MockCheckboxDistributionQuestion extends CheckboxDistributionQuestion with MockQuestion[CheckboxAnswer] {
+class MockCheckboxDistributionQuestion extends CheckboxDistributionQuestion {
   override type QO = MockOption
 
   override def randomized_options: List[QO] = Utilities.randomPermute(options)

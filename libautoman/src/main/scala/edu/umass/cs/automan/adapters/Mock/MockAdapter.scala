@@ -1,12 +1,14 @@
 package edu.umass.cs.automan.adapters.Mock
 
+import java.util.Date
+
+import edu.umass.cs.automan.adapters.Mock.events.Epoch
 import edu.umass.cs.automan.adapters.Mock.question._
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.Answer
 import edu.umass.cs.automan.core.scheduler.Thunk
 
 object MockAdapter {
-  def apply() : MockAdapter = MockAdapter(a => Unit)
   def apply(init: MockAdapter => Unit) : MockAdapter = {
     val a = new MockAdapter
     init(a)                     // assign values to fields in anonymous constructor
@@ -17,6 +19,7 @@ object MockAdapter {
 
 // note that the default is NOT to use memoization in testing
 class MockAdapter extends AutomanAdapter {
+  var _answers: List[Epoch] = List.empty
   private var _mock_budget : BigDecimal = 0.00
   private var _state : MockState = _
   _use_memoization = false
@@ -24,6 +27,8 @@ class MockAdapter extends AutomanAdapter {
   // setters and getters
   override def budget_=(b: BigDecimal) { _mock_budget = b }
   override def budget = _mock_budget
+  def mock_answers_=(answers: List[Epoch]) { _answers = answers }
+  def mock_answers = _answers
 
   // associated question types
   override type CBQ = MockCheckboxQuestion
@@ -32,7 +37,6 @@ class MockAdapter extends AutomanAdapter {
   override type FTDQ = MockFreeTextDistributionQuestion
   override type RBQ = MockRadioButtonQuestion
   override type RBDQ = MockRadioButtonDistributionQuestion
-
 
   // type factories
   override protected def CBQFactory(): CBQ = new MockCheckboxQuestion
@@ -57,7 +61,7 @@ class MockAdapter extends AutomanAdapter {
       // for each thunk, pair with answer, updating MockState as we go
       val (final_ts, final_state) = ts.foldLeft(List[Thunk[A]](), _state) { case (acc, t) =>
         val (updated_ts, state) = acc
-        val (t2, state2) = state.answer(t)
+        val (t2: Thunk[A], state2: MockState) = state.answer(t, this.mock_answers)
         (t2 :: updated_ts, state2)
       }
 
@@ -68,8 +72,8 @@ class MockAdapter extends AutomanAdapter {
   override protected[automan] def post[A <: Answer](ts: List[Thunk[A]], exclude_worker_ids: List[String]) : List[Thunk[A]] = {
     synchronized {
       val (final_ts, final_state) = ts.foldLeft(List[Thunk[A]](), _state) { case (acc, t) =>
-        val (updated_ts: List[Thunk[A]], state) = acc
-        val (t2, state2) = state.register(t.question.asInstanceOf[MockQuestion[A]], t)
+        val (updated_ts: List[Thunk[A]], state: MockState) = acc
+        val (t2, state2) = state.register(t.question, t)
         (t2 :: updated_ts, state2)
       }
 
@@ -86,7 +90,7 @@ class MockAdapter extends AutomanAdapter {
   override protected[automan] def get_budget_from_backend(): BigDecimal = budget
 
   override def init(): Unit = {
-    _state = MockState(Map.empty, Set.empty)
+    _state = MockState(0, new Date(), Map.empty, Set.empty)
     super.init()
   }
 }

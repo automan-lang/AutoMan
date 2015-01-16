@@ -1,6 +1,7 @@
 import java.util.UUID
 
 import edu.umass.cs.automan.adapters.Mock.MockAdapter
+import edu.umass.cs.automan.adapters.Mock.events.Epoch
 import edu.umass.cs.automan.adapters.Mock.question.MockOption
 import edu.umass.cs.automan.automan
 import edu.umass.cs.automan.core.answer.RadioButtonAnswer
@@ -20,6 +21,7 @@ class RadioButtonDistributionSpec extends FlatSpec with Matchers {
     val options = Set(cookiemonster, oscar, kermit, spongebob, thecount)
 
     // define mock answers
+    val question_id = UUID.randomUUID()
     val mock_answers = List(
       spongebob.question_id,
       spongebob.question_id,
@@ -29,18 +31,22 @@ class RadioButtonDistributionSpec extends FlatSpec with Matchers {
       thecount.question_id,
       oscar.question_id
     )
+    val epoch = Epoch(30, mock_answers.map { qid => question_id -> new RadioButtonAnswer(None, UUID.randomUUID().toString, qid)})
 
-    val n = mock_answers.size - 2
+    val n = epoch.answers.size - 2
 
     // init Mock backend
-    val ma = MockAdapter()
+    val ma = MockAdapter { a =>
+      a.mock_answers = List(epoch)
+      a.use_memoization = false
+    }
 
     // question object
     var q_obj : RadioButtonDistributionQuestion = null
 
     // define simple RadioButton distribution question & mock answers
     def AskEm(question: String) = ma.RadioButtonDistributionQuestion { q =>
-      q.mock_answers = mock_answers.map(new RadioButtonAnswer(None, UUID.randomUUID().toString, _))
+      q.id = question_id
       q.num_samples = n
       q.text = question
       q.title = question

@@ -1,6 +1,6 @@
 package edu.umass.cs.automan.core.scheduler
 
-import java.util.UUID
+import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.core.info.{EpochInfo, QuestionInfo}
 import edu.umass.cs.automan.core.memoizer.{ThunkLogger, AutomanMemoizer}
@@ -15,7 +15,13 @@ class Scheduler (val question: Question,
                  val adapter: AutomanAdapter,
                  val memoizer: Option[AutomanMemoizer],
                  val thunklog: Option[ThunkLogger],
-                 val poll_interval_in_s: Int) {
+                 val poll_interval_in_s: Int,
+                 val virtual_time: Option[Date]) {
+  def this(question: Question,
+           adapter: AutomanAdapter,
+           memoizer: Option[AutomanMemoizer],
+           thunklog: Option[ThunkLogger],
+           poll_interval_in_s: Int) = this(question, adapter, memoizer, thunklog, poll_interval_in_s, None)
   type A = question.A
   type B = question.B
   // we need to get the initialized strategy instance from

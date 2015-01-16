@@ -6,7 +6,7 @@ import edu.umass.cs.automan.core.answer.RadioButtonAnswer
 import edu.umass.cs.automan.core.question.RadioButtonQuestion
 import org.apache.commons.codec.binary.Hex
 
-class MockRadioButtonQuestion extends RadioButtonQuestion with MockQuestion[RadioButtonAnswer] {
+class MockRadioButtonQuestion extends RadioButtonQuestion {
   override type QO = MockOption
 
   override protected var _options: List[QO] = _
