@@ -1,6 +1,7 @@
 import java.util.UUID
 
 import edu.umass.cs.automan.adapters.Mock.MockAdapter
+import edu.umass.cs.automan.adapters.Mock.events.Epoch
 import edu.umass.cs.automan.adapters.Mock.question.MockOption
 import edu.umass.cs.automan.automan
 import edu.umass.cs.automan.core.answer.{CheckboxAnswer, RadioButtonAnswer}
@@ -20,6 +21,7 @@ class CheckboxQuestionSpec extends FlatSpec with Matchers {
     val options = Set(cookiemonster, oscar, kermit, spongebob, thecount)
 
     // define mock answers
+    val question_id = UUID.randomUUID()
     val mock_answers = List(
       Set(oscar.question_id),
       Set(spongebob.question_id, kermit.question_id),
@@ -29,9 +31,14 @@ class CheckboxQuestionSpec extends FlatSpec with Matchers {
       Set(spongebob.question_id, kermit.question_id),
       Set(spongebob.question_id, kermit.question_id)
     )
+    val epoch = Epoch(30, mock_answers.map {s => question_id -> new CheckboxAnswer(None, UUID.randomUUID().toString, s)}
+    )
 
     // init Mock backend
-    val ma = MockAdapter()
+    val ma = MockAdapter { a =>
+      a.mock_answers = List(epoch)
+      a.use_memoization = false
+    }
 
     // explicitly set confidence
     val target_confidence = 0.95
@@ -41,7 +48,7 @@ class CheckboxQuestionSpec extends FlatSpec with Matchers {
 
     // define simple Checkbox question & mock answers
     def AskEm(question: String) = ma.CheckboxQuestion { q =>
-      q.mock_answers = mock_answers.map(new CheckboxAnswer(None, UUID.randomUUID().toString, _))
+      q.id = question_id
       q.confidence = target_confidence
       q.text = question
       q.title = question

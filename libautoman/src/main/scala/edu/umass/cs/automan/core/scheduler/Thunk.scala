@@ -37,8 +37,7 @@ class Thunk[A <: Answer](val thunk_id: UUID,
     calendar.getTime
   }
   def is_timedout: Boolean = {
-    val now = new Date()
-    expires_at.before(now)
+    expires_at.before(new Date())
   }
   def copy_as_running() = {
     Utilities.DebugLog("Thunk " + thunk_id.toString +  " changed to RUNNING state; will expire at: " + expires_at.toString, LogLevel.INFO, LogType.SCHEDULER, computation_id)

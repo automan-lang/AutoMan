@@ -1,6 +1,7 @@
 import java.util.UUID
 
 import edu.umass.cs.automan.adapters.Mock.MockAdapter
+import edu.umass.cs.automan.adapters.Mock.events.Epoch
 import edu.umass.cs.automan.adapters.Mock.question.MockOption
 import edu.umass.cs.automan.automan
 import edu.umass.cs.automan.core.answer.RadioButtonAnswer
@@ -20,18 +21,24 @@ class RadioButtonSpec extends FlatSpec with Matchers {
     val options = Set(cookiemonster, oscar, kermit, spongebob, thecount)
 
     // define mock answers
-    val mock_answers = List(
-      spongebob.question_id,
-      kermit.question_id,
-      spongebob.question_id,
-      kermit.question_id,
-      spongebob.question_id,
-      spongebob.question_id,
-      spongebob.question_id
+    val question_id = UUID.randomUUID()
+    val epoch = Epoch(30,
+      List(
+        spongebob.question_id,
+        kermit.question_id,
+        spongebob.question_id,
+        kermit.question_id,
+        spongebob.question_id,
+        spongebob.question_id,
+        spongebob.question_id
+      ).map { qid => question_id -> new RadioButtonAnswer(None, UUID.randomUUID().toString, qid)}
     )
 
     // init Mock backend
-    val ma = MockAdapter()
+    val ma = MockAdapter { a =>
+      a.mock_answers = List(epoch)
+      a.use_memoization = false
+    }
 
     // explicitly set confidence
     val target_confidence = 0.95
@@ -41,7 +48,7 @@ class RadioButtonSpec extends FlatSpec with Matchers {
 
     // define simple RadioButton question & mock answers
     def AskEm(question: String) = ma.RadioButtonQuestion { q =>
-      q.mock_answers = mock_answers.map(new RadioButtonAnswer(None, UUID.randomUUID().toString, _))
+      q.id = question_id
       q.confidence = target_confidence
       q.text = question
       q.title = question

@@ -6,7 +6,7 @@ import edu.umass.cs.automan.core.answer.RadioButtonAnswer
 import edu.umass.cs.automan.core.question.RadioButtonDistributionQuestion
 import org.apache.commons.codec.binary.Hex
 
-class MockRadioButtonDistributionQuestion extends RadioButtonDistributionQuestion with MockQuestion[RadioButtonAnswer] {
+class MockRadioButtonDistributionQuestion extends RadioButtonDistributionQuestion {
   override type QO = MockOption
   override def memo_hash: String = {
     val hash_string = this.options.map(_.toString).mkString(",") + this.text + this.image_alt_text + this.image_url + this.title + this.question_type.toString

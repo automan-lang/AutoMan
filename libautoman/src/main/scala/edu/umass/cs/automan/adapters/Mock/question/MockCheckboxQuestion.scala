@@ -6,7 +6,7 @@ import edu.umass.cs.automan.core.answer.CheckboxAnswer
 import edu.umass.cs.automan.core.question.CheckboxQuestion
 import org.apache.commons.codec.binary.Hex
 
-class MockCheckboxQuestion extends CheckboxQuestion with MockQuestion[CheckboxAnswer] {
+class MockCheckboxQuestion extends CheckboxQuestion {
   override type QO = MockOption
 
   override protected var _options: List[QO] = List.empty

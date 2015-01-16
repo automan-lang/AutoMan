@@ -50,6 +50,7 @@ abstract class Question {
   }
   protected[automan] def final_cost_=(c: BigDecimal) { _final_cost = Some(c) }
   def id: UUID = _id
+  def id_=(id: UUID) { _id = id }
   def id_string: String = _id.toString
   protected[core] def is_for_distribution = _is_for_distribution
   def image_alt_text: String = _image_alt_text match { case Some(x) => x; case None => "" }
