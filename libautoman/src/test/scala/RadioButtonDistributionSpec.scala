@@ -1,7 +1,7 @@
 import java.util.UUID
 
 import edu.umass.cs.automan.adapters.Mock.MockAdapter
-import edu.umass.cs.automan.adapters.Mock.events.Epoch
+import edu.umass.cs.automan.adapters.Mock.events.TimedAnswer
 import edu.umass.cs.automan.adapters.Mock.question.MockOption
 import edu.umass.cs.automan.automan
 import edu.umass.cs.automan.core.answer.RadioButtonAnswer
@@ -31,13 +31,13 @@ class RadioButtonDistributionSpec extends FlatSpec with Matchers {
       thecount.question_id,
       oscar.question_id
     )
-    val epoch = Epoch(30, mock_answers.map { qid => question_id -> new RadioButtonAnswer(None, UUID.randomUUID().toString, qid)})
+    val epoch = TimedAnswer(1, mock_answers.map { qid => question_id -> new RadioButtonAnswer(None, UUID.randomUUID().toString, qid)})
 
     val n = epoch.answers.size - 2
 
     // init Mock backend
     val ma = MockAdapter { a =>
-      a.mock_answers = List(epoch)
+      a.answer_trace = List(epoch)
       a.use_memoization = false
     }
 

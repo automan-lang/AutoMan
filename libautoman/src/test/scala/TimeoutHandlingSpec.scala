@@ -3,14 +3,15 @@ import edu.umass.cs.automan.adapters.Mock.MockAdapter
 import edu.umass.cs.automan.adapters.Mock.events.TimedAnswer
 import edu.umass.cs.automan.adapters.Mock.question.MockOption
 import edu.umass.cs.automan.automan
-import edu.umass.cs.automan.core.answer.{CheckboxAnswer, RadioButtonAnswer}
+import edu.umass.cs.automan.core.answer.CheckboxAnswer
 import edu.umass.cs.automan.core.question.CheckboxQuestion
 import org.scalatest.{Matchers, FlatSpec}
+
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class CheckboxQuestionSpec extends FlatSpec with Matchers {
-  "A CheckboxQuestionSpec" should "return the most popular answer with the correct confidence and cost" in {
+class TimeoutHandlingSpec extends FlatSpec with Matchers {
+  "Timeouts" should "cause AutoMan to respawn tasks until it gets an answer" in {
     // define options
     val cookiemonster = MockOption('cookiemonster, "Cookie Monster")
     val oscar = MockOption('oscar, "Oscar the Grouch")
@@ -21,21 +22,22 @@ class CheckboxQuestionSpec extends FlatSpec with Matchers {
 
     // define mock answers
     val question_id = UUID.randomUUID()
-    val mock_answers = List(
+    val first_answers = List(
       Set(oscar.question_id),
       Set(spongebob.question_id, kermit.question_id),
-      Set(spongebob.question_id),
-      Set(kermit.question_id, spongebob.question_id),
-      Set(spongebob.question_id, kermit.question_id),
+      Set(spongebob.question_id)
+    )
+    val second_answers = List(
       Set(spongebob.question_id, kermit.question_id),
       Set(spongebob.question_id, kermit.question_id)
     )
-    val epoch = TimedAnswer(1, mock_answers.map {s => question_id -> new CheckboxAnswer(None, UUID.randomUUID().toString, s)}
-    )
+
+    val first_epoch = TimedAnswer(65, first_answers.map {s => question_id -> new CheckboxAnswer(None, UUID.randomUUID().toString, s)})
+    val second_epoch = TimedAnswer(91, second_answers.map {s => question_id -> new CheckboxAnswer(None, UUID.randomUUID().toString, s)})
 
     // init Mock backend
     val ma = MockAdapter { a =>
-      a.answer_trace = List(epoch)
+      a.answer_trace = List(first_epoch, second_epoch)
       a.use_memoization = false
     }
 
@@ -47,6 +49,10 @@ class CheckboxQuestionSpec extends FlatSpec with Matchers {
 
     // define simple Checkbox question & mock answers
     def AskEm(question: String) = ma.CheckboxQuestion { q =>
+      // set thunk timeout to 30 seconds
+      q.worker_timeout_in_s = 30
+      q.question_timeout_multiplier = 1
+
       q.id = question_id
       q.confidence = target_confidence
       q.text = question
@@ -67,7 +73,10 @@ class CheckboxQuestionSpec extends FlatSpec with Matchers {
     // ensure that the confidence meets the user's bound
     answer.confidence should be >= target_confidence
 
-    // we know that the correct amount is 5 * $0.06; is that what we paid?
-    q_obj.final_cost should be (BigDecimal("0.18"))
+    // we know that the correct amount is:
+    // first epoch: timeout, nothing gets paid, wage doubles
+    // second epoch: 3 valid answers needed, 0.12 * 1 valid answer received, timeout, wage doubles
+    // third epoch: 3 valid answers needed, 0.24 * 2 valid answers received
+    q_obj.final_cost should be (BigDecimal("0.60"))
   }
 }
