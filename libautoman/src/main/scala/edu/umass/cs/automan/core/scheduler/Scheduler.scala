@@ -117,7 +117,14 @@ class Scheduler (val question: Question,
   }
 
   private def largestAnswerGroup(ts: List[Thunk[A]]) : Int = {
-    ts.groupBy(_.answer.get.comparator).values.map { ts_group => ts_group.size }.max
+    val answered = ts.filter(_.answer != None)
+    if (answered.size == 0) {
+      0
+    } else {
+      answered
+        .groupBy(_.answer.get.comparator)
+        .values.map { ts_group => ts_group.size }.max
+    }
   }
 
   def run() : B = {

@@ -1,4 +1,4 @@
-import edu.umass.cs.automan.adapters.Mock.events.Epoch
+import edu.umass.cs.automan.adapters.Mock.events.TimedAnswer
 import edu.umass.cs.automan.core.answer.FreeTextAnswer
 import org.scalatest._
 import edu.umass.cs.automan.adapters.Mock.MockAdapter
@@ -12,13 +12,13 @@ class FreeTextDistributionSpec extends FlatSpec with Matchers {
     // define mock answers
     val question_id = UUID.randomUUID()
     val mock_answers = List('three, 'three, 'Three, Symbol("3"), 'four, 'one, 'three, Symbol("2"))
-    val epoch = Epoch(30, mock_answers.map { s => question_id -> new FreeTextAnswer(None, UUID.randomUUID().toString, s)})
+    val epoch = TimedAnswer(1, mock_answers.map { s => question_id -> new FreeTextAnswer(None, UUID.randomUUID().toString, s)})
 
     val n = epoch.answers.size - 1
 
     // init Mock backend
     val ma = MockAdapter { a =>
-      a.mock_answers = List(epoch)
+      a.answer_trace = List(epoch)
       a.use_memoization = false
     }
 

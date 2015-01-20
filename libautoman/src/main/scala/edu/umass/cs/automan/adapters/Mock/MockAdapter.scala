@@ -2,7 +2,7 @@ package edu.umass.cs.automan.adapters.Mock
 
 import java.util.Date
 
-import edu.umass.cs.automan.adapters.Mock.events.Epoch
+import edu.umass.cs.automan.adapters.Mock.events.TimedAnswer
 import edu.umass.cs.automan.adapters.Mock.question._
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.Answer
@@ -19,7 +19,7 @@ object MockAdapter {
 
 // note that the default is NOT to use memoization in testing
 class MockAdapter extends AutomanAdapter {
-  var _answers: List[Epoch] = List.empty
+  var _answers: List[TimedAnswer] = List.empty
   private var _mock_budget : BigDecimal = 0.00
   private var _state : MockState = _
   _use_memoization = false
@@ -27,8 +27,8 @@ class MockAdapter extends AutomanAdapter {
   // setters and getters
   override def budget_=(b: BigDecimal) { _mock_budget = b }
   override def budget = _mock_budget
-  def mock_answers_=(answers: List[Epoch]) { _answers = answers }
-  def mock_answers = _answers
+  def answer_trace_=(answers: List[TimedAnswer]) { _answers = answers }
+  def answer_trace = _answers
 
   // associated question types
   override type CBQ = MockCheckboxQuestion
@@ -61,7 +61,7 @@ class MockAdapter extends AutomanAdapter {
       // for each thunk, pair with answer, updating MockState as we go
       val (final_ts, final_state) = ts.foldLeft(List[Thunk[A]](), _state) { case (acc, t) =>
         val (updated_ts, state) = acc
-        val (t2: Thunk[A], state2: MockState) = state.answer(t, this.mock_answers)
+        val (t2: Thunk[A], state2: MockState) = state.answer(t, this.answer_trace)
         (t2 :: updated_ts, state2)
       }
 
@@ -71,9 +71,13 @@ class MockAdapter extends AutomanAdapter {
   }
   override protected[automan] def post[A <: Answer](ts: List[Thunk[A]], exclude_worker_ids: List[String]) : List[Thunk[A]] = {
     synchronized {
+      // set all thunks to RUNNING and update MockState
       val (final_ts, final_state) = ts.foldLeft(List[Thunk[A]](), _state) { case (acc, t) =>
+        // accumulator consists of a list of RUNNING thunks and the latest MockState
         val (updated_ts: List[Thunk[A]], state: MockState) = acc
+        // mark this thunk as RUNNING, pair it with the question, and update the MockState
         val (t2, state2) = state.register(t.question, t)
+        // add the RUNNING thunk to a RUNNING thunk list and return the updated MockState
         (t2 :: updated_ts, state2)
       }
 
@@ -90,7 +94,8 @@ class MockAdapter extends AutomanAdapter {
   override protected[automan] def get_budget_from_backend(): BigDecimal = budget
 
   override def init(): Unit = {
-    _state = MockState(0, new Date(), Map.empty, Set.empty)
+    val now = new Date()
+    _state = MockState(now, now, Map.empty, Set.empty)
     super.init()
   }
 }

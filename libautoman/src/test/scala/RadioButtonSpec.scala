@@ -1,7 +1,7 @@
 import java.util.UUID
 
 import edu.umass.cs.automan.adapters.Mock.MockAdapter
-import edu.umass.cs.automan.adapters.Mock.events.Epoch
+import edu.umass.cs.automan.adapters.Mock.events.TimedAnswer
 import edu.umass.cs.automan.adapters.Mock.question.MockOption
 import edu.umass.cs.automan.automan
 import edu.umass.cs.automan.core.answer.RadioButtonAnswer
@@ -22,7 +22,7 @@ class RadioButtonSpec extends FlatSpec with Matchers {
 
     // define mock answers
     val question_id = UUID.randomUUID()
-    val epoch = Epoch(30,
+    val epoch = TimedAnswer(1,
       List(
         spongebob.question_id,
         kermit.question_id,
@@ -36,7 +36,7 @@ class RadioButtonSpec extends FlatSpec with Matchers {
 
     // init Mock backend
     val ma = MockAdapter { a =>
-      a.mock_answers = List(epoch)
+      a.answer_trace = List(epoch)
       a.use_memoization = false
     }
 
