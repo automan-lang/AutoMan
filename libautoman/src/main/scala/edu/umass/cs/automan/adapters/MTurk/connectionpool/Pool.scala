@@ -451,32 +451,36 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
     ts2.filterNot(_.state == SchedulerState.RUNNING)
   }
   private def scheduled_timeout[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]] = {
-    Utilities.DebugLog(String.format("Checking %s tasks for TIMEOUT.", ts.size.toString()), LogLevel.INFO, LogType.ADAPTER, null)
+    if(ts.size == 0) {
+      ts
+    } else {
+      Utilities.DebugLog(String.format("Checking %s tasks for TIMEOUT.", ts.size.toString()), LogLevel.INFO, LogType.ADAPTER, null)
 
-    val question = mtquestion_for_thunks(ts)
-    val auquestion = question_for_thunks(ts)
-    val hits = question.hits.filter{_.state == HITState.RUNNING}
+      val question = mtquestion_for_thunks(ts)
+      val auquestion = question_for_thunks(ts)
+      val hits = question.hits.filter{_.state == HITState.RUNNING}
 
-    val ts2 = hits.map { hit =>
-      // for each HIT, ensure that we use the correct thunk
-      // by looking in the hit_thunk_map
-      val hts = Queue[Thunk[A]]()
-      hts ++= question.hit_thunk_map(hit).filter(ts.contains(_)).asInstanceOf[List[Thunk[A]]]
+      val ts2 = hits.map { hit =>
+        // for each HIT, ensure that we use the correct thunk
+        // by looking in the hit_thunk_map
+        val hts = Queue[Thunk[A]]()
+        hts ++= question.hit_thunk_map(hit).filter(ts.contains(_)).asInstanceOf[List[Thunk[A]]]
 
-      // timeout timed out Thunks and the HIT
-      // since hts is a queue, and we dequeued answered thunks in
-      // in the previous call, hts does not include answered thunks
-      val timeout_processed_thunks = process_timeouts(hit, hts.toList)
+        // timeout timed out Thunks and the HIT
+        // since hts is a queue, and we dequeued answered thunks in
+        // in the previous call, hts does not include answered thunks
+        val timeout_processed_thunks = process_timeouts(hit, hts.toList)
 
-      // check to see if we need to continue running this HIT
-      mark_hit_complete(hit, timeout_processed_thunks)
+        // check to see if we need to continue running this HIT
+        mark_hit_complete(hit, timeout_processed_thunks)
 
-      // return all thunks
-      timeout_processed_thunks
-    }.flatten
+        // return all thunks
+        timeout_processed_thunks
+      }.flatten
 
-    Utilities.DebugLog(ts2.count{_.state == SchedulerState.TIMEOUT} + " thunks marked TIMEOUT.", LogLevel.INFO, LogType.ADAPTER, auquestion.id)
-    ts2.filterNot(_.state == SchedulerState.RUNNING)
+      Utilities.DebugLog(ts2.count{_.state == SchedulerState.TIMEOUT} + " thunks marked TIMEOUT.", LogLevel.INFO, LogType.ADAPTER, auquestion.id)
+      ts2.filterNot(_.state == SchedulerState.RUNNING)
+    }
   }
   private def scheduled_get_budget(): BigDecimal = {
     Utilities.DebugLog("Getting budget.", LogLevel.INFO, LogType.ADAPTER, null)
