@@ -166,10 +166,11 @@ class Scheduler (val question: Question,
         // conditional covers the case where all thunk answers are recalled from memoDB
         if (running_thunks(_thunks).size > 0) {
           // get data
-          // TODO fix: adapter.retrieve() also cancels timed-out thunks, which violates single-responsibility
           val results =
             if (!question.dry_run) {
-              adapter.retrieve(running_thunks(_thunks)) // blocks
+              adapter.timeout(                            // blocks
+                adapter.retrieve(running_thunks(_thunks)) // blocks
+              )
             } else {
               List.empty
             }
@@ -195,10 +196,6 @@ class Scheduler (val question: Question,
           // saves *recently* RETRIEVED thunks
           memoize_answers(results.asInstanceOf[List[Thunk[A]]])  // blocks
         }
-
-        // sleep if necessary
-        // TODO: this sleep may no longer be necessary
-//        if (!_strategy.is_done(_thunks.values.toList) && incomplete_thunks(_thunks).size > 0) Thread.sleep(poll_interval_in_s * 1000)
       }
       // run shutdown hook
       if(!question.dry_run) {

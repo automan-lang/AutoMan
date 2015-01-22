@@ -1,6 +1,6 @@
 import java.util.UUID
 import edu.umass.cs.automan.adapters.Mock.MockAdapter
-import edu.umass.cs.automan.adapters.Mock.events.TimedAnswer
+import edu.umass.cs.automan.adapters.Mock.events._
 import edu.umass.cs.automan.adapters.Mock.question.MockOption
 import edu.umass.cs.automan.automan
 import edu.umass.cs.automan.core.answer.CheckboxAnswer
@@ -24,21 +24,26 @@ class TimeoutHandlingSpec extends FlatSpec with Matchers {
     val question_id = UUID.randomUUID()
     val first_answers = List(
       Set(oscar.question_id),
-      Set(spongebob.question_id, kermit.question_id),
-      Set(spongebob.question_id)
+      Set(spongebob.question_id, kermit.question_id)
     )
     val second_answers = List(
+      Set(spongebob.question_id, kermit.question_id)
+    )
+    val third_answers = List(
+      Set(spongebob.question_id, kermit.question_id),
       Set(spongebob.question_id, kermit.question_id),
       Set(spongebob.question_id, kermit.question_id)
     )
 
-    val first_epoch = TimedAnswer(65, first_answers.map {s => question_id -> new CheckboxAnswer(None, UUID.randomUUID().toString, s)})
-    val second_epoch = TimedAnswer(91, second_answers.map {s => question_id -> new CheckboxAnswer(None, UUID.randomUUID().toString, s)})
+    val first_epoch = TimedAnswerPool(65, first_answers.map {s => question_id -> new CheckboxAnswer(None, UUID.randomUUID().toString, s)})
+    val second_epoch = TimedAnswerPool(91, second_answers.map {s => question_id -> new CheckboxAnswer(None, UUID.randomUUID().toString, s)})
+    val third_epoch = TimedAnswerPool(122, third_answers.map {s => question_id -> new CheckboxAnswer(None, UUID.randomUUID().toString, s)})
 
     // init Mock backend
     val ma = MockAdapter { a =>
-      a.answer_trace = List(first_epoch, second_epoch)
+      a.answer_trace = List(first_epoch, second_epoch, third_epoch)
       a.use_memoization = false
+      a.quantum_length_sec = 3
     }
 
     // explicitly set confidence
@@ -53,6 +58,7 @@ class TimeoutHandlingSpec extends FlatSpec with Matchers {
       q.worker_timeout_in_s = 30
       q.question_timeout_multiplier = 1
 
+      q.budget = 2.00
       q.id = question_id
       q.confidence = target_confidence
       q.text = question
@@ -73,10 +79,7 @@ class TimeoutHandlingSpec extends FlatSpec with Matchers {
     // ensure that the confidence meets the user's bound
     answer.confidence should be >= target_confidence
 
-    // we know that the correct amount is:
-    // first epoch: timeout, nothing gets paid, wage doubles
-    // second epoch: 3 valid answers needed, 0.12 * 1 valid answer received, timeout, wage doubles
-    // third epoch: 3 valid answers needed, 0.24 * 2 valid answers received
-    q_obj.final_cost should be (BigDecimal("0.60"))
+    // we know that the correct amount is: 4 * 0.24 = 0.96
+    q_obj.final_cost should be (BigDecimal("0.96"))
   }
 }

@@ -2,7 +2,7 @@ package edu.umass.cs.automan.adapters.Mock
 
 import java.util.Date
 
-import edu.umass.cs.automan.adapters.Mock.events.TimedAnswer
+import edu.umass.cs.automan.adapters.Mock.events.AnswerPool
 import edu.umass.cs.automan.adapters.Mock.question._
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.Answer
@@ -19,16 +19,19 @@ object MockAdapter {
 
 // note that the default is NOT to use memoization in testing
 class MockAdapter extends AutomanAdapter {
-  var _answers: List[TimedAnswer] = List.empty
+  var _answers: List[AnswerPool] = List.empty
   private var _mock_budget : BigDecimal = 0.00
   private var _state : MockState = _
+  private var _quantum_length_sec : Int = 30
   _use_memoization = false
 
   // setters and getters
   override def budget_=(b: BigDecimal) { _mock_budget = b }
   override def budget = _mock_budget
-  def answer_trace_=(answers: List[TimedAnswer]) { _answers = answers }
+  def answer_trace_=(answers: List[AnswerPool]) { _answers = answers }
   def answer_trace = _answers
+  def quantum_length_sec = _quantum_length_sec
+  def quantum_length_sec_=(sec: Int) { _quantum_length_sec = sec }
 
   // associated question types
   override type CBQ = MockCheckboxQuestion
@@ -59,13 +62,32 @@ class MockAdapter extends AutomanAdapter {
   override protected[automan] def retrieve[A <: Answer](ts: List[Thunk[A]]): List[Thunk[A]] = {
     synchronized {
       // for each thunk, pair with answer, updating MockState as we go
-      val (final_ts, final_state) = ts.foldLeft(List[Thunk[A]](), _state) { case (acc, t) =>
+      val (final_ts, updated_state) = ts.foldLeft(List[Thunk[A]](), _state) { case (acc, t) =>
         val (updated_ts, state) = acc
         val (t2: Thunk[A], state2: MockState) = state.answer(t, this.answer_trace)
         (t2 :: updated_ts, state2)
       }
 
-      _state = final_state
+      // return final state
+      _state = updated_state
+      final_ts
+    }
+  }
+  override protected[automan] def timeout[A <: Answer](ts: List[Thunk[A]]): List[Thunk[A]] = {
+    synchronized {
+      val (final_ts, final_state) = ts.foldLeft(List[Thunk[A]](), _state) { case (acc, t) =>
+        val (updated_ts, state) = acc
+        val (t2: Thunk[A], state2: MockState) =
+          if (t.expires_at.before(state.current_time)) {
+            (t.copy_as_timeout(), state)
+          } else {
+            (t, state)
+          }
+        (t2 :: updated_ts, state2)
+      }
+
+      // advance virtual clock and return final state
+      _state = final_state.advance_clock()
       final_ts
     }
   }
@@ -95,7 +117,7 @@ class MockAdapter extends AutomanAdapter {
 
   override def init(): Unit = {
     val now = new Date()
-    _state = MockState(now, now, Map.empty, Set.empty)
+    _state = MockState(_quantum_length_sec, now, now, Map.empty, Set.empty)
     super.init()
   }
 }
