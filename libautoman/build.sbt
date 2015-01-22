@@ -38,4 +38,8 @@ libraryDependencies ++= {
   )
 }
 
+concurrentRestrictions in Global := Seq(
+  Tags.limit(Tags.Test, 1)
+)
+
 //net.virtualvoid.sbt.graph.Plugin.graphSettings

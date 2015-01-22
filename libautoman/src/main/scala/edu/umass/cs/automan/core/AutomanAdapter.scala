@@ -20,7 +20,7 @@ abstract class AutomanAdapter {
   type RBQ <: RadioButtonQuestion                 // answer scalar
   type RBDQ <: RadioButtonDistributionQuestion    // answer vector
 
-  protected var _default_budget: BigDecimal = 5.00
+//  protected var _default_budget: BigDecimal = 5.00
   protected var _default_confidence: Double = 0.95
   protected var _locale: Locale = Locale.getDefault
   protected var _memoizer: Option[AutomanMemoizer] = None
@@ -40,8 +40,6 @@ abstract class AutomanAdapter {
   protected var _use_memoization: Boolean = true
 
   // user-visible getters and setters
-  def budget: BigDecimal = _default_budget
-  def budget_=(b: BigDecimal) { _default_budget = b }
   def default_confidence: Double = _default_confidence
   def default_confidence_=(c: Double) { _default_confidence = c }
   def locale: Locale = _locale
@@ -100,18 +98,10 @@ abstract class AutomanAdapter {
     _thunklog = Some(new ThunkLogger(_thunk_conn_string, _thunk_user, _thunk_pass))
   }
   def state_snapshot(): StateInfo = {
-    StateInfo(budget, _schedulers.flatMap { s => s.state })
+    StateInfo(_schedulers.flatMap { s => s.state })
   }
 
   // Global backend config
-  protected[automan] def budget_formatted = {
-    val dbudget = _default_budget.setScale(2, BigDecimal.RoundingMode.HALF_EVEN)
-    val nf = NumberFormat.getCurrencyInstance(_locale)
-    nf.setMinimumFractionDigits(1)
-    nf.setMaximumFractionDigits(2)
-    nf.format(dbudget.doubleValue())
-  }
-
   protected[automan] def get_budget_from_backend(): BigDecimal
   private def scheduleScalar[Q <: Question,A <: Answer](q: Q, init: Q => Unit): Future[A] = Future {
     init(q)
