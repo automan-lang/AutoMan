@@ -20,14 +20,14 @@ object MockAdapter {
 // note that the default is NOT to use memoization in testing
 class MockAdapter extends AutomanAdapter {
   var _answers: List[AnswerPool] = List.empty
-  private var _mock_budget : BigDecimal = 0.00
+  private var _mock_funds : BigDecimal = 5.00
   private var _state : MockState = _
   private var _quantum_length_sec : Int = 30
   _use_memoization = false
 
   // setters and getters
-  override def budget_=(b: BigDecimal) { _mock_budget = b }
-  override def budget = _mock_budget
+  def mock_funds_=(b: BigDecimal) { _mock_funds = b }
+  def mock_funds = _mock_funds
   def answer_trace_=(answers: List[AnswerPool]) { _answers = answers }
   def answer_trace = _answers
   def quantum_length_sec = _quantum_length_sec
@@ -113,7 +113,7 @@ class MockAdapter extends AutomanAdapter {
   override protected[automan] def process_custom_info[A <: Answer](t: Thunk[A], i: Option[String]): Thunk[A] = {
     t.copy_as_processed()
   }
-  override protected[automan] def get_budget_from_backend(): BigDecimal = budget
+  override protected[automan] def get_budget_from_backend(): BigDecimal = _mock_funds
 
   override def init(): Unit = {
     val now = new Date()

@@ -10,11 +10,11 @@ object simple_checkbox_program extends App {
   val a = MTurkAdapter { mt =>
     mt.access_key_id = opts('key)
     mt.secret_access_key = opts('secret)
-    mt.budget = 8.00
     mt.sandbox_mode = opts('sandbox).toBoolean
   }
 
   def which_one(text: String) = a.CheckboxQuestion { q =>
+    q.budget = 8.00
     q.text = text
     q.options = List(
       a.Option('oscar, "Oscar the Grouch" /*, "http://tinyurl.com/c6d2s2r" */),

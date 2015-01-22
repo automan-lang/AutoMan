@@ -5,7 +5,7 @@ import edu.umass.cs.automan.adapters.Mock.question.MockOption
 import edu.umass.cs.automan.automan
 import edu.umass.cs.automan.core.answer.CheckboxAnswer
 import edu.umass.cs.automan.core.question.CheckboxQuestion
-import org.scalatest.{Matchers, FlatSpec}
+import org.scalatest.{SequentialNestedSuiteExecution, Matchers, FlatSpec}
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
