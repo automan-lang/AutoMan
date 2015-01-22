@@ -1,7 +1,7 @@
 import java.util.UUID
 
 import edu.umass.cs.automan.adapters.Mock.MockAdapter
-import edu.umass.cs.automan.adapters.Mock.events.TimedAnswer
+import edu.umass.cs.automan.adapters.Mock.events.UntimedAnswerPool
 import edu.umass.cs.automan.adapters.Mock.question.MockOption
 import edu.umass.cs.automan.automan
 import edu.umass.cs.automan.core.answer.{Answer, CheckboxAnswer}
@@ -32,7 +32,7 @@ class CheckboxDistributionSpec extends FlatSpec with Matchers {
       Set(spongebob.question_id, kermit.question_id),
       Set(spongebob.question_id, kermit.question_id)
     )
-    val epoch = TimedAnswer(1, mock_answers.map {s => question_id -> new CheckboxAnswer(None, UUID.randomUUID().toString, s)})
+    val epoch = UntimedAnswerPool(mock_answers.map {s => question_id -> new CheckboxAnswer(None, UUID.randomUUID().toString, s)})
 
     val n = epoch.answers.size
 
