@@ -31,7 +31,6 @@ class MTurkAdapter extends AutomanAdapter {
   override type RBDQ = MTRadioButtonDistributionQuestion
 
   private val SLEEP_MS = 500
-  private val SHUTDOWN_DELAY_MS = SLEEP_MS * 10
 
   private var _access_key_id: Option[String] = None
   private var _pool : Option[Pool] = None
@@ -113,7 +112,7 @@ class MTurkAdapter extends AutomanAdapter {
   private def setup() {
     val rs = new RequesterService(this.toClientConfig)
     _service = Some(rs)
-    _pool = Some(new Pool(rs, SLEEP_MS, SHUTDOWN_DELAY_MS))
+    _pool = Some(new Pool(rs, SLEEP_MS))
   }
   private def toClientConfig : ClientConfig = {
     import scala.collection.JavaConversions
@@ -126,5 +125,13 @@ class MTurkAdapter extends AutomanAdapter {
     _config.setRetryAttempts(_retry_attempts)
     _config.setRetryDelayMillis(_retry_delay_millis)
     _config
+  }
+
+  override protected[automan] def close(): Unit = {
+    super.close()
+    _pool match {
+      case Some(p) => p.shutdown()
+      case None => ()
+    }
   }
 }

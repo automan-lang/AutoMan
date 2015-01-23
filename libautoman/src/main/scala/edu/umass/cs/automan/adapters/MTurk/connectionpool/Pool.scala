@@ -16,7 +16,7 @@ import scala.collection.mutable
 import scala.collection.mutable.Queue
 import scala.concurrent.ExecutionContext
 
-class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
+class Pool(backend: RequesterService, sleep_ms: Int) {
   // we need a thread pool more appropriate for lots of long-running I/O
   private val MAX_PARALLELISM = 1000
   private val DEFAULT_POOL = new java.util.concurrent.ForkJoinPool(MAX_PARALLELISM)
@@ -39,6 +39,9 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
   private val _rejected_thunks = scala.collection.mutable.Map[RejectReq[_ <: Answer], Thunk[_ <: Answer]]()
   private val _retrieved_data = scala.collection.mutable.Map[RetrieveReq[_ <: Answer], List[Thunk[_ <: Answer]]]()
   private val _timeout_thunks = scala.collection.mutable.Map[TimeoutReq[_ <: Answer], List[Thunk[_ <: Answer]]]()
+
+  // control flags
+  private var _keep_running = true
 
   def enqueue_request[M <: Message, T](req: M, to_queue: mutable.Queue[M], receive_map: mutable.Map[M,T]) = {
     // put job in queue
@@ -127,6 +130,9 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
   }
   def retrieve[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]] = {
     enqueue_request(RetrieveReq(ts), _retrieve_queue, _retrieved_data).asInstanceOf[List[Thunk[A]]]
+  }
+  def shutdown(): Unit = {
+    _keep_running = false
   }
   def timeout[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]] = {
     enqueue_request(TimeoutReq(ts), _timeout_queue, _timeout_thunks).asInstanceOf[List[Thunk[A]]]
@@ -220,8 +226,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
     Utilities.DebugLog("No worker thread; starting one up.", LogLevel.INFO, LogType.ADAPTER, null)
     new Thread(new Runnable() {
       override def run() {
-        var keep_running = true
-        while (keep_running) {
+        while (_keep_running) {
           if (workToBeDone) {
             // Post queue
             while(synchronized { _post_queue.nonEmpty } ) {
@@ -323,17 +328,6 @@ class Pool(backend: RequesterService, sleep_ms: Int, shutdown_delay_ms: Int) {
               })
             }
 
-          } else {
-            // sleep a bit to avoid unnecessary thread startup churn
-            Utilities.DebugLog("No work remains; sleeping.", LogLevel.INFO, LogType.ADAPTER, null)
-            Thread.sleep(shutdown_delay_ms)
-            // if it's still empty, break
-            ifWorkToBeDoneThen (() => Unit /* keep running */)(() => {
-              Utilities.DebugLog("No work remains after sleep; shutting down thread.", LogLevel.INFO, LogType.ADAPTER, null)
-              keep_running = false
-              _worker_thread = None
-              Unit
-            })
           }
         } // exit loop
       }
