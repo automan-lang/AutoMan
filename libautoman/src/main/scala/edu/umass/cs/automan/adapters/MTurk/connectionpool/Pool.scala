@@ -3,7 +3,7 @@ package edu.umass.cs.automan.adapters.MTurk.connectionpool
 import java.text.SimpleDateFormat
 import java.util.{Date, UUID}
 
-import com.amazonaws.mturk.requester.{Comparator, QualificationType, QualificationRequirement, Assignment}
+import com.amazonaws.mturk.requester._
 import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.adapters.MTurk.memoizer.MTurkAnswerCustomInfo
 import edu.umass.cs.automan.adapters.MTurk.{AutomanHIT, MTurkAdapterNotInitialized, MTurkAdapter}
