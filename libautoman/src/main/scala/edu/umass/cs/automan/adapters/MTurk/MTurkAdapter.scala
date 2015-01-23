@@ -91,8 +91,8 @@ class MTurkAdapter extends AutomanAdapter {
   protected[automan] def reject[A <: Answer](t: Thunk[A]) = run_if_initialized((p: Pool) => p.reject(t))
   protected[automan] def retrieve[A <: Answer](ts: List[Thunk[A]]) =
     run_if_initialized((p: Pool) => p.retrieve(ts))
-  protected[automan] def timeout[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]] =
-    run_if_initialized((p: Pool) => p.timeout(ts))
+//  protected[automan] def timeout[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]] =
+//    run_if_initialized((p: Pool) => p.timeout(ts))
   protected[automan] override def question_shutdown_hook(q: Question): Unit = {
     // cleanup qualifications
     run_if_initialized((p: Pool) => p.cleanup_qualifications(q))

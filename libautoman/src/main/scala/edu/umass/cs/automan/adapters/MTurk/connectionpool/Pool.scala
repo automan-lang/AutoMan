@@ -29,7 +29,6 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   private val _post_queue : Queue[EnqueuedHIT[_ <: Answer]] = Queue.empty
   private val _retrieve_queue: Queue[RetrieveReq[_ <: Answer]] = Queue.empty
   private val _reject_queue: Queue[RejectReq[_ <: Answer]] = Queue.empty
-  private val _timeout_queue: Queue[TimeoutReq[_ <: Answer]] = Queue.empty
   private var _worker_thread: Option[Thread] = None
 
   // response data
@@ -38,7 +37,6 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   private val _disposal_completions = scala.collection.mutable.Map[DisposeQualsReq,Unit]()
   private val _rejected_thunks = scala.collection.mutable.Map[RejectReq[_ <: Answer], Thunk[_ <: Answer]]()
   private val _retrieved_data = scala.collection.mutable.Map[RetrieveReq[_ <: Answer], List[Thunk[_ <: Answer]]]()
-  private val _timeout_thunks = scala.collection.mutable.Map[TimeoutReq[_ <: Answer], List[Thunk[_ <: Answer]]]()
 
   // control flags
   private var _keep_running = true
@@ -134,9 +132,9 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   def shutdown(): Unit = {
     _keep_running = false
   }
-  def timeout[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]] = {
-    enqueue_request(TimeoutReq(ts), _timeout_queue, _timeout_thunks).asInstanceOf[List[Thunk[A]]]
-  }
+//  def timeout[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]] = {
+//    enqueue_request(TimeoutReq(ts), _timeout_queue, _timeout_thunks).asInstanceOf[List[Thunk[A]]]
+//  }
 
   private def ifWorkToBeDoneThen[T](when_yes: () => T)(when_no: () => T) : T = {
     synchronized {
@@ -244,20 +242,6 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
 
                   // send end-wait notification
                   rr.notifyAll()
-                }
-              })
-
-            // Timeout queue
-            while (synchronized { _timeout_queue.nonEmpty } )
-              lockDequeueAndProcess(_timeout_queue, (tr: TimeoutReq[_ <: Answer]) => {
-                // this lock provides notifications
-                // for blocked threads
-                tr.synchronized {
-                  // do request
-                  _timeout_thunks += (tr -> scheduled_timeout(tr.ts))
-
-                  // send end-wait notification
-                  tr.notifyAll()
                 }
               })
 
@@ -416,14 +400,11 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   }
   private def scheduled_retrieve[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]] = {
     Utilities.DebugLog(String.format("Retrieving %s tasks.", ts.size.toString()), LogLevel.INFO, LogType.ADAPTER, null)
-
     val question = mtquestion_for_thunks(ts)
     val auquestion = question_for_thunks(ts)
     val hits = question.hits.filter{_.state == HITState.RUNNING}
-
     // start by granting qualifications
     grant_qualification_requests(question, auquestion.blacklisted_workers, auquestion.id)
-
     // eagerly grab assignments for every known HIT
     val ts2 = hits.map { hit =>
       // for each HIT, ensure that we use the correct thunk
@@ -431,50 +412,20 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       val hts = Queue[Thunk[A]]()
       hts ++= question.hit_thunk_map(hit).filter(ts.contains(_)).asInstanceOf[List[Thunk[A]]]
       val assignments: List[Assignment] = hit.retrieve(backend) // finally, do MTurk call
-
       Utilities.DebugLog("There are " + assignments.size + " assignments available to process.", LogLevel.INFO, LogType.ADAPTER, auquestion.id)
-
       // for every available thunk-answer pairing, mark thunk as RETRIEVED
       val answered_ts = assignments.map { a => process_assignment(question, a, hit.hit.getHITId, hts.dequeue(), auquestion.use_disqualifications) }
-
+      // timeout timed out Thunks and the HIT
+      // since hts is a queue, and we dequeued answered thunks in
+      // in the previous call, hts does not include answered thunks
+      val unanswered_ts = cancel_hit(hit, hts.toList)
+      // check to see if we need to continue running this HIT
+      mark_hit_complete(hit, unanswered_ts)
       // return updated thunks (both answered and unanswered)
-      answered_ts ::: hts.toList
+      answered_ts ::: unanswered_ts
     }.flatten
-
     Utilities.DebugLog(ts2.count{_.state == SchedulerState.RETRIEVED} + " thunks marked RETRIEVED.", LogLevel.INFO, LogType.ADAPTER, auquestion.id)
     ts2.filterNot(_.state == SchedulerState.RUNNING)
-  }
-  private def scheduled_timeout[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]] = {
-    if(ts.size == 0) {
-      ts
-    } else {
-      Utilities.DebugLog(String.format("Checking %s tasks for TIMEOUT.", ts.size.toString()), LogLevel.INFO, LogType.ADAPTER, null)
-
-      val question = mtquestion_for_thunks(ts)
-      val auquestion = question_for_thunks(ts)
-      val hits = question.hits.filter{_.state == HITState.RUNNING}
-
-      val ts2 = hits.map { hit =>
-        // for each HIT, ensure that we use the correct thunk
-        // by looking in the hit_thunk_map
-        val hts = Queue[Thunk[A]]()
-        hts ++= question.hit_thunk_map(hit).filter(ts.contains(_)).asInstanceOf[List[Thunk[A]]]
-
-        // timeout timed out Thunks and the HIT
-        // since hts is a queue, and we dequeued answered thunks in
-        // in the previous call, hts does not include answered thunks
-        val timeout_processed_thunks = process_timeouts(hit, hts.toList)
-
-        // check to see if we need to continue running this HIT
-        mark_hit_complete(hit, timeout_processed_thunks)
-
-        // return all thunks
-        timeout_processed_thunks
-      }.flatten
-
-      Utilities.DebugLog(ts2.count{_.state == SchedulerState.TIMEOUT} + " thunks marked TIMEOUT.", LogLevel.INFO, LogType.ADAPTER, auquestion.id)
-      ts2.filterNot(_.state == SchedulerState.RUNNING)
-    }
   }
   private def scheduled_get_budget(): BigDecimal = {
     Utilities.DebugLog("Getting budget.", LogLevel.INFO, LogType.ADAPTER, null)
@@ -551,10 +502,10 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       hit.state = HITState.RESOLVED
     }
   }
-  private def process_timeouts[A <: Answer](hit: AutomanHIT, ts: List[Thunk[A]]) : List[Thunk[A]] = {
+  private def cancel_hit[A <: Answer](hit: AutomanHIT, ts: List[Thunk[A]]) : List[Thunk[A]] = {
     var hitcancelled = false
     ts.map { t =>
-      if (t.is_timedout) {
+      if (t.is_timedout && t.state == SchedulerState.RUNNING) {
         Utilities.DebugLog("HIT TIMED OUT.", LogLevel.WARN, LogType.ADAPTER, hit.id)
         val t2 = t.copy_as_timeout()
         if (!hitcancelled) {

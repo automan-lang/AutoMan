@@ -6,7 +6,7 @@ import edu.umass.cs.automan.adapters.Mock.events.AnswerPool
 import edu.umass.cs.automan.adapters.Mock.question._
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.Answer
-import edu.umass.cs.automan.core.scheduler.Thunk
+import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 
 object MockAdapter {
   def apply(init: MockAdapter => Unit) : MockAdapter = {
@@ -60,6 +60,7 @@ class MockAdapter extends AutomanAdapter {
     t.copy_as_rejected()
   }
   override protected[automan] def retrieve[A <: Answer](ts: List[Thunk[A]]): List[Thunk[A]] = {
+    assert(ts.count(_.state != SchedulerState.RUNNING) == 0)
     synchronized {
       // for each thunk, pair with answer, updating MockState as we go
       val (final_ts, updated_state) = ts.foldLeft(List[Thunk[A]](), _state) { case (acc, t) =>
@@ -68,17 +69,17 @@ class MockAdapter extends AutomanAdapter {
         (t2 :: updated_ts, state2)
       }
 
-      // return final state
+      // return final state after checking for timeouts
       _state = updated_state
-      final_ts
+      timeout(final_ts)
     }
   }
-  override protected[automan] def timeout[A <: Answer](ts: List[Thunk[A]]): List[Thunk[A]] = {
+  private def timeout[A <: Answer](ts: List[Thunk[A]]): List[Thunk[A]] = {
     synchronized {
       val (final_ts, final_state) = ts.foldLeft(List[Thunk[A]](), _state) { case (acc, t) =>
         val (updated_ts, state) = acc
         val (t2: Thunk[A], state2: MockState) =
-          if (t.expires_at.before(state.current_time)) {
+          if (t.state == SchedulerState.RUNNING && t.expires_at.before(state.current_time)) {
             (t.copy_as_timeout(), state)
           } else {
             (t, state)
