@@ -30,7 +30,7 @@ class MTCheckboxDistributionQuestion extends CheckboxDistributionQuestion with M
     val h = AutomanHIT { a =>
       a.hit_type_id = _hit_type_id
       a.title = title
-      a.description = text
+      a.description = _description
       a.keywords = _keywords
       a.question_xml = x
       a.assignmentDurationInSeconds = _worker_timeout_in_s
