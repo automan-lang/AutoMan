@@ -168,9 +168,7 @@ class Scheduler (val question: Question,
           // get data
           val results =
             if (!question.dry_run) {
-              adapter.timeout(                            // blocks
-                adapter.retrieve(running_thunks(_thunks)) // blocks
-              )
+              adapter.retrieve(running_thunks(_thunks)) // blocks
             } else {
               List.empty
             }
