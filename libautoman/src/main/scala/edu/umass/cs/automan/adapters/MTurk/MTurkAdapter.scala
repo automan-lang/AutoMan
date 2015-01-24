@@ -112,7 +112,7 @@ class MTurkAdapter extends AutomanAdapter {
   private def setup() {
     val rs = new RequesterService(this.toClientConfig)
     _service = Some(rs)
-    _pool = Some(new Pool(rs, SLEEP_MS))
+    _pool = Some(new Pool(rs, SLEEP_MS, _use_memoization))
   }
   private def toClientConfig : ClientConfig = {
     import scala.collection.JavaConversions

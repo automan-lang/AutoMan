@@ -16,7 +16,7 @@ import scala.collection.mutable
 import scala.collection.mutable.Queue
 import scala.concurrent.ExecutionContext
 
-class Pool(backend: RequesterService, sleep_ms: Int) {
+class Pool(backend: RequesterService, sleep_ms: Int, use_memoization: Boolean) {
   // we need a thread pool more appropriate for lots of long-running I/O
   private val MAX_PARALLELISM = 1000
   private val DEFAULT_POOL = new java.util.concurrent.ForkJoinPool(MAX_PARALLELISM)
@@ -542,18 +542,14 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     t2
   }
 
+  // TODO: move this call into the scheduler
   private def set_paid_status[A <: Answer](t: Thunk[A]) : Unit = {
-    t.question match {
-      case mtq:MTurkQuestion => {
-        assert(t.answer != None)
-        val ans = t.answer.get
-        if (!ans.paid) {
-          ans.memo_handle.setPaidStatus(true)
-          ans.memo_handle.save()
-          ans.paid = true
-        }
-      }
-      case _ => throw new Exception("Impossible error.")
+    assert(t.answer != None)
+    val ans = t.answer.get
+    if (!ans.paid && use_memoization) {
+      ans.memo_handle.setPaidStatus(true)
+      ans.memo_handle.save()
+      ans.paid = true
     }
   }
   private def get_qualifications(q: MTurkQuestion, title: String, qualify_early: Boolean, question_id: UUID, use_disq: Boolean) : List[QualificationRequirement] = {
