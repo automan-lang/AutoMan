@@ -1,5 +1,7 @@
 package edu.umass.cs.automan.core.memoizer
 
+import java.util.Calendar
+
 import net.java.ao._
 import edu.umass.cs.automan.core.question._
 import edu.umass.cs.automan.core.answer._
@@ -46,6 +48,9 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
       val r = new CheckboxAnswer(None, memo.getWorkerId, memo.getAnswerValues.split(",").map(str => Symbol(str.drop(1))).toSet)
       r.custom_info = Some(memo.getCustomInfo)
       r.paid = memo.getPaidStatus
+      val cal = Calendar.getInstance()
+      cal.setTime(memo.getCompletedAt)
+      r.accept_time = cal
       r.memo_handle = memo
       r
     }.toList
@@ -63,6 +68,9 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
       val r = new FreeTextAnswer(None, memo.getWorkerId, Symbol(memo.getAnswerValue.drop(1)))
       r.custom_info = Some(memo.getCustomInfo)
       r.paid = memo.getPaidStatus
+      val cal = Calendar.getInstance()
+      cal.setTime(memo.getCompletedAt)
+      r.accept_time = cal
       r.memo_handle = memo
       r
     }.toList
@@ -80,6 +88,9 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
       val r = new RadioButtonAnswer(None, memo.getWorkerId, Symbol(memo.getAnswerValue.drop(1)) )
       r.custom_info = Some(memo.getCustomInfo)
       r.paid = memo.getPaidStatus
+      val cal = Calendar.getInstance()
+      cal.setTime(memo.getCompletedAt)
+      r.accept_time = cal
       r.memo_handle = memo
       r
     }.toList
@@ -95,6 +106,7 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
         memo.setPaidStatus(rba.paid)
         memo.setWorkerId(rba.worker_id)
         memo.setIsForDistribution(q.is_for_distribution)
+        memo.setCompletedAt(rba.accept_time.getTime)
         memo.save()
         rba.memo_handle = memo
       }
@@ -106,6 +118,7 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
         memo.setPaidStatus(cba.paid)
         memo.setWorkerId(cba.worker_id)
         memo.setIsForDistribution(q.is_for_distribution)
+        memo.setCompletedAt(cba.accept_time.getTime)
         memo.save()
         cba.memo_handle = memo
       }
@@ -117,6 +130,7 @@ class AutomanMemoizer(DBConnString: String, user: String, password: String) {
         memo.setPaidStatus(fta.paid)
         memo.setWorkerId(fta.worker_id)
         memo.setIsForDistribution(q.is_for_distribution)
+        memo.setCompletedAt(fta.accept_time.getTime)
         memo.save()
         fta.memo_handle = memo
       }
