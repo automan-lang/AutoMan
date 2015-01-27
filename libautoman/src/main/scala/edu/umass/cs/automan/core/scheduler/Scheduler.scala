@@ -162,6 +162,11 @@ class Scheduler (val question: Question,
           }
         }
 
+        // The scheduler must wait, to give the crowd time to answer.
+        // This also informs the scheduler that this thread may yield
+        // its CPU time.
+        Thread.sleep(poll_interval_in_s * 1000)
+
         // ask the backend for answers and memoize_answers
         // conditional covers the case where all thunk answers are recalled from memoDB
         if (running_thunks(_thunks).size > 0) {
