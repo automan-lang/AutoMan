@@ -2,26 +2,19 @@ package edu.umass.cs.automan.adapters.MTurk.connectionpool
 
 import java.text.SimpleDateFormat
 import java.util.{Date, UUID}
-
 import com.amazonaws.mturk.requester._
 import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.adapters.MTurk.memoizer.MTurkAnswerCustomInfo
-import edu.umass.cs.automan.adapters.MTurk.{AutomanHIT, MTurkAdapterNotInitialized, MTurkAdapter}
+import edu.umass.cs.automan.adapters.MTurk.AutomanHIT
 import edu.umass.cs.automan.adapters.MTurk.question._
-import edu.umass.cs.automan.core.answer.{FreeTextAnswer, CheckboxAnswer, RadioButtonAnswer, Answer}
+import edu.umass.cs.automan.core.answer.Answer
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 import edu.umass.cs.automan.core.{LogLevel, LogType, Utilities}
 import scala.collection.mutable
 import scala.collection.mutable.Queue
-import scala.concurrent.ExecutionContext
 
 class Pool(backend: RequesterService, sleep_ms: Int, use_memoization: Boolean) {
-  // we need a thread pool more appropriate for lots of long-running I/O
-  private val MAX_PARALLELISM = 1000
-  private val DEFAULT_POOL = new java.util.concurrent.ForkJoinPool(MAX_PARALLELISM)
-  implicit val ec = ExecutionContext.fromExecutor(DEFAULT_POOL)
-
   // work queues
   private val _accept_queue: Queue[AcceptReq[_ <: Answer]] = Queue.empty
   private val _cancel_queue: Queue[CancelReq[_ <: Answer]] = Queue.empty

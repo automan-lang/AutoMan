@@ -1,14 +1,13 @@
 package edu.umass.cs.automan.core
 
-import java.text.NumberFormat
-import java.util.{UUID, Locale}
-import edu.umass.cs.automan.core.info.{StateInfo, QuestionInfo}
+import java.util.{Locale}
+import edu.umass.cs.automan.core.info.StateInfo
 import edu.umass.cs.automan.core.question._
 import answer._
-import scala.concurrent._
-import scala.concurrent.ExecutionContext.Implicits.global
 import memoizer.{ThunkLogger, AutomanMemoizer}
 import edu.umass.cs.automan.core.scheduler.{Scheduler, Thunk}
+import scala.concurrent.{blocking, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 abstract class AutomanAdapter {
   // question types are determined by adapter implementations
@@ -104,18 +103,22 @@ abstract class AutomanAdapter {
   // Global backend config
   protected[automan] def get_budget_from_backend(): BigDecimal
   private def scheduleScalar[Q <: Question,A <: Answer](q: Q, init: Q => Unit): Future[A] = Future {
-    init(q)
-    q.init_strategy()
-    val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
-    _schedulers = sched :: _schedulers
-    sched.run().asInstanceOf[A]
+    blocking {
+      init(q)
+      q.init_strategy()
+      val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
+      _schedulers = sched :: _schedulers
+      sched.run().asInstanceOf[A]
+    }
   }
   private def scheduleVector[Q <: Question,A <: Answer](q: Q, init: Q => Unit): Future[Set[A]] = Future {
-    init(q)
-    q.init_strategy()
-    val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
-    _schedulers = sched :: _schedulers
-    sched.run().asInstanceOf[Set[A]]
+    blocking {
+      init(q)
+      q.init_strategy()
+      val sched = new Scheduler(q, this, _memoizer, _thunklog, _poll_interval_in_s)
+      _schedulers = sched :: _schedulers
+      sched.run().asInstanceOf[Set[A]]
+    }
   }
 
   // subclass instantiators; these are needed because
