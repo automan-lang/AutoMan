@@ -1,24 +1,11 @@
 package edu.umass.cs.automan.core.question
 
-import edu.umass.cs.automan.core.answer.ScalarAnswer
-import edu.umass.cs.automan.core.strategy.{DefaultScalarStrategy, ScalarValidationStrategy}
+import edu.umass.cs.automan.core.strategy.DefaultScalarStrategy
 
-abstract class ScalarQuestion extends Question {
-  type A <: ScalarAnswer
-  type VS = ScalarValidationStrategy[this.type, A, B]
+abstract class ScalarQuestion[A] extends Question[A] {
+  protected var _confidence: Double = 0.95
+  type VS = DefaultScalarStrategy[A]
 
-  override val _is_for_distribution = false
-
-  protected var _confidence: Option[Double] = None
-  def confidence: Double = _confidence match { case Some(c) => c; case None => 0.95 }
-  def confidence_=(c: Double) { _confidence = Some(c) }
-  private[automan] def init_strategy() {
-    val s = _strategy match {
-      case None => new DefaultScalarStrategy[this.type, A, B](this)
-      case Some(strat) => strat.newInstance()
-    }
-    s.confidence = this.confidence
-    s.num_possibilities = this.num_possibilities
-    _strategy_instance = s
-  }
+  def confidence_=(c: Double) { _confidence = c }
+  def confidence: Double = _confidence
 }

@@ -2,38 +2,34 @@ package edu.umass.cs.automan.core.scheduler
 
 import java.util.{Date, UUID}
 
+import edu.umass.cs.automan.core.answer.Answer
 import edu.umass.cs.automan.core.info.{EpochInfo, QuestionInfo}
-import edu.umass.cs.automan.core.memoizer.{ThunkLogger, AutomanMemoizer}
-import edu.umass.cs.automan.core.answer.{Answer, ScalarAnswer}
+import edu.umass.cs.automan.core.memoizer.AutomanMemoizer
+import edu.umass.cs.automan.core.strategy.ValidationStrategy
 import scala.collection.mutable
 import scala.collection.mutable.Queue
-import edu.umass.cs.automan.core.question.{ScalarQuestion, Question}
+import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.{LogLevel, LogType, Utilities, AutomanAdapter}
 import edu.umass.cs.automan.core.exception.OverBudgetException
 
-class Scheduler (val question: Question,
-                 val adapter: AutomanAdapter,
-                 val memoizer: Option[AutomanMemoizer],
-                 val thunklog: Option[ThunkLogger],
-                 val poll_interval_in_s: Int,
-                 val virtual_time: Option[Date]) {
-  def this(question: Question,
+class Scheduler[A](val question: Question[A],
+                   val adapter: AutomanAdapter,
+                   val memoizer: Option[AutomanMemoizer],
+                   val poll_interval_in_s: Int,
+                   val virtual_time: Option[Date]) {
+  def this(question: Question[A],
            adapter: AutomanAdapter,
            memoizer: Option[AutomanMemoizer],
-           thunklog: Option[ThunkLogger],
-           poll_interval_in_s: Int) = this(question, adapter, memoizer, thunklog, poll_interval_in_s, None)
-  type A = question.A
-  type B = question.B
+           poll_interval_in_s: Int) = this(question, adapter, memoizer, poll_interval_in_s, None)
   // we need to get the initialized strategy instance from
   // the Question itself in order to satisfy the type checker
-  private val _strategy = question.strategy_instance
+  private val _strategy: ValidationStrategy[A] = question.strategy_instance
   private var _thunks = scala.collection.immutable.Map[UUID,Thunk[A]]()
   private var _total_needed : Option[Int] = None
-  private var _spent: BigDecimal = 0
   private var _epochs: List[EpochInfo] = List.empty
   private var _current_epoch_thunks: List[Thunk[A]] = List.empty
 
-  def post_new_thunks(thunks: List[Thunk[A]], last_iteration_timeout: Boolean, memo_answers: Queue[A]) : List[Thunk[A]] = {
+  def post_new_thunks(thunks: List[Thunk[A]], last_iteration_timeout: Boolean, memo_answers: Queue[BackendResult[A]]) : List[Thunk[A]] = {
     val num_answers = answered_thunks(thunks).size
 
     // spawn new thunks; in READY state here
@@ -57,50 +53,47 @@ class Scheduler (val question: Question,
     recalled_thunks ::: posted_thunks
   }
 
-  def state : Option[QuestionInfo] = {
-    // if the user happens to ask for state
-    // before the scheduler has done anything,
-    // return None
-    synchronized {
-      _total_needed match {
-        case Some(num_needed) => {
-          // make a snapshot
-          val my_thunks: Map[UUID, Thunk[A]] = _thunks
-
-
-          // find the oldest thunk
-          val oldest_thunk = my_thunks.values.toArray.sortWith {
-            (a, b) =>
-              a.created_at.compareTo(b.created_at) < 0
-          }.head
-
-          val conf = question match {
-            case s: ScalarQuestion => s.confidence
-            case _ => 1.0
-          }
-
-          Some(
-            new QuestionInfo(
-              question.id,
-              question.title,
-              question.title,
-              question.text,
-              question.question_type,
-              oldest_thunk.created_at,
-              conf,
-              my_thunks.values.toList,
-              num_needed,
-              question.budget,
-              _spent,
-              question.dont_reject,
-              _epochs
-            )
-          )
-        }
-        case None => None
-      }
-    }
-  }
+//  def state : Option[QuestionInfo] = {
+//    // if the user happens to ask for state
+//    // before the scheduler has done anything,
+//    // return None
+//    synchronized {
+//      _total_needed match {
+//        case Some(num_needed) => {
+//          // make a snapshot
+//          val my_thunks: Map[UUID, Thunk[A]] = _thunks
+//
+//
+//          // find the oldest thunk
+//          val oldest_thunk = my_thunks.values.toArray.sortWith {
+//            (a, b) =>
+//              a.created_at.compareTo(b.created_at) < 0
+//          }.head
+//
+//          val conf = ???
+//
+//          Some(
+//            new QuestionInfo(
+//              question.id,
+//              question.title,
+//              question.title,
+//              question.text,
+//              question.question_type,
+//              oldest_thunk.created_at,
+//              conf,
+//              my_thunks.values.toList,
+//              num_needed,
+//              question.budget,
+//              _spent,
+//              question.dont_reject,
+//              _epochs
+//            )
+//          )
+//        }
+//        case None => None
+//      }
+//    }
+//  }
 
   private def archiveEpoch(ts: List[Thunk[A]], needed_agreement: Int, largest_agreement: Int) : EpochInfo = {
     // make sure that all thunks are completed
@@ -122,12 +115,12 @@ class Scheduler (val question: Question,
       0
     } else {
       answered
-        .groupBy(_.answer.get.comparator)
+        .groupBy(_.answer)
         .values.map { ts_group => ts_group.size }.max
     }
   }
 
-  def run() : B = {
+  def run() : SchedulerResult[A] = {
     // check memo DB first
     val memo_answers = get_memo_answers()
     val unpaid_timeouts = new mutable.HashSet[Thunk[A]]()
@@ -214,29 +207,35 @@ class Scheduler (val question: Question,
     Utilities.DebugLog("Exiting scheduling loop...", LogLevel.INFO, LogType.SCHEDULER, question.id)
 
     synchronized {
-      val answer = _strategy.select_answer(_thunks.values.toList)
+      _strategy.select_answer(_thunks.values.toList) match {
+        case Some(scheduler_result) =>
+          val cost = if (!over_budget) {
+            accept_and_reject(_thunks)
+          } else {
+            throw new OverBudgetException(Some(scheduler_result))
+          }
 
-      if (!over_budget) {
-        _spent = accept_and_reject(_thunks, answer.asInstanceOf[B])
-        Utilities.DebugLog("Total spent: " + _spent.toString(), LogLevel.INFO, LogType.SCHEDULER, question.id)
-      } else {
-        throw new OverBudgetException(Some(answer))
+          // log
+          Utilities.DebugLog("Total spent: " + cost.toString(), LogLevel.INFO, LogType.SCHEDULER, question.id)
+
+          // final result; will be wrapped in Answer[A] by caller
+          scheduler_result
+        case None => ???
       }
-      question.final_cost = _spent
-      answer.asInstanceOf[B]
     }
   }
 
-  def get_memo_answers() : Queue[A] = {
-    val answers = Queue[A]()
-    answers ++= (memoizer match {
-      case Some(m) => m.checkDB(question).map{ a => a.asInstanceOf[A]}
-      case None => List()
-    })
-    answers
+  def get_memo_answers() : Queue[BackendResult[A]] = {
+    ???
+//    val answers = Queue[A]()
+//    answers ++= (memoizer match {
+//      case Some(m) => m.checkDB(question).map{ a => a.asInstanceOf[A]}
+//      case None => List()
+//    })
+//    answers
   }
 
-  def accept_and_reject(ts: Map[UUID, Thunk[A]], answer: B) : BigDecimal = {
+  def accept_and_reject(ts: Map[UUID, Thunk[A]]) : BigDecimal = {
     var spent: BigDecimal = 0
     val accepts = _strategy.thunks_to_accept(ts.values.toList)
     val rejects = _strategy.thunks_to_reject(ts.values.toList)
@@ -250,10 +249,11 @@ class Scheduler (val question: Question,
           t.cost.toString(), LogLevel.INFO, LogType.SCHEDULER, question.id
       )
       val t2 = adapter.accept(t)
-      thunklog match {
-        case Some(tl) => tl.writeThunk(t2, SchedulerState.ACCEPTED, t2.worker_id.get)
-        case None => Unit
-      }
+//      thunklog match {
+//        case Some(tl) => tl.writeThunk(t2, SchedulerState.ACCEPTED, t2.worker_id.get)
+//        case None => Unit
+//      }
+      ???
       spent += t.cost
     }
 
@@ -265,10 +265,11 @@ class Scheduler (val question: Question,
             t.answer.get.toString + "\"", LogLevel.INFO, LogType.SCHEDULER, question.id
         )
         val t2 = adapter.reject(t)
-        thunklog match {
-          case Some(tl) => tl.writeThunk(t2, SchedulerState.REJECTED, t2.worker_id.get)
-          case None => Unit
-        }
+//        thunklog match {
+//          case Some(tl) => tl.writeThunk(t2, SchedulerState.REJECTED, t2.worker_id.get)
+//          case None => Unit
+//        }
+        ???
       }
     } else {
       // Accept if the user specified "don't reject"
@@ -279,10 +280,11 @@ class Scheduler (val question: Question,
           LogLevel.INFO, LogType.SCHEDULER, question.id
         )
         val t2 = adapter.accept(t)
-        thunklog match {
-          case Some(tl) => tl.writeThunk(t2, SchedulerState.ACCEPTED, t2.worker_id.get)
-          case None => Unit
-        }
+//        thunklog match {
+//          case Some(tl) => tl.writeThunk(t2, SchedulerState.ACCEPTED, t2.worker_id.get)
+//          case None => Unit
+//        }
+        ???
         spent += t2.cost
       }
     }
@@ -291,18 +293,20 @@ class Scheduler (val question: Question,
     cancels.foreach { t =>
       Utilities.DebugLog("Cancelling RUNNING thunk " + t.thunk_id + "...", LogLevel.INFO, LogType.SCHEDULER, question.id)
       adapter.cancel(t)
-      thunklog match {
-        case Some(tl) => tl.writeThunk(t, SchedulerState.CANCELLED, null)
-        case None => Unit
-      }
+//      thunklog match {
+//        case Some(tl) => tl.writeThunk(t, SchedulerState.CANCELLED, null)
+//        case None => Unit
+//      }
+      ???
     }
 
     // Timeouts
     timeouts.foreach { t =>
-      thunklog match {
-        case Some(tl) => tl.writeThunk(t, SchedulerState.TIMEOUT, null)
-        case None => Unit
-      }
+//      thunklog match {
+//        case Some(tl) => tl.writeThunk(t, SchedulerState.TIMEOUT, null)
+//        case None => Unit
+//      }
+      ???
     }
 
     spent
@@ -335,7 +339,8 @@ class Scheduler (val question: Question,
     memoizer match {
       case Some(m) =>
         ts.filter(_.state == SchedulerState.RETRIEVED).foreach {t =>
-          m.writeAnswer(question, t.answer.get)
+//          m.writeAnswer(question, t.answer.get)
+          ???
         }
       case None => Unit
     }
@@ -345,18 +350,20 @@ class Scheduler (val question: Question,
     adapter.post(ts, question.blacklisted_workers)
   }
   def running_thunks(ts: Map[UUID,Thunk[A]]) = ts.values.filter(_.state == SchedulerState.RUNNING).toList
-  def recall(ts: List[Thunk[A]], answers: Queue[A]) : List[Thunk[A]] = {
+  def recall(ts: List[Thunk[A]], results: Queue[BackendResult[A]]) : List[Thunk[A]] = {
     // sanity check
     assert(ts.forall(_.state == SchedulerState.READY))
 
-    if (answers.size > 0) {
-      ts.take(answers.size).map { t =>
-        val answer = answers.dequeue()
-        Utilities.DebugLog("Pairing thunk " + t.thunk_id + " with memoized answer \"" + answer.toString + "\".", LogLevel.INFO, LogType.SCHEDULER, question.id)
-        val worker_id = answer.worker_id
-        val t2 = t.copy_with_answer(answer, worker_id)
+    if (results.size > 0) {
+      ts.take(results.size).map { t =>
+        val result = results.dequeue()
+        Utilities.DebugLog("Pairing thunk " + t.thunk_id + " with memoized result \"" + result.toString + "\".", LogLevel.INFO, LogType.SCHEDULER, question.id)
+        val worker_id = result.worker_id
+        val t2 = t.copy_with_answer(result.answer, worker_id)
         t2.question.blacklist_worker(worker_id)
-        adapter.process_custom_info(t2, answer.custom_info)
+//        adapter.process_custom_info(t2, result.custom_info)
+        ???
+        t2
       }
     } else {
       List.empty

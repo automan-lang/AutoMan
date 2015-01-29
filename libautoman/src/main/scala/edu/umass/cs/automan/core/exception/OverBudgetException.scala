@@ -1,3 +1,3 @@
 package edu.umass.cs.automan.core.exception
 
-case class OverBudgetException[B](answer_so_far: Option[B]) extends Exception
+case class OverBudgetException[T](answer_so_far: Option[T]) extends Exception
