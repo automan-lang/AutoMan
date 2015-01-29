@@ -4,8 +4,7 @@ import edu.umass.cs.automan.core.exception.OverBudgetException
 import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 
 import scala.collection.mutable
-import edu.umass.cs.automan.core.answer.Answer
-import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
+import edu.umass.cs.automan.core.scheduler.{SchedulerResult, SchedulerState, Thunk}
 import edu.umass.cs.automan.core.question.Question
 import java.util.UUID
 
@@ -58,7 +57,7 @@ object ValidationStrategy {
 
 }
 
-abstract class ValidationStrategy[Q <: Question, A <: Answer, B](question: Q) {
+abstract class ValidationStrategy[A](question: Question[A]) {
   class PrematureValidationCompletionException(methodname: String, classname: String)
     extends Exception(methodname + " called prematurely in " + classname)
 
@@ -69,7 +68,7 @@ abstract class ValidationStrategy[Q <: Question, A <: Answer, B](question: Q) {
   def is_done(thunks: List[Thunk[A]]) : Boolean
   def num_possibilities: BigInt = _num_possibilities
   def num_possibilities_=(n: BigInt) { _num_possibilities = n }
-  def select_answer(thunks: List[Thunk[A]]) : B
+  def select_answer(thunks: List[Thunk[A]]) : Option[SchedulerResult[A]]
   def spawn(thunks: List[Thunk[A]], suffered_timeout: Boolean): List[Thunk[A]]
   def thunks_to_accept(thunks: List[Thunk[A]]): List[Thunk[A]]
   def thunks_to_reject(thunks: List[Thunk[A]]): List[Thunk[A]]
@@ -89,7 +88,7 @@ abstract class ValidationStrategy[Q <: Question, A <: Answer, B](question: Q) {
     }
   }
 
-  protected def unique_by_date(ts: List[Thunk[_ <: Answer]]) = {
+  protected def unique_by_date(ts: List[Thunk[A]]) = {
     // worker_id should always be set for RETRIEVED and PROCESSED
     val tw_groups = ts.groupBy( t => t.worker_id.get )
     // sort by creation date and take the first

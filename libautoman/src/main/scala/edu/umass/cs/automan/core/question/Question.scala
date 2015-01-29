@@ -3,19 +3,16 @@ package edu.umass.cs.automan.core.question
 import java.io.File
 import java.util.UUID
 import edu.umass.cs.automan.core.answer.Answer
-import edu.umass.cs.automan.core.info.QuestionType
-import QuestionType.QuestionType
+import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk, Scheduler}
 import edu.umass.cs.automan.core.strategy.ValidationStrategy
 
-abstract class Question {
-  type A <: Answer  // thunk type
-  type B  // future return type (scalar and dist. questions have different return types)
-  type VS <: ValidationStrategy[this.type, A, B]
+abstract class Question[A] {
+  type AnswerType = A
+  type VS <: ValidationStrategy[A]
 
   class QuestionStillExecutingException extends Exception
 
   protected var _budget: Option[BigDecimal] = None
-  protected var _final_cost: Option[BigDecimal] = None
   protected var _id: UUID = UUID.randomUUID()
   protected var _image: Option[File] = None
   protected var _image_alt_text: Option[String] = None
@@ -44,22 +41,15 @@ abstract class Question {
   def dont_reject: Boolean = _dont_reject
   def dry_run_=(dr: Boolean) { _dry_run = dr }
   def dry_run: Boolean = _dry_run
-  def final_cost: BigDecimal = _final_cost match {
-    case Some(c) => c
-    case None => throw new QuestionStillExecutingException
-  }
-  protected[automan] def final_cost_=(c: BigDecimal) { _final_cost = Some(c) }
   def id: UUID = _id
   def id_=(id: UUID) { _id = id }
   def id_string: String = _id.toString
-  protected[core] def is_for_distribution = _is_for_distribution
   def image_alt_text: String = _image_alt_text match { case Some(x) => x; case None => "" }
   def image_alt_text_=(s: String) { _image_alt_text = Some(s) }
   def image_url: String = _image_url match { case Some(x) => x; case None => "" }
   def image_url_=(s: String) { _image_url = Some(s) }
   def image: File = _image match { case Some(f) => f; case None => null }
   def image_=(f: File) { _image = Some(f) }
-  private[automan] def init_strategy(): Unit
   def max_replicas: Option[Int] = _max_replicas
   def max_replicas_=(m: Int) { _max_replicas = Some(m) }
   def memo_hash: String
@@ -67,14 +57,12 @@ abstract class Question {
   def question_timeout_in_s: Int = (_worker_timeout_in_s * _question_timeout_multiplier).toInt
   def question_timeout_multiplier_=(t: Double) { _question_timeout_multiplier = t }
   def question_timeout_multiplier: Double = _question_timeout_multiplier
-  def question_type: QuestionType
   def reward : BigDecimal = { // this is what workers actually get paid per-task
     (_wage * _worker_timeout_in_s * (1.0/3600)).setScale(2, math.BigDecimal.RoundingMode.FLOOR)
   }
   def strategy = _strategy match { case Some(vs) => vs; case None => null }
   def strategy_=(s: Class[VS]) { _strategy = Some(s) }
   def strategy_option = _strategy
-  private[automan] def strategy_instance = _strategy_instance
   def text: String = _text match { case Some(t) => t; case None => "Question not specified." }
   def text_=(s: String) { _text = Some(s) }
   def time_value_per_hour: BigDecimal = _time_value_per_hour match { case Some(v) => v; case None => _wage }
@@ -87,4 +75,23 @@ abstract class Question {
   def wage_=(w: BigDecimal) { _wage = w }
   def worker_timeout_in_s_=(t: Int) { _worker_timeout_in_s = t }
   def worker_timeout_in_s: Int = _worker_timeout_in_s
+
+  // private methods
+  protected[core] def is_for_distribution = _is_for_distribution
+  private[automan] def init_strategy(): Unit
+  private[automan] def strategy_instance = _strategy_instance
+  protected[automan] def getThunk: Thunk[A] =
+    new Thunk[A](
+      UUID.randomUUID(),
+      this,
+      this.question_timeout_in_s,
+      this.worker_timeout_in_s,
+      this.reward,
+      this.id,
+      new java.util.Date(),
+      SchedulerState.READY,
+      false
+    )
+  protected[automan] def getAnswer(scheduler: Scheduler[A]): Answer[A]
+  protected[automan] def sameAnswer(a1: A, a2: A) : Boolean
 }

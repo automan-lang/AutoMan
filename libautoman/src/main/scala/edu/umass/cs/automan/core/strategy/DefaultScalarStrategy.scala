@@ -3,9 +3,8 @@ package edu.umass.cs.automan.core.strategy
 import java.util
 import java.util.UUID
 
-import edu.umass.cs.automan.core.answer.ScalarAnswer
+import edu.umass.cs.automan.core.question.ScalarQuestion
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
-import edu.umass.cs.automan.core.question.{ScalarQuestion, CheckboxQuestion}
 import edu.umass.cs.automan.core.exception.OverBudgetException
 import edu.umass.cs.automan.core.{LogLevel, LogType, Utilities}
 
@@ -15,14 +14,14 @@ object DefaultScalarStrategy {
   val table = new util.HashMap[(Int,Int,Int,Double),Int]()
 }
 
-class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question: Q)
-  extends ScalarValidationStrategy[Q,A,B](question) {
+class DefaultScalarStrategy[A](question: ScalarQuestion[A])
+  extends ScalarValidationStrategy[A](question) {
   Utilities.DebugLog("DEFAULTSCALAR strategy loaded.",LogLevel.INFO,LogType.STRATEGY,_computation_id)
 
   def current_confidence(thunks: List[Thunk[A]]): Double = {
     val valid_ts = completed_workerunique_thunks(thunks)
     if (valid_ts.size == 0) return 0.0 // bail if we have no valid responses
-    val biggest_answer = valid_ts.groupBy(_.answer.get.comparator).maxBy{ case(sym,ts) => ts.size }._2.size
+    val biggest_answer = valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
     MonteCarlo.confidenceOfOutcome(_num_possibilities.toInt, thunks.size, biggest_answer, 1000000)
   }
   def is_confident(thunks: List[Thunk[A]]): Boolean = {
@@ -32,7 +31,7 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
     } else {
       val valid_ts = completed_workerunique_thunks(thunks)
       if (valid_ts.size == 0) return false // bail if we have no valid responses
-      val biggest_answer = valid_ts.groupBy(_.answer.get.comparator).maxBy{ case(sym,ts) => ts.size }._2.size
+      val biggest_answer = valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
 
       // TODO: MonteCarlo simulator needs to take BigInts!
       val min_agree = MonteCarlo.requiredForAgreement(_num_possibilities.toInt, thunks.size, _confidence, 1000000)
@@ -48,12 +47,12 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
   def max_agree(thunks: List[Thunk[A]]) : Int = {
     val valid_ts = completed_workerunique_thunks(thunks)
     if (valid_ts.size == 0) return 0
-    valid_ts.groupBy(_.answer.get.comparator).maxBy{ case(sym,ts) => ts.size }._2.size
+    valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
   }
   def spawn(thunks: List[Thunk[A]], had_timeout: Boolean): List[Thunk[A]] = {
     // num to spawn (don't spawn more if any are running)
     val num_to_spawn = if (thunks.count(_.state == SchedulerState.RUNNING) == 0) {
-      num_to_run(thunks, question)
+      num_to_run(thunks)
     } else {
       return List[Thunk[A]]() // Be patient!
     }
@@ -92,25 +91,25 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
     new_thunks
   }
 
-  def num_to_run(thunks: List[Thunk[A]], q: Q) : Int = {
-    val np: Int = if(q.num_possibilities > BigInt(Int.MaxValue)) 1000 else q.num_possibilities.toInt
+  def num_to_run(thunks: List[Thunk[A]]) : Int = {
+    val np: Int = if(question.num_possibilities > BigInt(Int.MaxValue)) 1000 else question.num_possibilities.toInt
 
     // update # of unique workers
     val unique_workers = completed_thunks(thunks).map { t => t.worker_id }.distinct.size
-    ValidationStrategy.overwrite(q.title, q.text, _computation_id, unique_workers, completed_thunks(thunks).size)
+    ValidationStrategy.overwrite(question.title, question.text, _computation_id, unique_workers, completed_thunks(thunks).size)
 
     // number needed for agreement, adjusted for programmer time-value
-    val n = math.max(expected_for_agreement(np, thunks.size, max_agree(thunks), q.confidence).toDouble,
-             math.min(math.floor(q.budget.toDouble/q.reward.toDouble),
-                      math.floor(q.time_value_per_hour.toDouble/q.wage.toDouble)
+    val n = math.max(expected_for_agreement(np, thunks.size, max_agree(thunks), question.confidence).toDouble,
+             math.min(math.floor(question.budget.toDouble/question.reward.toDouble),
+                      math.floor(question.time_value_per_hour.toDouble/question.wage.toDouble)
              )
     )
 
     // if we aren't using disqualifications, calculate the expected number of
     // worker reparticipations and inflate n accordingly
-    ValidationStrategy.work_uniqueness(q.title, q.text) match {
+    ValidationStrategy.work_uniqueness(question.title, question.text) match {
       case Some(u) =>
-        if (q.use_disqualifications) {
+        if (question.use_disqualifications) {
           n.toInt
         } else {
           Math.ceil(n / u.toDouble).toInt
@@ -146,7 +145,7 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
     }
   }
 
-  def choose_starting_n(question: Q) : Int = {
+  def choose_starting_n() : Int = {
     // at start, we assume that all workers will agree unanimously
     var duplicates_required = 1
 
@@ -157,11 +156,11 @@ class DefaultScalarStrategy[Q <: ScalarQuestion, A <: ScalarAnswer, B](question:
     }
 
     // multiply by pessimism factor
-    (duplicates_required * pessimism(question)).toInt
+    (duplicates_required * pessimism()).toInt
   }
 
-  def pessimism(q: Q) = {
-    val p: Double = math.max((q.time_value_per_hour/q.wage).toDouble, 1.0)
+  def pessimism() = {
+    val p: Double = math.max((question.time_value_per_hour/question.wage).toDouble, 1.0)
     if (p > 1) {
       Utilities.DebugLog("Using pessimistic (expensive) strategy.", LogLevel.INFO, LogType.STRATEGY, _computation_id)
     } else {
