@@ -23,7 +23,7 @@ object AutoManBuild extends Build {
     Project(id = "automan", base = file("libautoman"))
       .settings(
         memoClean := {
-          val memo_db = new File("AutomanMemoDB")
+          val memo_db = new File("AutoManMemoDB")
           val thunk_db = new File("ThunkLogDB")
           val derby_log = new File("derby.log")
           if (memo_db.exists()) {
