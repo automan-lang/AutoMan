@@ -34,7 +34,9 @@ libraryDependencies ++= {
     "xerces"                     % "xercesImpl"             % "2.9.1",
     "org.apache.velocity"        % "velocity"               % "1.6.2",
     "commons-beanutils"          % "commons-beanutils-core" % "1.7.0",
-    "org.specs2"                 %%  "specs2-core"          % "2.3.11" % "test"
+    "org.specs2"                 %%  "specs2-core"          % "2.3.11" % "test",
+    "com.typesafe.slick"         %% "slick"                 % "2.1.0",
+    "org.slf4j"                  % "slf4j-nop"              % "1.6.4"
   )
 }
 

@@ -22,10 +22,6 @@ abstract class AutomanAdapter {
   protected var _default_confidence: Double = 0.95
   protected var _locale: Locale = Locale.getDefault
   protected var _memoizer: Option[AutomanMemoizer] = None
-  protected var _memo_db: String = "AutomanMemoDB"
-  protected def _memo_conn_string: String = "jdbc:derby:" + _memo_db + ";create=true"
-  protected var _memo_user: String = ""
-  protected var _memo_pass: String = ""
   protected var _plugins: List[Class[_ <: Plugin]] = List.empty
   protected var _plugins_initialized: List[_ <: Plugin] = List.empty
   protected var _poll_interval_in_s : Int = 30
