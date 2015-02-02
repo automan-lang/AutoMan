@@ -1,10 +1,12 @@
 package edu.umass.cs.automan.core.scheduler
 
+import edu.umass.cs.automan.core.memoizer.Memo
 import edu.umass.cs.automan.core.question.Question
 import java.util.{UUID, Calendar, Date}
 import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 
-class Thunk[T](val thunk_id: UUID,
+class Thunk[T](val memo: Memo,
+               val thunk_id: UUID,
                val question: Question[T],
                val timeout_in_s: Int,
                val worker_timeout: Int,
@@ -17,16 +19,17 @@ class Thunk[T](val thunk_id: UUID,
                val answer: Option[T],
                val completed_at: Option[Date]
               ) {
-  def this(thunk_id: UUID,
-       question: Question[T],
-       timeout_in_s: Int,
-       worker_timeout: Int,
-       cost: BigDecimal,
-       computation_id: UUID,
-       created_at: Date,
-       state: SchedulerState.Value,
-       from_memo: Boolean) {
-    this(thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, state, from_memo, None, None, None)
+  def this(memo: Memo,
+           thunk_id: UUID,
+           question: Question[T],
+           timeout_in_s: Int,
+           worker_timeout: Int,
+           cost: BigDecimal,
+           computation_id: UUID,
+           created_at: Date,
+           state: SchedulerState.Value,
+           from_memo: Boolean) {
+    this(memo, thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, state, from_memo, None, None, None)
     Utilities.DebugLog("New Thunk " + thunk_id.toString +  "; will expire at: " + expires_at.toString, LogLevel.INFO, LogType.SCHEDULER, computation_id)
   }
   val expires_at : Date = {
@@ -35,6 +38,9 @@ class Thunk[T](val thunk_id: UUID,
     calendar.add(Calendar.SECOND, timeout_in_s)
     calendar.getTime
   }
+  // add to database
+  
+
   def is_timedout: Boolean = {
     expires_at.before(new Date())
   }
