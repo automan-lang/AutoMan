@@ -4,7 +4,7 @@ import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.core.answer.Answer
 import edu.umass.cs.automan.core.info.{EpochInfo, QuestionInfo}
-import edu.umass.cs.automan.core.memoizer.AutomanMemoizer
+import edu.umass.cs.automan.core.memoizer.Memo
 import edu.umass.cs.automan.core.strategy.ValidationStrategy
 import scala.collection.mutable
 import scala.collection.mutable.Queue
@@ -14,12 +14,12 @@ import edu.umass.cs.automan.core.exception.OverBudgetException
 
 class Scheduler[A](val question: Question[A],
                    val adapter: AutomanAdapter,
-                   val memoizer: Option[AutomanMemoizer],
+                   val memoizer: Option[Memo],
                    val poll_interval_in_s: Int,
                    val virtual_time: Option[Date]) {
   def this(question: Question[A],
            adapter: AutomanAdapter,
-           memoizer: Option[AutomanMemoizer],
+           memoizer: Option[Memo],
            poll_interval_in_s: Int) = this(question, adapter, memoizer, poll_interval_in_s, None)
   // we need to get the initialized strategy instance from
   // the Question itself in order to satisfy the type checker

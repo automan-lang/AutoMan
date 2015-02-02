@@ -4,7 +4,7 @@ import java.util.Locale
 import edu.umass.cs.automan.core.answer.Answer
 import edu.umass.cs.automan.core.info.StateInfo
 import edu.umass.cs.automan.core.question._
-import memoizer.AutomanMemoizer
+import memoizer.Memo
 import edu.umass.cs.automan.core.scheduler.{Scheduler, Thunk}
 import scala.concurrent.{blocking, Future}
 
@@ -21,7 +21,7 @@ abstract class AutomanAdapter {
 //  protected var _default_budget: BigDecimal = 5.00
   protected var _default_confidence: Double = 0.95
   protected var _locale: Locale = Locale.getDefault
-  protected var _memoizer: Option[AutomanMemoizer] = None
+  protected var _memoizer: Option[Memo] = None
   protected var _plugins: List[Class[_ <: Plugin]] = List.empty
   protected var _plugins_initialized: List[_ <: Plugin] = List.empty
   protected var _poll_interval_in_s : Int = 30
