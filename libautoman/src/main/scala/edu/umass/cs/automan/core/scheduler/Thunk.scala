@@ -5,7 +5,7 @@ import edu.umass.cs.automan.core.question.Question
 import java.util.{UUID, Calendar, Date}
 import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 
-class Thunk[T](val memo: Memo,
+class Thunk[T](val memo: Option[Memo],
                val thunk_id: UUID,
                val question: Question[T],
                val timeout_in_s: Int,
@@ -19,7 +19,7 @@ class Thunk[T](val memo: Memo,
                val answer: Option[T],
                val completed_at: Option[Date]
               ) {
-  def this(memo: Memo,
+  def this(memo: Option[Memo],
            thunk_id: UUID,
            question: Question[T],
            timeout_in_s: Int,
@@ -39,41 +39,44 @@ class Thunk[T](val memo: Memo,
     calendar.getTime
   }
   // add to database
-  
+  memo match {
+    case Some(mem) => mem.saveThunk(this)
+    case None => ()
+  }
 
   def is_timedout: Boolean = {
     expires_at.before(new Date())
   }
   def copy_as_running() = {
     Utilities.DebugLog("Thunk " + thunk_id.toString +  " changed to RUNNING state; will expire at: " + expires_at.toString, LogLevel.INFO, LogType.SCHEDULER, computation_id)
-    new Thunk[T](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.RUNNING, from_memo, worker_id, answer, None)
+    new Thunk[T](memo, thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.RUNNING, from_memo, worker_id, answer, None)
   }
   def copy_with_answer(ans: T, wrk_id: String) = {
     Utilities.DebugLog("Thunk " + thunk_id.toString +  " changed to RETRIEVED state with answer \"" + ans.toString + "\"; will expire at: " + expires_at.toString, LogLevel.INFO, LogType.SCHEDULER, computation_id)
-    new Thunk[T](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.RETRIEVED, from_memo, Some(wrk_id), Some(ans), Some(new Date()))
+    new Thunk[T](memo, thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.RETRIEVED, from_memo, Some(wrk_id), Some(ans), Some(new Date()))
   }
   def copy_as_timeout() = {
     Utilities.DebugLog("Thunk " + thunk_id.toString +  " changed to TIMEOUT state; expired at: " + expires_at.toString, LogLevel.INFO, LogType.SCHEDULER, computation_id)
-    new Thunk[T](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.TIMEOUT, from_memo, worker_id, answer, Some(new Date()))
+    new Thunk[T](memo, thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.TIMEOUT, from_memo, worker_id, answer, Some(new Date()))
   }
   def copy_as_processed() = {
     assert(completed_at != None)
     Utilities.DebugLog("Thunk " + thunk_id.toString +  " changed to PROCESSED state.", LogLevel.INFO, LogType.SCHEDULER, computation_id)
-    new Thunk[T](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.PROCESSED, from_memo, worker_id, answer, None)
+    new Thunk[T](memo, thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.PROCESSED, from_memo, worker_id, answer, None)
   }
   def copy_as_cancelled() = {
     Utilities.DebugLog("Thunk " + thunk_id.toString +  " changed to CANCELLED state.", LogLevel.INFO, LogType.SCHEDULER, computation_id)
-    new Thunk[T](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.CANCELLED, from_memo, worker_id, answer, Some(new Date()))
+    new Thunk[T](memo, thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.CANCELLED, from_memo, worker_id, answer, Some(new Date()))
   }
   def copy_as_accepted() = {
     assert(completed_at != None)
     Utilities.DebugLog("Thunk " + thunk_id.toString +  " changed to ACCEPTED state.", LogLevel.INFO, LogType.SCHEDULER, computation_id)
-    new Thunk[T](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.ACCEPTED, from_memo, worker_id, answer, None)
+    new Thunk[T](memo, thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.ACCEPTED, from_memo, worker_id, answer, None)
   }
   def copy_as_rejected() = {
     assert(completed_at != None)
     Utilities.DebugLog("Thunk " + thunk_id.toString +  " changed to REJECTED state.", LogLevel.INFO, LogType.SCHEDULER, computation_id)
-    new Thunk[T](thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.REJECTED, from_memo, worker_id, answer, None)
+    new Thunk[T](memo, thunk_id, question, timeout_in_s, worker_timeout, cost, computation_id, created_at, SchedulerState.REJECTED, from_memo, worker_id, answer, None)
   }
   override def toString = {
     val has_answer = answer match { case Some(_) => "yes"; case None => "no" }
