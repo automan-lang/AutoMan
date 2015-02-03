@@ -1,21 +1,20 @@
-package edu.umass.cs.automan.core.memoizer
+package edu.umass.cs.automan.core.logging
 
 import java.util.UUID
 import edu.umass.cs.automan.core.scheduler.SchedulerState
 import scala.slick.driver.DerbyDriver.simple._
 import scala.slick.jdbc.meta.MTable
-import scala.slick.lifted
 
-class Memo {
+class Memo(log_config: LogConfig.Value) {
   // connection string
   private val jdbc_conn_string = "jdbc:derby:AutoManMemoDB"
 
   // tables
-  private val thunk = TableQuery[edu.umass.cs.automan.core.memoizer.tables.Thunk]
-  private val thunk_history = TableQuery[edu.umass.cs.automan.core.memoizer.tables.ThunkHistory]
-  private val question = TableQuery[edu.umass.cs.automan.core.memoizer.tables.Question]
-  private val question_thunk = TableQuery[edu.umass.cs.automan.core.memoizer.tables.QuestionThunk]
-  private val radio_button_answer = TableQuery[edu.umass.cs.automan.core.memoizer.tables.RadioButtonAnswer]
+  private val thunk = TableQuery[edu.umass.cs.automan.core.logging.tables.Thunk]
+  private val thunk_history = TableQuery[edu.umass.cs.automan.core.logging.tables.ThunkHistory]
+  private val question = TableQuery[edu.umass.cs.automan.core.logging.tables.Question]
+  private val question_thunk = TableQuery[edu.umass.cs.automan.core.logging.tables.QuestionThunk]
+  private val radio_button_answer = TableQuery[edu.umass.cs.automan.core.logging.tables.RadioButtonAnswer]
 
   // get DB handle
   private val db = Database.forURL(jdbc_conn_string, driver = "scala.slick.driver.DerbyDriver")
