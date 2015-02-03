@@ -4,7 +4,7 @@ import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.core.answer.Answer
 import edu.umass.cs.automan.core.info.{EpochInfo, QuestionInfo}
-import edu.umass.cs.automan.core.memoizer.Memo
+import edu.umass.cs.automan.core.logging.Memo
 import edu.umass.cs.automan.core.strategy.ValidationStrategy
 import scala.collection.mutable
 import scala.collection.mutable.Queue
@@ -25,17 +25,12 @@ class Scheduler[A](val question: Question[A],
   // the Question itself in order to satisfy the type checker
   private val _strategy: ValidationStrategy[A] = question.strategy_instance
   private var _thunks = scala.collection.immutable.Map[UUID,Thunk[A]]()
-  private var _total_needed : Option[Int] = None
-  private var _epochs: List[EpochInfo] = List.empty
-  private var _current_epoch_thunks: List[Thunk[A]] = List.empty
 
   def post_new_thunks(thunks: List[Thunk[A]], last_iteration_timeout: Boolean, memo_answers: Queue[BackendResult[A]]) : List[Thunk[A]] = {
     val num_answers = answered_thunks(thunks).size
 
     // spawn new thunks; in READY state here
     val new_thunks = _strategy.spawn(thunks, last_iteration_timeout) // OverBudgetException should be thrown here
-
-    _total_needed = Some(new_thunks.size + num_answers)
 
     // before posting, pick answers out of memo DB
     val recalled_thunks = recall(new_thunks, memo_answers) // blocks
@@ -51,73 +46,6 @@ class Scheduler[A](val question: Question[A],
     }
 
     recalled_thunks ::: posted_thunks
-  }
-
-//  def state : Option[QuestionInfo] = {
-//    // if the user happens to ask for state
-//    // before the scheduler has done anything,
-//    // return None
-//    synchronized {
-//      _total_needed match {
-//        case Some(num_needed) => {
-//          // make a snapshot
-//          val my_thunks: Map[UUID, Thunk[A]] = _thunks
-//
-//
-//          // find the oldest thunk
-//          val oldest_thunk = my_thunks.values.toArray.sortWith {
-//            (a, b) =>
-//              a.created_at.compareTo(b.created_at) < 0
-//          }.head
-//
-//          val conf = ???
-//
-//          Some(
-//            new QuestionInfo(
-//              question.id,
-//              question.title,
-//              question.title,
-//              question.text,
-//              question.question_type,
-//              oldest_thunk.created_at,
-//              conf,
-//              my_thunks.values.toList,
-//              num_needed,
-//              question.budget,
-//              _spent,
-//              question.dont_reject,
-//              _epochs
-//            )
-//          )
-//        }
-//        case None => None
-//      }
-//    }
-//  }
-
-  private def archiveEpoch(ts: List[Thunk[A]], needed_agreement: Int, largest_agreement: Int) : EpochInfo = {
-    // make sure that all thunks are completed
-    assert(ts.count(_.completed_at == None) == 0)
-
-    // get epoch start time
-    val start_time = ts.sortWith((a,b) => a.created_at.compareTo(b.created_at) < 0).head.created_at
-
-    // get epoch end time
-    val end_time = ts.sortWith((a,b) => a.completed_at.get.compareTo(b.completed_at.get) > 0).head.created_at
-
-    // create epoch object
-    EpochInfo(start_time, end_time, ts, needed_agreement, largest_agreement)
-  }
-
-  private def largestAnswerGroup(ts: List[Thunk[A]]) : Int = {
-    val answered = ts.filter(_.answer != None)
-    if (answered.size == 0) {
-      0
-    } else {
-      answered
-        .groupBy(_.answer)
-        .values.map { ts_group => ts_group.size }.max
-    }
   }
 
   def run() : SchedulerResult[A] = {
@@ -138,19 +66,9 @@ class Scheduler[A](val question: Question[A],
       while(!_strategy.is_done(_thunks.values.toList)) {
         if (running_thunks(_thunks).size == 0) {
           synchronized {
-            val old_needed = _total_needed match { case Some(n) => n; case None => 0 }
-
             val new_thunks = post_new_thunks(_thunks.values.toList, last_iteration_timeout, memo_answers)
 
-            // this marks the beginning of a new epoch;
-            // archive last epoch thunks to EpochInfo
-            // and replace current thunk list
-            if (_current_epoch_thunks.size != 0) {
-              _epochs = archiveEpoch(_current_epoch_thunks, old_needed, largestAnswerGroup(_thunks.values.toList)) :: _epochs
-            }
-
             // update thunk data structures
-            _current_epoch_thunks = new_thunks
             _thunks = _thunks ++ new_thunks.map { t => t.thunk_id -> t}
           }
         }
@@ -174,7 +92,6 @@ class Scheduler[A](val question: Question[A],
           // atomically update thunk data structures with new results
           synchronized {
             _thunks = _thunks ++ results.map { t => t.thunk_id -> t}
-            _current_epoch_thunks = _current_epoch_thunks.map { t => _thunks(t.thunk_id)}
           }
 
           // check for timed-out thunks

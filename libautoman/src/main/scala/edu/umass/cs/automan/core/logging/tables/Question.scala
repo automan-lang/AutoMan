@@ -1,4 +1,4 @@
-package edu.umass.cs.automan.core.memoizer.tables
+package edu.umass.cs.automan.core.logging.tables
 
 import java.util.UUID
 import scala.slick.driver.DerbyDriver.simple._

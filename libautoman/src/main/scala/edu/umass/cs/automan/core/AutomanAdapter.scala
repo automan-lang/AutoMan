@@ -3,8 +3,10 @@ package edu.umass.cs.automan.core
 import java.util.Locale
 import edu.umass.cs.automan.core.answer.Answer
 import edu.umass.cs.automan.core.info.StateInfo
+import edu.umass.cs.automan.core.logging.LogConfig.LogConfig
+import edu.umass.cs.automan.core.logging.LogConfig.LogConfig
 import edu.umass.cs.automan.core.question._
-import memoizer.Memo
+import edu.umass.cs.automan.core.logging.{LogConfig, Memo}
 import edu.umass.cs.automan.core.scheduler.{Scheduler, Thunk}
 import scala.concurrent.{blocking, Future}
 
@@ -18,7 +20,6 @@ abstract class AutomanAdapter {
   type RBQ = RadioButtonQuestion                 // answer scalar
 //  type RBDQ <: RadioButtonDistributionQuestion    // answer vector
 
-//  protected var _default_budget: BigDecimal = 5.00
   protected var _default_confidence: Double = 0.95
   protected var _locale: Locale = Locale.getDefault
   protected var _memoizer: Option[Memo] = None
@@ -26,12 +27,11 @@ abstract class AutomanAdapter {
   protected var _plugins_initialized: List[_ <: Plugin] = List.empty
   protected var _poll_interval_in_s : Int = 30
   protected var _schedulers: List[Scheduler[_]] = List.empty
-//  protected var _thunklog: Option[ThunkLogger] = None
   protected var _thunk_db: String = "ThunkLogDB"
   protected var _thunk_conn_string: String = "jdbc:derby:" + _thunk_db + ";create=true"
   protected var _thunk_user: String = ""
   protected var _thunk_pass: String = ""
-  protected var _use_memoization: Boolean = true
+  protected var _log_config: LogConfig = LogConfig.LOG_MEMOIZE_VERBOSE
 
   // user-visible getters and setters
   def default_confidence: Double = _default_confidence
@@ -40,8 +40,8 @@ abstract class AutomanAdapter {
   def locale_=(l: Locale) { _locale = l }
   def plugins: List[Class[_ <: Plugin]] = _plugins
   def plugins_=(ps: List[Class[_ <: Plugin]]) { _plugins = ps }
-  def use_memoization = _use_memoization
-  def use_memoization_=(um: Boolean) { _use_memoization = um }
+  def logging = _log_config
+  def logging_=(lc: LogConfig.Value) { _log_config = lc }
 
   // marshaling calls
   protected[automan] def accept[A](t: Thunk[A]) : Thunk[A]
@@ -67,10 +67,7 @@ abstract class AutomanAdapter {
   // state management
   protected[automan] def init() {
     plugins_init()
-    if (_use_memoization) {
-      memo_init()
-      thunklog_init()
-    }
+    memo_init()
   }
   protected[automan] def close() = {
     plugins_shutdown()
@@ -87,13 +84,13 @@ abstract class AutomanAdapter {
     _plugins_initialized.foreach { plugin => plugin.shutdown() }
   }
   private def memo_init() {
+    if (_log_config != LogConfig.NO_LOGGING) {
+      _memoizer = Some(new Memo(_log_config))
+    }
 //    _memoizer = Some(new AutomanMemoizer(_memo_conn_string, _memo_user, _memo_pass))
     ???
   }
-  private def thunklog_init() {
-//    _thunklog = Some(new ThunkLogger(_thunk_conn_string, _thunk_user, _thunk_pass))
-    ???
-  }
+
 //  def state_snapshot(): StateInfo = {
 //    StateInfo(_schedulers.flatMap { s => s.state })
 //  }
