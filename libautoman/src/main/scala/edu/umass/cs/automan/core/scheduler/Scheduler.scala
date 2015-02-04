@@ -1,289 +1,183 @@
 package edu.umass.cs.automan.core.scheduler
 
-import java.util.{Date, UUID}
-
-import edu.umass.cs.automan.core.answer.Answer
-import edu.umass.cs.automan.core.info.{EpochInfo, QuestionInfo}
-import edu.umass.cs.automan.core.logging.Memo
-import edu.umass.cs.automan.core.strategy.ValidationStrategy
-import scala.collection.mutable
-import scala.collection.mutable.Queue
-import edu.umass.cs.automan.core.question.Question
-import edu.umass.cs.automan.core.{LogLevel, LogType, Utilities, AutomanAdapter}
+import java.util.Date
+import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.exception.OverBudgetException
+import edu.umass.cs.automan.core.logging.Memo
+import edu.umass.cs.automan.core.question.Question
+import scala.annotation.tailrec
 
 class Scheduler[A](val question: Question[A],
-                   val adapter: AutomanAdapter,
-                   val memoizer: Option[Memo],
+                   val backend: AutomanAdapter,
+                   val memo_opt: Option[Memo],
                    val poll_interval_in_s: Int,
-                   val virtual_time: Option[Date]) {
+                   val time_opt: Option[Date]) {
   def this(question: Question[A],
            adapter: AutomanAdapter,
            memoizer: Option[Memo],
            poll_interval_in_s: Int) = this(question, adapter, memoizer, poll_interval_in_s, None)
-  // we need to get the initialized strategy instance from
-  // the Question itself in order to satisfy the type checker
-  private val _strategy: ValidationStrategy[A] = question.strategy_instance
-  private var _thunks = scala.collection.immutable.Map[UUID,Thunk[A]]()
 
-  def post_new_thunks(thunks: List[Thunk[A]], last_iteration_timeout: Boolean, memo_answers: Queue[BackendResult[A]]) : List[Thunk[A]] = {
-    val num_answers = answered_thunks(thunks).size
-
-    // spawn new thunks; in READY state here
-    val new_thunks = _strategy.spawn(thunks, last_iteration_timeout) // OverBudgetException should be thrown here
-
-    // before posting, pick answers out of memo DB
-    val recalled_thunks = recall(new_thunks, memo_answers) // blocks
-
-    // remaining new thunks
-    val rem_new_thunks = new_thunks.filter{ t => recalled_thunks.forall(_.thunk_id != t.thunk_id)}
-
-    // post remaining thunks
-    val posted_thunks = if (!question.dry_run && rem_new_thunks.size > 0) {
-      post(rem_new_thunks) // non-blocking
-    } else {
-      List.empty
+  /** Crowdsources a task on the desired backend, scheduling and
+    * rescheduling enough jobs until the chosen quality-control
+    * mechanism is confident in the result, and paying for answers
+    * where appropriate.
+    */
+  def run(): SchedulerResult[A] = {
+    // Was this computation interrupted? If there's a memoizer instance
+    // restore thunks from scheduler trace.
+    val thunks: List[Thunk[A]] = memo_opt match {
+      case Some(memo) => memo.restoreThunksForQuestion(question.memo_hash)
+      case None => List.empty
     }
 
-    recalled_thunks ::: posted_thunks
+    // set initial conditions and then call the tail-recursive version
+    run_tr(thunks, suffered_timeout = false)
   }
 
-  def run() : SchedulerResult[A] = {
-    // check memo DB first
-    val memo_answers = get_memo_answers()
-    val unpaid_timeouts = new mutable.HashSet[Thunk[A]]()
-    var last_iteration_timeout = false
-    var over_budget = false
-    Utilities.DebugLog("Found " + memo_answers.size + " saved Answers in database.", LogLevel.INFO, LogType.SCHEDULER, question.id)
+  @tailrec private def run_tr(thunks: List[Thunk[A]], suffered_timeout: Boolean) : SchedulerResult[A] = {
+    val s = question.strategy_instance
 
-    try {
-      Utilities.DebugLog("Entering scheduling loop...", LogLevel.INFO, LogType.SCHEDULER, question.id)
-      Utilities.DebugLog(String.format("Initial budget set at: %s", Utilities.decimalAsDollars(question.budget)), LogLevel.INFO, LogType.SCHEDULER, question.id)
-      // run startup hook
-      if(!question.dry_run) {
-        adapter.question_startup_hook(question)
-      }
-      while(!_strategy.is_done(_thunks.values.toList)) {
-        if (running_thunks(_thunks).size == 0) {
-          synchronized {
-            val new_thunks = post_new_thunks(_thunks.values.toList, last_iteration_timeout, memo_answers)
+    if(s.is_done(thunks)) {
+      // pay for answers
+      val all_thunks = Scheduler.accept_and_reject(s.thunks_to_accept(thunks), s.thunks_to_reject(thunks), backend)
 
-            // update thunk data structures
-            _thunks = _thunks ++ new_thunks.map { t => t.thunk_id -> t}
-          }
-        }
+      // calculate total cost
+      val final_spent = Scheduler.total_cost(all_thunks)
 
-        // The scheduler must wait, to give the crowd time to answer.
-        // This also informs the scheduler that this thread may yield
-        // its CPU time.
-        Thread.sleep(poll_interval_in_s * 1000)
-
-        // ask the backend for answers and memoize_answers
-        // conditional covers the case where all thunk answers are recalled from memoDB
-        if (running_thunks(_thunks).size > 0) {
-          // get data
-          val results =
-            if (!question.dry_run) {
-              adapter.retrieve(running_thunks(_thunks)) // blocks
-            } else {
-              List.empty
-            }
-
-          // atomically update thunk data structures with new results
-          synchronized {
-            _thunks = _thunks ++ results.map { t => t.thunk_id -> t}
-          }
-
-          // check for timed-out thunks
-          if (results.count(_.state == SchedulerState.TIMEOUT) != 0) {
-            // unreserve these amounts from our budget
-            val new_timeouts = results.filter{ t =>
-              t.state == SchedulerState.TIMEOUT &&
-              !unpaid_timeouts.contains(t)
-            }
-            _strategy.unpay_for_thunks(new_timeouts)
-            last_iteration_timeout = true
-          } else {
-            last_iteration_timeout = false
-          }
-          // saves *recently* RETRIEVED thunks
-          memoize_answers(results.asInstanceOf[List[Thunk[A]]])  // blocks
-        }
-      }
-      // run shutdown hook
-      if(!question.dry_run) {
-        adapter.question_shutdown_hook(question)
-      }
-
-    } catch {
-      case o:OverBudgetException[_] => {
-        Utilities.DebugLog("OverBudgetException.", LogLevel.FATAL, LogType.SCHEDULER, question.id)
-        over_budget = true
-      }
-    }
-    Utilities.DebugLog("Exiting scheduling loop...", LogLevel.INFO, LogType.SCHEDULER, question.id)
-
-    synchronized {
-      _strategy.select_answer(_thunks.values.toList) match {
-        case Some(scheduler_result) =>
-          val cost = if (!over_budget) {
-            accept_and_reject(_thunks)
-          } else {
-            throw new OverBudgetException(Some(scheduler_result))
-          }
-
-          // log
-          Utilities.DebugLog("Total spent: " + cost.toString(), LogLevel.INFO, LogType.SCHEDULER, question.id)
-
-          // final result; will be wrapped in Answer[A] by caller
-          scheduler_result
-        case None => ???
-      }
-    }
-  }
-
-  def get_memo_answers() : Queue[BackendResult[A]] = {
-    ???
-//    val answers = Queue[A]()
-//    answers ++= (memoizer match {
-//      case Some(m) => m.checkDB(question).map{ a => a.asInstanceOf[A]}
-//      case None => List()
-//    })
-//    answers
-  }
-
-  def accept_and_reject(ts: Map[UUID, Thunk[A]]) : BigDecimal = {
-    var spent: BigDecimal = 0
-    val accepts = _strategy.thunks_to_accept(ts.values.toList)
-    val rejects = _strategy.thunks_to_reject(ts.values.toList)
-    val cancels = ts.values.filter(_.state == SchedulerState.CANCELLED)
-    val timeouts = ts.values.filter(_.state == SchedulerState.TIMEOUT)
-
-    // Accept
-    accepts.foreach { t =>
-      Utilities.DebugLog(
-        "Accepting thunk " + t.thunk_id +  " with answer \"" + t.answer.get.toString + "\" and paying $" +
-          t.cost.toString(), LogLevel.INFO, LogType.SCHEDULER, question.id
-      )
-      val t2 = adapter.accept(t)
-//      thunklog match {
-//        case Some(tl) => tl.writeThunk(t2, SchedulerState.ACCEPTED, t2.worker_id.get)
-//        case None => Unit
-//      }
-      ???
-      spent += t.cost
-    }
-
-    // Reject
-    if (!question.dont_reject) {
-      rejects.foreach { t =>
-        Utilities.DebugLog(
-          "Rejecting thunk " + t.thunk_id + " with incorrect answer \"" +
-            t.answer.get.toString + "\"", LogLevel.INFO, LogType.SCHEDULER, question.id
-        )
-        val t2 = adapter.reject(t)
-//        thunklog match {
-//          case Some(tl) => tl.writeThunk(t2, SchedulerState.REJECTED, t2.worker_id.get)
-//          case None => Unit
-//        }
-        ???
+      // return answer
+      s.select_answer(thunks) match {
+        case Some(result) => result
+        case None => throw new Exception("The computation cannot both be completed and have no answer.")
       }
     } else {
-      // Accept if the user specified "don't reject"
-      rejects.foreach { t =>
-        Utilities.DebugLog(
-          "Accepting (NOT rejecting) thunk " + t.thunk_id + " with incorrect answer \"" +
-            t.answer.get.toString + "\". If you did not want this, set Question.dont_reject to false.",
-          LogLevel.INFO, LogType.SCHEDULER, question.id
-        )
-        val t2 = adapter.accept(t)
-//        thunklog match {
-//          case Some(tl) => tl.writeThunk(t2, SchedulerState.ACCEPTED, t2.worker_id.get)
-//          case None => Unit
-//        }
-        ???
-        spent += t2.cost
+      // get list of workers who may not re-participate
+      val blacklist = s.blacklisted_workers(thunks)
+      // post more tasks as needed
+      val new_thunks = Scheduler.post_as_needed(thunks, backend, question, suffered_timeout, blacklist)
+      // The scheduler waits here to give the crowd time to answer.
+      // Sleeping also informs the scheduler that this thread may yield
+      // its CPU time.
+      Thread.sleep(poll_interval_in_s * 1000)
+      // ask the backend to retrieve answers for all RUNNING thunks
+      val (running_thunks,dead_thunks) = (thunks ::: new_thunks).partition(_.state == SchedulerState.RUNNING)
+      assert(running_thunks.size > 0)
+      val answered_thunks = backend.retrieve(running_thunks)
+      assert(Scheduler.retrieve_invariant(running_thunks, answered_thunks))
+      // complete list of thunks
+      val all_thunks = answered_thunks ::: dead_thunks
+
+      // memoize thunks
+      memo_opt match {
+        case Some(memo) => memo.save(all_thunks)
+        case None => ()
       }
-    }
-
-    // Early cancel
-    cancels.foreach { t =>
-      Utilities.DebugLog("Cancelling RUNNING thunk " + t.thunk_id + "...", LogLevel.INFO, LogType.SCHEDULER, question.id)
-      adapter.cancel(t)
-//      thunklog match {
-//        case Some(tl) => tl.writeThunk(t, SchedulerState.CANCELLED, null)
-//        case None => Unit
-//      }
-      ???
-    }
-
-    // Timeouts
-    timeouts.foreach { t =>
-//      thunklog match {
-//        case Some(tl) => tl.writeThunk(t, SchedulerState.TIMEOUT, null)
-//        case None => Unit
-//      }
-      ???
-    }
-
-    spent
-  }
-
-  def answered_thunks(ts: List[Thunk[A]]) : List[Thunk[A]] = ts.filter( t =>
-    t.state == SchedulerState.PROCESSED &&
-    t.state == SchedulerState.RETRIEVED ||
-    t.state == SchedulerState.ACCEPTED ||
-    t.state == SchedulerState.REJECTED
-  ).toList
-  def completed_thunks(ts: Map[UUID,Thunk[A]]) : List[Thunk[A]] = ts.values.filter( t =>
-    t.state == SchedulerState.PROCESSED &&
-    t.state == SchedulerState.RETRIEVED ||
-    t.state == SchedulerState.ACCEPTED ||
-    t.state == SchedulerState.REJECTED ||
-    t.state == SchedulerState.TIMEOUT  ||
-    t.state == SchedulerState.CANCELLED
-  ).toList
-  def incomplete_thunks(ts: Map[UUID,Thunk[A]]) : List[Thunk[A]] = ts.values.filter( t =>
-    t.state != SchedulerState.PROCESSED &&
-    t.state != SchedulerState.RETRIEVED &&
-    t.state != SchedulerState.ACCEPTED &&
-    t.state != SchedulerState.REJECTED &&
-    t.state != SchedulerState.TIMEOUT &&
-    t.state != SchedulerState.CANCELLED
-  ).toList
-  def memoize_answers(ts: List[Thunk[A]]) {
-    // save
-    memoizer match {
-      case Some(m) =>
-        ts.filter(_.state == SchedulerState.RETRIEVED).foreach {t =>
-//          m.writeAnswer(question, t.answer.get)
-          ???
-        }
-      case None => Unit
+      // recursive call
+      run_tr(all_thunks, Scheduler.timeout_occurred(answered_thunks))
     }
   }
-  def post(ts: List[Thunk[A]]) : List[Thunk[A]] = {
-    Utilities.DebugLog("Posting " + ts.size + " tasks.", LogLevel.INFO, LogType.SCHEDULER, question.id)
-    adapter.post(ts, question.blacklisted_workers)
-  }
-  def running_thunks(ts: Map[UUID,Thunk[A]]) = ts.values.filter(_.state == SchedulerState.RUNNING).toList
-  def recall(ts: List[Thunk[A]], results: Queue[BackendResult[A]]) : List[Thunk[A]] = {
-    // sanity check
-    assert(ts.forall(_.state == SchedulerState.READY))
+}
 
-    if (results.size > 0) {
-      ts.take(results.size).map { t =>
-        val result = results.dequeue()
-        Utilities.DebugLog("Pairing thunk " + t.thunk_id + " with memoized result \"" + result.toString + "\".", LogLevel.INFO, LogType.SCHEDULER, question.id)
-        val worker_id = result.worker_id
-        val t2 = t.copy_with_answer(result.answer, worker_id)
-        t2.question.blacklist_worker(worker_id)
-//        adapter.process_custom_info(t2, result.custom_info)
-        ???
-        t2
+object Scheduler {
+  def cost_for_thunks(thunks: List[Thunk[_]]) : BigDecimal = {
+    thunks.foldLeft(BigDecimal(0)) { case (acc, t) => acc + t.cost }
+  }
+
+  /**
+   * Check to see whether a timeout occurred given a list of Thunks.
+   * @param thunks A list of Thunks.
+   * @tparam A The data type of the returned Answer.
+   * @return True if at least one timeout occurred.
+   */
+  def timeout_occurred[A](thunks: List[Thunk[_]]) : Boolean = {
+    thunks.count(_.state == SchedulerState.TIMEOUT) > 0
+  }
+
+  /**
+   * Post new tasks if needed. Returns only newly-created thunks.
+   * @param thunks The complete list of thunks.
+   * @param question Question data.
+   * @param suffered_timeout True if any thunks suffered a timeout on the last iteration.
+   * @tparam A The data type of the returned Answer.
+   * @return A list of newly-created Thunks.
+   */
+  def post_as_needed[A](thunks: List[Thunk[A]], backend: AutomanAdapter, question: Question[A], suffered_timeout: Boolean, blacklist: List[String]) : List[Thunk[A]] = {
+    val s = question.strategy_instance
+    
+    // are any thunks still running?
+    if (thunks.count(_.state == SchedulerState.RUNNING) == 0) {
+      // no, so post more
+      val new_thunks = s.spawn(thunks, suffered_timeout)
+      assert(spawn_invariant(new_thunks))
+      // can we afford these?
+      if (question.budget < Scheduler.cost_for_thunks(thunks ::: new_thunks)) {
+        throw new OverBudgetException[A](s.select_answer(thunks))
+      } else {
+        // yes, so post and return all posted thunks
+        backend.post(new_thunks, blacklist)
       }
     } else {
       List.empty
     }
+  }
+
+  /**
+   * Accepts and rejects tasks on the backend.  Returns all Thunks.
+   * @param to_accept A list of Thunks to be accepted.
+   * @param to_reject A list of Thunks to be rejected.
+   * @return The amount of money spent.
+   */
+  def accept_and_reject(to_accept: List[Thunk[_]], to_reject: List[Thunk[_]], backend: AutomanAdapter) : List[Thunk[_]] = {
+    val accepted = to_accept.map(backend.accept(_))
+    assert(all_set_to_state(to_accept, accepted, SchedulerState.ACCEPTED))
+    val rejected = to_reject.map(backend.reject(_))
+    assert(all_set_to_state(to_reject, rejected, SchedulerState.REJECTED))
+    accepted ::: rejected
+  }
+
+  /**
+   * Calculates the total cost of all ACCEPTED thunks.
+   * @param thunks The complete list of Thunks.
+   * @return The amount spent.
+   */
+  def total_cost(thunks: List[Thunk[_]]) : BigDecimal = {
+    thunks.filter(_.state == SchedulerState.ACCEPTED).foldLeft(BigDecimal(0)) { case (acc,t) => acc + t.cost }
+  }
+
+  // INVARIANTS
+
+  /**
+   * Given a list of RUNNING thunks and a list of thunks returned from
+   * the AutomanAdapter.retrieve method, ensure that a number of
+   * invariants hold.
+   * @param running A list of RUNNING thunks.
+   * @param answered A list of thunks returned by the AutomanAdapter.retrieve method.
+   * @tparam A The data type of the returned Answer.
+   * @return True if all invariants hold.
+   */
+  def retrieve_invariant[A](running: List[Thunk[A]], answered: List[Thunk[A]]) : Boolean = {
+    // all of the running thunks should actually be RUNNING
+    running.count(_.state == SchedulerState.RUNNING) == running.size &&
+      // the number of thunks given should be the same number returned
+      answered.size == running.size &&
+      // returned thunks should all either be RUNNING, RETRIEVED, or TIMEOUT
+      answered.count { t =>
+        t.state == SchedulerState.RUNNING ||
+          t.state == SchedulerState.RETRIEVED ||
+          t.state == SchedulerState.TIMEOUT
+      } == running.size
+  }
+
+  /**
+   * The list of newly-spawned thunks should never be zero.
+   * @param new_thunks A list of newly-spawned thunks.
+   * @tparam A The data type of the returned Answer.
+   * @return True if the invariant holds.
+   */
+  def spawn_invariant[A](new_thunks: List[Thunk[A]]) : Boolean = {
+    new_thunks.size != 0
+  }
+
+  def all_set_to_state[A](before: List[Thunk[A]], after: List[Thunk[A]], state: SchedulerState.Value) : Boolean = {
+    after.count(_.state == state) == before.size
   }
 }

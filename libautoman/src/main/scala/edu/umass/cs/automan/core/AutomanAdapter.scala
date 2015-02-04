@@ -31,7 +31,7 @@ abstract class AutomanAdapter {
   protected var _thunk_conn_string: String = "jdbc:derby:" + _thunk_db + ";create=true"
   protected var _thunk_user: String = ""
   protected var _thunk_pass: String = ""
-  protected var _log_config: LogConfig = LogConfig.LOG_MEMOIZE_VERBOSE
+  protected var _log_config: LogConfig = LogConfig.TRACE_MEMOIZE_VERBOSE
 
   // user-visible getters and setters
   def default_confidence: Double = _default_confidence
@@ -44,12 +44,32 @@ abstract class AutomanAdapter {
   def logging_=(lc: LogConfig.Value) { _log_config = lc }
 
   // marshaling calls
+  // invariant: every Thunk that is passed in is passed back
   protected[automan] def accept[A](t: Thunk[A]) : Thunk[A]
   protected[automan] def backend_budget(): BigDecimal
   protected[automan] def cancel[A](t: Thunk[A]) : Thunk[A]
+  /**
+   * Post tasks on the backend, one task for each Thunk.  All Thunks should
+   * be marked READY. The method returns the complete list of Thunks passed
+   * but with new states. Invariant: the size of the list of input Thunks ==
+   * the size of the list of the output Thunks.
+   * @param ts A list of new Thunks.
+   * @param exclude_worker_ids Worker IDs to exclude, if any.
+   * @tparam A The data type of the Answer value.
+   * @return A list of the posted Thunks.
+   */
   protected[automan] def post[A](ts: List[Thunk[A]], exclude_worker_ids: List[String]) : List[Thunk[A]]
   protected[automan] def process_custom_info[A](t: Thunk[A], i: Option[String]) : Thunk[A]
   protected[automan] def reject[A](t: Thunk[A]) : Thunk[A]
+
+  /**
+   * Ask the backend to retrieve answers given a list of RUNNING Thunks. Invariant:
+   * the size of the list of input Thunks == the size of the list of the output
+   * Thunks.
+   * @param ts A list of RUNNING thunks.
+   * @tparam A The data type of the Answer value.
+   * @return A list of RUNNING, RETRIEVED, or TIMEOUT Thunks.
+   */
   protected[automan] def retrieve[A](ts: List[Thunk[A]]) : List[Thunk[A]]
 //  protected[automan] def timeout[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]]
   protected[automan] def question_startup_hook[A](q: Question[A]): Unit = {}
