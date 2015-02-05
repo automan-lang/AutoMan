@@ -87,7 +87,6 @@ abstract class Question[A] {
       this.question_timeout_in_s,
       this.worker_timeout_in_s,
       this.reward,
-      this.id,
       new java.util.Date(),
       SchedulerState.READY,
       false

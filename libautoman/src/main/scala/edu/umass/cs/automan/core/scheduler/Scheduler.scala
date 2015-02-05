@@ -124,13 +124,14 @@ object Scheduler {
    * Accepts and rejects tasks on the backend.  Returns all Thunks.
    * @param to_accept A list of Thunks to be accepted.
    * @param to_reject A list of Thunks to be rejected.
+   * @tparam A The data type of the returned Answer.
    * @return The amount of money spent.
    */
-  def accept_and_reject(to_accept: List[Thunk[_]], to_reject: List[Thunk[_]], backend: AutomanAdapter) : List[Thunk[_]] = {
-    val accepted = to_accept.map(backend.accept(_))
-    assert(all_set_to_state(to_accept, accepted, SchedulerState.ACCEPTED))
-    val rejected = to_reject.map(backend.reject(_))
-    assert(all_set_to_state(to_reject, rejected, SchedulerState.REJECTED))
+  def accept_and_reject[A](to_accept: List[Thunk[A]], to_reject: List[Thunk[A]], backend: AutomanAdapter) : List[Thunk[A]] = {
+    val accepted = to_accept.map(backend.accept)
+    assert(all_set_invariant(to_accept, accepted, SchedulerState.ACCEPTED))
+    val rejected = to_reject.map(backend.reject)
+    assert(all_set_invariant(to_reject, rejected, SchedulerState.REJECTED))
     accepted ::: rejected
   }
 
@@ -177,7 +178,17 @@ object Scheduler {
     new_thunks.size != 0
   }
 
-  def all_set_to_state[A](before: List[Thunk[A]], after: List[Thunk[A]], state: SchedulerState.Value) : Boolean = {
-    after.count(_.state == state) == before.size
+  /**
+   * Returns true if all of the Thunks from the before list are set to the
+   * given state in the after list.
+   * @param before A list of Thunks.
+   * @param after A list of Thunks.
+   * @param state The state to check.
+   * @tparam A The data type of the returned Answer.
+   * @return True if the invariant holds.
+   */
+  def all_set_invariant[A](before: List[Thunk[A]], after: List[Thunk[A]], state: SchedulerState.Value) : Boolean = {
+    val after_set = after.map { t => t.thunk_id }.toSet
+    before.foldLeft(true){ case (acc,t) => acc && after_set.contains(t.thunk_id) }
   }
 }

@@ -88,21 +88,6 @@ abstract class ValidationStrategy[A](question: Question[A]) {
   def spawn(thunks: List[Thunk[A]], suffered_timeout: Boolean): List[Thunk[A]]
   def thunks_to_accept(thunks: List[Thunk[A]]): List[Thunk[A]]
   def thunks_to_reject(thunks: List[Thunk[A]]): List[Thunk[A]]
-//  def pay_for_thunks(ts: List[Thunk[A]]) {
-//    ts.foreach { t =>
-//      _budget_committed += question.reward
-//      if (_budget_committed > question.budget) {
-//        Utilities.DebugLog("Over budget. budget_committed = " + _budget_committed + " > budget = " + question.budget, LogLevel.FATAL, LogType.STRATEGY, _computation_id)
-//        throw OverBudgetException[A](None)
-//      }
-//    }
-//  }
-//  def unpay_for_thunks(ts: List[Thunk[A]]) {
-//    ts.foreach { t =>
-//      _budget_committed -= question.reward
-//      Utilities.DebugLog("Returning " + question.reward + " to budget.", LogLevel.INFO, LogType.STRATEGY, _computation_id)
-//    }
-//  }
 
   protected def unique_by_date(ts: List[Thunk[A]]) = {
     // worker_id should always be set for RETRIEVED and PROCESSED

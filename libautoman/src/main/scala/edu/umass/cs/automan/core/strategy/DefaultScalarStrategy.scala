@@ -16,7 +16,7 @@ object DefaultScalarStrategy {
 
 class DefaultScalarStrategy[A](question: ScalarQuestion[A])
   extends ScalarValidationStrategy[A](question) {
-  Utilities.DebugLog("DEFAULTSCALAR strategy loaded.",LogLevel.INFO,LogType.STRATEGY,_computation_id)
+  Utilities.DebugLog("DEFAULTSCALAR strategy loaded.",LogLevel.INFO,LogType.STRATEGY, question.id)
 
   def current_confidence(thunks: List[Thunk[A]]): Double = {
     val valid_ts = completed_workerunique_thunks(thunks)
@@ -26,7 +26,7 @@ class DefaultScalarStrategy[A](question: ScalarQuestion[A])
   }
   def is_confident(thunks: List[Thunk[A]]): Boolean = {
     if (thunks.size == 0) {
-      Utilities.DebugLog("Have no thunks; confidence is undefined.", LogLevel.INFO, LogType.STRATEGY, _computation_id)
+      Utilities.DebugLog("Have no thunks; confidence is undefined.", LogLevel.INFO, LogType.STRATEGY, question.id)
       false
     } else {
       val valid_ts = completed_workerunique_thunks(thunks)
@@ -36,10 +36,10 @@ class DefaultScalarStrategy[A](question: ScalarQuestion[A])
       // TODO: MonteCarlo simulator needs to take BigInts!
       val min_agree = MonteCarlo.requiredForAgreement(_num_possibilities.toInt, thunks.size, _confidence, 1000000)
       if (biggest_answer >= min_agree) {
-        Utilities.DebugLog("Reached or exceeded alpha = " + (1 - _confidence).toString, LogLevel.INFO, LogType.STRATEGY, _computation_id)
+        Utilities.DebugLog("Reached or exceeded alpha = " + (1 - question.id).toString, LogLevel.INFO, LogType.STRATEGY, question.id)
         true
       } else {
-        Utilities.DebugLog("Need " + min_agree + " for alpha = " + (1 - _confidence) + "; have " + biggest_answer, LogLevel.INFO, LogType.STRATEGY, _computation_id)
+        Utilities.DebugLog("Need " + min_agree + " for alpha = " + (1 - _confidence) + "; have " + biggest_answer, LogLevel.INFO, LogType.STRATEGY, question.id)
         false
       }
     }
@@ -59,7 +59,7 @@ class DefaultScalarStrategy[A](question: ScalarQuestion[A])
 
     // determine duration
     if (had_timeout) {
-      Utilities.DebugLog("Had a timeout; doubling worker timeout.", LogLevel.INFO, LogType.STRATEGY, _computation_id)
+      Utilities.DebugLog("Had a timeout; doubling worker timeout.", LogLevel.INFO, LogType.STRATEGY, question.id)
       question.worker_timeout_in_s *= 2
     }
 
@@ -67,7 +67,7 @@ class DefaultScalarStrategy[A](question: ScalarQuestion[A])
                         " more Thunks at $" + question.reward + "/thunk, " +
                           question.question_timeout_in_s + "s until question timeout, " +
                           question.worker_timeout_in_s + "s until worker task timeout.", LogLevel.INFO, LogType.STRATEGY,
-                        _computation_id)
+                          question.id)
 
     // allocate Thunk objects
     val new_thunks = (0 until num_to_spawn).map { i =>
@@ -76,17 +76,13 @@ class DefaultScalarStrategy[A](question: ScalarQuestion[A])
         question.question_timeout_in_s,
         question.worker_timeout_in_s,
         question.reward,
-        _computation_id,
         new java.util.Date(),
         SchedulerState.READY,
         false
       )
-      Utilities.DebugLog("spawned question_id = " + question.id_string,LogLevel.INFO,LogType.STRATEGY,_computation_id)
+      Utilities.DebugLog("spawned question_id = " + question.id_string,LogLevel.INFO,LogType.STRATEGY, question.id)
       t
     }.toList
-
-    // reserve money for them
-    pay_for_thunks(new_thunks)
 
     new_thunks
   }
