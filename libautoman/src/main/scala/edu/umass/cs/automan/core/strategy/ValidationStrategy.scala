@@ -1,8 +1,5 @@
 package edu.umass.cs.automan.core.strategy
 
-import edu.umass.cs.automan.core.exception.OverBudgetException
-import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
-
 import scala.collection.mutable
 import edu.umass.cs.automan.core.scheduler.{SchedulerResult, SchedulerState, Thunk}
 import edu.umass.cs.automan.core.question.Question
@@ -61,20 +58,16 @@ abstract class ValidationStrategy[A](question: Question[A]) {
   class PrematureValidationCompletionException(methodname: String, classname: String)
     extends Exception(methodname + " called prematurely in " + classname)
 
-//  val _computation_id = UUID.randomUUID()
-//  var _budget_committed: BigDecimal = 0.00
-  var _num_possibilities: BigInt = 2
-
   /**
    * Returns a list of blacklisted worker_ids given a
    * set of thunks, completed or not.
    * @param thunks The complete list of thunks.
    * @return A list of worker IDs.
    */
-  def blacklisted_workers(thunks: List[Thunk[A]]): List[String]
+  def blacklisted_workers(thunks: List[Thunk[A]]): List[String] = {
+    thunks.flatMap(_.worker_id)
+  }
   def is_done(thunks: List[Thunk[A]]) : Boolean
-  def num_possibilities: BigInt = _num_possibilities
-  def num_possibilities_=(n: BigInt) { _num_possibilities = n }
   def select_answer(thunks: List[Thunk[A]]) : Option[SchedulerResult[A]]
   /**
    * Computes the number of Thunks needed to satisfy the quality-control

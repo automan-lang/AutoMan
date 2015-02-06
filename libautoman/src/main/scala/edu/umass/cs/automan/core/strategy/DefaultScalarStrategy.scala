@@ -22,7 +22,7 @@ class DefaultScalarStrategy[A](question: ScalarQuestion[A])
     val valid_ts = completed_workerunique_thunks(thunks)
     if (valid_ts.size == 0) return 0.0 // bail if we have no valid responses
     val biggest_answer = valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
-    MonteCarlo.confidenceOfOutcome(_num_possibilities.toInt, thunks.size, biggest_answer, 1000000)
+    MonteCarlo.confidenceOfOutcome(question.num_possibilities.toInt, thunks.size, biggest_answer, 1000000)
   }
   def is_confident(thunks: List[Thunk[A]]): Boolean = {
     if (thunks.size == 0) {
@@ -34,12 +34,12 @@ class DefaultScalarStrategy[A](question: ScalarQuestion[A])
       val biggest_answer = valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
 
       // TODO: MonteCarlo simulator needs to take BigInts!
-      val min_agree = MonteCarlo.requiredForAgreement(_num_possibilities.toInt, thunks.size, _confidence, 1000000)
+      val min_agree = MonteCarlo.requiredForAgreement(question.num_possibilities.toInt, thunks.size, question.confidence, 1000000)
       if (biggest_answer >= min_agree) {
-        Utilities.DebugLog("Reached or exceeded alpha = " + (1 - question.id).toString, LogLevel.INFO, LogType.STRATEGY, question.id)
+        Utilities.DebugLog("Reached or exceeded alpha = " + (1 - question.confidence).toString, LogLevel.INFO, LogType.STRATEGY, question.id)
         true
       } else {
-        Utilities.DebugLog("Need " + min_agree + " for alpha = " + (1 - _confidence) + "; have " + biggest_answer, LogLevel.INFO, LogType.STRATEGY, question.id)
+        Utilities.DebugLog("Need " + min_agree + " for alpha = " + (1 - question.confidence) + "; have " + biggest_answer, LogLevel.INFO, LogType.STRATEGY, question.id)
         false
       }
     }
@@ -90,10 +90,6 @@ class DefaultScalarStrategy[A](question: ScalarQuestion[A])
   def num_to_run(thunks: List[Thunk[A]]) : Int = {
     val np: Int = if(question.num_possibilities > BigInt(Int.MaxValue)) 1000 else question.num_possibilities.toInt
 
-    // update # of unique workers
-    val unique_workers = completed_thunks(thunks).map { t => t.worker_id }.distinct.size
-    ValidationStrategy.overwrite(question.title, question.text, _computation_id, unique_workers, completed_thunks(thunks).size)
-
     // number needed for agreement, adjusted for programmer time-value
     val n = math.max(expected_for_agreement(np, thunks.size, max_agree(thunks), question.confidence).toDouble,
              math.min(math.floor(question.budget.toDouble/question.reward.toDouble),
@@ -101,17 +97,7 @@ class DefaultScalarStrategy[A](question: ScalarQuestion[A])
              )
     )
 
-    // if we aren't using disqualifications, calculate the expected number of
-    // worker reparticipations and inflate n accordingly
-    ValidationStrategy.work_uniqueness(question.title, question.text) match {
-      case Some(u) =>
-        if (question.use_disqualifications) {
-          n.toInt
-        } else {
-          Math.ceil(n / u.toDouble).toInt
-        }
-      case None => n.toInt
-    }
+    n.toInt
   }
   
   def expected_for_agreement(num_possibilities: Int, trials: Int,  max_agr: Int, confidence: Double) : Int = {
@@ -147,7 +133,7 @@ class DefaultScalarStrategy[A](question: ScalarQuestion[A])
 
     // formula is:
     // (# of ways to have unanimous answer) * (probability of a given choice)^(trials)
-    while (question.num_possibilities.toDouble * math.pow(1.0/question.num_possibilities.toDouble, duplicates_required) > (1.0 - confidence)) {
+    while (question.num_possibilities.toDouble * math.pow(1.0/question.num_possibilities.toDouble, duplicates_required) > (1.0 - question.confidence)) {
       duplicates_required += 1
     }
 
@@ -158,9 +144,9 @@ class DefaultScalarStrategy[A](question: ScalarQuestion[A])
   def pessimism() = {
     val p: Double = math.max((question.time_value_per_hour/question.wage).toDouble, 1.0)
     if (p > 1) {
-      Utilities.DebugLog("Using pessimistic (expensive) strategy.", LogLevel.INFO, LogType.STRATEGY, _computation_id)
+      Utilities.DebugLog("Using pessimistic (expensive) strategy.", LogLevel.INFO, LogType.STRATEGY, question.id)
     } else {
-      Utilities.DebugLog("Using Using optimistic (cheap) strategy.", LogLevel.INFO, LogType.STRATEGY, _computation_id)
+      Utilities.DebugLog("Using Using optimistic (cheap) strategy.", LogLevel.INFO, LogType.STRATEGY, question.id)
     }
     p
   }
