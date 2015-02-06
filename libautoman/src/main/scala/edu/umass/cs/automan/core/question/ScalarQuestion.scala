@@ -8,4 +8,11 @@ abstract class ScalarQuestion[A] extends Question[A] {
 
   def confidence_=(c: Double) { _confidence = c }
   def confidence: Double = _confidence
+
+  override private[automan] def init_strategy(): Unit = {
+    _strategy_instance = _strategy match {
+      case None => new DefaultScalarStrategy[A](this)
+      case Some(strat) => strat.newInstance()
+    }
+  }
 }
