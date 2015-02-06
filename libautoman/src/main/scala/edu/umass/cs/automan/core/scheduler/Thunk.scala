@@ -1,22 +1,21 @@
 package edu.umass.cs.automan.core.scheduler
 
-import edu.umass.cs.automan.core.logging.Memo
 import edu.umass.cs.automan.core.question.Question
 import java.util.{UUID, Calendar, Date}
 import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 
-class Thunk[T](val thunk_id: UUID,
-               val question: Question[T],
-               val timeout_in_s: Int,
-               val worker_timeout: Int,
-               val cost: BigDecimal,
-               val created_at: Date,
-               val state: SchedulerState.Value,
-               val from_memo: Boolean,
-               val worker_id: Option[String],
-               val answer: Option[T],
-               val completed_at: Option[Date]
-              ) {
+case class Thunk[T](thunk_id: UUID,
+                    question: Question[T],
+                    timeout_in_s: Int,
+                    worker_timeout: Int,
+                    cost: BigDecimal,
+                    created_at: Date,
+                    state: SchedulerState.Value,
+                    from_memo: Boolean,
+                    worker_id: Option[String],
+                    answer: Option[T],
+                    completed_at: Option[Date]
+                     ) {
   def this(thunk_id: UUID,
            question: Question[T],
            timeout_in_s: Int,
