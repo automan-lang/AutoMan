@@ -29,9 +29,7 @@ abstract class Question[A] {
   protected var _blacklisted_workers = List[String]()
   protected var _dry_run: Boolean = false
   protected var _dont_reject: Boolean = false
-  protected var _use_disqualifications: Boolean = false
   protected var _dont_randomize_options: Boolean = false
-  protected val _is_for_distribution: Boolean
 
   def blacklist_worker(worker_id: String) { _blacklisted_workers = worker_id :: _blacklisted_workers }
   def blacklisted_workers = _blacklisted_workers
@@ -92,5 +90,4 @@ abstract class Question[A] {
       false
     )
   protected[automan] def getAnswer(scheduler: Scheduler[A]): Answer[A]
-  protected[automan] def sameAnswer(a1: A, a2: A) : Boolean
 }
