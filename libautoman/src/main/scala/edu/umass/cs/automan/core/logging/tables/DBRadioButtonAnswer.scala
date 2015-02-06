@@ -2,7 +2,7 @@ package edu.umass.cs.automan.core.logging.tables
 
 import scala.slick.driver.DerbyDriver.simple._
 
-class RadioButtonAnswer(tag: Tag) extends Table[(Int, Symbol, String)](tag, "RADIOBUTTONANSWER") {
+class DBRadioButtonAnswer(tag: Tag) extends Table[(Int, Symbol, String)](tag, "RADIOBUTTONANSWER") {
   // implicit conversion for Symbol <-> String
   implicit val symbolColumnType = MappedColumnType.base[Symbol, String](
     { sym => sym.toString() },  // map Symbol to String

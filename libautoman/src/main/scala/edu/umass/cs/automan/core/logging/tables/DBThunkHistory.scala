@@ -6,7 +6,7 @@ import edu.umass.cs.automan.core.scheduler.SchedulerState.SchedulerState
 import scala.slick.driver.DerbyDriver.simple._
 import java.util.Date
 
-class ThunkHistory(tag: Tag) extends Table[(UUID, Date, SchedulerState)](tag, "THUNK_HISTORY") {
+class DBThunkHistory(tag: Tag) extends Table[(Int, UUID, Date, SchedulerState)](tag, "THUNK_HISTORY") {
   implicit val JavaUtilDateMapper =
     MappedColumnType.base[java.util.Date, java.sql.Timestamp] (
       d => new java.sql.Timestamp(d.getTime),
@@ -18,5 +18,5 @@ class ThunkHistory(tag: Tag) extends Table[(UUID, Date, SchedulerState)](tag, "T
   def thunk_id = column[UUID]("THUNK_ID", O.DBType("UUID"))
   def state_change_time = column[Date]("STATE_CHANGE_TIME")
   def scheduler_state = column[SchedulerState]("SCHEDULER_STATE")
-  override def * = (thunk_id, state_change_time, scheduler_state)
+  override def * = (history_id, thunk_id, state_change_time, scheduler_state)
 }

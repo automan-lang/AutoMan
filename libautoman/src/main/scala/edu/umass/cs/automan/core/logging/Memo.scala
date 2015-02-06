@@ -1,19 +1,28 @@
 package edu.umass.cs.automan.core.logging
 
-import java.util.UUID
-import edu.umass.cs.automan.core.scheduler.{Thunk, SchedulerState}
+import java.util.{Date, UUID}
+import edu.umass.cs.automan.core.info.QuestionType._
+import edu.umass.cs.automan.core.question.Question
+import edu.umass.cs.automan.core.scheduler.SchedulerState._
+import edu.umass.cs.automan.core.scheduler.Thunk
 import scala.slick.driver.DerbyDriver.simple._
 import scala.slick.jdbc.meta.MTable
 
 class Memo(log_config: LogConfig.Value) {
+  // typedefs
+  type DBThunk = (UUID, UUID, BigDecimal, Date, Int, Int)
+  type DBThunkHistory =(UUID, Date, SchedulerState)
+  type DBQuestion = (UUID, String, QuestionType)
+  type DBRadioButtonAnswer = (Int, Symbol, String)
+
   // connection string
   private val jdbc_conn_string = "jdbc:derby:AutoManMemoDB"
 
   // tables
-  private val thunk = TableQuery[edu.umass.cs.automan.core.logging.tables.Thunk]
-  private val thunk_history = TableQuery[edu.umass.cs.automan.core.logging.tables.ThunkHistory]
-  private val question = TableQuery[edu.umass.cs.automan.core.logging.tables.Question]
-  private val radio_button_answer = TableQuery[edu.umass.cs.automan.core.logging.tables.RadioButtonAnswer]
+  private val dbThunk = TableQuery[edu.umass.cs.automan.core.logging.tables.DBThunk]
+  private val dbThunkHistory = TableQuery[edu.umass.cs.automan.core.logging.tables.DBThunkHistory]
+  private val dbQuestion = TableQuery[edu.umass.cs.automan.core.logging.tables.DBQuestion]
+  private val dbRadioButtonAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBRadioButtonAnswer]
 
   // get DB handle
   private val db = Database.forURL(jdbc_conn_string, driver = "scala.slick.driver.DerbyDriver")
@@ -26,19 +35,59 @@ class Memo(log_config: LogConfig.Value) {
     implicit session =>
 
     if (MTable.getTables("QUESTION").list(session).isEmpty) {
-      ( thunk.ddl ++
-        thunk_history.ddl ++
-        question.ddl ++
-        radio_button_answer.ddl
+      ( dbThunk.ddl ++
+        dbThunkHistory.ddl ++
+        dbQuestion.ddl ++
+        dbRadioButtonAnswer.ddl
       ).create
     } else {
       // add all of the thunk_ids from the database to the tracked set
-      thunk.map(_.thunk_id).foreach(all_thunk_ids.add(_))
+      dbThunk.map(_.thunk_id).foreach(all_thunk_ids.add(_))
     }
   }
 
-  def restoreThunksForQuestion[A](memo_hash: String) : List[Thunk[A]] = {
-    ???
+  /**
+   * Restore all Thunks from the database given a question's memo_hash.
+   * @param q An AutoMan question.
+   * @tparam A The data type of the Answer.
+   * @return A list of Thunks.
+   */
+  def restore[A](q: Question[A]) : List[Thunk[A]] = {
+    // TODO: right now, this just returns thunks with actual answer; it really should return everything.
+    db.withTransaction {
+      implicit session =>
+        // get the question entry
+        val question: DBQuestion = dbQuestion.filter(_.memo_hash == q.memo_hash).first
+
+        question._3 match {
+          case RadioButtonQuestion =>
+            val ts_with_answer = for {
+              ((thunk, thunkhistory), answer) <- (dbThunk leftJoin dbThunkHistory on (_.thunk_id === _.thunk_id) leftJoin dbRadioButtonAnswer on (_._2.history_id === _.history_id)).run
+            } yield (thunk, thunkhistory, answer)
+            ts_with_answer.map {
+              case (
+              (thunk_id, question_id, cost_in_cents, creation_time, timeout_in_s, worker_timeout_in_s),
+              (history_id, _, state_change_time, scheduler_state),
+              (_, answer, worker_id)
+              ) =>
+              Thunk(
+                thunk_id,
+                q,
+                timeout_in_s,
+                worker_timeout_in_s,
+                cost_in_cents,
+                creation_time,
+                scheduler_state,
+                from_memo = true,
+                Some(worker_id),
+                Some(answer),
+                Some(state_change_time)
+              ).asInstanceOf[Thunk[A]]
+            }.toList
+          case _ => ???
+        }
+    }
+
   }
 
   /**
@@ -49,28 +98,4 @@ class Memo(log_config: LogConfig.Value) {
   def save[A](thunks: List[Thunk[A]]) : Unit = {
     ???
   }
-
-//  def saveThunk(t: edu.umass.cs.automan.core.scheduler.Thunk[_]) : Unit = {
-//    // if the Thunk already exists, just update the ThunkHistory table
-//    if (all_thunk_ids.contains(t.thunk_id)) {
-//      assert(t.state != SchedulerState.READY)
-//
-//      db.withTransaction {
-//        implicit session =>
-//
-//          thunk_history += (t.thunk_id, t.created_at, t.state)
-//      }
-//    } else {
-//      assert(t.state == SchedulerState.READY)
-//
-//      // otherwise, create a Thunk entry
-//      db.withTransaction {
-//        implicit session =>
-//
-//          thunk += (t.thunk_id, t.question.id, t.cost, t.created_at, t.timeout_in_s, t.worker_timeout)
-//          thunk_history += (t.thunk_id, t.created_at, t.state)
-//      }
-//      all_thunk_ids.add(t.thunk_id)
-//    }
-//  }
 }

@@ -1,10 +1,13 @@
 package edu.umass.cs.automan.core.logging.tables
 
 import java.util.UUID
+import edu.umass.cs.automan.core.info.QuestionType
+import edu.umass.cs.automan.core.info.QuestionType.QuestionType
+
 import scala.slick.driver.DerbyDriver.simple._
 import java.util.Date
 
-class Thunk(tag: Tag) extends Table[(UUID, UUID, BigDecimal, Date, Int, Int)](tag, "THUNK") {
+class DBThunk(tag: Tag) extends Table[(UUID, UUID, BigDecimal, Date, Int, Int)](tag, "THUNK") {
   implicit val javaUtilDateMapper =
     MappedColumnType.base[java.util.Date, java.sql.Timestamp] (
       d => new java.sql.Timestamp(d.getTime),
@@ -17,4 +20,5 @@ class Thunk(tag: Tag) extends Table[(UUID, UUID, BigDecimal, Date, Int, Int)](ta
   def timeout_in_s = column[Int]("TIMEOUT_IN_SEC")
   def worker_timeout_in_s = column[Int]("WORKER_TIMEOUT_IN_SEC")
   override def * = (thunk_id, question_id, cost_in_cents, creation_time, timeout_in_s, worker_timeout_in_s)
-}
+  def ? = (thunk_id.?, question_id.?, cost_in_cents.?, creation_time.?, timeout_in_s.?, worker_timeout_in_s.?)
+})

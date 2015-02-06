@@ -4,6 +4,7 @@ import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 import edu.umass.cs.automan.core.scheduler.Thunk
+import scala.slick.driver.DerbyDriver.simple.MappedColumnType
 
 case class QuestionInfo(computation_id: UUID,
                         name: String,
@@ -27,4 +28,25 @@ object QuestionType extends Enumeration {
   val FreeTextDistributionQuestion = Value("FreeTextDistributionQuestion")
   val RadioButtonQuestion = Value("RadioButtonQuestion")
   val RadioButtonDistributionQuestion = Value("RadioButtonDistributionQuestion")
+
+  // datatypes for serialization
+  val mapper =
+    MappedColumnType.base[QuestionType, Int](
+      {
+        case CheckboxQuestion => 0
+        case CheckboxDistributionQuestion => 1
+        case FreeTextQuestion => 2
+        case FreeTextDistributionQuestion => 3
+        case RadioButtonQuestion => 4
+        case RadioButtonDistributionQuestion => 5
+      },
+      {
+        case 0 => CheckboxQuestion
+        case 1 => CheckboxDistributionQuestion
+        case 2 => FreeTextQuestion
+        case 3 => FreeTextDistributionQuestion
+        case 4 => RadioButtonQuestion
+        case 5 => RadioButtonDistributionQuestion
+      }
+    )
 }
