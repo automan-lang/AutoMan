@@ -53,41 +53,9 @@ class Memo(log_config: LogConfig.Value) {
    * @return A list of Thunks.
    */
   def restore[A](q: Question[A]) : List[Thunk[A]] = {
-    // TODO: right now, this just returns thunks with actual answer; it really should return everything.
-    db.withTransaction {
-      implicit session =>
-        // get the question entry
-        val question: DBQuestion = dbQuestion.filter(_.memo_hash == q.memo_hash).first
-
-        question._3 match {
-          case RadioButtonQuestion =>
-            val ts_with_answer = for {
-              ((thunk, thunkhistory), answer) <- (dbThunk leftJoin dbThunkHistory on (_.thunk_id === _.thunk_id) leftJoin dbRadioButtonAnswer on (_._2.history_id === _.history_id)).run
-            } yield (thunk, thunkhistory, answer)
-            ts_with_answer.map {
-              case (
-              (thunk_id, question_id, cost_in_cents, creation_time, timeout_in_s, worker_timeout_in_s),
-              (history_id, _, state_change_time, scheduler_state),
-              (_, answer, worker_id)
-              ) =>
-              Thunk(
-                thunk_id,
-                q,
-                timeout_in_s,
-                worker_timeout_in_s,
-                cost_in_cents,
-                creation_time,
-                scheduler_state,
-                from_memo = true,
-                Some(worker_id),
-                Some(answer),
-                Some(state_change_time)
-              ).asInstanceOf[Thunk[A]]
-            }.toList
-          case _ => ???
-        }
-    }
-
+    // TODO: run something like this instead; returns most recent state for each thunk_id, parameterized by memo_hash
+    "SELECT history_id,DBThunkHistory.thunk_id,state_change_time,scheduler_state,question_id,cost_in_cents,creation_time,timeout_in_s,worker_timeout_in_s,memo_hash FROM automan.DBThunkHistory INNER JOIN (SELECT thunk_id,MAX(state_change_time) as most_recent FROM automan.DBThunkHistory GROUP BY thunk_id) AS T INNER JOIN DBThunk ON DBThunk.thunk_id = DBThunkHistory.thunk_id INNER JOIN DBQuestion ON DBQuestion.id = DBThunk.question_id WHERE DBThunkHistory.thunk_id = T.thunk_id AND DBThunkHistory.state_change_time = T.most_recent AND memo_hash = 'foo';"
+    ???
   }
 
   /**
