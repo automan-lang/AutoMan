@@ -15,10 +15,10 @@ class DBThunk(tag: Tag) extends Table[(UUID, UUID, BigDecimal, Date, Int, Int)](
 
   def thunk_id = column[UUID]("THUNK_ID", O.PrimaryKey)
   def question_id = column[UUID]("QUESTION_ID")
-  def cost_in_cents = column[BigDecimal]("COST_IN_CENTS", O.DBType("decimal(10, 4)"))
+  def cost = column[BigDecimal]("COST_IN_CENTS", O.DBType("decimal(10, 4)"))
   def creation_time = column[Date]("CREATION_TIME")
   def timeout_in_s = column[Int]("TIMEOUT_IN_S")
   def worker_timeout_in_s = column[Int]("WORKER_TIMEOUT_IN_S")
-  override def * = (thunk_id, question_id, cost_in_cents, creation_time, timeout_in_s, worker_timeout_in_s)
-  def ? = (thunk_id.?, question_id.?, cost_in_cents.?, creation_time.?, timeout_in_s.?, worker_timeout_in_s.?)
+  override def * = (thunk_id, question_id, cost, creation_time, timeout_in_s, worker_timeout_in_s)
+  def ? = (thunk_id.?, question_id.?, cost.?, creation_time.?, timeout_in_s.?, worker_timeout_in_s.?)
 }

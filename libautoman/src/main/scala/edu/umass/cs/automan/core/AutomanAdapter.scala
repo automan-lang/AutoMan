@@ -17,7 +17,7 @@ abstract class AutomanAdapter {
 //  type CBDQ <: CheckboxDistributionQuestion       // answer vector
 //  type FTQ <: FreeTextQuestion                    // answer scalar
 //  type FTDQ <: FreeTextDistributionQuestion       // answer vector
-  type RBQ <: RadioButtonQuestion                 // answer scalar
+  type RBQ  <: RadioButtonQuestion                 // answer scalar
 //  type RBDQ <: RadioButtonDistributionQuestion    // answer vector
 
   protected var _default_confidence: Double = 0.95
@@ -36,8 +36,6 @@ abstract class AutomanAdapter {
   // user-visible getters and setters
   def default_confidence: Double = _default_confidence
   def default_confidence_=(c: Double) { _default_confidence = c }
-  def locale: Locale = _locale
-  def locale_=(l: Locale) { _locale = l }
   def plugins: List[Class[_ <: Plugin]] = _plugins
   def plugins_=(ps: List[Class[_ <: Plugin]]) { _plugins = ps }
   def logging = _log_config
