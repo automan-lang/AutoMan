@@ -68,7 +68,7 @@ class Scheduler[A](val question: Question[A],
 
       // memoize thunks
       memo_opt match {
-        case Some(memo) => memo.save(all_thunks)
+        case Some(memo) => memo.save(question, all_thunks)
         case None => ()
       }
       // recursive call

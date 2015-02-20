@@ -1,5 +1,7 @@
 package edu.umass.cs.automan.adapters.mturk
 
+import java.util.Locale
+
 import com.amazonaws.mturk.util.ClientConfig
 import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.adapters.mturk.connectionpool.Pool
@@ -43,6 +45,8 @@ class MTurkAdapter extends AutomanAdapter {
   // user-visible getters and setters
   def access_key_id: String = _access_key_id match { case Some(id) => id; case None => "" }
   def access_key_id_=(id: String) { _access_key_id = Some(id) }
+  def locale: Locale = _locale
+  def locale_=(l: Locale) { _locale = l }
   def poll_interval = _poll_interval_in_s
   def poll_interval_=(s: Int) { _poll_interval_in_s = s }
   def retriable_errors_=(re: Set[String]) { _retriable_errors = re }
