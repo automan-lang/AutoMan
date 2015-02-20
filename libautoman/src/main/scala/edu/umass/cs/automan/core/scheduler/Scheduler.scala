@@ -26,7 +26,7 @@ class Scheduler[A](val question: Question[A],
     // Was this computation interrupted? If there's a memoizer instance
     // restore thunks from scheduler trace.
     val thunks: List[Thunk[A]] = memo_opt match {
-      case Some(memo) => memo.restore(question.memo_hash)
+      case Some(memo) => memo.restore(question)
       case None => List.empty
     }
 

@@ -30,23 +30,23 @@ object QuestionType extends Enumeration {
   val RadioButtonDistributionQuestion = Value("RadioButtonDistributionQuestion")
 
   // datatypes for serialization
-  val mapper =
-    MappedColumnType.base[QuestionType, Int](
-      {
-        case CheckboxQuestion => 0
-        case CheckboxDistributionQuestion => 1
-        case FreeTextQuestion => 2
-        case FreeTextDistributionQuestion => 3
-        case RadioButtonQuestion => 4
-        case RadioButtonDistributionQuestion => 5
-      },
-      {
-        case 0 => CheckboxQuestion
-        case 1 => CheckboxDistributionQuestion
-        case 2 => FreeTextQuestion
-        case 3 => FreeTextDistributionQuestion
-        case 4 => RadioButtonQuestion
-        case 5 => RadioButtonDistributionQuestion
-      }
-    )
+//  val mapper =
+//    MappedColumnType.base[QuestionType, Int](
+//      {
+//        case CheckboxQuestion => 0
+//        case CheckboxDistributionQuestion => 1
+//        case FreeTextQuestion => 2
+//        case FreeTextDistributionQuestion => 3
+//        case RadioButtonQuestion => 4
+//        case RadioButtonDistributionQuestion => 5
+//      },
+//      {
+//        case 0 => CheckboxQuestion
+//        case 1 => CheckboxDistributionQuestion
+//        case 2 => FreeTextQuestion
+//        case 3 => FreeTextDistributionQuestion
+//        case 4 => RadioButtonQuestion
+//        case 5 => RadioButtonDistributionQuestion
+//      }
+//    )
 }
