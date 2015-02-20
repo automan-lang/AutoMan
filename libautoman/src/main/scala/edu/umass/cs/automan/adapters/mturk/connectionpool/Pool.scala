@@ -5,8 +5,7 @@ import java.util.{Date, UUID}
 import com.amazonaws.mturk.requester._
 import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.adapters.mturk.AutomanHIT
-import edu.umass.cs.automan.adapters.MTurk.question._
-import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
+import edu.umass.cs.automan.adapters.mturk.question.{MTRadioButtonQuestion, HITState, MTurkQuestion}
 import edu.umass.cs.automan.core.answer.Answer
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
@@ -16,20 +15,20 @@ import scala.collection.mutable.Queue
 
 class Pool(backend: RequesterService, sleep_ms: Int) {
   // work queues
-  private val _accept_queue: Queue[AcceptReq[_ <: Answer]] = Queue.empty
-  private val _cancel_queue: Queue[CancelReq[_ <: Answer]] = Queue.empty
+  private val _accept_queue: Queue[AcceptReq[_]] = Queue.empty
+  private val _cancel_queue: Queue[CancelReq[_]] = Queue.empty
   private val _dispose_quals_queue: Queue[DisposeQualsReq] = Queue.empty
-  private val _post_queue : Queue[EnqueuedHIT[_ <: Answer]] = Queue.empty
-  private val _retrieve_queue: Queue[RetrieveReq[_ <: Answer]] = Queue.empty
-  private val _reject_queue: Queue[RejectReq[_ <: Answer]] = Queue.empty
+  private val _post_queue : Queue[EnqueuedHIT[_]] = Queue.empty
+  private val _retrieve_queue: Queue[RetrieveReq[_]] = Queue.empty
+  private val _reject_queue: Queue[RejectReq[_ ]] = Queue.empty
   private var _worker_thread: Option[Thread] = None
 
   // response data
-  private val _accepted_thunks = scala.collection.mutable.Map[AcceptReq[_ <: Answer], Thunk[_ <: Answer]]()
-  private val _cancelled_thunks = scala.collection.mutable.Map[CancelReq[_ <: Answer], Thunk[_ <: Answer]]()
+  private val _accepted_thunks = scala.collection.mutable.Map[AcceptReq[_], Thunk[_]]()
+  private val _cancelled_thunks = scala.collection.mutable.Map[CancelReq[_], Thunk[_]]()
   private val _disposal_completions = scala.collection.mutable.Map[DisposeQualsReq,Unit]()
-  private val _rejected_thunks = scala.collection.mutable.Map[RejectReq[_ <: Answer], Thunk[_ <: Answer]]()
-  private val _retrieved_data = scala.collection.mutable.Map[RetrieveReq[_ <: Answer], List[Thunk[_ <: Answer]]]()
+  private val _rejected_thunks = scala.collection.mutable.Map[RejectReq[_], Thunk[_]]()
+  private val _retrieved_data = scala.collection.mutable.Map[RetrieveReq[_], List[Thunk[_]]]()
 
   // control flags
   private var _keep_running = true
@@ -62,19 +61,19 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   }
 
   // API
-  def accept[A <: Answer](t: Thunk[A]) : Thunk[A] = {
+  def accept[A](t: Thunk[A]) : Thunk[A] = {
     enqueue_request(AcceptReq(t), _accept_queue, _accepted_thunks).asInstanceOf[Thunk[A]]
   }
-  def budget(): BigDecimal = {
+  def backend_budget: BigDecimal = {
     // budget requests are made as soon as is possible (not queued)
     syncCommWait { () =>
       scheduled_get_budget()
     }
   }
-  def cancel[A <: Answer](t: Thunk[A]) : Thunk[A] = {
+  def cancel[A](t: Thunk[A]) : Thunk[A] = {
     enqueue_request(CancelReq(t), _cancel_queue, _cancelled_thunks).asInstanceOf[Thunk[A]]
   }
-  def cleanup_qualifications(q: Question) : Unit = {
+  def cleanup_qualifications[A](q: Question[A]) : Unit = {
     val req = q match {
       case mtq:MTurkQuestion => {
         enqueue_request(DisposeQualsReq(mtq), _dispose_quals_queue, _disposal_completions)
@@ -82,7 +81,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       case _ => throw new Exception("Impossible error.")
     }
   }
-  def post[A <: Answer](ts: List[Thunk[A]], exclude_worker_ids: List[String]) : Unit = {
+  def post[A](ts: List[Thunk[A]], exclude_worker_ids: List[String]) : Unit = {
     // enqueue
     synchronized {
       _post_queue.enqueue(EnqueuedHIT(ts, exclude_worker_ids))
@@ -90,8 +89,9 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
 
     initWorkerIfNeeded()
   }
-//  // put HIT's AssignmentId back into map or mark as PROCESSED
-//  def process_custom_info[A <: Answer](t: Thunk[A], i: Option[String]) : Thunk[A] = {
+  // put HIT's AssignmentId back into map or mark as PROCESSED
+  def process_custom_info[A](t: Thunk[A], i: Option[String]) : Thunk[A] = {
+    ???
 //    val q = question_for_thunks(List(t))
 //    Utilities.DebugLog("Processing custom info...", LogLevel.INFO, LogType.ADAPTER, q.id)
 //    t.question match {
@@ -115,7 +115,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
 //      }
 //      case _ => throw new Exception("MTurkAdapter can only operate on Thunks for MTurkQuestions.")
 //    }
-//  }
+  }
   def reject[A](t: Thunk[A]) : Thunk[A] = {
     enqueue_request(RejectReq(t), _reject_queue, _rejected_thunks).asInstanceOf[Thunk[A]]
   }
@@ -226,7 +226,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
 
             // Retrieve queue
             while (synchronized { _retrieve_queue.nonEmpty } )
-              lockDequeueAndProcess(_retrieve_queue, (rr: RetrieveReq[_ <: Answer]) => {
+              lockDequeueAndProcess(_retrieve_queue, (rr: RetrieveReq[_]) => {
                 // this lock provides notifications
                 // for blocked threads
                 rr.synchronized {
@@ -240,7 +240,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
 
             // Accept queue
             while (synchronized { _accept_queue.nonEmpty } ) {
-              lockDequeueAndProcess(_accept_queue, (ar: AcceptReq[_ <: Answer]) => {
+              lockDequeueAndProcess(_accept_queue, (ar: AcceptReq[_]) => {
                 // this lock provides notifications
                 // for blocked threads
                 ar.synchronized {
@@ -261,7 +261,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
 
             // Reject queue
             while (synchronized { _reject_queue.nonEmpty } ) {
-              lockDequeueAndProcess(_reject_queue, (rj: RejectReq[_ <: Answer]) => {
+              lockDequeueAndProcess(_reject_queue, (rj: RejectReq[_]) => {
                 // this lock provides notifications
                 // for blocked threads
                 rj.synchronized {
@@ -276,7 +276,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
 
             // Cancel queue
             while (synchronized { _cancel_queue.nonEmpty } ) {
-              lockDequeueAndProcess(_cancel_queue, (cr: CancelReq[_ <: Answer]) => {
+              lockDequeueAndProcess(_cancel_queue, (cr: CancelReq[_]) => {
                 // this lock provides notifications
                 // for blocked threads
                 cr.synchronized {
@@ -342,28 +342,28 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     val question = question_for_thunks(ts)
     val mtquestion = question match { case mtq: MTurkQuestion => mtq; case _ => throw new Exception("Impossible.") }
     val qualify_early = if (question.blacklisted_workers.size > 0) true else false
-    val quals = get_qualifications(mtquestion, ts.head.question.text, qualify_early, question.id, question.use_disqualifications)
+    val quals = get_qualifications(mtquestion, ts.head.question.text, qualify_early, question.id, ???)  // TODO: use_disqualifications is now gone
 
     // Build HIT and post it
     mtquestion match {
       case rbq: MTRadioButtonQuestion => {
         mtquestion.hit_type_id = rbq.build_hit(ts).post(backend, quals)
       }
-      case rbdq: MTRadioButtonDistributionQuestion => {
-        mtquestion.hit_type_id = rbdq.build_hit(ts).post(backend, quals)
-      }
-      case cbq: MTCheckboxQuestion => {
-        mtquestion.hit_type_id = cbq.build_hit(ts).post(backend, quals)
-      }
-      case cbdq: MTCheckboxDistributionQuestion => {
-        mtquestion.hit_type_id = cbdq.build_hit(ts).post(backend, quals)
-      }
-      case ftq: MTFreeTextQuestion => {
-        mtquestion.hit_type_id = ftq.build_hit(ts).post(backend, quals)
-      }
-      case ftdq: MTFreeTextDistributionQuestion => {
-        mtquestion.hit_type_id = ftdq.build_hit(ts).post(backend, quals)
-      }
+//      case rbdq: MTRadioButtonDistributionQuestion => {
+//        mtquestion.hit_type_id = rbdq.build_hit(ts).post(backend, quals)
+//      }
+//      case cbq: MTCheckboxQuestion => {
+//        mtquestion.hit_type_id = cbq.build_hit(ts).post(backend, quals)
+//      }
+//      case cbdq: MTCheckboxDistributionQuestion => {
+//        mtquestion.hit_type_id = cbdq.build_hit(ts).post(backend, quals)
+//      }
+//      case ftq: MTFreeTextQuestion => {
+//        mtquestion.hit_type_id = ftq.build_hit(ts).post(backend, quals)
+//      }
+//      case ftdq: MTFreeTextDistributionQuestion => {
+//        mtquestion.hit_type_id = ftdq.build_hit(ts).post(backend, quals)
+//      }
       case _ => throw new Exception("Question type not yet supported. Question class is " + mtquestion.getClass)
     }
   }
@@ -381,11 +381,13 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
         assert(t2.answer != None)
         val ans = t2.answer.get
 
-        if (!ans.paid) {
-          ans.memo_handle.setPaidStatus(true)
-          ans.memo_handle.save()
-          ans.paid = true
-        }
+        // TODO: I don't think we should ever interact with memo_handle inside the backend adapter
+        ???
+//        if (!ans.paid) {
+//          ans.memo_handle.setPaidStatus(true)
+//          ans.memo_handle.save()
+//          ans.paid = true
+//        }
         t2
       }
       case _ => throw new Exception("Impossible error.")
@@ -407,7 +409,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       val assignments: List[Assignment] = hit.retrieve(backend) // finally, do MTurk call
       Utilities.DebugLog("There are " + assignments.size + " assignments available to process.", LogLevel.INFO, LogType.ADAPTER, auquestion.id)
       // for every available thunk-answer pairing, mark thunk as RETRIEVED
-      val answered_ts = assignments.map { a => process_assignment(question, a, hit.hit.getHITId, hts.dequeue(), auquestion.use_disqualifications) }
+      val answered_ts = assignments.map { a => process_assignment(question, a, hit.hit.getHITId, hts.dequeue(), ???) } // TODO: use_disqualifications is now gone
       // timeout timed out Thunks and the HIT
       // since hts is a queue, and we dequeued answered thunks in
       // in the previous call, hts does not include answered thunks
@@ -438,7 +440,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       case _ => throw new Exception("MTurkAdapter can only operate on Thunks for MTurkQuestions.")
     }
   }
-  private[MTurk] def question_for_thunks(ts: List[Thunk[_]]) : Question = {
+  private[mturk] def question_for_thunks(ts: List[Thunk[_]]) : Question[_] = {
     // determine which question we've been asked about
     val tg = ts.groupBy(_.question)
     if(tg.size != 1) {
@@ -519,7 +521,9 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     val answer = q.answer(a).asInstanceOf[A]
 
     // write custominfo
-    answer.custom_info = Some(new MTurkAnswerCustomInfo(a.getAssignmentId, hit_id).toString)
+    // TODO: fix
+    ???
+//    answer.custom_info = Some(new MTurkAnswerCustomInfo(a.getAssignmentId, hit_id).toString)
 
     // new thunk
     val t2 = t.copy_with_answer(answer, a.getWorkerId)

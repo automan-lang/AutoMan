@@ -1,4 +1,4 @@
-package edu.umass.cs.automan.adapters.MTurk.question
+package edu.umass.cs.automan.adapters.mturk.question
 
 object HITState extends Enumeration {
   type HITState = Value

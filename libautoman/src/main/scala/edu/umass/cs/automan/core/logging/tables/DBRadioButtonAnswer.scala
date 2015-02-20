@@ -2,12 +2,16 @@ package edu.umass.cs.automan.core.logging.tables
 
 import scala.slick.driver.DerbyDriver.simple._
 
-class DBRadioButtonAnswer(tag: Tag) extends Table[(Int, Symbol, String)](tag, "RADIOBUTTONANSWER") {
-  // implicit conversion for Symbol <-> String
-  implicit val symbolColumnType = MappedColumnType.base[Symbol, String](
-    { sym => sym.toString() },  // map Symbol to String
-    { str => Symbol(str) }      // map String to Symbol
+object DBRadioButtonAnswer {
+  val symbolStringMapper = MappedColumnType.base[Symbol, String](
+  { sym => sym.toString() },  // map Symbol to String
+  { str => Symbol(str) }      // map String to Symbol
   )
+}
+
+class DBRadioButtonAnswer(tag: Tag) extends Table[(Int, Symbol, String)](tag, "DBRADIOBUTTONANSWER") {
+  // implicit conversion for Symbol <-> String
+  implicit val symbolColumnType = DBRadioButtonAnswer.symbolStringMapper
 
   def history_id = column[Int]("HISTORY_ID")
   def answer = column[Symbol]("ANSWER")

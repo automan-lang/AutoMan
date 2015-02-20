@@ -17,7 +17,7 @@ abstract class AutomanAdapter {
 //  type CBDQ <: CheckboxDistributionQuestion       // answer vector
 //  type FTQ <: FreeTextQuestion                    // answer scalar
 //  type FTDQ <: FreeTextDistributionQuestion       // answer vector
-  type RBQ = RadioButtonQuestion                 // answer scalar
+  type RBQ <: RadioButtonQuestion                 // answer scalar
 //  type RBDQ <: RadioButtonDistributionQuestion    // answer vector
 
   protected var _default_confidence: Double = 0.95
