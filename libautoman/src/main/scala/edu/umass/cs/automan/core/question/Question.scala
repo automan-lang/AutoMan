@@ -3,6 +3,7 @@ package edu.umass.cs.automan.core.question
 import java.io.File
 import java.util.UUID
 import edu.umass.cs.automan.core.answer.Answer
+import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk, Scheduler}
 import edu.umass.cs.automan.core.strategy.ValidationStrategy
 
@@ -67,15 +68,12 @@ abstract class Question[A] {
   def time_value_per_hour_=(v: BigDecimal) { _time_value_per_hour = Some(v) }
   def title: String = _title match { case Some(t) => t; case None => text }
   def title_=(t: String) { _title = Some(t)}
-  def use_disqualifications_=(b: Boolean) { _use_disqualifications = b }
-  def use_disqualifications: Boolean = _use_disqualifications
   def wage: BigDecimal = _wage
   def wage_=(w: BigDecimal) { _wage = w }
   def worker_timeout_in_s_=(t: Int) { _worker_timeout_in_s = t }
   def worker_timeout_in_s: Int = _worker_timeout_in_s
 
   // private methods
-  protected[core] def is_for_distribution = _is_for_distribution
   private[automan] def init_strategy(): Unit
   private[automan] def strategy_instance = _strategy_instance
   protected[automan] def getThunk: Thunk[A] =
@@ -90,4 +88,5 @@ abstract class Question[A] {
       false
     )
   protected[automan] def getAnswer(scheduler: Scheduler[A]): Answer[A]
+  protected[automan] def getQuestionType: QuestionType
 }
