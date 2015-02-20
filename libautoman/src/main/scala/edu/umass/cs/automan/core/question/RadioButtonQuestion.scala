@@ -1,6 +1,8 @@
 package edu.umass.cs.automan.core.question
 
 import edu.umass.cs.automan.core.answer.Answer
+import edu.umass.cs.automan.core.info.QuestionType
+import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 import edu.umass.cs.automan.core.scheduler.Scheduler
 
 import scala.concurrent._
@@ -20,4 +22,6 @@ abstract class RadioButtonQuestion extends ScalarQuestion[Symbol] {
     val f = Future{ blocking { scheduler.run() } }
     new Answer[Symbol](f, scheduler)
   }
+
+  override protected[automan] def getQuestionType = QuestionType.RadioButtonQuestion
 }
