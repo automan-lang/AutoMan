@@ -14,22 +14,19 @@ object Memo {
   def sameThunks[A](ts1: List[Thunk[A]], ts2: List[Thunk[A]]) : Boolean = {
     val t1_map = ts1.map { t => t.thunk_id -> t }.toMap
     ts2.foldLeft (true) { case (acc, t) =>
-      acc &&
-        t1_map.contains(t.thunk_id) &&
-        sameThunk(t1_map(t.thunk_id), t)
+      acc && t1_map.contains(t.thunk_id) && sameThunk(t1_map(t.thunk_id), t)
     }
   }
   def sameThunk[A](t1: Thunk[A], t2: Thunk[A]) : Boolean = {
     t1.thunk_id == t2.thunk_id &&
-      t1.question == t2.question &&
-      t1.timeout_in_s == t2.timeout_in_s &&
-      t1.worker_timeout == t2.worker_timeout &&
-      t1.cost == t2.cost &&
-      t1.created_at == t1.created_at &&
-      t1.state == t2.state &&
-      t1.worker_id == t2.worker_id &&
-      t1.answer == t2.answer &&
-      t1.state_changed_at == t2.state_changed_at
+    t1.question == t2.question &&
+    t1.timeout_in_s == t2.timeout_in_s &&
+    t1.worker_timeout == t2.worker_timeout &&
+    t1.cost == t2.cost &&
+    t1.created_at == t1.created_at &&
+    t1.state == t2.state &&
+    t1.worker_id == t2.worker_id &&
+    t1.answer == t2.answer
   }
 }
 
@@ -177,8 +174,11 @@ class Memo(log_config: LogConfig.Value) {
     }
   }
 
-  private def getQuestion(memo_hash: String)(implicit db: DBSession) : Option[(UUID, String, QuestionType)] = {
-    dbQuestion.filter(_.memo_hash === memo_hash).firstOption
+  private def questionInDB(memo_hash: String)(implicit db: DBSession) : Boolean = {
+    dbQuestion.filter(_.memo_hash === memo_hash).firstOption match {
+      case Some(q) => true
+      case None => false
+    }
   }
 
   private def needsUpdate[A](ts: List[Thunk[A]]) : List[InsertUpdateOrSkip[A]] = {
@@ -240,11 +240,9 @@ class Memo(log_config: LogConfig.Value) {
         db.withTransaction { implicit session =>
           synchronized {
             // is the question even in the database?
-            val question_id = getQuestion(q.memo_hash) match {
-              case Some((id, _, _)) => id // return question ID
-              case None =>
-                // create dbQuestion record for this memo_hash and return question ID
-                (dbQuestion returning dbQuestion.map(_.id)) += (q.id, q.memo_hash, q.getQuestionType)
+            if (!questionInDB(q.memo_hash)) {
+                // create dbQuestion record for this memo_hash
+                dbQuestion += (q.id, q.memo_hash, q.getQuestionType)
             }
 
             // determine which records need to be inserted/updated/ignored
@@ -260,7 +258,13 @@ class Memo(log_config: LogConfig.Value) {
             dbThunk ++= thunk2ThunkTuple(inserts)
 
             // do bulk insert for all thunk histories (inserts and updates)
-            val histories = (dbThunkHistory returning dbThunkHistory.map(th => (th.thunk_id, th.history_id))) ++= thunk2ThunkHistoryTuple(inserts ::: updates)
+            dbThunkHistory ++= thunk2ThunkHistoryTuple(inserts ::: updates)
+
+            // Derby can only return a single item, so we were not able to
+            // get a thunk_id -> history_map in the previous step;
+            // instead we query the table we just inserted into
+            val t_ids = ts.map(_.thunk_id).toSet
+            val histories = dbThunkHistory.filter(_.thunk_id inSet t_ids).map(th => (th.thunk_id, th.history_id)).list
 
             // do bulk insert for all answered thunks
             insertAnswerTable(ts, histories)
@@ -270,6 +274,23 @@ class Memo(log_config: LogConfig.Value) {
               t.thunk_id -> t.state
             }.toMap
           }
+        }
+      case None => ()
+    }
+  }
+
+  /**
+   * This call deletes all records stored in all of the Memo
+   * database's tables.
+   */
+  def wipeDatabase() : Unit = {
+    db_opt match {
+      case Some(db) =>
+        db.withTransaction { implicit session =>
+          dbQuestion.delete
+          dbThunk.delete
+          dbThunkHistory.delete
+          dbRadioButtonAnswer.delete
         }
       case None => ()
     }
