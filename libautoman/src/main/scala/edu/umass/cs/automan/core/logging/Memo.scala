@@ -18,15 +18,19 @@ object Memo {
     }
   }
   def sameThunk[A](t1: Thunk[A], t2: Thunk[A]) : Boolean = {
-    t1.thunk_id == t2.thunk_id &&
-    t1.question == t2.question &&
-    t1.timeout_in_s == t2.timeout_in_s &&
-    t1.worker_timeout == t2.worker_timeout &&
-    t1.cost == t2.cost &&
-    t1.created_at == t1.created_at &&
-    t1.state == t2.state &&
-    t1.worker_id == t2.worker_id &&
-    t1.answer == t2.answer
+    // this is split into separate statements
+    // to make debugging easier
+    val c1 = t1.thunk_id == t2.thunk_id
+    val c2 = t1.question == t2.question
+    val c3 = t1.timeout_in_s == t2.timeout_in_s
+    val c4 = t1.worker_timeout == t2.worker_timeout
+    val c5 = t1.cost == t2.cost
+    val c6 = t1.created_at == t1.created_at
+    val c7 = t1.state == t2.state
+    val c8 = t1.worker_id == t2.worker_id
+    val c9 = t1.answer == t2.answer
+    val is_same = c1 && c2 && c3 && c4 && c5 && c6 && c7 && c8 && c9
+    is_same
   }
 }
 

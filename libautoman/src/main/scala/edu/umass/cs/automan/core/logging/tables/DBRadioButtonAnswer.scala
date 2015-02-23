@@ -4,8 +4,8 @@ import scala.slick.driver.DerbyDriver.simple._
 
 object DBRadioButtonAnswer {
   val symbolStringMapper = MappedColumnType.base[Symbol, String](
-  { sym => sym.toString() },  // map Symbol to String
-  { str => Symbol(str) }      // map String to Symbol
+  { sym => sym.toString().drop(1) },  // map Symbol to String
+  { str => Symbol(str) }              // map String to Symbol
   )
 }
 
