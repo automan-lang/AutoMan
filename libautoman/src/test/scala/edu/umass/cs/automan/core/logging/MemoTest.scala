@@ -8,17 +8,22 @@ import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 import org.scalatest._
 
 object TestUtil {
-  def newThunk[A](question: Question[A], timeout: Int, worker_timeout: Int, cost: BigDecimal, time_delta: Int) =
+  def newThunk[A](question: Question[A], timeout: Int, worker_timeout: Int, cost: BigDecimal, time_delta: Int) = {
+    val now = new Date()
     Thunk[A](
       UUID.randomUUID(),
       question,
       timeout,
       worker_timeout,
       cost,
-      new Date(),
+      now,
       SchedulerState.READY,
-      from_memo = false, None, None, None
+      from_memo = false,
+      None,
+      None,
+      now
     )
+  }
 }
 
 class MemoTest extends FlatSpec with Matchers {

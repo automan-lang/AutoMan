@@ -6,6 +6,7 @@ import edu.umass.cs.automan.core.logging.tables.{DBRadioButtonAnswer, DBThunkHis
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.SchedulerState._
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
+import scala.slick.driver.DerbyDriver
 import scala.slick.driver.DerbyDriver.simple._
 import scala.slick.jdbc.meta.MTable
 
@@ -28,7 +29,7 @@ object Memo {
       t1.state == t2.state &&
       t1.worker_id == t2.worker_id &&
       t1.answer == t2.answer &&
-      t1.completed_at == t2.completed_at
+      t1.state_changed_at == t2.state_changed_at
   }
 }
 
@@ -42,6 +43,7 @@ class Memo(log_config: LogConfig.Value) {
   type DBThunkHistory =(UUID, Date, SchedulerState)
   type DBQuestion = (UUID, String, QuestionType)
   type DBRadioButtonAnswer = (Int, Symbol, String)
+  type DBSession = DerbyDriver.backend.Session
 
   // connection string
   private val jdbc_conn_string = "jdbc:derby:AutoManMemoDB;create=true"
@@ -99,7 +101,7 @@ class Memo(log_config: LogConfig.Value) {
     dbQuestion join TS_THS on (_.id === _._1.question_id)
   }
 
-  private def getAllThunksMap : Map[UUID,SchedulerState.Value] = {
+  private def getAllThunksMap(implicit session: DBSession) : Map[UUID,SchedulerState.Value] = {
     allThunksQuery().map { case (dbquestion, (dbthunk, dbthunkhistory)) =>
       dbthunk.thunk_id -> dbthunkhistory.scheduler_state
     }.list.toMap
@@ -146,12 +148,37 @@ class Memo(log_config: LogConfig.Value) {
 
           // make and return thunks
         results.map {
-        case (thunk_id, timeout_in_s, worker_timeout_in_s, cost, created_at, state, from_memo, worker_id_opt, answer_opt, state_changed_at) =>
-        Thunk[A](thunk_id, q, timeout_in_s, worker_timeout_in_s, cost, created_at, state, from_memo = true, worker_id_opt, answer_opt.asInstanceOf[Option[A]], Some(state_changed_at))
+          case (thunk_id,
+                timeout_in_s,
+                worker_timeout_in_s,
+                cost,
+                created_at,
+                state,
+                from_memo,
+                worker_id_opt,
+                answer_opt,
+                state_changed_at) =>
+            Thunk[A](
+              thunk_id,
+              q,
+              timeout_in_s,
+              worker_timeout_in_s,
+              cost,
+              created_at,
+              state,
+              from_memo = true,
+              worker_id_opt,
+              answer_opt.asInstanceOf[Option[A]],
+              state_changed_at
+            )
         }
       }
       case None => List.empty
     }
+  }
+
+  private def getQuestion(memo_hash: String)(implicit db: DBSession) : Option[(UUID, String, QuestionType)] = {
+    dbQuestion.filter(_.memo_hash === memo_hash).firstOption
   }
 
   private def needsUpdate[A](ts: List[Thunk[A]]) : List[InsertUpdateOrSkip[A]] = {
@@ -166,29 +193,85 @@ class Memo(log_config: LogConfig.Value) {
     }
   }
 
+  private def thunk2ThunkTuple[A](ts: List[Thunk[A]]) : List[(UUID, UUID, BigDecimal, Date, Int, Int)] = {
+    ts.map(t => (t.thunk_id, t.question.id, t.cost, t.created_at, t.timeout_in_s, t.worker_timeout))
+  }
+
+  private def thunk2ThunkHistoryTuple[A](ts: List[Thunk[A]]) : List[(Int, UUID, Date, SchedulerState)] = {
+    ts.map(t => (1, t.thunk_id, new Date(), t.state))
+  }
+
+  private def thunk2ThunkAnswerTuple[A](ts: List[Thunk[A]], histories: Seq[(UUID, Int)]) : List[(Int, A, String)] = {
+    val history_dict = histories.toMap
+    ts.flatMap { t =>
+      t.answer match {
+        case Some(ans) =>
+          assert(history_dict.contains(t.thunk_id))
+          assert(t.worker_id != None)
+          Some(history_dict(t.thunk_id), ans, t.worker_id.get)
+        case None => None
+      }
+    }
+  }
+
+  private def insertAnswerTable[A](ts: List[Thunk[A]], histories: Seq[(UUID, Int)])(implicit session: DBSession) = {
+    assert(ts.size != 0)
+    ts.head.question.getQuestionType match {
+      case RadioButtonQuestion =>
+        dbRadioButtonAnswer ++= thunk2ThunkAnswerTuple(ts, histories).asInstanceOf[List[(Int, Symbol, String)]]
+      case RadioButtonDistributionQuestion => ???
+      case CheckboxQuestion => ???
+      case CheckboxDistributionQuestion => ???
+      case FreeTextQuestion => ???
+      case FreeTextDistributionQuestion => ???
+    }
+  }
+
   /**
    * Updates the database given a complete list of Thunks.
-   * @param ts A list of Thunks.
+   * @param ts A non-empty list of Thunks.
    * @tparam A The data type of the Answer.
    */
   def save[A](q: Question[A], ts: List[Thunk[A]]) : Unit = {
-    synchronized {
-      // determine which records need to be updated
-      val (inserts,updates) = needsUpdate(ts).foldLeft((List.empty[Thunk[A]],List.empty[Thunk[A]])) {
-        case (acc, ius) => ius match {
-          case Insert(t) => (t :: acc._1, acc._2)
-          case Update(t) => (acc._1, t :: acc._2)
-          case Skip(t) => acc
+    assert(ts.size != 0)  // should never be given zero thunks
+
+    db_opt match {
+      case Some(db) =>
+        db.withTransaction { implicit session =>
+          synchronized {
+            // is the question even in the database?
+            val question_id = getQuestion(q.memo_hash) match {
+              case Some((id, _, _)) => id // return question ID
+              case None =>
+                // create dbQuestion record for this memo_hash and return question ID
+                (dbQuestion returning dbQuestion.map(_.id)) += (q.id, q.memo_hash, q.getQuestionType)
+            }
+
+            // determine which records need to be inserted/updated/ignored
+            val (inserts, updates) = needsUpdate (ts).foldLeft ((List.empty[Thunk[A]], List.empty[Thunk[A]] ) ) {
+              case (acc, ius) => ius match {
+                case Insert (t) => (t :: acc._1, acc._2)
+                case Update (t) => (acc._1, t :: acc._2)
+                case Skip (t) => acc
+              }
+            }
+
+            // do bulk insert for new thunks
+            dbThunk ++= thunk2ThunkTuple(inserts)
+
+            // do bulk insert for all thunk histories (inserts and updates)
+            val histories = (dbThunkHistory returning dbThunkHistory.map(th => (th.thunk_id, th.history_id))) ++= thunk2ThunkHistoryTuple(inserts ::: updates)
+
+            // do bulk insert for all answered thunks
+            insertAnswerTable(ts, histories)
+
+            // update the cache
+            all_thunk_ids = ts.map { t =>
+              t.thunk_id -> t.state
+            }.toMap
+          }
         }
-      }
-
-      // do thunk insert
-
-      // do thunk history insert
-
-      // do answer insert
-      
-      ???
+      case None => ()
     }
   }
 }
