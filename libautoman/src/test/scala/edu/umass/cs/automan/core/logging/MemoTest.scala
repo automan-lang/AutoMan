@@ -8,12 +8,13 @@ class MemoTest extends FlatSpec with Matchers {
   val WORKER_TIMEOUT_IN_S = 30
   val BASE_COST = BigDecimal(0.06)
 
-  "The Memo class" should "save and restore execution traces when logging is enabled" in {
-    // init
-    // TODO: switch this to Mock later
-    val q = new MTRadioButtonQuestion()
-    val m = new Memo(LogConfig.TRACE_MEMOIZE_VERBOSE)
+  // init
+  // TODO: switch this to MockQuestion later
+  val q = new MTRadioButtonQuestion()
+  val m = new Memo(LogConfig.TRACE_MEMOIZE_VERBOSE)
+  m.wipeDatabase()
 
+  "The Memo class" should "save and restore execution traces when logging is enabled" in {
     val ts = List(
       TestUtil.newThunk(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
       TestUtil.newThunk(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
