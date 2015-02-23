@@ -56,8 +56,8 @@ class Scheduler[A](val question: Question[A],
       val new_thunks = Scheduler.post_as_needed(thunks, backend, question, suffered_timeout, blacklist)
       // The scheduler waits here to give the crowd time to answer.
       // Sleeping also informs the scheduler that this thread may yield
-      // its CPU time.
-      Thread.sleep(poll_interval_in_s * 1000)
+      // its CPU time.  While we wait, we also save changes.
+      Scheduler.memo_and_sleep(poll_interval_in_s * 1000, thunks ::: new_thunks, question, memo_opt)
       // ask the backend to retrieve answers for all RUNNING thunks
       val (running_thunks,dead_thunks) = (thunks ::: new_thunks).partition(_.state == SchedulerState.RUNNING)
       assert(running_thunks.size > 0)
@@ -78,6 +78,24 @@ class Scheduler[A](val question: Question[A],
 }
 
 object Scheduler {
+  def memo_and_sleep[A](wait_time_ms: Int, ts: List[Thunk[A]], question: Question[A], memo_opt: Option[Memo]) : Unit = {
+    val t = Stopwatch {
+      memo_opt match {
+        case Some(memo) => memo.save(question, ts)
+        case None => ()
+      }
+    }
+    val rem_ms = wait_time_ms - t.duration_ms
+    if (rem_ms > 0) {
+      // wait the remaining amount of time
+      Thread.sleep(rem_ms)
+    } else {
+      // even if we don't need to wait, we should give the JVM
+      // the opportunity to schedule another thread
+      Thread.`yield`()
+    }
+  }
+
   def cost_for_thunks(thunks: List[Thunk[_]]) : BigDecimal = {
     thunks.foldLeft(BigDecimal(0)) { case (acc, t) => acc + t.cost }
   }

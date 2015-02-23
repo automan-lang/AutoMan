@@ -1,9 +1,6 @@
 package edu.umass.cs.automan.core.logging.tables
 
 import java.util.UUID
-import edu.umass.cs.automan.core.info.QuestionType
-import edu.umass.cs.automan.core.info.QuestionType.QuestionType
-
 import scala.slick.driver.DerbyDriver.simple._
 import java.util.Date
 
