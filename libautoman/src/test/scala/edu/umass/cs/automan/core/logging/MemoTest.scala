@@ -1,30 +1,7 @@
 package edu.umass.cs.automan.core.logging
 
-import java.util.{Date, UUID}
-
 import edu.umass.cs.automan.adapters.mturk.question.MTRadioButtonQuestion
-import edu.umass.cs.automan.core.question.Question
-import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 import org.scalatest._
-
-object TestUtil {
-  def newThunk[A](question: Question[A], timeout: Int, worker_timeout: Int, cost: BigDecimal, time_delta: Int) = {
-    val now = new Date()
-    Thunk[A](
-      UUID.randomUUID(),
-      question,
-      timeout,
-      worker_timeout,
-      cost,
-      now,
-      SchedulerState.READY,
-      from_memo = false,
-      None,
-      None,
-      now
-    )
-  }
-}
 
 class MemoTest extends FlatSpec with Matchers {
   val TIMEOUT_IN_S = 600
