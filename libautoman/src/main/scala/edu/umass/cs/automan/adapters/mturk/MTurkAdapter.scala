@@ -5,6 +5,7 @@ import java.util.Locale
 import com.amazonaws.mturk.util.ClientConfig
 import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.adapters.mturk.connectionpool.Pool
+import edu.umass.cs.automan.adapters.mturk.logging.MTMemo
 import edu.umass.cs.automan.adapters.mturk.question.{MTQuestionOption, MTRadioButtonQuestion}
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.Thunk
@@ -137,5 +138,9 @@ class MTurkAdapter extends AutomanAdapter {
       case Some(p) => p.shutdown()
       case None => ()
     }
+  }
+
+  override protected[automan] def memo_init(): Unit = {
+    _memoizer = new MTMemo(_log_config)
   }
 }
