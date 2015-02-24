@@ -3,12 +3,10 @@ package edu.umass.cs.automan.core.strategy
 import java.util
 import java.util.UUID
 
+import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.question.ScalarQuestion
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
-import edu.umass.cs.automan.core.exception.OverBudgetException
-import edu.umass.cs.automan.core.{LogLevel, LogType, Utilities}
-
-import scala.collection.immutable.Iterable
+import edu.umass.cs.automan.core.util.Utilities
 
 object DefaultScalarStrategy {
   val table = new util.HashMap[(Int,Int,Int,Double),Int]()
@@ -16,7 +14,7 @@ object DefaultScalarStrategy {
 
 class DefaultScalarStrategy[A](question: ScalarQuestion[A])
   extends ScalarValidationStrategy[A](question) {
-  Utilities.DebugLog("DEFAULTSCALAR strategy loaded.",LogLevel.INFO,LogType.STRATEGY, question.id)
+  DebugLog("DEFAULTSCALAR strategy loaded.",LogLevel.INFO,LogType.STRATEGY, question.id)
 
   def current_confidence(thunks: List[Thunk[A]]): Double = {
     val valid_ts = completed_workerunique_thunks(thunks)
@@ -26,7 +24,7 @@ class DefaultScalarStrategy[A](question: ScalarQuestion[A])
   }
   def is_confident(thunks: List[Thunk[A]]): Boolean = {
     if (thunks.size == 0) {
-      Utilities.DebugLog("Have no thunks; confidence is undefined.", LogLevel.INFO, LogType.STRATEGY, question.id)
+      DebugLog("Have no thunks; confidence is undefined.", LogLevel.INFO, LogType.STRATEGY, question.id)
       false
     } else {
       val valid_ts = completed_workerunique_thunks(thunks)
@@ -36,10 +34,10 @@ class DefaultScalarStrategy[A](question: ScalarQuestion[A])
       // TODO: MonteCarlo simulator needs to take BigInts!
       val min_agree = MonteCarlo.requiredForAgreement(question.num_possibilities.toInt, thunks.size, question.confidence, 1000000)
       if (biggest_answer >= min_agree) {
-        Utilities.DebugLog("Reached or exceeded alpha = " + (1 - question.confidence).toString, LogLevel.INFO, LogType.STRATEGY, question.id)
+        DebugLog("Reached or exceeded alpha = " + (1 - question.confidence).toString, LogLevel.INFO, LogType.STRATEGY, question.id)
         true
       } else {
-        Utilities.DebugLog("Need " + min_agree + " for alpha = " + (1 - question.confidence) + "; have " + biggest_answer, LogLevel.INFO, LogType.STRATEGY, question.id)
+        DebugLog("Need " + min_agree + " for alpha = " + (1 - question.confidence) + "; have " + biggest_answer, LogLevel.INFO, LogType.STRATEGY, question.id)
         false
       }
     }
@@ -59,11 +57,11 @@ class DefaultScalarStrategy[A](question: ScalarQuestion[A])
 
     // determine duration
     if (had_timeout) {
-      Utilities.DebugLog("Had a timeout; doubling worker timeout.", LogLevel.INFO, LogType.STRATEGY, question.id)
+      DebugLog("Had a timeout; doubling worker timeout.", LogLevel.INFO, LogType.STRATEGY, question.id)
       question.worker_timeout_in_s *= 2
     }
 
-    Utilities.DebugLog("You should spawn " + num_to_spawn +
+    DebugLog("You should spawn " + num_to_spawn +
                         " more Thunks at $" + question.reward + "/thunk, " +
                           question.question_timeout_in_s + "s until question timeout, " +
                           question.worker_timeout_in_s + "s until worker task timeout.", LogLevel.INFO, LogType.STRATEGY,
@@ -80,7 +78,7 @@ class DefaultScalarStrategy[A](question: ScalarQuestion[A])
         SchedulerState.READY,
         false
       )
-      Utilities.DebugLog("spawned question_id = " + question.id_string,LogLevel.INFO,LogType.STRATEGY, question.id)
+      DebugLog("spawned question_id = " + question.id_string,LogLevel.INFO,LogType.STRATEGY, question.id)
       t
     }.toList
 
@@ -144,9 +142,9 @@ class DefaultScalarStrategy[A](question: ScalarQuestion[A])
   def pessimism() = {
     val p: Double = math.max((question.time_value_per_hour/question.wage).toDouble, 1.0)
     if (p > 1) {
-      Utilities.DebugLog("Using pessimistic (expensive) strategy.", LogLevel.INFO, LogType.STRATEGY, question.id)
+      DebugLog("Using pessimistic (expensive) strategy.", LogLevel.INFO, LogType.STRATEGY, question.id)
     } else {
-      Utilities.DebugLog("Using Using optimistic (cheap) strategy.", LogLevel.INFO, LogType.STRATEGY, question.id)
+      DebugLog("Using Using optimistic (cheap) strategy.", LogLevel.INFO, LogType.STRATEGY, question.id)
     }
     p
   }

@@ -1,18 +1,22 @@
 package edu.umass.cs.automan.adapters.mturk.question
 
-import edu.umass.cs.automan.adapters.mturk.{AutomanHIT, MTurkAdapter}
-import edu.umass.cs.automan.core.question.{QuestionOption, RadioButtonQuestion}
+import edu.umass.cs.automan.adapters.mturk.AutomanHIT
+import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
+import edu.umass.cs.automan.core.question.RadioButtonQuestion
 import edu.umass.cs.automan.core.scheduler.{BackendResult, Thunk}
 import com.amazonaws.mturk.requester.Assignment
+import edu.umass.cs.automan.core.util.Utilities
 import xml.XML
 import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
-import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 
 class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
   type QO = MTQuestionOption
   type A = Symbol
+  override type Group = MTRadioButtonQuestionGroup
+
   protected var _options = List[QO]()
+  override protected var _question_group: Group = MTRadioButtonQuestionGroup(this.id.toString())
 
   def answer(a: Assignment): BackendResult[A] = {
     new BackendResult[A](
@@ -36,11 +40,12 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
       a.cost = ts.head.cost
       a.id = id
     }
-    Utilities.DebugLog("Posting XML:\n" + x,LogLevel.INFO,LogType.ADAPTER,id)
+    DebugLog("Posting XML:\n" + x,LogLevel.INFO,LogType.ADAPTER,id)
     hits = h :: hits
     hit_thunk_map += (h -> ts)
     h
   }
+
   def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
     new String(Hex.encodeHex(md.digest(toXML(randomize = false).toString().getBytes)))
@@ -53,10 +58,11 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
     //      <QuestionIdentifier>721be9fc-c867-42ce-8acd-829e64ae62dd</QuestionIdentifier>
     //      <SelectionIdentifier>count</SelectionIdentifier>
     //    </Answer>
-    Utilities.DebugLog("MTRadioButtonQuestion: fromXML:\n" + x.toString,LogLevel.INFO,LogType.ADAPTER,id)
+    DebugLog("MTRadioButtonQuestion: fromXML:\n" + x.toString,LogLevel.INFO,LogType.ADAPTER,id)
 
     Symbol((x \\ "Answer" \\ "SelectionIdentifier").text)
   }
+  override def group_=(id: String) { _question_group = MTRadioButtonQuestionGroup(id) }
   // TODO: random checkbox fill
   def toXML(randomize: Boolean) : scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">

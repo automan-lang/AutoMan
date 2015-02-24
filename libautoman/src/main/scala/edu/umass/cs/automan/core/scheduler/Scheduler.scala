@@ -9,7 +9,7 @@ import scala.annotation.tailrec
 
 class Scheduler[A](val question: Question[A],
                    val backend: AutomanAdapter,
-                   val memo_opt: Option[Memo],
+                   val memo_opt: Option[_ <: Memo],
                    val poll_interval_in_s: Int,
                    val time_opt: Option[Date]) {
   def this(question: Question[A],

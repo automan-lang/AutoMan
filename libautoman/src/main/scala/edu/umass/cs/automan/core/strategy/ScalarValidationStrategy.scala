@@ -1,7 +1,8 @@
 package edu.umass.cs.automan.core.strategy
-import edu.umass.cs.automan.core.scheduler.{SchedulerResult, SchedulerState, Thunk}
+
+import edu.umass.cs.automan.core.logging._
+import edu.umass.cs.automan.core.scheduler._
 import edu.umass.cs.automan.core.question._
-import edu.umass.cs.automan.core.{LogType, LogLevel, Utilities}
 
 abstract class ScalarValidationStrategy[A](question: Question[A])
   extends ValidationStrategy[A](question) {
@@ -19,13 +20,13 @@ abstract class ScalarValidationStrategy[A](question: Question[A])
     // group by answer (which is actually an Option[A] because Thunk.answer is Option[A])
     val groups: Map[Option[A], List[Thunk[A]]] = rt.groupBy(_.answer)
     
-    Utilities.DebugLog("Groups = " + groups, LogLevel.INFO, LogType.STRATEGY, question.id)
+    DebugLog("Groups = " + groups, LogLevel.INFO, LogType.STRATEGY, question.id)
 
     // find answer of the largest group
     val gsymb: Option[A] = groups.maxBy { case(opt, as) => as.size }._1
 
-    Utilities.DebugLog("Most popular answer is " + gsymb, LogLevel.INFO, LogType.STRATEGY, question.id)
-    Utilities.DebugLog("classOf Thunk.answer is " + groups(gsymb).head.answer.get.getClass, LogLevel.INFO, LogType.STRATEGY, question.id)
+    DebugLog("Most popular answer is " + gsymb, LogLevel.INFO, LogType.STRATEGY, question.id)
+    DebugLog("classOf Thunk.answer is " + groups(gsymb).head.answer.get.getClass, LogLevel.INFO, LogType.STRATEGY, question.id)
 
     // return the top result
     val selected_answer = Some(groups(gsymb).head.answer.get)
