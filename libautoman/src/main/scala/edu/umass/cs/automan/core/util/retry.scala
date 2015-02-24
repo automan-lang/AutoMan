@@ -1,4 +1,4 @@
-package edu.umass.cs.automan.core
+package edu.umass.cs.automan.core.util
 
 // Mostly taken from
 // http://stackoverflow.com/questions/7930814/whats-the-scala-way-to-implement-a-retry-able-call-like-this-one

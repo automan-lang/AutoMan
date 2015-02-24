@@ -2,9 +2,10 @@ package edu.umass.cs.automan.adapters.mturk
 
 import com.amazonaws.mturk.service.axis.RequesterService
 import com.amazonaws.mturk.requester._
-import edu.umass.cs.automan.core.{LogLevel, LogType, Utilities, retry}
-import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
-import question.{HITState, MTRadioButtonQuestion}
+import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
+import edu.umass.cs.automan.core.util.{retry, Utilities}
+import edu.umass.cs.automan.core.scheduler.Thunk
+import question.HITState
 import HITState._
 import java.util.UUID
 
@@ -45,7 +46,7 @@ class AutomanHIT {
   // returns a hit type id
   def post(service: RequesterService, quals: List[QualificationRequirement]) : String = {
     val htid = hittype(service, cost, quals)
-    Utilities.DebugLog("Posting HIT with type: " + htid + " and qualifications: " +
+    DebugLog("Posting HIT with type: " + htid + " and qualifications: " +
                        quals.map(_.getQualificationTypeId).foldLeft("")((acc,q) => acc + ", " + q) +
                        " and " + maxAssignments + " assignments.",LogLevel.INFO,LogType.ADAPTER,id)
     hit = service.createHIT(null,
@@ -70,7 +71,7 @@ class AutomanHIT {
   def retrieve(service: RequesterService) : List[Assignment] = {
     // get new assignments
     var assns = List[Assignment]()
-    Utilities.DebugLog("Getting assignments...",LogLevel.INFO,LogType.ADAPTER,id)
+    DebugLog("Getting assignments...",LogLevel.INFO,LogType.ADAPTER,id)
     assns = retry(5) {
       service.getAllAssignmentsForHIT(
         hit.getHITId, Array(AssignmentStatus.Submitted)

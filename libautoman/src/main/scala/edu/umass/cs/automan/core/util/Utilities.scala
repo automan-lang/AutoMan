@@ -1,9 +1,10 @@
-package edu.umass.cs.automan.core
+package edu.umass.cs.automan.core.util
 
 import java.io.File
 import java.text.NumberFormat
-import java.util.{Locale, UUID, Date, Calendar}
-import java.util
+import java.util.{Calendar, Date, Locale, UUID}
+
+import edu.umass.cs.automan.core.logging.{LogType, LogLevel}
 
 import scala.reflect.ClassTag
 
@@ -21,24 +22,24 @@ object Utilities {
   def randomSelect1[A](n: Int, ls: List[A]): List[A] = {
     if (n <= 0) Nil
     else {
-      val (rest, e) = removeAt((new util.Random).nextInt(ls.length), ls)
+      val (rest, e) = removeAt((new java.util.Random).nextInt(ls.length), ls)
       e :: randomSelect1(n - 1, rest)
     }
   }
   def randomSelect[A](n: Int, ls: List[A]): List[A] = {
-    def randomSelectR(n: Int, ls: List[A], r: util.Random): List[A] =
+    def randomSelectR(n: Int, ls: List[A], r: java.util.Random): List[A] =
       if (n <= 0) Nil
       else {
         val (rest, e) = removeAt(r.nextInt(ls.length), ls)
         e :: randomSelectR(n - 1, rest, r)
       }
-    randomSelectR(n, ls, new util.Random)
+    randomSelectR(n, ls, new java.util.Random)
   }
 
   // borrowed from: http://aperiodic.net/phil/scala/s-99/p25.scala
   def randomPermute1[A](ls: List[A]): List[A] = randomSelect(ls.length, ls)
   def randomPermute[A: ClassTag](ls: List[A]): List[A] = {
-    val rand = new util.Random
+    val rand = new java.util.Random
     val a = ls.toArray
     for (i <- a.length - 1 to 1 by -1) {
       val i1 = rand.nextInt(i + 1)
@@ -60,30 +61,13 @@ object Utilities {
     c
   }
   def thirty_minutes_from_now = {
-    import java.util.Date
-    import java.util.Calendar
+    import java.util.{Calendar, Date}
 
     var d = new Date()
     var c = Calendar.getInstance()
     c.setTime(d)
     c.add(Calendar.MINUTE, 30)
     c.getTime()
-  }
-
-  def DebugLog(msg: String, level: LogLevel.Value, source: LogType.Value, id: UUID) {
-    val idstr =
-      id match {
-        case null => ""
-        case _ =>
-          source match {
-            case LogType.SCHEDULER => "question_id = " + id.toString + ", "
-            case LogType.STRATEGY => "computation_id = " + id.toString + ", "
-            case LogType.ADAPTER => "question_id = " + id.toString + ", "
-            case LogType.MEMOIZER => ""
-          }
-      }
-
-    System.err.println(new Date().toString + ": " + level.toString + ": " + source.toString + ": " + idstr +  msg)
   }
 
   def unsafe_optparse(args: Array[String], invoked_as_name: String) : OptionMap = {
@@ -134,23 +118,3 @@ object Utilities {
     d.getTime() / 1000
   }
 }
-
-object LogType extends Enumeration {
-  type LogType = Value
-  val STRATEGY,
-  SCHEDULER,
-  ADAPTER,
-  MEMOIZER
-  = Value
-}
-
-object LogLevel extends Enumeration {
-  type LogLevel = Value
-  val INFO,
-  WARN,
-  FATAL
-  = Value
-}
-
-import LogType._
-import LogLevel._

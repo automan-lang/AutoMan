@@ -9,6 +9,7 @@ import com.amazonaws.mturk.requester.{Assignment, QualificationRequirement}
 
 trait MTurkQuestion {
   type A
+  type Group <: MTQuestionGroup
 
   protected[automan] var disqualification : QualificationRequirement = _
   protected[automan] var firstrun: Boolean = true
@@ -22,6 +23,7 @@ trait MTurkQuestion {
   protected var _keywords = List[String]()
   protected var _qualifications = List[QualificationRequirement]()
   protected val _mt_date_format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
+  protected var _question_group: Group
 
   def answer(a: Assignment): BackendResult[A]
   def build_hit(ts: List[Thunk[_]]) : AutomanHIT
@@ -32,6 +34,8 @@ trait MTurkQuestion {
     case None => scala.xml.NodeSeq.Empty
   }
   def formatted_content_=(x: scala.xml.NodeSeq) { _formatted_content = Some(x) }
+  def group_=(id: String)
+  def group: String = _question_group.group_id
   def hit_for_thunk(t: Thunk[_]) : AutomanHIT = {
     var the_hit: AutomanHIT = null
     hits.foreach { h =>

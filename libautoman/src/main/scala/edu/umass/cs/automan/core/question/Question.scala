@@ -4,11 +4,13 @@ import java.io.File
 import java.util.UUID
 import edu.umass.cs.automan.core.answer.Answer
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
+import edu.umass.cs.automan.core.logging.Memo
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk, Scheduler}
 import edu.umass.cs.automan.core.strategy.ValidationStrategy
 
 abstract class Question[A] {
   type AnswerType = A
+  type MemoType <: Memo
   type VS <: ValidationStrategy[A]
 
   class QuestionStillExecutingException extends Exception

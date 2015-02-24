@@ -6,10 +6,10 @@ import com.amazonaws.mturk.requester._
 import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.adapters.mturk.AutomanHIT
 import edu.umass.cs.automan.adapters.mturk.question.{MTRadioButtonQuestion, HITState, MTurkQuestion}
-import edu.umass.cs.automan.core.answer.Answer
+import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
-import edu.umass.cs.automan.core.{LogLevel, LogType, Utilities}
+import edu.umass.cs.automan.core.util.Utilities
 import scala.collection.mutable
 import scala.collection.mutable.Queue
 
@@ -47,7 +47,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       // Note that the purpose of this second lock
       // is to provide blocking semantics
       req.synchronized {
-        Utilities.DebugLog("Response from adapter for not available (" + req.toString + "), putting Question Scheduler to sleep.", LogLevel.INFO, LogType.ADAPTER, null)
+        DebugLog("Response from adapter for not available (" + req.toString + "), putting Question Scheduler to sleep.", LogLevel.INFO, LogType.ADAPTER, null)
         req.wait() // block until cancelled thunk is available
       }
     }
@@ -109,7 +109,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
 //          mtq.thunk_assnid_map += (t -> info.assignment_id)
 //          t
 //        } else {
-//          Utilities.DebugLog("Answer was previously paid for; marking thunk as PROCESSED.", LogLevel.INFO, LogType.ADAPTER, q.id)
+//          DebugLog("Answer was previously paid for; marking thunk as PROCESSED.", LogLevel.INFO, LogType.ADAPTER, q.id)
 //          t.copy_as_processed()
 //        }
 //      }
@@ -214,7 +214,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   }
 
   private def initConnectionPoolThread(): Thread = {
-    Utilities.DebugLog("No worker thread; starting one up.", LogLevel.INFO, LogType.ADAPTER, null)
+    DebugLog("No worker thread; starting one up.", LogLevel.INFO, LogType.ADAPTER, null)
     new Thread(new Runnable() {
       override def run() {
         while (_keep_running) {
@@ -312,7 +312,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   }
 
   private def scheduled_accept[A](t: Thunk[A]) : Thunk[A] = {
-    Utilities.DebugLog(String.format("Accepting task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
+    DebugLog(String.format("Accepting task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
     t.question match {
       case mtq:MTurkQuestion => {
@@ -323,7 +323,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     }
   }
   private def scheduled_cancel[A](t: Thunk[A]) : Thunk[A] = {
-    Utilities.DebugLog(String.format("Cancelling task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
+    DebugLog(String.format("Cancelling task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
     t.question match {
       case mtq:MTurkQuestion => {
@@ -337,7 +337,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     }
   }
   private def scheduled_post(ts: List[Thunk[_]], exclude_worker_ids: List[String]) : Unit = {
-    Utilities.DebugLog(String.format("Posting %s tasks.", ts.size.toString()), LogLevel.INFO, LogType.ADAPTER, null)
+    DebugLog(String.format("Posting %s tasks.", ts.size.toString()), LogLevel.INFO, LogType.ADAPTER, null)
 
     val question = question_for_thunks(ts)
     val mtquestion = question match { case mtq: MTurkQuestion => mtq; case _ => throw new Exception("Impossible.") }
@@ -368,7 +368,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     }
   }
   private def scheduled_reject[A](t: Thunk[A]) : Thunk[A] = {
-    Utilities.DebugLog(String.format("Rejecting task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
+    DebugLog(String.format("Rejecting task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
     t.question match {
       case mtq:MTurkQuestion => {
@@ -394,7 +394,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     }
   }
   private def scheduled_retrieve[A](ts: List[Thunk[A]]) : List[Thunk[A]] = {
-    Utilities.DebugLog(String.format("Retrieving %s tasks.", ts.size.toString()), LogLevel.INFO, LogType.ADAPTER, null)
+    DebugLog(String.format("Retrieving %s tasks.", ts.size.toString()), LogLevel.INFO, LogType.ADAPTER, null)
     val question: MTurkQuestion = mtquestion_for_thunks(ts)
     val auquestion = question_for_thunks(ts)
     val hits = question.hits.filter(_.state == HITState.RUNNING)
@@ -407,7 +407,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       val hts = Queue[Thunk[A]]()
       hts ++= question.hit_thunk_map(hit).filter(ts.contains(_)).asInstanceOf[List[Thunk[A]]]
       val assignments: List[Assignment] = hit.retrieve(backend) // finally, do MTurk call
-      Utilities.DebugLog("There are " + assignments.size + " assignments available to process.", LogLevel.INFO, LogType.ADAPTER, auquestion.id)
+      DebugLog("There are " + assignments.size + " assignments available to process.", LogLevel.INFO, LogType.ADAPTER, auquestion.id)
       // for every available thunk-answer pairing, mark thunk as RETRIEVED
       val answered_ts = assignments.map { a => process_assignment(question, a, hit.hit.getHITId, hts.dequeue(), ???) } // TODO: use_disqualifications is now gone
       // timeout timed out Thunks and the HIT
@@ -419,11 +419,11 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       // return updated thunks (both answered and unanswered)
       answered_ts ::: unanswered_ts
     }.flatten
-    Utilities.DebugLog(ts2.count{_.state == SchedulerState.RETRIEVED} + " thunks marked RETRIEVED.", LogLevel.INFO, LogType.ADAPTER, auquestion.id)
+    DebugLog(ts2.count{_.state == SchedulerState.RETRIEVED} + " thunks marked RETRIEVED.", LogLevel.INFO, LogType.ADAPTER, auquestion.id)
     ts2.filterNot(_.state == SchedulerState.RUNNING)
   }
   private def scheduled_get_budget(): BigDecimal = {
-    Utilities.DebugLog("Getting budget.", LogLevel.INFO, LogType.ADAPTER, null)
+    DebugLog("Getting budget.", LogLevel.INFO, LogType.ADAPTER, null)
     backend.getAccountBalance
   }
 
@@ -454,11 +454,11 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     // AMT checks whether worker's assigned value == 1; if so, not allowed
     if (q.worker_is_qualified(q.disqualification.getQualificationTypeId, worker_id)) {
       // the user may have asked for the dequalification for second-round thunks
-      Utilities.DebugLog("Updating worker dequalification for " + worker_id + ".", LogLevel.INFO, LogType.ADAPTER, question_id)
+      DebugLog("Updating worker dequalification for " + worker_id + ".", LogLevel.INFO, LogType.ADAPTER, question_id)
       backend.updateQualificationScore(q.disqualification.getQualificationTypeId, worker_id, 1)
     } else {
       // otherwise, just grant it
-      Utilities.DebugLog("Dequalifying worker " + worker_id + " from future work.", LogLevel.INFO, LogType.ADAPTER, question_id)
+      DebugLog("Dequalifying worker " + worker_id + " from future work.", LogLevel.INFO, LogType.ADAPTER, question_id)
       backend.assignQualification(q.disqualification.getQualificationTypeId, worker_id, 1, false)
       q.qualify_worker(q.disqualification.getQualificationTypeId, worker_id)
     }
@@ -472,16 +472,16 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     qrs.foreach { qr =>
       if (blacklisted_workers.contains(qr.getSubjectId)) {
         // we don't want blacklisted workers working on this
-        Utilities.DebugLog("Worker " + qr.getSubjectId + " cannot request a qualification for a question that they are blacklisted for; rejecting request.", LogLevel.INFO, LogType.ADAPTER, question_id)
+        DebugLog("Worker " + qr.getSubjectId + " cannot request a qualification for a question that they are blacklisted for; rejecting request.", LogLevel.INFO, LogType.ADAPTER, question_id)
         backend.rejectQualificationRequest(qr.getQualificationRequestId, "You may not work on this particular hit for statistical purposes.")
       } else if (q.worker_is_qualified(qr.getQualificationTypeId, qr.getSubjectId)) {
         // we don't want to grant more than once
-        Utilities.DebugLog("Worker " + qr.getSubjectId + " cannot request a qualification more than once; rejecting request.", LogLevel.INFO, LogType.ADAPTER, question_id)
+        DebugLog("Worker " + qr.getSubjectId + " cannot request a qualification more than once; rejecting request.", LogLevel.INFO, LogType.ADAPTER, question_id)
         backend.rejectQualificationRequest(qr.getQualificationRequestId, "You cannot request this Qualification more than once.")
       } else {
         // grant
         if (qr.getQualificationTypeId == q.disqualification.getQualificationTypeId) {
-          Utilities.DebugLog("Worker " + qr.getSubjectId + " requests one-time qualification; granting.", LogLevel.INFO, LogType.ADAPTER, question_id)
+          DebugLog("Worker " + qr.getSubjectId + " requests one-time qualification; granting.", LogLevel.INFO, LogType.ADAPTER, question_id)
           backend.grantQualification(qr.getQualificationRequestId, 0)
           q.qualify_worker(qr.getQualificationTypeId, qr.getSubjectId)
         } else {
@@ -493,7 +493,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   private def mark_hit_complete[A](hit: AutomanHIT, ts: List[Thunk[A]]) {
     if (ts.count{_.state == SchedulerState.RUNNING} == 0) {
       // we're done
-      Utilities.DebugLog("HIT is RESOLVED.", LogLevel.INFO, LogType.ADAPTER, hit.id)
+      DebugLog("HIT is RESOLVED.", LogLevel.INFO, LogType.ADAPTER, hit.id)
       hit.state = HITState.RESOLVED
     }
   }
@@ -501,10 +501,10 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     var hitcancelled = false
     ts.map { t =>
       if (t.is_timedout && t.state == SchedulerState.RUNNING) {
-        Utilities.DebugLog("HIT TIMED OUT.", LogLevel.WARN, LogType.ADAPTER, hit.id)
+        DebugLog("HIT TIMED OUT.", LogLevel.WARN, LogType.ADAPTER, hit.id)
         val t2 = t.copy_as_timeout()
         if (!hitcancelled) {
-          Utilities.DebugLog("Force-expiring HIT.", LogLevel.WARN, LogType.ADAPTER, hit.id)
+          DebugLog("Force-expiring HIT.", LogLevel.WARN, LogType.ADAPTER, hit.id)
           hit.cancel(backend)
           hitcancelled = true
         }
@@ -515,7 +515,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     }
   }
   private def process_assignment[A](q: MTurkQuestion, a: Assignment, hit_id: String, t: Thunk[A], use_disq: Boolean) : Thunk[A] = {
-    Utilities.DebugLog("Processing assignment...", LogLevel.WARN, LogType.ADAPTER, t.question.id)
+    DebugLog("Processing assignment...", LogLevel.WARN, LogType.ADAPTER, t.question.id)
 
     // convert answer from XML
     val answer = q.answer(a).asInstanceOf[A]
@@ -554,7 +554,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
         val sdf = new SimpleDateFormat("yyyy-MM-dd:z")
         val datestr = sdf.format(new Date())
 
-        Utilities.DebugLog("This is the task's first run; creating dequalification.",LogLevel.INFO,LogType.ADAPTER,question_id)
+        DebugLog("This is the task's first run; creating dequalification.",LogLevel.INFO,LogType.ADAPTER,question_id)
         val qualtxt = String.format("AutoMan automatically generated Qualification (title: %s, date: %s)", title, datestr)
         val qual : QualificationType = backend.createQualificationType("AutoMan " + UUID.randomUUID(), "automan", qualtxt)
         val deq = new QualificationRequirement(qual.getQualificationTypeId, Comparator.NotEqualTo, 1, null, false)
