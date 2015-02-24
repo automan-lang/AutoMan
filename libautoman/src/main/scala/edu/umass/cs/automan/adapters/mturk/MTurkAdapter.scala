@@ -8,7 +8,7 @@ import edu.umass.cs.automan.adapters.mturk.connectionpool.Pool
 import edu.umass.cs.automan.adapters.mturk.logging.MTMemo
 import edu.umass.cs.automan.adapters.mturk.question.{MTQuestionOption, MTRadioButtonQuestion}
 import edu.umass.cs.automan.core.question.Question
-import edu.umass.cs.automan.core.scheduler.Thunk
+import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 import edu.umass.cs.automan.core.AutomanAdapter
 
 object MTurkAdapter {
@@ -82,6 +82,8 @@ class MTurkAdapter extends AutomanAdapter {
   protected[automan] def cancel[A](t: Thunk[A]) = run_if_initialized((p: Pool) => p.cancel(t))
   protected[automan] def backend_budget() = run_if_initialized((p: Pool) => p.backend_budget)
   protected[automan] def post[A](ts: List[Thunk[A]], exclude_worker_ids: List[String]) = {
+    assert(ts.forall(_.state == SchedulerState.READY))
+
     run_if_initialized((p: Pool) => {
       // mark thunks as RUNNING so that the scheduler
       // knows to attempt to retrieve their answers later
