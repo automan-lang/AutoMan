@@ -7,7 +7,7 @@ import edu.umass.cs.automan.core.logging.LogConfig.LogConfig
 import edu.umass.cs.automan.core.logging.LogConfig.LogConfig
 import edu.umass.cs.automan.core.question._
 import edu.umass.cs.automan.core.logging.{LogConfig, Memo}
-import edu.umass.cs.automan.core.scheduler.{Scheduler, Thunk}
+import edu.umass.cs.automan.core.scheduler.{SchedulerState, Scheduler, Thunk}
 import scala.concurrent.{blocking, Future}
 
 abstract class AutomanAdapter {
@@ -47,10 +47,10 @@ abstract class AutomanAdapter {
   protected[automan] def backend_budget(): BigDecimal
   protected[automan] def cancel[A](t: Thunk[A]) : Thunk[A]
   /**
-   * Post tasks on the backend, one task for each Thunk.  All Thunks should
+   * Post tasks on the backend, one task for each Thunk.  All Thunks given should
    * be marked READY. The method returns the complete list of Thunks passed
-   * but with new states. Invariant: the size of the list of input Thunks ==
-   * the size of the list of the output Thunks.
+   * but with new states. Nonblocking. Invariant: the size of the list of input
+   * Thunks == the size of the list of the output Thunks.
    * @param ts A list of new Thunks.
    * @param exclude_worker_ids Worker IDs to exclude, if any.
    * @tparam A The data type of the Answer value.
