@@ -9,13 +9,13 @@ import scala.annotation.tailrec
 
 class Scheduler[A](val question: Question[A],
                    val backend: AutomanAdapter,
-                   val memo_opt: Option[_ <: Memo],
+                   val memo: Memo,
                    val poll_interval_in_s: Int,
                    val time_opt: Option[Date]) {
   def this(question: Question[A],
            adapter: AutomanAdapter,
-           memoizer: Option[Memo],
-           poll_interval_in_s: Int) = this(question, adapter, memoizer, poll_interval_in_s, None)
+           memo: Memo,
+           poll_interval_in_s: Int) = this(question, adapter, memo, poll_interval_in_s, None)
 
   /** Crowdsources a task on the desired backend, scheduling and
     * rescheduling enough jobs until the chosen quality-control
@@ -25,10 +25,7 @@ class Scheduler[A](val question: Question[A],
   def run(): SchedulerResult[A] = {
     // Was this computation interrupted? If there's a memoizer instance
     // restore thunks from scheduler trace.
-    val thunks: List[Thunk[A]] = memo_opt match {
-      case Some(memo) => memo.restore(question)
-      case None => List.empty
-    }
+    val thunks: List[Thunk[A]] = memo.restore(question)
 
     // set initial conditions and then call the tail-recursive version
     run_tr(thunks, suffered_timeout = false)
@@ -57,7 +54,7 @@ class Scheduler[A](val question: Question[A],
       // The scheduler waits here to give the crowd time to answer.
       // Sleeping also informs the scheduler that this thread may yield
       // its CPU time.  While we wait, we also save changes.
-      Scheduler.memo_and_sleep(poll_interval_in_s * 1000, thunks ::: new_thunks, question, memo_opt)
+      Scheduler.memo_and_sleep(poll_interval_in_s * 1000, thunks ::: new_thunks, question, memo)
       // ask the backend to retrieve answers for all RUNNING thunks
       val (running_thunks,dead_thunks) = (thunks ::: new_thunks).partition(_.state == SchedulerState.RUNNING)
       assert(running_thunks.size > 0)
@@ -67,10 +64,7 @@ class Scheduler[A](val question: Question[A],
       val all_thunks = answered_thunks ::: dead_thunks
 
       // memoize thunks
-      memo_opt match {
-        case Some(memo) => memo.save(question, all_thunks)
-        case None => ()
-      }
+      memo.save(question, all_thunks)
       // recursive call
       run_tr(all_thunks, Scheduler.timeout_occurred(answered_thunks))
     }
@@ -78,12 +72,9 @@ class Scheduler[A](val question: Question[A],
 }
 
 object Scheduler {
-  def memo_and_sleep[A](wait_time_ms: Int, ts: List[Thunk[A]], question: Question[A], memo_opt: Option[Memo]) : Unit = {
+  def memo_and_sleep[A](wait_time_ms: Int, ts: List[Thunk[A]], question: Question[A], memo: Memo) : Unit = {
     val t = Stopwatch {
-      memo_opt match {
-        case Some(memo) => memo.save(question, ts)
-        case None => ()
-      }
+      memo.save(question, ts)
     }
     val rem_ms = wait_time_ms - t.duration_ms
     if (rem_ms > 0) {

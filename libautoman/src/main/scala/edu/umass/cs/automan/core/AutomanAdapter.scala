@@ -22,7 +22,7 @@ abstract class AutomanAdapter {
 
   protected var _default_confidence: Double = 0.95
   protected var _locale: Locale = Locale.getDefault
-  protected var _memoizer: Option[Memo] = None
+  protected var _memoizer: Memo = _
   protected var _plugins: List[Class[_ <: Plugin]] = List.empty
   protected var _plugins_initialized: List[_ <: Plugin] = List.empty
   protected var _poll_interval_in_s : Int = 30
@@ -101,12 +101,8 @@ abstract class AutomanAdapter {
   private def plugins_shutdown(): Unit = {
     _plugins_initialized.foreach { plugin => plugin.shutdown() }
   }
-  private def memo_init() {
-    if (_log_config != LogConfig.NO_LOGGING) {
-      _memoizer = Some(new Memo(_log_config))
-    }
-//    _memoizer = Some(new AutomanMemoizer(_memo_conn_string, _memo_user, _memo_pass))
-    ???
+  protected[automan] def memo_init() {
+    _memoizer = new Memo(_log_config)
   }
 
 //  def state_snapshot(): StateInfo = {
