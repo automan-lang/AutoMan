@@ -1,7 +1,6 @@
 package edu.umass.cs.automan.adapters.mturk.connectionpool
 
 import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
-import edu.umass.cs.automan.core.answer.Answer
 import edu.umass.cs.automan.core.scheduler.Thunk
 
 protected[mturk] sealed trait Message extends Comparable[Message] {

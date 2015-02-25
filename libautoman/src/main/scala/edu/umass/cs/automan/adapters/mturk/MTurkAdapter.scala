@@ -6,7 +6,7 @@ import com.amazonaws.mturk.util.ClientConfig
 import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.adapters.mturk.connectionpool.Pool
 import edu.umass.cs.automan.adapters.mturk.logging.MTMemo
-import edu.umass.cs.automan.adapters.mturk.question.{MTQuestionOption, MTRadioButtonQuestion}
+import edu.umass.cs.automan.adapters.mturk.question.{MTurkQuestion, MTQuestionOption, MTRadioButtonQuestion}
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 import edu.umass.cs.automan.core.AutomanAdapter
@@ -92,8 +92,6 @@ class MTurkAdapter extends AutomanAdapter {
       ts2
     })
   }
-  protected[automan] def process_custom_info[A](t: Thunk[A], i: Option[String]) : Thunk[A] =
-    run_if_initialized((p: Pool) => p.process_custom_info(t, i))
   protected[automan] def reject[A](t: Thunk[A]) = run_if_initialized((p: Pool) => p.reject(t))
   protected[automan] def retrieve[A](ts: List[Thunk[A]]) =
     run_if_initialized((p: Pool) => p.retrieve(ts))
@@ -102,7 +100,7 @@ class MTurkAdapter extends AutomanAdapter {
   override protected[automan] def question_shutdown_hook[A](q: Question[A]): Unit = {
     super.question_shutdown_hook(q)
     // cleanup qualifications
-    run_if_initialized((p: Pool) => p.cleanup_qualifications(q))
+    run_if_initialized((p: Pool) => p.cleanup_qualifications(q.asInstanceOf[MTurkQuestion]))
   }
 
   // exception helper function

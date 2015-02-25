@@ -57,7 +57,6 @@ abstract class AutomanAdapter {
    * @return A list of the posted Thunks.
    */
   protected[automan] def post[A](ts: List[Thunk[A]], exclude_worker_ids: List[String]) : List[Thunk[A]]
-  protected[automan] def process_custom_info[A](t: Thunk[A], i: Option[String]) : Thunk[A]
   protected[automan] def reject[A](t: Thunk[A]) : Thunk[A]
 
   /**

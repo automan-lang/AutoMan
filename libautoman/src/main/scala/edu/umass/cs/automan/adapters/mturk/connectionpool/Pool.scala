@@ -10,7 +10,7 @@ import edu.umass.cs.automan.adapters.mturk.question.{MTRadioButtonQuestion, HITS
 import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
-import scala.collection.mutable
+import edu.umass.cs.automan.core.util.Stopwatch
 import scala.collection.mutable.Queue
 
 class Pool(backend: RequesterService, sleep_ms: Int) {
@@ -21,141 +21,62 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   private val _work_queue: PriorityBlockingQueue[Message] = new PriorityBlockingQueue[Message]()
 
   // response data
-  private val _thunk_responses = scala.collection.mutable.Map[Message, List[Thunk[_]]]()
+  private val _responses = scala.collection.mutable.Map[Message, Any]()
 
-  private val _accepted_thunks = scala.collection.mutable.Map[AcceptReq[_], Thunk[_]]()
-  private val _cancelled_thunks = scala.collection.mutable.Map[CancelReq[_], Thunk[_]]()
-  private val _disposal_completions = scala.collection.mutable.Map[DisposeQualsReq,Unit]()
-  private val _rejected_thunks = scala.collection.mutable.Map[RejectReq[_], Thunk[_]]()
-  private val _retrieved_data = scala.collection.mutable.Map[RetrieveReq[_], List[Thunk[_]]]()
+  // API
+  def accept[A](t: Thunk[A]) : Thunk[A] = {
+    blocking_enqueue(AcceptReq(t)).asInstanceOf[Thunk[A]]
+  }
+  def backend_budget: BigDecimal = {
+    blocking_enqueue(BudgetReq()).asInstanceOf[BigDecimal]
+  }
+  def cancel[A](t: Thunk[A]) : Thunk[A] = {
+    blocking_enqueue(CancelReq(t)).asInstanceOf[Thunk[A]]
+  }
+  def cleanup_qualifications[A](mtq: MTurkQuestion) : Unit = {
+    nonblocking_enqueue(DisposeQualsReq(mtq))
+  }
+  def post[A](ts: List[Thunk[A]], exclude_worker_ids: List[String]) : Unit = {
+    nonblocking_enqueue(CreateHITReq(ts, exclude_worker_ids))
+  }
+  def reject[A](t: Thunk[A]) : Thunk[A] = {
+    blocking_enqueue(RejectReq(t)).asInstanceOf[Thunk[A]]
+  }
+  def retrieve[A](ts: List[Thunk[A]]) : List[Thunk[A]] = {
+    blocking_enqueue(RetrieveReq(ts)).asInstanceOf[List[Thunk[A]]]
+  }
+  def shutdown(): Unit = synchronized {
+    nonblocking_enqueue(ShutdownReq())
+  }
 
+  // IMPLEMENTATIONS
   def nonblocking_enqueue[M <: Message, T](req: M) = {
     // put job in queue
     _work_queue.add(req)
 
     initWorkerIfNeeded()
   }
-  def blocking_enqueue[M <: Message, T](req: M, receive_map: mutable.Map[M,T]) = {
+  def blocking_enqueue[M <: Message, T](req: M) = {
     nonblocking_enqueue(req)
 
     // wait for response
     // while loop is because the JVM is
     // permitted to send spurious wakeups
-    while(synchronized { !receive_map.contains(req) }) {
+    while(synchronized { !_responses.contains(req) }) {
       // Note that the purpose of this second lock
       // is to provide blocking semantics
       req.synchronized {
-        DebugLog("Response from adapter for not available (" + req.toString + "), putting Question Scheduler to sleep.", LogLevel.INFO, LogType.ADAPTER, null)
         req.wait() // block until cancelled thunk is available
       }
     }
 
     // return output
     synchronized {
-      val ret = receive_map(req)
-      receive_map.remove(req)
+      val ret = _responses(req)
+      _responses.remove(req)
       ret
     }
   }
-
-  // API
-  def accept[A](t: Thunk[A]) : Thunk[A] = {
-    blocking_enqueue(AcceptReq(t), _accepted_thunks).asInstanceOf[Thunk[A]]
-  }
-  def backend_budget: BigDecimal = {
-    // budget requests are made as soon as is possible (not queued)
-    syncCommWait { () =>
-      scheduled_get_budget()
-    }
-  }
-  def cancel[A](t: Thunk[A]) : Thunk[A] = {
-    blocking_enqueue(CancelReq(t), _cancelled_thunks).asInstanceOf[Thunk[A]]
-  }
-  def cleanup_qualifications[A](q: Question[A]) : Unit = {
-    val req = q match {
-      case mtq:MTurkQuestion => {
-        blocking_enqueue(DisposeQualsReq(mtq), _disposal_completions)
-      }
-      case _ => throw new Exception("Impossible error.")
-    }
-  }
-  def post[A](ts: List[Thunk[A]], exclude_worker_ids: List[String]) : Unit = {
-    nonblocking_enqueue(CreateHITReq(ts, exclude_worker_ids))
-  }
-  def reject[A](t: Thunk[A]) : Thunk[A] = {
-    blocking_enqueue(RejectReq(t), _rejected_thunks).asInstanceOf[Thunk[A]]
-  }
-  def retrieve[A](ts: List[Thunk[A]]) : List[Thunk[A]] = {
-    blocking_enqueue(RetrieveReq(ts), _retrieved_data).asInstanceOf[List[Thunk[A]]]
-  }
-  def shutdown(): Unit = synchronized {
-    nonblocking_enqueue(ShutdownReq())
-  }
-
-//  private def ifWorkToBeDoneThen[T](when_yes: () => T)(when_no: () => T) : T = {
-//    synchronized {
-//      val yes = !_work_queue.isEmpty
-//      if (yes) {
-//        when_yes()
-//      } else {
-//        when_no()
-//      }
-//    }
-//  }
-
-//  private def workToBeDone: Boolean = {
-//    ifWorkToBeDoneThen(() => true)(() => false)
-//  }
-  // if an item is in the queue, it is dequeued
-  // f is executed inside the lock
-  // g is executed outside the lock
-//  private def lockDequeueAndProcessAndThen[T](q: Queue[T], f: T => Unit, g: T => Unit) = {
-//    // Dequeue and execute f inside lock
-//    val topt: Option[T] = syncCommWait { () =>
-//      val t = if (q.nonEmpty) {
-//        Some(q.dequeue())
-//      } else {
-//        None
-//      }
-//      t match {
-//        case Some(th) => f(th); t
-//        case None => t
-//      }
-//    }
-//    // execute g outside lock, if there was an item to dequeue
-//    topt match {
-//      case Some(t) => g(t)
-//      case None => Unit
-//    }
-//  }
-//  private def lockDequeueAndProcess[T](q: Queue[T], f: T => Unit) = {
-//    lockDequeueAndProcessAndThen(q, f, (t: T) => Unit /* do nothing */)
-//  }
-//  private def dequeueAllAndProcess[T](q: Queue[T], f: Seq[T] => Unit) = {
-//    syncCommWait { () =>
-//      val t = synchronized {
-//        if (q.nonEmpty) {
-//          Some(q.dequeueAll(t => true))
-//        } else {
-//          None
-//        }
-//      }
-//      t match {
-//        case Some(t) => f(t)
-//        case None => Unit
-//      }
-//    }
-//  }
-  // communication always syncs on 'this' adapter object
-  // so this methods prevents multiple requests from
-  // happening simultaneously
-//  private def syncCommWait[T](f: () => T) : T = {
-//    synchronized {
-//      val t = f()
-//      Thread.sleep(sleep_ms)
-//      t
-//    }
-//  }
   private def initWorkerIfNeeded() : Unit = {
     // if there's no thread already servicing the queue,
     // lock and start one up
@@ -169,30 +90,43 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       }
     }
   }
-
   private def initWorkerThread(): Thread = {
     DebugLog("No worker thread; starting one up.", LogLevel.INFO, LogType.ADAPTER, null)
     new Thread(new Runnable() {
       override def run() {
         while (true) {
-          _work_queue.take() match {
-            case sr: ShutdownReq => return ()
-            case ar: AcceptReq[_] => ar.synchronized {
-              // do request
-              val accepted_thunk = scheduled_accept(ar.t)
-              // store response thunk
-              synchronized { _accepted_thunks += (ar -> accepted_thunk) }
-              // send end-wait notification
-              ar.notifyAll()
+
+          val time = Stopwatch {
+            _work_queue.take() match {
+              case req: ShutdownReq => return
+              case req: AcceptReq[_] => do_sync_action(req, () => scheduled_accept(req.t))
+              case req: BudgetReq => do_sync_action(req, () => scheduled_get_budget())
+              case req: CancelReq[_] => do_sync_action(req, () => scheduled_cancel(req.t))
+              case req: DisposeQualsReq => do_sync_action(req, () => scheduled_cleanup_qualifications(req.q))
+              case req: CreateHITReq[_] => do_sync_action(req, () => scheduled_post(req.ts, req.exclude_worker_ids))
+              case req: RejectReq[_] => do_sync_action(req, () => scheduled_reject(req.t))
+              case req: RetrieveReq[_] => do_sync_action(req, () => scheduled_retrieve(req.ts))
             }
-            case br: BudgetReq =>
           }
 
+          // rate-limit
+          Thread.sleep(Math.max(sleep_ms - time.duration_ms, 0))
         } // exit loop
       }
     })
   }
-
+  private def do_sync_action[T](message: Message, action: () => T) : Unit = {
+    message.synchronized {
+      // do request
+      val response = action()
+      // store response
+      synchronized {
+        _responses += (message -> response)
+      }
+      // send end-wait notification
+      message.notifyAll()
+    }
+  }
   private def scheduled_accept[A](t: Thunk[A]) : Thunk[A] = {
     DebugLog(String.format("Accepting task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
@@ -219,7 +153,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     }
   }
   private def scheduled_post(ts: List[Thunk[_]], exclude_worker_ids: List[String]) : Unit = {
-    DebugLog(String.format("Posting %s tasks.", ts.size.toString()), LogLevel.INFO, LogType.ADAPTER, null)
+    DebugLog(String.format("Posting %s tasks.", ts.size.toString), LogLevel.INFO, LogType.ADAPTER, null)
 
     val question = question_for_thunks(ts)
     val mtquestion = question match { case mtq: MTurkQuestion => mtq; case _ => throw new Exception("Impossible.") }

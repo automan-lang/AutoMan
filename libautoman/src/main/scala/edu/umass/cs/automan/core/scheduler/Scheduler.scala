@@ -5,6 +5,7 @@ import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.exception.OverBudgetException
 import edu.umass.cs.automan.core.logging.Memo
 import edu.umass.cs.automan.core.question.Question
+import edu.umass.cs.automan.core.util.Stopwatch
 import scala.annotation.tailrec
 
 class Scheduler[A](val question: Question[A],
