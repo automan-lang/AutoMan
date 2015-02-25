@@ -1,4 +1,4 @@
-package edu.umass.cs.automan.core.scheduler
+package edu.umass.cs.automan.core.util
 
 case class Time[A](result: A, duration_ms: Long)
 
