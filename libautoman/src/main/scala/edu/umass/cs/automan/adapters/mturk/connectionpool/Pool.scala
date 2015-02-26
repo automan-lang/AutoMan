@@ -5,7 +5,6 @@ import java.util.concurrent.PriorityBlockingQueue
 import java.util.{Date, UUID}
 import com.amazonaws.mturk.requester._
 import com.amazonaws.mturk.service.axis.RequesterService
-import edu.umass.cs.automan.adapters.mturk.AutomanHIT
 import edu.umass.cs.automan.adapters.mturk.question.{MTRadioButtonQuestion, HITState, MTurkQuestion}
 import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
 import edu.umass.cs.automan.core.question.Question
@@ -22,6 +21,11 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
 
   // response data
   private val _responses = scala.collection.mutable.Map[Message, Any]()
+
+  // MTurk-related state
+  // key: (group_id,cost,worker_timeout_s)
+  // value: a HITTypeId
+  private val _group_hittype_map = Map[(String,BigDecimal,Int),String]()
 
   // API
   def accept[A](t: Thunk[A]) : Thunk[A] = {
@@ -152,22 +156,50 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       case _ => throw new Exception("Impossible error.")
     }
   }
+
   private def scheduled_post(ts: List[Thunk[_]], exclude_worker_ids: List[String]) : Unit = {
-    DebugLog(String.format("Posting %s tasks.", ts.size.toString), LogLevel.INFO, LogType.ADAPTER, null)
+    // One consequence of dealing with groups of thunks is that
+    // they may each be associated with a different question; although
+    // automan never calls post with heterogeneous set of thunks, we
+    // have to allow for the possibility that it does.
+    ts.groupBy(_.question).foreach { case (q, qts) =>
+      // Our questions are *always* MTurkQuestions
+      val mtq = q.asInstanceOf[MTurkQuestion]
 
-    val question = question_for_thunks(ts)
-    val mtquestion = question match { case mtq: MTurkQuestion => mtq; case _ => throw new Exception("Impossible.") }
-    val qualify_early = if (question.blacklisted_workers.size > 0) true else false
-    val quals = get_qualifications(mtquestion, ts.head.question.text, qualify_early, question.id, ???)  // TODO: use_disqualifications is now gone
+      // also, we need to ensure that all the thunks have the same properties
+      qts.groupBy{ t => (t.cost,t.worker_timeout)}.foreach { case ((cost,worker_timeout), tz) =>
+        // does this group and (cost, timeout) need a new HITType?
+        val key = (mtq.group_id, cost, worker_timeout)
+        val hit_type_id = if (_group_hittype_map.contains(key)) {
+          backend.registerHITType(
+            (30 * 24 * 60 * 60).toLong,       // 30 days
+            worker_timeout.toLong,            // amount of time the worker has to complete the task
+            cost.toDouble,                    // cost in USD
+            q.title,                          // title
+            mtq.keywords.mkString(","),       // keywords
+            mtq.description,                  // description
+            Array[QualificationRequirement]() // no quals initially
+          )
+          _group_hittype_map ++= ???
+        } else {
+          _group_hittype_map(key)
+        }
 
-    // Build HIT and post it
-    mtquestion match {
-      case rbq: MTRadioButtonQuestion => {
-        mtquestion.hit_type_id = rbq.build_hit(ts).post(backend, quals)
+        // do we need to _start_ with qualifications?
+        val qualify_early = q.blacklisted_workers.size > 0
+
+        // get qualification
+        val quals = get_qualifications(mtq, q.text, qualify_early, q.id, true)
+
+        // finally post the task to MTurk
+        //      mtq.hit_type_id = mtq.build_hit(ts).post(backend, quals)
+        ???
       }
-      case _ => ???
+
+
     }
   }
+
   private def scheduled_reject[A](t: Thunk[A]) : Thunk[A] = {
     DebugLog(String.format("Rejecting task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
@@ -360,7 +392,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
         val deq = new QualificationRequirement(qual.getQualificationTypeId, Comparator.NotEqualTo, 1, null, false)
         q.disqualification = deq
         q.firstrun = false
-        // we need early qualifications; add anyway
+        // we need early qualifications; add disqualification anyway
         if (qualify_early) {
           q.qualifications = deq :: q.qualifications
         }
