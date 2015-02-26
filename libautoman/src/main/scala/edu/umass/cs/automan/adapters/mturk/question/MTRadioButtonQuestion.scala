@@ -1,10 +1,9 @@
 package edu.umass.cs.automan.adapters.mturk.question
 
-import edu.umass.cs.automan.adapters.mturk.AutomanHIT
 import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
 import edu.umass.cs.automan.core.question.RadioButtonQuestion
 import edu.umass.cs.automan.core.scheduler.{BackendResult, Thunk}
-import com.amazonaws.mturk.requester.Assignment
+import com.amazonaws.mturk.requester.{HIT, Assignment}
 import edu.umass.cs.automan.core.util.Utilities
 import xml.XML
 import java.security.MessageDigest
@@ -13,10 +12,8 @@ import org.apache.commons.codec.binary.Hex
 class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
   type QO = MTQuestionOption
   type A = Symbol
-  override type Group = MTRadioButtonQuestionGroup
 
   protected var _options = List[QO]()
-  override protected var _question_group: Group = MTRadioButtonQuestionGroup(this.id.toString())
 
   def answer(a: Assignment): BackendResult[A] = {
     new BackendResult[A](
@@ -26,25 +23,25 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
       a.getSubmitTime.getTime
     )
   }
-  def build_hit(ts: List[Thunk[_]]) : AutomanHIT = {
-    val x = toXML(randomize = !_dont_randomize_options)
-    val h = AutomanHIT { a =>
-      a.hit_type_id = _hit_type_id
-      a.title = title
-      a.description = _description
-      a.keywords = _keywords
-      a.question_xml = x
-      a.assignmentDurationInSeconds = _worker_timeout_in_s
-      a.lifetimeInSeconds = question_timeout_in_s
-      a.maxAssignments = ts.size
-      a.cost = ts.head.cost
-      a.id = id
-    }
-    DebugLog("Posting XML:\n" + x,LogLevel.INFO,LogType.ADAPTER,id)
-    hits = h :: hits
-    hit_thunk_map += (h -> ts)
-    h
-  }
+//  def build_hit(ts: List[Thunk[_]]) : AutomanHIT = {
+//    val x = toXML(randomize = !_dont_randomize_options)
+//    val h = AutomanHIT { a =>
+//      a.hit_type_id = _hit_type_id
+//      a.title = title
+//      a.description = _description
+//      a.keywords = _keywords
+//      a.question_xml = x
+//      a.assignmentDurationInSeconds = _worker_timeout_in_s
+//      a.lifetimeInSeconds = question_timeout_in_s
+//      a.maxAssignments = ts.size
+//      a.cost = ts.head.cost
+//      a.id = id
+//    }
+//    DebugLog("Posting XML:\n" + x,LogLevel.INFO,LogType.ADAPTER,id)
+//    hits = h :: hits
+//    hit_thunk_map += (h -> ts)
+//    h
+//  }
 
   def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
@@ -62,7 +59,6 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
 
     Symbol((x \\ "Answer" \\ "SelectionIdentifier").text)
   }
-  override def group_=(id: String) { _question_group = MTRadioButtonQuestionGroup(id) }
   // TODO: random checkbox fill
   def toXML(randomize: Boolean) : scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">

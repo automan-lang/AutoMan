@@ -1,6 +1,6 @@
 package edu.umass.cs.automan.adapters.mturk
 
-import java.util.Locale
+import java.util.{Date, UUID, Locale}
 
 import com.amazonaws.mturk.util.ClientConfig
 import com.amazonaws.mturk.service.axis.RequesterService
