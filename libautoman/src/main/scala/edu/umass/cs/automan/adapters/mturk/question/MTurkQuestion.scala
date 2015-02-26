@@ -6,7 +6,6 @@ import com.amazonaws.mturk.requester.{HIT, Assignment, QualificationRequirement}
 trait MTurkQuestion {
   type A
 
-  protected[automan] var disqualification : QualificationRequirement = _
   protected var _description: String = ""
   protected var _qualified_workers = Map[String,Set[String]]() // (QualificationTypeId -> Set[worker_id])
   protected var _formatted_content: Option[scala.xml.NodeSeq] = None

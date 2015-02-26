@@ -142,5 +142,8 @@ class MTurkAdapter extends AutomanAdapter {
 
   override protected[automan] def memo_init(): Unit = {
     _memoizer = new MTMemo(_log_config)
+
+    // TODO: read saved adapter state
+    ???
   }
 }

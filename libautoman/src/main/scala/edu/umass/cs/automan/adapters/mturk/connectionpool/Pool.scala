@@ -25,7 +25,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   // MTurk-related state
   // key: (group_id,cost,worker_timeout_s)
   // value: a HITTypeId
-  private val _group_hittype_map = Map[(String,BigDecimal,Int),String]()
+  private var _group_hittype_map = Map[(String,BigDecimal,Int),String]()
 
   // API
   def accept[A](t: Thunk[A]) : Thunk[A] = {
@@ -157,6 +157,24 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     }
   }
 
+  private def mturk_registerHITType(question: Question[_], worker_timeout: Int, cost: BigDecimal, quals: List[QualificationRequirement]) : String = {
+    backend.registerHITType(
+      (30 * 24 * 60 * 60).toLong,                                   // 30 days
+      worker_timeout.toLong,                                        // amount of time the worker has to complete the task
+      cost.toDouble,                                                // cost in USD
+      question.title,                                               // title
+      question.asInstanceOf[MTurkQuestion].keywords.mkString(","),  // keywords
+      question.asInstanceOf[MTurkQuestion].description,             // description
+      quals.toArray                                                 // no quals initially
+    )
+  }
+
+  /**
+   * This call marshals data to MTurk, updating local state
+   * where necessary.
+   * @param ts  A List of Thunks to post.
+   * @param exclude_worker_ids  A list of worker_ids to exclude (via disqualifications)
+   */
   private def scheduled_post(ts: List[Thunk[_]], exclude_worker_ids: List[String]) : Unit = {
     // One consequence of dealing with groups of thunks is that
     // they may each be associated with a different question; although
@@ -168,32 +186,36 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
 
       // also, we need to ensure that all the thunks have the same properties
       qts.groupBy{ t => (t.cost,t.worker_timeout)}.foreach { case ((cost,worker_timeout), tz) =>
-        // does this group and (cost, timeout) need a new HITType?
+        // when these properties change from what we've seen before
+        // (including the possibility that we've never seen any of these
+        // thunks before) we need to create a new HITType
         val key = (mtq.group_id, cost, worker_timeout)
-        val hit_type_id = if (_group_hittype_map.contains(key)) {
-          backend.registerHITType(
-            (30 * 24 * 60 * 60).toLong,       // 30 days
-            worker_timeout.toLong,            // amount of time the worker has to complete the task
-            cost.toDouble,                    // cost in USD
-            q.title,                          // title
-            mtq.keywords.mkString(","),       // keywords
-            mtq.description,                  // description
-            Array[QualificationRequirement]() // no quals initially
-          )
-          _group_hittype_map ++= ???
+        if (_group_hittype_map.contains(key)) {
+          // whenever we create a new HIT, we need to add a disqualification
+          // EXCEPT when it's the very first time and we weren't specifically
+          // asked to blacklist any workers
+          val quals = if ((q.blacklisted_workers.size > 0) || (exclude_worker_ids.size > 0)) {
+            mturk_createDisqualification(mtq, q.text, q.id) :: mtq.qualifications
+          } else {
+            mtq.qualifications
+          }
+
+          // request new HITTypeId from MTurk
+          val hit_type_id = mturk_registerHITType(q, worker_timeout, cost, quals)
+
+          // update map
+          _group_hittype_map ++= hit_type_id
+
+          // finally post the task to MTurk
+          //      mtq.hit_type_id = mtq.build_hit(ts).post(backend, quals)
+          ???
         } else {
-          _group_hittype_map(key)
+          // this case, we're just creating more assignments for a HIT that
+          // we already posted, so we can just "extend" it
+          val hit_type_id = _group_hittype_map(key)
+
+          ???
         }
-
-        // do we need to _start_ with qualifications?
-        val qualify_early = q.blacklisted_workers.size > 0
-
-        // get qualification
-        val quals = get_qualifications(mtq, q.text, qualify_early, q.id, true)
-
-        // finally post the task to MTurk
-        //      mtq.hit_type_id = mtq.build_hit(ts).post(backend, quals)
-        ???
       }
 
 
@@ -374,37 +396,15 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   private def set_paid_status[A](t: Thunk[A]) : Unit = {
     ???
   }
-  private def get_qualifications(q: MTurkQuestion, title: String, qualify_early: Boolean, question_id: UUID, use_disq: Boolean) : List[QualificationRequirement] = {
-    // if we are not using the disqualification mechanism,
-    // just return the user-specified list of qualifications
-    if (use_disq) {
-      // The first qualification always needs to be the special
-      // "dequalification" type so that we may grant it as soon as
-      // a worker completes some work.
-      if (q.firstrun) {
-        // get a simply-formatted date
-        val sdf = new SimpleDateFormat("yyyy-MM-dd:z")
-        val datestr = sdf.format(new Date())
 
-        DebugLog("This is the task's first run; creating dequalification.",LogLevel.INFO,LogType.ADAPTER,question_id)
-        val qualtxt = String.format("AutoMan automatically generated Qualification (title: %s, date: %s)", title, datestr)
-        val qual : QualificationType = backend.createQualificationType("AutoMan " + UUID.randomUUID(), "automan", qualtxt)
-        val deq = new QualificationRequirement(qual.getQualificationTypeId, Comparator.NotEqualTo, 1, null, false)
-        q.disqualification = deq
-        q.firstrun = false
-        // we need early qualifications; add disqualification anyway
-        if (qualify_early) {
-          q.qualifications = deq :: q.qualifications
-        }
-      } else if (!q.qualifications.contains(q.disqualification)) {
-        // add the dequalification to the list of quals if this
-        // isn't a first run and it isn't already there
-        q.qualifications = q.disqualification :: q.qualifications
-      }
-    } else if (q.firstrun) {
-      q.firstrun = false // in case this gets used anywhere else
-    }
+  private def mturk_createDisqualification(q: MTurkQuestion, title: String, question_id: UUID) : QualificationRequirement = {
+    // get a simply-formatted date
+    val sdf = new SimpleDateFormat("yyyy-MM-dd:z")
+    val datestr = sdf.format(new Date())
 
-    q.qualifications
+    DebugLog("Creating dequalification.",LogLevel.INFO,LogType.ADAPTER,question_id)
+    val qualtxt = String.format("AutoMan automatically generated Qualification (title: %s, date: %s)", title, datestr)
+    val qual : QualificationType = backend.createQualificationType("AutoMan " + UUID.randomUUID(), "automan", qualtxt)
+    new QualificationRequirement(qual.getQualificationTypeId, Comparator.NotEqualTo, 1, null, false)
   }
 }
