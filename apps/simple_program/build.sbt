@@ -12,4 +12,4 @@ scalaVersion := Common.ScalaVersion
 
 exportJars := true
 
-libraryDependencies += "edu.umass.cs.plasma"  %%  "automandebugger" % "0.1-SNAPSHOT"
+//libraryDependencies += "edu.umass.cs.plasma"  %%  "automandebugger" % "0.1-SNAPSHOT"
