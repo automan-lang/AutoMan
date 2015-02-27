@@ -23,9 +23,18 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   private val _responses = scala.collection.mutable.Map[Message, Any]()
 
   // MTurk-related state
+
   // key: (group_id,cost,worker_timeout_s)
   // value: a HITTypeId
   private var _group_hittype_map = Map[(String,BigDecimal,Int),String]()
+
+  // key: thunk_id
+  // value: a HIT data structure
+  private var _thunk_hit_map = Map[UUID,HIT]()
+
+  // key: (question_id,cost,worker_timeout_s)
+  // value: a HIT data structure
+  private var _question_hit_map = Map[(UUID,BigDecimal,Int),HIT]()
 
   // API
   def accept[A](t: Thunk[A]) : Thunk[A] = {
@@ -169,6 +178,34 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     )
   }
 
+  private def mturk_createHIT(num_tasks: Int, hitTypeId: String, lifetimeInSeconds: Int, question: Question[_]) : HIT = {
+    val hit = backend.createHIT(
+      hitTypeId,                                                    // hitTypeId
+      null,                                                         // title; defined by HITType
+      null,                                                         // description
+      null,                                                         // keywords; defined by HITType
+      question.asInstanceOf[MTurkQuestion].toXML(true).toString(),  // question
+      null,                                                         // reward; defined by HITType
+      null,                                                         // assignmentDurationInSeconds; defined by HITType
+      null,                                                         // autoApprovalDelayInSeconds; defined by HITType
+      lifetimeInSeconds.toLong,                                     // lifetimeInSeconds
+      num_tasks,                                                    // maxAssignments
+      "automan",                                                    // requesterAnnotation
+      Array[QualificationRequirement](),                            // qualificationRequirements; defined by HITType
+      Array[String]())                                              // responseGroup
+    // we immediately query the backend for the HIT's complete details
+    // because the HIT structure returned by createHIT has a number
+    // of uninitialized fields
+    backend.getHIT(hit.getHITId)
+  }
+
+  private def mturk_extendHIT(num_tasks: Int, timeout_in_s: Int, hit: HIT) : HIT = {
+    backend.extendHIT(hit.getHITId, num_tasks, timeout_in_s.toLong)
+    // we immediately query the backend for the HIT's complete details
+    // to update our cached data
+    backend.getHIT(hit.getHITId)
+  }
+
   /**
    * This call marshals data to MTurk, updating local state
    * where necessary.
@@ -188,9 +225,13 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       qts.groupBy{ t => (t.cost,t.worker_timeout)}.foreach { case ((cost,worker_timeout), tz) =>
         // when these properties change from what we've seen before
         // (including the possibility that we've never seen any of these
-        // thunks before) we need to create a new HITType
+        // thunks before) we need to create a new HITType;
+        // Note that simply adding blacklisted/excluded workers to an existing group
+        // is not sufficient to trigger the creation of a new HITType, nor do we want
+        // it to, because MTurk's extendHIT is sufficient to prevent re-participation
+        // for a given HIT.
         val key = (mtq.group_id, cost, worker_timeout)
-        if (_group_hittype_map.contains(key)) {
+        if (!_group_hittype_map.contains(key)) {
           // whenever we create a new HIT, we need to add a disqualification
           // EXCEPT when it's the very first time and we weren't specifically
           // asked to blacklist any workers
@@ -204,21 +245,24 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
           val hit_type_id = mturk_registerHITType(q, worker_timeout, cost, quals)
 
           // update map
-          _group_hittype_map ++= hit_type_id
-
-          // finally post the task to MTurk
-          //      mtq.hit_type_id = mtq.build_hit(ts).post(backend, quals)
-          ???
-        } else {
-          // this case, we're just creating more assignments for a HIT that
-          // we already posted, so we can just "extend" it
-          val hit_type_id = _group_hittype_map(key)
-
-          ???
+          _group_hittype_map = _group_hittype_map + (key -> hit_type_id)
         }
+
+        // this combination of parameters uniquely defines a class of thunks
+        val qkey = (q.id, cost, worker_timeout)
+
+        // have we already posted a HIT for thunks of this class?
+        val hit = if (_question_hit_map.contains(qkey)) {
+          // if so, extend it
+          mturk_extendHIT(tz.size, tz.head.timeout_in_s, _question_hit_map(qkey))
+        } else {
+          // if not, post a new HIT on MTurk
+          mturk_createHIT(tz.size, _group_hittype_map(key), tz.head.timeout_in_s, q)
+        }
+
+        // update map
+        _question_hit_map = _question_hit_map + (qkey -> hit)
       }
-
-
     }
   }
 
