@@ -206,6 +206,35 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     backend.getHIT(hit.getHITId)
   }
 
+  private def get_or_create_hittypeid(key: (String, BigDecimal, Int), exclude_worker_ids: List[String], question: Question[_]) : String = {
+    // when these properties change from what we've seen before
+    // (including the possibility that we've never seen any of these
+    // thunks before) we need to create a new HITType;
+    // Note that simply adding blacklisted/excluded workers to an existing group
+    // is not sufficient to trigger the creation of a new HITType, nor do we want
+    // it to, because MTurk's extendHIT is sufficient to prevent re-participation
+    // for a given HIT.
+    val (group_id, cost, worker_timeout) = key
+    if (!_group_hittype_map.contains(key)) {
+      // whenever we create a new HIT, we need to add a disqualification
+      // EXCEPT when it's the very first time and we weren't specifically
+      // asked to blacklist any workers
+      val quals = if ((question.blacklisted_workers.size > 0) || (exclude_worker_ids.size > 0)) {
+        mturk_createDisqualification(question.asInstanceOf[MTurkQuestion], question.text, question.id) ::
+          question.asInstanceOf[MTurkQuestion].qualifications
+      } else {
+        question.asInstanceOf[MTurkQuestion].qualifications
+      }
+
+      // request new HITTypeId from MTurk
+      val hit_type_id = mturk_registerHITType(question, worker_timeout, cost, quals)
+
+      // update map
+      _group_hittype_map = _group_hittype_map + (key -> hit_type_id)
+    }
+    _group_hittype_map(key)
+  }
+
   /**
    * This call marshals data to MTurk, updating local state
    * where necessary.
@@ -223,30 +252,11 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
 
       // also, we need to ensure that all the thunks have the same properties
       qts.groupBy{ t => (t.cost,t.worker_timeout)}.foreach { case ((cost,worker_timeout), tz) =>
-        // when these properties change from what we've seen before
-        // (including the possibility that we've never seen any of these
-        // thunks before) we need to create a new HITType;
-        // Note that simply adding blacklisted/excluded workers to an existing group
-        // is not sufficient to trigger the creation of a new HITType, nor do we want
-        // it to, because MTurk's extendHIT is sufficient to prevent re-participation
-        // for a given HIT.
+        // HITTypeId is uniquely determined by group_id, cost, and worker_timeout
         val key = (mtq.group_id, cost, worker_timeout)
-        if (!_group_hittype_map.contains(key)) {
-          // whenever we create a new HIT, we need to add a disqualification
-          // EXCEPT when it's the very first time and we weren't specifically
-          // asked to blacklist any workers
-          val quals = if ((q.blacklisted_workers.size > 0) || (exclude_worker_ids.size > 0)) {
-            mturk_createDisqualification(mtq, q.text, q.id) :: mtq.qualifications
-          } else {
-            mtq.qualifications
-          }
 
-          // request new HITTypeId from MTurk
-          val hit_type_id = mturk_registerHITType(q, worker_timeout, cost, quals)
-
-          // update map
-          _group_hittype_map = _group_hittype_map + (key -> hit_type_id)
-        }
+        // get hit_type_id
+        val hit_type_id = get_or_create_hittypeid(key, exclude_worker_ids, q)
 
         // this combination of parameters uniquely defines a class of thunks
         val qkey = (q.id, cost, worker_timeout)
