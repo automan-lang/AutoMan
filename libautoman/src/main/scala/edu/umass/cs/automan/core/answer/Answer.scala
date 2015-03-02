@@ -6,20 +6,20 @@ import edu.umass.cs.automan.core.scheduler.{SchedulerResult, Scheduler}
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
-case class Answer[T](private val f: Future[SchedulerResult[T]], private val scheduler: Scheduler[T]) {
+case class Answer[A](private val f: Future[SchedulerResult[A]], private val scheduler: Scheduler[_,A]) {
   def cost : AbstractOutcome[BigDecimal] = {
     try {
       Outcome(Await.result(f, Duration.Inf).cost)
     } catch {
-      case e:OverBudgetException[T] => OverBudget()
+      case e:OverBudgetException[A] => OverBudget()
     }
   }
-  def value : AbstractOutcome[T] = {
+  def value : AbstractOutcome[A] = {
     try {
       val result = Await.result(f, Duration.Inf).answer
       Outcome(result)
     } catch {
-      case e:OverBudgetException[T] => OverBudget()
+      case e:OverBudgetException[A] => OverBudget()
     }
   }
 }

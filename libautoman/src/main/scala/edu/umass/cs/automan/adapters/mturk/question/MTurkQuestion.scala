@@ -22,10 +22,6 @@ trait MTurkQuestion {
     case None => scala.xml.NodeSeq.Empty
   }
   def formatted_content_=(x: scala.xml.NodeSeq) { _formatted_content = Some(x) }
-  def answerifyThunk(t: Thunk[R,A], a: Assignment) : Thunk[R,A] = {
-    val xml = scala.xml.XML.loadString(a.getAnswer)
-    t.copy_with_answer(fromXML(xml), a.getWorkerId)
-  }
   def fromXML(x: scala.xml.Node) : A
   def group_id_=(id: String) { _group_id = id }
   def group_id: String = _group_id

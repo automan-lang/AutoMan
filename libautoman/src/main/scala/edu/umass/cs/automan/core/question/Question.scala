@@ -8,8 +8,8 @@ import edu.umass.cs.automan.core.logging.Memo
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk, Scheduler}
 import edu.umass.cs.automan.core.strategy.ValidationStrategy
 
-abstract class Question[R,A] {
-  type VS <: ValidationStrategy[R,A]
+abstract class Question[A] {
+  type VS <: ValidationStrategy[A]
 
   class QuestionStillExecutingException extends Exception
 
@@ -76,7 +76,6 @@ abstract class Question[R,A] {
   // private methods
   private[automan] def init_strategy(): Unit
   private[automan] def strategy_instance = _strategy_instance
-  protected[automan] def getAnswer(scheduler: Scheduler[R,A]): Answer[A]
+  protected[automan] def getAnswer(scheduler: Scheduler[A]): Answer[A]
   protected[automan] def getQuestionType: QuestionType
-  protected[automan] def unmarshaler : R => A
 }

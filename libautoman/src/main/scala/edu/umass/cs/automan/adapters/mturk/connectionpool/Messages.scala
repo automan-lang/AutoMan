@@ -10,24 +10,24 @@ protected[mturk] sealed trait Message extends Comparable[Message] {
 protected[mturk] case class ShutdownReq() extends Message {
   override protected def order = 0
 }
-protected[mturk] case class AcceptReq[R,A](t: Thunk[R,A]) extends Message {
+protected[mturk] case class AcceptReq[A](t: Thunk[A]) extends Message {
   override protected def order = 3
 }
 protected[mturk] case class BudgetReq() extends Message {
   override protected def order = 1
 }
-protected[mturk] case class CancelReq[R,A](t: Thunk[R,A]) extends Message {
+protected[mturk] case class CancelReq[A](t: Thunk[A]) extends Message {
   override protected def order = 2
 }
 protected[mturk] case class DisposeQualsReq(q: MTurkQuestion) extends Message {
   override protected def order = 4
 }
-protected[mturk] case class CreateHITReq[R,A](ts: List[Thunk[R,A]], exclude_worker_ids: List[String]) extends Message {
+protected[mturk] case class CreateHITReq[A](ts: List[Thunk[A]], exclude_worker_ids: List[String]) extends Message {
   override protected def order = 3
 }
-protected[mturk] case class RejectReq[R,A](t: Thunk[R,A]) extends Message {
+protected[mturk] case class RejectReq[A](t: Thunk[A]) extends Message {
   override protected def order = 3
 }
-protected[mturk] case class RetrieveReq[R,A](ts: List[Thunk[R,A]]) extends Message {
+protected[mturk] case class RetrieveReq[A](ts: List[Thunk[A]]) extends Message {
   override protected def order = 3
 }
