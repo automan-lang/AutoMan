@@ -1,8 +1,11 @@
 package edu.umass.cs.automan.adapters.mturk.question
 
+import java.util.{Date, UUID}
+
+import edu.umass.cs.automan.core.answer.Answer
 import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
-import edu.umass.cs.automan.core.question.RadioButtonQuestion
-import edu.umass.cs.automan.core.scheduler.{BackendResult, Thunk}
+import edu.umass.cs.automan.core.question.{Question, RadioButtonQuestion}
+import edu.umass.cs.automan.core.scheduler.{SchedulerState, Scheduler, BackendResult, Thunk}
 import com.amazonaws.mturk.requester.{HIT, Assignment}
 import edu.umass.cs.automan.core.util.Utilities
 import xml.XML
@@ -12,44 +15,27 @@ import org.apache.commons.codec.binary.Hex
 class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
   type QO = MTQuestionOption
   type A = Symbol
+  type R = scala.xml.Node
 
+  override protected var _group_id: String = _
   protected var _options = List[QO]()
 
   def answer(a: Assignment): BackendResult[A] = {
     new BackendResult[A](
-      answerFromXML(XML.loadString(a.getAnswer)),
+      fromXML(XML.loadString(a.getAnswer)),
       a.getWorkerId,
       a.getAcceptTime.getTime,
       a.getSubmitTime.getTime
     )
   }
-//  def build_hit(ts: List[Thunk[_]]) : AutomanHIT = {
-//    val x = toXML(randomize = !_dont_randomize_options)
-//    val h = AutomanHIT { a =>
-//      a.hit_type_id = _hit_type_id
-//      a.title = title
-//      a.description = _description
-//      a.keywords = _keywords
-//      a.question_xml = x
-//      a.assignmentDurationInSeconds = _worker_timeout_in_s
-//      a.lifetimeInSeconds = question_timeout_in_s
-//      a.maxAssignments = ts.size
-//      a.cost = ts.head.cost
-//      a.id = id
-//    }
-//    DebugLog("Posting XML:\n" + x,LogLevel.INFO,LogType.ADAPTER,id)
-//    hits = h :: hits
-//    hit_thunk_map += (h -> ts)
-//    h
-//  }
-
+  override protected[automan] def getAnswer(scheduler: Scheduler[R, A]): Answer[A] = ???
   def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
     new String(Hex.encodeHex(md.digest(toXML(randomize = false).toString().getBytes)))
   }
   def options: List[QO] = _options
   def options_=(os: List[QO]) { _options = os }
-  def answerFromXML(x: scala.xml.Node) : Symbol = {
+  def fromXML(x: scala.xml.Node) : A = {
     // There should only be a SINGLE answer here, like this:
     //    <Answer>
     //      <QuestionIdentifier>721be9fc-c867-42ce-8acd-829e64ae62dd</QuestionIdentifier>

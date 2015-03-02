@@ -1,17 +1,15 @@
 package edu.umass.cs.automan.core.question
 
 import java.io.File
-import java.util.UUID
+import java.util.{Date, UUID}
 import edu.umass.cs.automan.core.answer.Answer
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 import edu.umass.cs.automan.core.logging.Memo
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk, Scheduler}
 import edu.umass.cs.automan.core.strategy.ValidationStrategy
 
-abstract class Question[A] {
-  type AnswerType = A
-  type MemoType <: Memo
-  type VS <: ValidationStrategy[A]
+abstract class Question[R,A] {
+  type VS <: ValidationStrategy[R,A]
 
   class QuestionStillExecutingException extends Exception
 
@@ -78,17 +76,7 @@ abstract class Question[A] {
   // private methods
   private[automan] def init_strategy(): Unit
   private[automan] def strategy_instance = _strategy_instance
-  protected[automan] def getThunk: Thunk[A] =
-    new Thunk[A](
-      UUID.randomUUID(),
-      this,
-      this.question_timeout_in_s,
-      this.worker_timeout_in_s,
-      this.reward,
-      new java.util.Date(),
-      SchedulerState.READY,
-      false
-    )
-  protected[automan] def getAnswer(scheduler: Scheduler[A]): Answer[A]
+  protected[automan] def getAnswer(scheduler: Scheduler[R,A]): Answer[A]
   protected[automan] def getQuestionType: QuestionType
+  protected[automan] def unmarshaler : R => A
 }
