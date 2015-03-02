@@ -5,6 +5,7 @@ import java.util.concurrent.PriorityBlockingQueue
 import java.util.{Date, UUID}
 import com.amazonaws.mturk.requester._
 import com.amazonaws.mturk.service.axis.RequesterService
+import edu.umass.cs.automan.adapters.mturk.connectionpool.HITState
 import edu.umass.cs.automan.adapters.mturk.question.{MTRadioButtonQuestion, HITState, MTurkQuestion}
 import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
 import edu.umass.cs.automan.core.question.Question
@@ -25,7 +26,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
 
   // key: (group_id,cost,worker_timeout_s)
   // value: a HITTypeId
-  private var _group_hittype_map = Map[(String,BigDecimal,Int),String]()
+  private var _group_hittype_map = Map[(String,BigDecimal,Int),HITType]()
 
   // key: HIT ID
   // value: HITState
@@ -177,9 +178,9 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     )
   }
 
-  private def mturk_createHIT(num_tasks: Int, hitTypeId: String, lifetimeInSeconds: Int, question: Question[_]) : HIT = {
+  private def mturk_createHIT(ts: List[Thunk[_]], hittype: HITType, question: Question[_]) : HITState = {
     val hit = backend.createHIT(
-      hitTypeId,                                                    // hitTypeId
+      hittype.id,                                                   // hitTypeId
       null,                                                         // title; defined by HITType
       null,                                                         // description
       null,                                                         // keywords; defined by HITType
@@ -187,25 +188,27 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       null,                                                         // reward; defined by HITType
       null,                                                         // assignmentDurationInSeconds; defined by HITType
       null,                                                         // autoApprovalDelayInSeconds; defined by HITType
-      lifetimeInSeconds.toLong,                                     // lifetimeInSeconds
-      num_tasks,                                                    // maxAssignments
+      ts.head.timeout_in_s.toLong,                                  // lifetimeInSeconds
+      ts.size,                                                      // maxAssignments
       "automan",                                                    // requesterAnnotation
       Array[QualificationRequirement](),                            // qualificationRequirements; defined by HITType
       Array[String]())                                              // responseGroup
     // we immediately query the backend for the HIT's complete details
     // because the HIT structure returned by createHIT has a number
-    // of uninitialized fields
-    backend.getHIT(hit.getHITId)
+    // of uninitialized fields; return new HITState
+    HITState(backend.getHIT(hit.getHITId), ts)
   }
 
-  private def mturk_extendHIT(num_tasks: Int, timeout_in_s: Int, hit: HIT) : HIT = {
-    backend.extendHIT(hit.getHITId, num_tasks, timeout_in_s.toLong)
+  private def mturk_extendHIT(ts: List[Thunk[_]], timeout_in_s: Int, hitstate: HITState) : HITState = {
+    backend.extendHIT(hitstate.HITId, ts.size, timeout_in_s.toLong)
     // we immediately query the backend for the HIT's complete details
     // to update our cached data
-    backend.getHIT(hit.getHITId)
+
+    // update HITState and return
+    hitstate.addNewThunks(backend.getHIT(hitstate.HITId), ts)
   }
 
-  private def get_or_create_hittypeid(key: (String, BigDecimal, Int), exclude_worker_ids: List[String], question: Question[_]) : String = {
+  private def get_or_create_hittypeid(key: (String, BigDecimal, Int), exclude_worker_ids: List[String], question: Question[_]) : HITType = {
     // when these properties change from what we've seen before
     // (including the possibility that we've never seen any of these
     // thunks before) we need to create a new HITType;
@@ -215,9 +218,9 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     // for a given HIT.
     val (group_id, cost, worker_timeout) = key
     if (!_group_hittype_map.contains(key)) {
-      // whenever we create a new HIT, we need to add a disqualification
-      // EXCEPT when it's the very first time and we weren't specifically
-      // asked to blacklist any workers
+      // whenever we create a new group, we need to add a disqualification
+      // EXCEPT if it's the very first time the group is posted
+      // AND we weren't specifically asked to blacklist any workers
       val quals = if ((question.blacklisted_workers.size > 0) || (exclude_worker_ids.size > 0)) {
         mturk_createDisqualification(question.asInstanceOf[MTurkQuestion], question.text, question.id) ::
           question.asInstanceOf[MTurkQuestion].qualifications
@@ -228,8 +231,10 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       // request new HITTypeId from MTurk
       val hit_type_id = mturk_registerHITType(question, worker_timeout, cost, quals)
 
+      val hittype = HITType(hit_type_id, quals)
+
       // update map
-      _group_hittype_map = _group_hittype_map + (key -> hit_type_id)
+      _group_hittype_map = _group_hittype_map + (key -> hittype)
     }
     _group_hittype_map(key)
   }
@@ -255,7 +260,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
         val key = (mtq.group_id, cost, worker_timeout)
 
         // get hit_type_id
-        val hit_type_id = get_or_create_hittypeid(key, exclude_worker_ids, q)
+        val hittype = get_or_create_hittypeid(key, exclude_worker_ids, q)
 
         // this combination of parameters uniquely defines a class of thunks
         val qkey = (q.id, cost, worker_timeout)
@@ -263,31 +268,26 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
         // have we already posted a HIT for thunks of this class?
         // the extra indirection wrt HIT IDs allows us simply to update the
         // _hitstates structure when the HITState changes
-        if (_question_hitId_map.contains(qkey)) {
+        val hs = if (_question_hitId_map.contains(qkey)) {
           // if so, get HITState
           val hs = _hitstates(_question_hitId_map(qkey))
 
           // extend it
-          val updated_hit = mturk_extendHIT(tz.size, tz.head.timeout_in_s, hs.hit)
+          val updated_hs = mturk_extendHIT(tz, tz.head.timeout_in_s, hs)
 
-          // update HITState and return
-          val updated_hs = hs.addNewThunks(updated_hit, tz)
-
-          // update HIT ID -> HITState map
-          _hitstates = _hitstates + (updated_hs.HITId -> updated_hs)
+          hs
         } else {
           // if not, post a new HIT on MTurk
-          val hit = mturk_createHIT(tz.size, _group_hittype_map(key), tz.head.timeout_in_s, q)
-
-          // init new HitState
-          val hs = HITState(hit, tz)
-
-          // update map
-          _hitstates = _hitstates + (hs.HITId -> hs)
+          val hs = mturk_createHIT(tz, hittype, q)
 
           // update qkey -> HITState map
           _question_hitId_map = _question_hitId_map + (qkey -> hs.HITId)
+
+          hs
         }
+
+        // update map
+        _hitstates = _hitstates + (hs.HITId -> hs)
       }
     }
   }
@@ -354,6 +354,9 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       // get HITState
       val hs = _hitstates(_question_hitId_map(qkey))
 
+      // before we do anything, grant outstanding qualification requests, where appropriate
+      grant_qualification_requests(question, auquestion.blacklisted_workers, auquestion.id)
+
       // get assignments (unmarshal)
       val assns = backend.getAllAssignmentsForHIT(hs.HITId).toList
 
@@ -364,11 +367,13 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       // update thunks and return
       ts.map { t =>
         hs2.t_a_map(t.thunk_id) match {
+          // when a Thunk is paired with an answer
           case Some(assignment) =>
             val xml = scala.xml.XML.loadString(assignment.getAnswer)
             val answer = t.question.asInstanceOf[MTurkQuestion].fromXML(xml)
             t.copy_with_answer(answer.asInstanceOf[A], assignment.getWorkerId)
-          case None => ???
+          // when a Thunk is not paired with an answer
+          case None => t
         }
       }
 
@@ -420,33 +425,43 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       q.qualify_worker(q.disqualification.getQualificationTypeId, worker_id)
     }
   }
-  private def grant_qualification_requests(q: MTurkQuestion, blacklisted_workers: List[String], question_id: UUID) : Unit = {
+
+  private def mturk_grantQualifications(hitstate: HITState, blacklisted_worker_ids: List[String]) : Unit = {
     // get all requests for all qualifications on this HIT
     val qrs = q.qualifications.map { qual =>
       backend.getAllQualificationRequests(qual.getQualificationTypeId)
     }.flatten
 
-    qrs.foreach { qr =>
-      if (blacklisted_workers.contains(qr.getSubjectId)) {
-        // we don't want blacklisted workers working on this
-        DebugLog("Worker " + qr.getSubjectId + " cannot request a qualification for a question that they are blacklisted for; rejecting request.", LogLevel.INFO, LogType.ADAPTER, question_id)
-        backend.rejectQualificationRequest(qr.getQualificationRequestId, "You may not work on this particular hit for statistical purposes.")
-      } else if (q.worker_is_qualified(qr.getQualificationTypeId, qr.getSubjectId)) {
-        // we don't want to grant more than once
-        DebugLog("Worker " + qr.getSubjectId + " cannot request a qualification more than once; rejecting request.", LogLevel.INFO, LogType.ADAPTER, question_id)
-        backend.rejectQualificationRequest(qr.getQualificationRequestId, "You cannot request this Qualification more than once.")
-      } else {
-        // grant
-        if (qr.getQualificationTypeId == q.disqualification.getQualificationTypeId) {
-          DebugLog("Worker " + qr.getSubjectId + " requests one-time qualification; granting.", LogLevel.INFO, LogType.ADAPTER, question_id)
-          backend.grantQualification(qr.getQualificationRequestId, 0)
-          q.qualify_worker(qr.getQualificationTypeId, qr.getSubjectId)
-        } else {
-          throw new Exception("User-defined qualifications not yet supported.")
-        }
-      }
-    }
+    backend.grantQualification()
   }
+
+//  private def grant_qualification_requests(q: MTurkQuestion, blacklisted_workers: List[String], question_id: UUID) : Unit = {
+//    // get all requests for all qualifications on this HIT
+//    val qrs = q.qualifications.map { qual =>
+//      backend.getAllQualificationRequests(qual.getQualificationTypeId)
+//    }.flatten
+//
+//    qrs.foreach { qr =>
+//      if (blacklisted_workers.contains(qr.getSubjectId)) {
+//        // we don't want blacklisted workers working on this
+//        DebugLog("Worker " + qr.getSubjectId + " cannot request a qualification for a question that they are blacklisted for; rejecting request.", LogLevel.INFO, LogType.ADAPTER, question_id)
+//        backend.rejectQualificationRequest(qr.getQualificationRequestId, "You may not work on this particular hit for statistical purposes.")
+//      } else if (q.worker_is_qualified(qr.getQualificationTypeId, qr.getSubjectId)) {
+//        // we don't want to grant more than once
+//        DebugLog("Worker " + qr.getSubjectId + " cannot request a qualification more than once; rejecting request.", LogLevel.INFO, LogType.ADAPTER, question_id)
+//        backend.rejectQualificationRequest(qr.getQualificationRequestId, "You cannot request this Qualification more than once.")
+//      } else {
+//        // grant
+//        if (qr.getQualificationTypeId == q.disqualification.getQualificationTypeId) {
+//          DebugLog("Worker " + qr.getSubjectId + " requests one-time qualification; granting.", LogLevel.INFO, LogType.ADAPTER, question_id)
+//          backend.grantQualification(qr.getQualificationRequestId, 0)
+//          q.qualify_worker(qr.getQualificationTypeId, qr.getSubjectId)
+//        } else {
+//          throw new Exception("User-defined qualifications not yet supported.")
+//        }
+//      }
+//    }
+//  }
   private def mark_hit_complete[A](hit: AutomanHIT, ts: List[Thunk[A]]) {
     if (ts.count{_.state == SchedulerState.RUNNING} == 0) {
       // we're done

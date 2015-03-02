@@ -6,6 +6,8 @@ import com.amazonaws.mturk.requester.{Assignment, HIT}
 import edu.umass.cs.automan.core.scheduler.Thunk
 
 object HITState {
+  // creates a HITState object from a HIT data
+  // structure and a list of Thunks
   def apply(hit: HIT, ts: List[Thunk[_]]) : HITState = {
     val t_a_map = ts.map(_.thunk_id -> None).toMap
     HITState(hit, t_a_map)
