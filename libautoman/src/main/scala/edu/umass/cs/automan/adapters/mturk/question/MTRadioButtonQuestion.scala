@@ -15,7 +15,6 @@ import org.apache.commons.codec.binary.Hex
 class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
   type QO = MTQuestionOption
   type A = Symbol
-  type R = scala.xml.Node
 
   override protected var _group_id: String = _
   protected var _options = List[QO]()
@@ -28,7 +27,7 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
       a.getSubmitTime.getTime
     )
   }
-  override protected[automan] def getAnswer(scheduler: Scheduler[R, A]): Answer[A] = ???
+  override protected[automan] def getAnswer(scheduler: Scheduler[A]): Answer[A] = ???
   def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
     new String(Hex.encodeHex(md.digest(toXML(randomize = false).toString().getBytes)))

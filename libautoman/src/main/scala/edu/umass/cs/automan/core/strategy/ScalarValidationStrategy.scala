@@ -4,13 +4,13 @@ import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.scheduler._
 import edu.umass.cs.automan.core.question._
 
-abstract class ScalarValidationStrategy[R,A](question: Question[R,A])
-  extends ValidationStrategy[R,A](question) {
+abstract class ScalarValidationStrategy[A](question: Question[A])
+  extends ValidationStrategy[A](question) {
 
-  def current_confidence(thunks: List[Thunk[R,A]]) : Double
-  def is_confident(thunks: List[Thunk[R,A]]) : Boolean
-  def is_done(thunks: List[Thunk[R,A]]) = is_confident(thunks)
-  def select_answer(thunks: List[Thunk[R,A]]) : Option[SchedulerResult[A]] = {
+  def current_confidence(thunks: List[Thunk[A]]) : Double
+  def is_confident(thunks: List[Thunk[A]]) : Boolean
+  def is_done(thunks: List[Thunk[A]]) = is_confident(thunks)
+  def select_answer(thunks: List[Thunk[A]]) : Option[SchedulerResult[A]] = {
     val rt = completed_workerunique_thunks(thunks) // only retrieved and memo-recalled; only earliest submission per-worker
 
     if (rt.size == 0) {
@@ -18,7 +18,7 @@ abstract class ScalarValidationStrategy[R,A](question: Question[R,A])
     }
 
     // group by answer (which is actually an Option[A] because Thunk.answer is Option[A])
-    val groups: Map[Option[A], List[Thunk[R,A]]] = rt.groupBy(_.answer)
+    val groups: Map[Option[A], List[Thunk[A]]] = rt.groupBy(_.answer)
     
     DebugLog("Groups = " + groups, LogLevel.INFO, LogType.STRATEGY, question.id)
 
@@ -33,7 +33,7 @@ abstract class ScalarValidationStrategy[R,A](question: Question[R,A])
     Some(SchedulerResult(selected_answer.get, ???, current_confidence(thunks)))
   }
 
-  override def thunks_to_accept(thunks: List[Thunk[R,A]]): List[Thunk[R,A]] = {
+  override def thunks_to_accept(thunks: List[Thunk[A]]): List[Thunk[A]] = {
     if (question.dont_reject) {
       thunks
     } else {
@@ -49,7 +49,7 @@ abstract class ScalarValidationStrategy[R,A](question: Question[R,A])
     }
   }
 
-  override def thunks_to_reject(thunks: List[Thunk[R,A]]): List[Thunk[R,A]] = {
+  override def thunks_to_reject(thunks: List[Thunk[A]]): List[Thunk[A]] = {
     if (question.dont_reject) {
       List.empty
     } else {

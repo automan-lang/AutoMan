@@ -8,12 +8,12 @@ import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.util.Stopwatch
 import scala.annotation.tailrec
 
-class Scheduler[R,A](val question: Question[R,A],
+class Scheduler[A](val question: Question[A],
                    val backend: AutomanAdapter,
                    val memo: Memo,
                    val poll_interval_in_s: Int,
                    val time_opt: Option[Date]) {
-  def this(question: Question[R,A],
+  def this(question: Question[A],
            adapter: AutomanAdapter,
            memo: Memo,
            poll_interval_in_s: Int) = this(question, adapter, memo, poll_interval_in_s, None)
@@ -26,13 +26,13 @@ class Scheduler[R,A](val question: Question[R,A],
   def run(): SchedulerResult[A] = {
     // Was this computation interrupted? If there's a memoizer instance
     // restore thunks from scheduler trace.
-    val thunks: List[Thunk[R,A]] = memo.restore(question)
+    val thunks: List[Thunk[A]] = memo.restore(question)
 
     // set initial conditions and then call the tail-recursive version
     run_tr(thunks, suffered_timeout = false)
   }
 
-  @tailrec private def run_tr(thunks: List[Thunk[R,A]], suffered_timeout: Boolean) : SchedulerResult[A] = {
+  @tailrec private def run_tr(thunks: List[Thunk[A]], suffered_timeout: Boolean) : SchedulerResult[A] = {
     val s = question.strategy_instance
 
     if(s.is_done(thunks)) {
@@ -73,7 +73,7 @@ class Scheduler[R,A](val question: Question[R,A],
 }
 
 object Scheduler {
-  def memo_and_sleep[R,A](wait_time_ms: Int, ts: List[Thunk[R,A]], question: Question[R,A], memo: Memo) : Unit = {
+  def memo_and_sleep[A](wait_time_ms: Int, ts: List[Thunk[A]], question: Question[A], memo: Memo) : Unit = {
     val t = Stopwatch {
       memo.save(question, ts)
     }
@@ -88,7 +88,7 @@ object Scheduler {
     }
   }
 
-  def cost_for_thunks[R,A](thunks: List[Thunk[R,A]]) : BigDecimal = {
+  def cost_for_thunks[A](thunks: List[Thunk[A]]) : BigDecimal = {
     thunks.foldLeft(BigDecimal(0)) { case (acc, t) => acc + t.cost }
   }
 
@@ -98,7 +98,7 @@ object Scheduler {
    * @tparam A The data type of the returned Answer.
    * @return True if at least one timeout occurred.
    */
-  def timeout_occurred[R,A](thunks: List[Thunk[R,A]]) : Boolean = {
+  def timeout_occurred[A](thunks: List[Thunk[A]]) : Boolean = {
     thunks.count(_.state == SchedulerState.TIMEOUT) > 0
   }
 
@@ -110,7 +110,7 @@ object Scheduler {
    * @tparam A The data type of the returned Answer.
    * @return A list of newly-created Thunks.
    */
-  def post_as_needed[R,A](thunks: List[Thunk[R,A]], backend: AutomanAdapter, question: Question[R,A], suffered_timeout: Boolean, blacklist: List[String]) : List[Thunk[A]] = {
+  def post_as_needed[A](thunks: List[Thunk[A]], backend: AutomanAdapter, question: Question[A], suffered_timeout: Boolean, blacklist: List[String]) : List[Thunk[A]] = {
     val s = question.strategy_instance
     
     // are any thunks still running?
@@ -137,7 +137,7 @@ object Scheduler {
    * @tparam A The data type of the returned Answer.
    * @return The amount of money spent.
    */
-  def accept_and_reject[R,A](to_accept: List[Thunk[R,A]], to_reject: List[Thunk[R,A]], backend: AutomanAdapter) : List[Thunk[R,A]] = {
+  def accept_and_reject[A](to_accept: List[Thunk[A]], to_reject: List[Thunk[A]], backend: AutomanAdapter) : List[Thunk[A]] = {
     val accepted = to_accept.map(backend.accept)
     assert(all_set_invariant(to_accept, accepted, SchedulerState.ACCEPTED))
     val rejected = to_reject.map(backend.reject)
@@ -150,7 +150,7 @@ object Scheduler {
    * @param thunks The complete list of Thunks.
    * @return The amount spent.
    */
-  def total_cost[R,A](thunks: List[Thunk[R,A]]) : BigDecimal = {
+  def total_cost[A](thunks: List[Thunk[A]]) : BigDecimal = {
     thunks.filter(_.state == SchedulerState.ACCEPTED).foldLeft(BigDecimal(0)) { case (acc,t) => acc + t.cost }
   }
 
@@ -165,7 +165,7 @@ object Scheduler {
    * @tparam A The data type of the returned Answer.
    * @return True if all invariants hold.
    */
-  def retrieve_invariant[R,A](running: List[Thunk[R,A]], answered: List[Thunk[R,A]]) : Boolean = {
+  def retrieve_invariant[A](running: List[Thunk[A]], answered: List[Thunk[A]]) : Boolean = {
     // all of the running thunks should actually be RUNNING
     running.count(_.state == SchedulerState.RUNNING) == running.size &&
       // the number of thunks given should be the same number returned
@@ -184,7 +184,7 @@ object Scheduler {
    * @tparam A The data type of the returned Answer.
    * @return True if the invariant holds.
    */
-  def spawn_invariant[R,A](new_thunks: List[Thunk[R,A]]) : Boolean = {
+  def spawn_invariant[A](new_thunks: List[Thunk[A]]) : Boolean = {
     new_thunks.size != 0
   }
 
@@ -197,7 +197,7 @@ object Scheduler {
    * @tparam A The data type of the returned Answer.
    * @return True if the invariant holds.
    */
-  def all_set_invariant[R,A](before: List[Thunk[R,A]], after: List[Thunk[R,A]], state: SchedulerState.Value) : Boolean = {
+  def all_set_invariant[A](before: List[Thunk[A]], after: List[Thunk[A]], state: SchedulerState.Value) : Boolean = {
     val after_set = after.map { t => t.thunk_id }.toSet
     before.foldLeft(true){ case (acc,t) => acc && after_set.contains(t.thunk_id) }
   }
