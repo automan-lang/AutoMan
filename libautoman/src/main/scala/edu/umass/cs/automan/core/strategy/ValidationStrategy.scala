@@ -54,7 +54,7 @@ object ValidationStrategy {
 
 }
 
-abstract class ValidationStrategy[A](question: Question[A]) {
+abstract class ValidationStrategy[R,A](question: Question[R,A]) {
   class PrematureValidationCompletionException(methodname: String, classname: String)
     extends Exception(methodname + " called prematurely in " + classname)
 
@@ -64,11 +64,11 @@ abstract class ValidationStrategy[A](question: Question[A]) {
    * @param thunks The complete list of thunks.
    * @return A list of worker IDs.
    */
-  def blacklisted_workers(thunks: List[Thunk[A]]): List[String] = {
+  def blacklisted_workers(thunks: List[Thunk[R,A]]): List[String] = {
     thunks.flatMap(_.worker_id)
   }
-  def is_done(thunks: List[Thunk[A]]) : Boolean
-  def select_answer(thunks: List[Thunk[A]]) : Option[SchedulerResult[A]]
+  def is_done(thunks: List[Thunk[R,A]]) : Boolean
+  def select_answer(thunks: List[Thunk[R,A]]) : Option[SchedulerResult[A]]
   /**
    * Computes the number of Thunks needed to satisfy the quality-control
    * algorithm given the already-collected list of Thunks. Returns only
@@ -78,11 +78,11 @@ abstract class ValidationStrategy[A](question: Question[A]) {
    * @param suffered_timeout True if any of the latest batch of Thunks suffered a timeout.
    * @return A list of new Thunks to schedule on the backend.
    */
-  def spawn(thunks: List[Thunk[A]], suffered_timeout: Boolean): List[Thunk[A]]
-  def thunks_to_accept(thunks: List[Thunk[A]]): List[Thunk[A]]
-  def thunks_to_reject(thunks: List[Thunk[A]]): List[Thunk[A]]
+  def spawn(thunks: List[Thunk[R,A]], suffered_timeout: Boolean): List[Thunk[R,A]]
+  def thunks_to_accept(thunks: List[Thunk[R,A]]): List[Thunk[R,A]]
+  def thunks_to_reject(thunks: List[Thunk[R,A]]): List[Thunk[R,A]]
 
-  protected def unique_by_date(ts: List[Thunk[A]]) = {
+  protected def unique_by_date(ts: List[Thunk[R,A]]) = {
     // worker_id should always be set for RETRIEVED and PROCESSED
     val tw_groups = ts.groupBy( t => t.worker_id.get )
     // sort by creation date and take the first
@@ -91,7 +91,7 @@ abstract class ValidationStrategy[A](question: Question[A]) {
     }.toList
   }
 
-  protected def completed_thunks(thunks: List[Thunk[A]]) = {
+  protected def completed_thunks(thunks: List[Thunk[R,A]]) = {
     // thunks should be
     thunks.filter(t =>
       t.state == SchedulerState.RETRIEVED ||  // retrieved from MTurk
@@ -102,12 +102,12 @@ abstract class ValidationStrategy[A](question: Question[A]) {
 
   // thunks that have either been retrieved from memo
   // or pulled from backend; and no more than one per worker
-  protected def completed_workerunique_thunks(thunks: List[Thunk[A]]) = {
+  protected def completed_workerunique_thunks(thunks: List[Thunk[R,A]]) = {
     // if a worker completed more than one, take the first
     unique_by_date(completed_thunks(thunks))
   }
 
-  protected def outstanding_thunks(thunks: List[Thunk[A]]) = {
+  protected def outstanding_thunks(thunks: List[Thunk[R,A]]) = {
     // basically, not TIMEOUTs and REJECTs
     val outstanding = thunks.filter(t =>
       t.state == SchedulerState.READY ||

@@ -26,7 +26,7 @@ abstract class AutomanAdapter {
   protected var _plugins: List[Class[_ <: Plugin]] = List.empty
   protected var _plugins_initialized: List[_ <: Plugin] = List.empty
   protected var _poll_interval_in_s : Int = 30
-  protected var _schedulers: List[Scheduler[_]] = List.empty
+  protected var _schedulers: List[Scheduler[_,_]] = List.empty
   protected var _thunk_db: String = "ThunkLogDB"
   protected var _thunk_conn_string: String = "jdbc:derby:" + _thunk_db + ";create=true"
   protected var _thunk_user: String = ""
@@ -109,7 +109,7 @@ abstract class AutomanAdapter {
 //  }
 
   // thread management
-  private def schedule[A](q: Question[A], init: Question[A] => Unit): Answer[A] = {
+  private def schedule[R,A](q: Question[R,A], init: Question[R,A] => Unit): Answer[A] = {
     // initialize question with end-user lambda
     init(q)
     // initialize QA strategy

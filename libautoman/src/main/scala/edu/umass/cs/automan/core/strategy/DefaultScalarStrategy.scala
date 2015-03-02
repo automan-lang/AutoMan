@@ -12,17 +12,17 @@ object DefaultScalarStrategy {
   val table = new util.HashMap[(Int,Int,Int,Double),Int]()
 }
 
-class DefaultScalarStrategy[A](question: ScalarQuestion[A])
-  extends ScalarValidationStrategy[A](question) {
+class DefaultScalarStrategy[R,A](question: ScalarQuestion[R,A])
+  extends ScalarValidationStrategy[R,A](question) {
   DebugLog("DEFAULTSCALAR strategy loaded.",LogLevel.INFO,LogType.STRATEGY, question.id)
 
-  def current_confidence(thunks: List[Thunk[A]]): Double = {
+  def current_confidence(thunks: List[Thunk[R,A]]): Double = {
     val valid_ts = completed_workerunique_thunks(thunks)
     if (valid_ts.size == 0) return 0.0 // bail if we have no valid responses
     val biggest_answer = valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
     MonteCarlo.confidenceOfOutcome(question.num_possibilities.toInt, thunks.size, biggest_answer, 1000000)
   }
-  def is_confident(thunks: List[Thunk[A]]): Boolean = {
+  def is_confident(thunks: List[Thunk[R,A]]): Boolean = {
     if (thunks.size == 0) {
       DebugLog("Have no thunks; confidence is undefined.", LogLevel.INFO, LogType.STRATEGY, question.id)
       false
@@ -42,17 +42,17 @@ class DefaultScalarStrategy[A](question: ScalarQuestion[A])
       }
     }
   }
-  def max_agree(thunks: List[Thunk[A]]) : Int = {
+  def max_agree(thunks: List[Thunk[R,A]]) : Int = {
     val valid_ts = completed_workerunique_thunks(thunks)
     if (valid_ts.size == 0) return 0
     valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
   }
-  def spawn(thunks: List[Thunk[A]], had_timeout: Boolean): List[Thunk[A]] = {
+  def spawn(thunks: List[Thunk[R,A]], had_timeout: Boolean): List[Thunk[R,A]] = {
     // num to spawn (don't spawn more if any are running)
     val num_to_spawn = if (thunks.count(_.state == SchedulerState.RUNNING) == 0) {
       num_to_run(thunks)
     } else {
-      return List[Thunk[A]]() // Be patient!
+      return List[Thunk[R,A]]() // Be patient!
     }
 
     // determine duration
@@ -69,14 +69,20 @@ class DefaultScalarStrategy[A](question: ScalarQuestion[A])
 
     // allocate Thunk objects
     val new_thunks = (0 until num_to_spawn).map { i =>
-      val t = new Thunk[A](UUID.randomUUID(),
+      val now = new java.util.Date()
+      val t = new Thunk(
+        UUID.randomUUID(),
         question,
         question.question_timeout_in_s,
         question.worker_timeout_in_s,
         question.reward,
-        new java.util.Date(),
+        now,
         SchedulerState.READY,
-        false
+        from_memo = false,
+        None,
+        None,
+        now,
+        question.unmarshaler
       )
       DebugLog("spawned question_id = " + question.id_string,LogLevel.INFO,LogType.STRATEGY, question.id)
       t
@@ -85,7 +91,7 @@ class DefaultScalarStrategy[A](question: ScalarQuestion[A])
     new_thunks
   }
 
-  def num_to_run(thunks: List[Thunk[A]]) : Int = {
+  def num_to_run(thunks: List[Thunk[R,A]]) : Int = {
     val np: Int = if(question.num_possibilities > BigInt(Int.MaxValue)) 1000 else question.num_possibilities.toInt
 
     // number needed for agreement, adjusted for programmer time-value
