@@ -170,11 +170,12 @@ object Scheduler {
     running.count(_.state == SchedulerState.RUNNING) == running.size &&
       // the number of thunks given should be the same number returned
       answered.size == running.size &&
-      // returned thunks should all either be RUNNING, RETRIEVED, or TIMEOUT
+      // returned thunks should all either be RUNNING, RETRIEVED, DUPLICATE, or TIMEOUT
       answered.count { t =>
         t.state == SchedulerState.RUNNING ||
-          t.state == SchedulerState.RETRIEVED ||
-          t.state == SchedulerState.TIMEOUT
+        t.state == SchedulerState.ANSWERED ||
+        t.state == SchedulerState.DUPLICATE ||
+        t.state == SchedulerState.TIMEOUT
       } == running.size
   }
 
