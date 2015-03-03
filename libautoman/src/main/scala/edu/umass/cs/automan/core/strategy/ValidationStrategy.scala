@@ -94,7 +94,7 @@ abstract class ValidationStrategy[A](question: Question[A]) {
   protected def completed_thunks(thunks: List[Thunk[A]]) = {
     // thunks should be
     thunks.filter(t =>
-      t.state == SchedulerState.RETRIEVED ||  // retrieved from MTurk
+      t.state == SchedulerState.ANSWERED ||  // retrieved from MTurk
         t.state == SchedulerState.PROCESSED ||  // OR recalled from a memo DB
         t.state == SchedulerState.ACCEPTED      // OR accepted
     )

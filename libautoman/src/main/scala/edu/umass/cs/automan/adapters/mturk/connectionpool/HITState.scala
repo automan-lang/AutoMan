@@ -14,17 +14,18 @@ object HITState {
   }
 }
 
+// Note that this class stores references to actual MTurk Assignment objects
+// but compares them by their Assignment IDs, in case Assignments
+// are fetched multiple times.
 case class HITState(hit: HIT, t_a_map: Map[UUID,Option[Assignment]], hittype: HITType) {
   val aid_t_map = t_a_map.flatMap { case (t, a_o) => a_o match { case Some(a) => Some(a.getAssignmentId -> t); case None => None }}
 
-  def matchAssignments(assns: List[Assignment]) : HITState = {
-    val unmatched_thunks = t_a_map.flatMap { case (t_id: UUID, a_o: Option[Assignment]) => if (a_o == None) Some(t_id) else None }.toList
-
+  def matchAssignments(assns: Array[Assignment]) : HITState = {
     // for every available assignment and unmatched thunk,
     // pair the two and update the map
     // we compare IDs since we may get duplicate Assignment
     // and Thunk objects as we run
-    val (new_t_a_map,_) = assns.foldLeft(t_a_map,unmatched_thunks){ case ((tam, ts), a) =>
+    val (new_t_a_map,_) = assns.foldLeft(t_a_map,unmatchedThunks){ case ((tam, ts), a) =>
         if (!aid_t_map.contains(a.getAssignmentId) && ts.nonEmpty) {
           (tam + (ts.head -> Some(a)), ts.tail)
         } else {
@@ -36,7 +37,13 @@ case class HITState(hit: HIT, t_a_map: Map[UUID,Option[Assignment]], hittype: HI
     HITState(hit, new_t_a_map, hittype)
   }
 
-  def getAssignmentOption(t: Thunk[_]) = t_a_map(t.thunk_id)
+  private def unmatchedThunks : List[UUID] = {
+    t_a_map.flatMap { case (t_id: UUID, a_o: Option[Assignment]) =>
+      if (a_o == None) Some(t_id) else None
+    }.toList
+  }
+
+  def getAssignmentOption(t: Thunk[_]): Option[Assignment] = t_a_map(t.thunk_id)
 
   def addNewThunks(updated_hit: HIT, ts: List[Thunk[_]]) : HITState = {
     assert(updated_hit.getHITId == hit.getHITId)

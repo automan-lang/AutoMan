@@ -41,7 +41,7 @@ abstract class ScalarValidationStrategy[A](question: Question[A])
       selected_answer match {
         case Some(answer) =>
           thunks
-            .filter(_.state == SchedulerState.RETRIEVED)
+            .filter(_.state == SchedulerState.ANSWERED)
             .filter(_.answer.get == answer) // note that we accept all of a worker's matching submissions
         // even if we have to accept duplicate submissions
         case None => throw new PrematureValidationCompletionException("thunks_to_accept", this.getClass.toString)
@@ -57,7 +57,7 @@ abstract class ScalarValidationStrategy[A](question: Question[A])
       selected_answer match {
         case Some(answer) =>
           thunks
-            .filter(_.state == SchedulerState.RETRIEVED)
+            .filter(_.state == SchedulerState.ANSWERED)
             .filter(_.answer.get != answer)
         case None => throw new PrematureValidationCompletionException("thunks_to_reject", this.getClass.toString)
       }

@@ -39,13 +39,17 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   // value: HIT ID
   private var _hit_ids = Map[HITKey,HITID]()
 
-  // key: worker_id
+  // key: (worker_id,group_id)
   // value: HITTypeId
-  private var _worker_whitelist = Map[String,String]()
+  private var _worker_whitelist = Map[(String,String),String]()
 
   // key: qualification_id
   // value: HITTypeId
-  private var _qualifications = Map[String,String]()
+  private var _disqualifications = Map[String,String]()
+
+  // key: group_id
+  // value: batch_no
+  private var _batch_no = Map[String,Int]()
 
   // API
   def accept[A](t: Thunk[A]) : Thunk[A] = {
@@ -177,7 +181,29 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     }
   }
 
-  private def mturk_registerHITType(question: Question[_], worker_timeout: Int, cost: BigDecimal, quals: List[QualificationRequirement]) : HITType = {
+  /**
+   * Create a new HITType on MTurk, with a disqualification if applicable.
+   * @param question An AutoMan Question[_]
+   * @param batch_key Batch parameters
+   */
+  private def mturk_registerHITType(question: Question[_], batch_key: BatchKey) : Unit = {
+    val (group_id, cost, worker_timeout) = batch_key
+
+    // get current batch number
+    val batch_no = _batch_no(group_id)
+
+    // create disqualification for batch
+    val disqualification = mturk_createQualification(question.asInstanceOf[MTurkQuestion], question.text, question.id, batch_no)
+
+    // whenever we create a new group, we need to add the disqualification to the HITType
+    // EXCEPT if it's the very first time the group is posted
+    // AND we weren't specifically asked to blacklist any workers
+    val quals = if (question.blacklisted_workers.size > 0 || batch_no != 1) {
+      disqualification :: question.asInstanceOf[MTurkQuestion].qualifications
+    } else {
+      question.asInstanceOf[MTurkQuestion].qualifications
+    }
+
     val hit_type_id = backend.registerHITType(
       (30 * 24 * 60 * 60).toLong,                                   // 30 days
       worker_timeout.toLong,                                        // amount of time the worker has to complete the task
@@ -187,7 +213,13 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       question.asInstanceOf[MTurkQuestion].description,             // description
       quals.toArray                                                 // no quals initially
     )
-    HITType(hit_type_id, quals)
+    val hittype = HITType(hit_type_id, quals, disqualification, group_id)
+
+    // update disqualification map
+    _disqualifications += disqualification.getQualificationTypeId -> hittype.id
+
+    // update hittype map
+    _hit_types = _hit_types + (batch_key -> hittype)
   }
 
   private def mturk_createHIT(ts: List[Thunk[_]], batch_key: BatchKey, question: Question[_]) : HITState = {
@@ -253,11 +285,11 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
    * Checks that a HITType already exists for the task group;
    * if it does, it returns the associated HITType object,
    * otherwise it creates a HITType on MTurk.
-   * @param key A GroupKey tuple that uniquely identifies a batch round.
-   * @param question
-   * @return
+   * @param batch_key A GroupKey tuple that uniquely identifies a batch round.
+   * @param question An AutoMan question.
+   * @return A HITType
    */
-  private def get_or_create_hittype(key: BatchKey, question: Question[_]) : HITType = {
+  private def get_or_create_hittype(batch_key: BatchKey, question: Question[_]) : HITType = {
     // when these properties change from what we've seen before
     // (including the possibility that we've never seen any of these
     // thunks before) we need to create a new HITType;
@@ -265,28 +297,18 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     // is not sufficient to trigger the creation of a new HITType, nor do we want
     // it to, because MTurk's extendHIT is sufficient to prevent re-participation
     // for a given HIT.
-    val (group_id, cost, worker_timeout) = key
-    if (!_hit_types.contains(key)) {
-      // whenever we create a new group, we need to add a disqualification
-      // EXCEPT if it's the very first time the group is posted
-      // AND we weren't specifically asked to blacklist any workers
-      val quals = if (question.blacklisted_workers.size > 0 || !first_run(group_id)) {
-        mturk_createDisqualification(question.asInstanceOf[MTurkQuestion], question.text, question.id) ::
-          question.asInstanceOf[MTurkQuestion].qualifications
-      } else {
-        question.asInstanceOf[MTurkQuestion].qualifications
-      }
+    val (group_id, _, worker_timeout) = batch_key
+
+    val firstrun = first_run(group_id)
+
+    if (!_hit_types.contains(batch_key)) {
+      // update batch counter
+      _batch_no += (if (firstrun) group_id -> 1 else group_id -> (_batch_no(group_id) + 1))
 
       // request new HITTypeId from MTurk
-      val hittype = mturk_registerHITType(question, worker_timeout, cost, quals)
-
-      // update hittype map
-      _hit_types = _hit_types + (key -> hittype)
-
-      // update qualification map
-      _qualifications = _qualifications ++ quals.map(_.getQualificationTypeId -> hittype.id)
+      mturk_registerHITType(question, batch_key)
     }
-    _hit_types(key)
+    _hit_types(batch_key)
   }
 
   /**
@@ -327,64 +349,117 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   private def scheduled_reject[A](t: Thunk[A]) : Thunk[A] = {
     DebugLog(String.format("Rejecting task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
-    t.question match {
-      case mtq:MTurkQuestion => {
-        // TODO: we should tell them why
-        //       the old call needed to go because distribution questions do
-        //       do not come with a confidence value.
-        backend.rejectAssignment(mtq.thunk_assnid_map(t), "Your answer is incorrect.")
-        val t2 = t.copy_as_rejected()
-
-        assert(t2.answer != None)
-        val ans = t2.answer.get
-
-        ???
-//        if (!ans.paid) {
-//          ans.memo_handle.setPaidStatus(true)
-//          ans.memo_handle.save()
-//          ans.paid = true
-//        }
-        t2
-      }
-      case _ => throw new Exception("Impossible error.")
-    }
+    ???
   }
 
-  private def HITKey(t: Thunk[_]) : HITKey = ((t.question.asInstanceOf[MTurkQuestion].group_id, t.cost, t.worker_timeout), t.question.id)
+  private def BatchKey(t: Thunk[_]) : BatchKey = (t.question.asInstanceOf[MTurkQuestion].group_id, t.cost, t.worker_timeout)
+  private def HITKeyForBatch(batchKey: BatchKey, t: Thunk[_]) : HITKey = (batchKey, t.question.id)
+  private def HITKey(t: Thunk[_]) : HITKey = HITKeyForBatch(BatchKey(t), t)
 
-  private def scheduled_retrieve[A](ts: List[Thunk[A]]) : List[Thunk[A]] = {
-    ts.groupBy(HITKey(_)).foreach { case (hit_key, tz) =>
-      // get HITState
-      val hit_state = _hit_states(_hit_ids(hit_key))
+  private def scheduled_retrieve[A](ts: List[Thunk[A]]): List[Thunk[A]] = {
+    // 1. eagerly get all Reviewable HITs
+    // 2. pair HIT Assignments with Thunks
+    // 3. update Thunks with answers
+    // 4. timeout Thunks, where appropriate
+    val ts2 = ts.groupBy(BatchKey).map { case (batch_key, bts) =>
+      // get HITType
+      val hittype = _hit_types(batch_key)
 
-      // before we do anything, grant outstanding qualification requests for this HIT
-      mturk_grantQualifications(hit_state)
+      // get all Reviewable HITs for this HIT Type;
+      // extended HITs are automatically converted back to
+      // Assignable by MTurk
+      val hits: Array[HIT] = backend.getAllReviewableHITs(hittype.id)
 
-      // get assignments (unmarshal)
-      val assns = backend.getAllAssignmentsForHIT(hit_state.HITId).toList
+      // mark reviewable HITs as Reviewing so that we do not fetch them again
+      hits.foreach { hit => backend.setHITAsReviewable(hit.getHITId) }
 
-      // pair thunks with available assignments & store new HITState
-      val updated_hit_state = hit_state.matchAssignments(assns)
-      _hit_states = _hit_states + (hit_state.HITId -> updated_hit_state)
+      // pair all assignments with thunks, yielding a new collection of HITStates
+      val updated_hss = hits.map { hit =>
+        // get HITState for this HIT
+        val hit_state = _hit_states(hit.getHITId)
 
-      // update thunks and return
-      ts.map { t =>
-        updated_hit_state.getAssignmentOption(t) match {
+        // get all of the assignments for this HIT
+        val assns = backend.getAllAssignmentsForHIT(hit_state.HITId)
+
+        // pair with the HIT's thunks and return new HITState
+        hit_state.matchAssignments(assns)
+      }
+
+      // update HITState map all at once
+      _hit_states ++= updated_hss.map { hs => hs.HITId -> hs }
+
+      // return answered thunks
+      answer_thunks(bts, batch_key)
+    }.flatten.toList
+
+    // unanswered Thunks past their expiration dates are timed-out here
+    timeout_thunks_as_needed(ts2)
+  }
+
+  private def answer_thunks[A](ts: List[Thunk[A]], batch_key: BatchKey) : List[Thunk[A]] = {
+    val group_id = batch_key._1
+
+    // group by HITKey
+    ts.groupBy(HITKeyForBatch(batch_key,_)).map { case (hit_key, hts) =>
+      // get HITState for this set of Thunks
+      val hs = _hit_states(_hit_ids(hit_key))
+
+      // start by granting Qualifications, where appropriate
+      mturk_grantQualifications(hs)
+
+      hts.map { t =>
+        hs.getAssignmentOption(t) match {
           // when a Thunk is paired with an answer
           case Some(assignment) =>
-            val xml = scala.xml.XML.loadString(assignment.getAnswer)
-            val answer = t.question.asInstanceOf[MTurkQuestion].fromXML(xml)
-            t.copy_with_answer(answer.asInstanceOf[A], assignment.getWorkerId)
+            // only update Thunk object if the Thunk isn't already answered
+            if (t.state != SchedulerState.ANSWERED) {
+              // get worker_id
+              val worker_id = assignment.getWorkerId
+
+              // update the worker whitelist and grant qualification (disqualifiaction)
+              // if this is the first time we've ever seen this worker
+              if (!_worker_whitelist.contains(worker_id, group_id)) {
+                _worker_whitelist += ((worker_id,group_id) -> hs.hittype.id)
+                val disqualification_id = hs.hittype.disqualification.getQualificationTypeId
+                backend.assignQualification(disqualification_id, worker_id, _batch_no(hs.hittype.group_id), false)
+              }
+
+              // process answer
+              val xml = scala.xml.XML.loadString(assignment.getAnswer)
+              val answer = t.question.asInstanceOf[MTurkQuestion].fromXML(xml)
+
+              // it is possible, although unlikely, that a worker could submit
+              // work twice for the same HIT, if the following scenario occurs:
+              // 1. HIT A in HITGroup #1 times-out, causing AutoMan to post HITGroup #2 containing a second round of HIT A
+              // 2. Worker w asks for and receives a Qualification for HITGroup #2
+              // 3. Worker w submits work to HITGroup #1 for HIT B (not HIT A).
+              // 4. HIT B times out, causing AutoMan to post a second round of HIT B to HITGroup #2.
+              // 5. Worker w submits work for HITGroup #2.
+              // Since this is unlikely, and violates the i.i.d. guarantee that
+              // the Scheduler requires, we consider this a duplicate
+              if (_worker_whitelist(worker_id, group_id) == hs.hittype.id) {
+                t.copy_with_answer(answer.asInstanceOf[A], worker_id)
+              } else {
+                t.copy_as_duplicate(answer.asInstanceOf[A], worker_id)
+              }
+            } else {
+              t
+            }
           // when a Thunk is not paired with an answer
           case None => t
         }
       }
+    }.flatten.toList
+  }
 
+  private def timeout_thunks_as_needed[A](ts: List[Thunk[A]]) : List[Thunk[A]] = {
+    ts.map { t =>
+      if (t.is_timedout) {
+        t.copy_as_timeout()
+      } else {
+        t
+      }
     }
-
-    // TODO: qualification requests
-
-    ???
   }
 
   private def scheduled_get_budget(): BigDecimal = {
@@ -414,21 +489,6 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     tg.head._1
   }
 
-//  private def disqualify_worker(q: MTurkQuestion, worker_id: String, question_id: UUID) : Unit = {
-//    // grant dequalification Qualification
-//    // AMT checks whether worker's assigned value == 1; if so, not allowed
-//    if (q.worker_is_qualified(q.disqualification.getQualificationTypeId, worker_id)) {
-//      // the user may have asked for the dequalification for second-round thunks
-//      DebugLog("Updating worker dequalification for " + worker_id + ".", LogLevel.INFO, LogType.ADAPTER, question_id)
-//      backend.updateQualificationScore(q.disqualification.getQualificationTypeId, worker_id, 1)
-//    } else {
-//      // otherwise, just grant it
-//      DebugLog("Dequalifying worker " + worker_id + " from future work.", LogLevel.INFO, LogType.ADAPTER, question_id)
-//      backend.assignQualification(q.disqualification.getQualificationTypeId, worker_id, 1, false)
-//      q.qualify_worker(q.disqualification.getQualificationTypeId, worker_id)
-//    }
-//  }
-
   private def mturk_grantQualifications(hitstate: HITState) : Unit = {
     // get all requests for this HIT's group qualification
     val requests = hitstate.hittype.quals.map { qual =>
@@ -440,14 +500,17 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       val worker_id = request.getSubjectId
 
       // the HITType being requested
-      val hit_type_id = if(_qualifications.contains(request.getQualificationTypeId)) {
-        _qualifications(request.getQualificationTypeId)
+      val hit_type_id = if(_disqualifications.contains(request.getQualificationTypeId)) {
+        _disqualifications(request.getQualificationTypeId)
       } else {
         throw new Exception("User-defined qualifications not yet supported.")
       }
 
-      if (_worker_whitelist.contains(worker_id)) {
-        if (_worker_whitelist(worker_id) != hit_type_id) {
+      // the group_id for this HITType
+      val group_id = hitstate.hittype.group_id
+
+      if (_worker_whitelist.contains(worker_id, group_id)) {
+        if (_worker_whitelist(worker_id, group_id) != hit_type_id) {
           backend.rejectQualificationRequest(request.getQualificationRequestId,
             "You have already requested a qualification or submitted work for an associated HITType " +
               "that disqualifies you from participating in this HITType."
@@ -458,19 +521,12 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
           )
         }
       } else {
-        _worker_whitelist += (worker_id -> hit_type_id)
-        backend.grantQualification(request.getQualificationRequestId, 0)
+        _worker_whitelist += ((worker_id,group_id) -> hit_type_id)
+        backend.grantQualification(request.getQualificationRequestId, _batch_no(hitstate.hittype.group_id))
       }
     }
   }
 
-  private def mark_hit_complete[A](hit: AutomanHIT, ts: List[Thunk[A]]) {
-    if (ts.count{_.state == SchedulerState.RUNNING} == 0) {
-      // we're done
-      DebugLog("HIT is RESOLVED.", LogLevel.INFO, LogType.ADAPTER, hit.id)
-      hit.state = HITState.RESOLVED
-    }
-  }
   private def cancel_hit[A](hit: AutomanHIT, ts: List[Thunk[A]]) : List[Thunk[A]] = {
     var hitcancelled = false
     ts.map { t =>
@@ -488,43 +544,19 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       }
     }
   }
-  private def process_assignment[A](q: MTurkQuestion, a: Assignment, hit_id: String, t: Thunk[A], use_disq: Boolean) : Thunk[A] = {
-    DebugLog("Processing assignment...", LogLevel.WARN, LogType.ADAPTER, t.question.id)
-
-    // convert answer from XML
-    val answer = q.answer(a).asInstanceOf[A]
-
-    // write custominfo
-    // TODO: fix
-    ???
-//    answer.custom_info = Some(new MTurkAnswerCustomInfo(a.getAssignmentId, hit_id).toString)
-
-    // new thunk
-    val t2 = t.copy_with_answer(answer, a.getWorkerId)
-
-    // disqualify worker
-    if (use_disq) {
-      disqualify_worker(q, a.getWorkerId, t.question.id)
-    }
-
-    // pair assignment with thunk
-    q.thunk_assnid_map += (t2 -> a.getAssignmentId)  // I believe that .getAssignmentId is just a local getter
-
-    t2
-  }
 
   private def set_paid_status[A](t: Thunk[A]) : Unit = {
     ???
   }
 
-  private def mturk_createDisqualification(q: MTurkQuestion, title: String, question_id: UUID) : QualificationRequirement = {
+  private def mturk_createQualification(q: MTurkQuestion, title: String, question_id: UUID, batch_no: Int) : QualificationRequirement = {
     // get a simply-formatted date
     val sdf = new SimpleDateFormat("yyyy-MM-dd:z")
     val datestr = sdf.format(new Date())
 
-    DebugLog("Creating dequalification.",LogLevel.INFO,LogType.ADAPTER,question_id)
-    val qualtxt = String.format("AutoMan automatically generated Qualification (title: %s, date: %s)", title, datestr)
+    DebugLog("Creating disqualification.",LogLevel.INFO,LogType.ADAPTER,question_id)
+    val qualtxt = String.format("AutoMan automatically generated Disqualification (title: %s, date: %s)", title, datestr)
     val qual : QualificationType = backend.createQualificationType("AutoMan " + UUID.randomUUID(), "automan", qualtxt)
-    new QualificationRequirement(qual.getQualificationTypeId, Comparator.NotEqualTo, 1, null, false)
+    new QualificationRequirement(qual.getQualificationTypeId, Comparator.EqualTo, batch_no, null, false)
   }
 }

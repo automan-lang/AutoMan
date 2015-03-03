@@ -91,10 +91,13 @@ class DefaultScalarStrategy[A](question: ScalarQuestion[A])
   }
 
   def num_to_run(thunks: List[Thunk[A]]) : Int = {
+    // eliminate duplicates from the list of Thunks
+    val thunks_no_dupes = thunks.filter(_.state != SchedulerState.DUPLICATE)
+
     val np: Int = if(question.num_possibilities > BigInt(Int.MaxValue)) 1000 else question.num_possibilities.toInt
 
     // number needed for agreement, adjusted for programmer time-value
-    val n = math.max(expected_for_agreement(np, thunks.size, max_agree(thunks), question.confidence).toDouble,
+    val n = math.max(expected_for_agreement(np, thunks_no_dupes.size, max_agree(thunks_no_dupes), question.confidence).toDouble,
              math.min(math.floor(question.budget.toDouble/question.reward.toDouble),
                       math.floor(question.time_value_per_hour.toDouble/question.wage.toDouble)
              )
