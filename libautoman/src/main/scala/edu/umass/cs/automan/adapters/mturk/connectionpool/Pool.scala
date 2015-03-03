@@ -5,14 +5,17 @@ import java.util.concurrent.PriorityBlockingQueue
 import java.util.{Date, UUID}
 import com.amazonaws.mturk.requester._
 import com.amazonaws.mturk.service.axis.RequesterService
-import edu.umass.cs.automan.adapters.mturk.connectionpool.HITState
-import edu.umass.cs.automan.adapters.mturk.question.{MTRadioButtonQuestion, HITState, MTurkQuestion}
+import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
 import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 import edu.umass.cs.automan.core.util.Stopwatch
 
 class Pool(backend: RequesterService, sleep_ms: Int) {
+  type HITID = String
+  type GroupKey = (String,BigDecimal,Int)   // (group_id, cost, timeout); uniquely identifies a group round
+  type QuestionKey = (UUID,BigDecimal,Int)  // (question_id, cost, timeout); uniquely identifies a question round
+
   // worker
   private var _worker_thread: Option[Thread] = None
 
@@ -26,15 +29,15 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
 
   // key: (group_id,cost,worker_timeout_s)
   // value: a HITTypeId
-  private var _group_hittype_map = Map[(String,BigDecimal,Int),HITType]()
+  private var _group_hittype_map = Map[GroupKey,HITType]()
 
   // key: HIT ID
   // value: HITState
-  private var _hitstates = Map[String,HITState]()
+  private var _hitstates = Map[HITID,HITState]()
 
   // key: (question_id,cost,worker_timeout_s)
   // value: HIT ID
-  private var _question_hitId_map = Map[(UUID,BigDecimal,Int),String]()
+  private var _question_hitId_map = Map[QuestionKey,HITID]()
 
   // API
   def accept[A](t: Thunk[A]) : Thunk[A] = {
@@ -196,7 +199,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     // we immediately query the backend for the HIT's complete details
     // because the HIT structure returned by createHIT has a number
     // of uninitialized fields; return new HITState
-    HITState(backend.getHIT(hit.getHITId), ts)
+    HITState(backend.getHIT(hit.getHITId), ts, hittype)
   }
 
   private def mturk_extendHIT(ts: List[Thunk[_]], timeout_in_s: Int, hitstate: HITState) : HITState = {
@@ -231,7 +234,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       // request new HITTypeId from MTurk
       val hit_type_id = mturk_registerHITType(question, worker_timeout, cost, quals)
 
-      val hittype = HITType(hit_type_id, quals)
+      val hittype = HITType(hit_type_id, quals, exclude_worker_ids.toSet)
 
       // update map
       _group_hittype_map = _group_hittype_map + (key -> hittype)
@@ -269,13 +272,8 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
         // the extra indirection wrt HIT IDs allows us simply to update the
         // _hitstates structure when the HITState changes
         val hs = if (_question_hitId_map.contains(qkey)) {
-          // if so, get HITState
-          val hs = _hitstates(_question_hitId_map(qkey))
-
-          // extend it
-          val updated_hs = mturk_extendHIT(tz, tz.head.timeout_in_s, hs)
-
-          hs
+          // if so, get HITState and extend it
+          mturk_extendHIT(tz, tz.head.timeout_in_s, _hitstates(_question_hitId_map(qkey)))
         } else {
           // if not, post a new HIT on MTurk
           val hs = mturk_createHIT(tz, hittype, q)
@@ -354,8 +352,8 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       // get HITState
       val hs = _hitstates(_question_hitId_map(qkey))
 
-      // before we do anything, grant outstanding qualification requests, where appropriate
-      grant_qualification_requests(question, auquestion.blacklisted_workers, auquestion.id)
+      // before we do anything, grant outstanding qualification requests for this HIT
+      mturk_grantQualifications(hs)
 
       // get assignments (unmarshal)
       val assns = backend.getAllAssignmentsForHIT(hs.HITId).toList
@@ -426,11 +424,16 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     }
   }
 
-  private def mturk_grantQualifications(hitstate: HITState, blacklisted_worker_ids: List[String]) : Unit = {
-    // get all requests for all qualifications on this HIT
-    val qrs = q.qualifications.map { qual =>
+  private def mturk_grantQualifications(hitstate: HITState) : Unit = {
+    // get all requests for this HIT's group qualification
+    val requests = hitstate.hittype.quals.map { qual =>
       backend.getAllQualificationRequests(qual.getQualificationTypeId)
-    }.flatten
+    }
+
+//    // get all requests for all qualifications on this HIT
+//    val qrs = q.qualifications.map { qual =>
+//      backend.getAllQualificationRequests(qual.getQualificationTypeId)
+//    }.flatten
 
     backend.grantQualification()
   }

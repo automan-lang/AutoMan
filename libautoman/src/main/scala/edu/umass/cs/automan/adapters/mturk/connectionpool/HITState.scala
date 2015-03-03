@@ -8,13 +8,13 @@ import edu.umass.cs.automan.core.scheduler.Thunk
 object HITState {
   // creates a HITState object from a HIT data
   // structure and a list of Thunks
-  def apply(hit: HIT, ts: List[Thunk[_]]) : HITState = {
+  def apply(hit: HIT, ts: List[Thunk[_]], hittype: HITType) : HITState = {
     val t_a_map = ts.map(_.thunk_id -> None).toMap
-    HITState(hit, t_a_map)
+    HITState(hit, t_a_map, hittype)
   }
 }
 
-case class HITState(hit: HIT, t_a_map: Map[UUID,Option[Assignment]]) {
+case class HITState(hit: HIT, t_a_map: Map[UUID,Option[Assignment]], hittype: HITType) {
   val aid_t_map = t_a_map.flatMap { case (t, a_o) => a_o match { case Some(a) => Some(a.getAssignmentId -> t); case None => None }}
 
   def matchAssignments(assns: List[Assignment]) : HITState = {
@@ -33,13 +33,14 @@ case class HITState(hit: HIT, t_a_map: Map[UUID,Option[Assignment]]) {
     }
 
     // return new state object
-    HITState(hit, new_t_a_map)
+    HITState(hit, new_t_a_map, hittype)
   }
 
   def addNewThunks(updated_hit: HIT, ts: List[Thunk[_]]) : HITState = {
     assert(updated_hit.getHITId == hit.getHITId)
-    HITState(updated_hit, t_a_map ++ ts.map(_.thunk_id -> None))
+    HITState(updated_hit, t_a_map ++ ts.map(_.thunk_id -> None), hittype)
   }
 
   def HITId = hit.getHITId
+  def HITType = hittype
 }
