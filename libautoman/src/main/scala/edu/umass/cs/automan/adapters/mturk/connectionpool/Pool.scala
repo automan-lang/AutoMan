@@ -158,13 +158,10 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   private def scheduled_accept[A](t: Thunk[A]) : Thunk[A] = {
     DebugLog(String.format("Accepting task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
-    t.question match {
-      case mtq:MTurkQuestion => {
-        backend.approveAssignment(mtq.thunk_assnid_map(t), "Thanks!")
-        t.copy_as_accepted()
-      }
-      case _ => throw new Exception("Impossible error.")
-    }
+    val mtq = t.question.asInstanceOf[MTurkQuestion]
+
+    backend.approveAssignment(mtq.thunk_assnid_map(t), "Thanks!")
+    t.copy_as_accepted()
   }
   private def scheduled_cancel[A](t: Thunk[A]) : Thunk[A] = {
     DebugLog(String.format("Cancelling task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
