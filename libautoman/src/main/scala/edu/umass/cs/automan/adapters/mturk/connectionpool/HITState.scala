@@ -36,6 +36,8 @@ case class HITState(hit: HIT, t_a_map: Map[UUID,Option[Assignment]], hittype: HI
     HITState(hit, new_t_a_map, hittype)
   }
 
+  def getAssignmentOption(t: Thunk[_]) = t_a_map(t.thunk_id)
+
   def addNewThunks(updated_hit: HIT, ts: List[Thunk[_]]) : HITState = {
     assert(updated_hit.getHITId == hit.getHITId)
     HITState(updated_hit, t_a_map ++ ts.map(_.thunk_id -> None), hittype)
