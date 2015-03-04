@@ -350,30 +350,23 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   }
 
   private def BatchKey(t: Thunk[_]) : BatchKey = (t.question.asInstanceOf[MTurkQuestion].group_id, t.cost, t.worker_timeout)
-  private def HITKeyForBatch(batchKey: BatchKey, t: Thunk[_]) : HITKey = (batchKey, t.question.id)
+  private def HITKeyForBatch(batch_key: BatchKey, t: Thunk[_]) : HITKey = (batch_key, t.question.id)
   private def HITKey(t: Thunk[_]) : HITKey = HITKeyForBatch(BatchKey(t), t)
+  private def HITIDsForBatch(batch_key: BatchKey) : List[HITID] = _hit_ids.flatMap { case ((bkey, _), hit_id) => if (bkey == batch_key) Some(hit_id) else None }.toList
 
   private def scheduled_retrieve[A](ts: List[Thunk[A]]): List[Thunk[A]] = {
-    // 1. eagerly get all Reviewable HITs
+    // 1. eagerly get all HIT assignments
     // 2. pair HIT Assignments with Thunks
     // 3. update Thunks with answers
     // 4. timeout Thunks, where appropriate
     val ts2 = ts.groupBy(BatchKey).map { case (batch_key, bts) =>
-      // get HITType
+      // get HITType for BatchKey
       val hittype = _hit_types(batch_key)
 
-      // get all Reviewable HITs for this HIT Type;
-      // extended HITs are automatically converted back to
-      // Assignable by MTurk
-      val hits: Array[HIT] = backend.getAllReviewableHITs(hittype.id)
-
-      // mark reviewable HITs as Reviewing so that we do not fetch them again
-      hits.foreach { hit => backend.setHITAsReviewable(hit.getHITId) }
-
+      // iterate through all HITs for this HITType
       // pair all assignments with thunks, yielding a new collection of HITStates
-      val updated_hss = hits.map { hit =>
-        // get HITState for this HIT
-        val hit_state = _hit_states(hit.getHITId)
+      val updated_hss = HITIDsForBatch(batch_key).map { hit_id =>
+        val hit_state = _hit_states(hit_id)
 
         // get all of the assignments for this HIT
         val assns = backend.getAllAssignmentsForHIT(hit_state.HITId)
@@ -396,7 +389,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   private def answer_thunks[A](ts: List[Thunk[A]], batch_key: BatchKey) : List[Thunk[A]] = {
     val group_id = batch_key._1
 
-    // group by HITKey
+    // group by HIT
     ts.groupBy(HITKeyForBatch(batch_key,_)).map { case (hit_key, hts) =>
       // get HITState for this set of Thunks
       val hs = _hit_states(_hit_ids(hit_key))
@@ -416,7 +409,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
               // update the worker whitelist and grant qualification (disqualifiaction)
               // if this is the first time we've ever seen this worker
               if (!_worker_whitelist.contains(worker_id, group_id)) {
-                _worker_whitelist += ((worker_id,group_id) -> hs.hittype.id)
+                _worker_whitelist += ((worker_id, group_id) -> hs.hittype.id)
                 val disqualification_id = hs.hittype.disqualification.getQualificationTypeId
                 backend.assignQualification(disqualification_id, worker_id, _batch_no(hs.hittype.group_id), false)
               }
@@ -434,11 +427,19 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
               // 5. Worker w submits work for HITGroup #2.
               // Since this is unlikely, and violates the i.i.d. guarantee that
               // the Scheduler requires, we consider this a duplicate
-              if (_worker_whitelist(worker_id, group_id) == hs.hittype.id) {
-                t.copy_with_answer(answer.asInstanceOf[A], worker_id)
-              } else {
-                t.copy_as_duplicate(answer.asInstanceOf[A], worker_id)
+              val whitelisted_ht_id = _worker_whitelist(worker_id, group_id)
+              if (whitelisted_ht_id != hs.hittype.id) {
+                // immediately revoke the qualification in the other group;
+                // we'll deal with duplicates later
+                backend.revokeQualification(whitelisted_ht_id, worker_id,
+                  "For quality control purposes, qualification " + whitelisted_ht_id +
+                    " was revoked because you submitted related work for HIT " + hs.HITId +
+                    ".  This is for our own bookkeeping purposes and not a reflection on the quality of your work. " +
+                    "We apologize for the inconvenience that this may cause and we encourage you to continue " +
+                    "your participation in our HITs."
+                )
               }
+              t.copy_with_answer(answer.asInstanceOf[A], worker_id)
             } else {
               t
             }
