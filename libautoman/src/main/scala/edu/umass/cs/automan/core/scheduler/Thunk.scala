@@ -35,7 +35,7 @@ case class Thunk[A](thunk_id: UUID,
     DebugLog("Thunk " + thunk_id.toString +  " changed to ANSWERED state with answer \"" + ans.toString + "\"", LogLevel.INFO, LogType.SCHEDULER, question.id)
     new Thunk[A](thunk_id, question, timeout_in_s, worker_timeout, cost, created_at, SchedulerState.ANSWERED, from_memo, Some(wrk_id), Some(ans), new Date())
   }
-  def copy_as_duplicate(ans: A, wrk_id: String) = {
+  def copy_as_duplicate() = {
     DebugLog("Thunk " + thunk_id.toString +  " changed to DUPLICATE state with answer \"" + ans.toString + "\" for worker_id = \"" + worker_id + "\"", LogLevel.INFO, LogType.SCHEDULER, question.id)
     new Thunk[A](thunk_id, question, timeout_in_s, worker_timeout, cost, created_at, SchedulerState.DUPLICATE, from_memo, Some(wrk_id), Some(ans), new Date())
   }

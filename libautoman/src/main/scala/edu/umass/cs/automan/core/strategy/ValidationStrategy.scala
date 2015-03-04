@@ -65,7 +65,22 @@ abstract class ValidationStrategy[A](question: Question[A]) {
    * @return A list of worker IDs.
    */
   def blacklisted_workers(thunks: List[Thunk[A]]): List[String] = {
-    thunks.flatMap(_.worker_id)
+    thunks.flatMap(_.worker_id).distinct
+  }
+
+  /**
+   * Given a list of ANSWERED thunks, this method returns the same list with
+   * all but one thunk marked as DUPLICATE for each subset submitted by each
+   * distinct worker.  The thunk left as ANSWERED is chosen arbitrarily (the
+   * first one encountered).
+   * @param thunks A list of ANSWERED thunks.
+   * @return A list of ANSWERED and DUPLICATE thunks.
+   */
+  def mark_duplicates(thunks: List[Thunk[A]]): List[Thunk[A]] = {
+    assert(thunks.forall(_.state == SchedulerState.ANSWERED))
+    thunks.groupBy(_.worker_id).map { case (worker_id, ts) =>
+        ts.head :: ts.tail.map(_.copy_as_duplicate())
+    }.flatten.toList
   }
   def is_done(thunks: List[Thunk[A]]) : Boolean
   def select_answer(thunks: List[Thunk[A]]) : Option[SchedulerResult[A]]

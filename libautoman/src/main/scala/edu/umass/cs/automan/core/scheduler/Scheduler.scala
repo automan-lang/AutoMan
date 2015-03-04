@@ -50,21 +50,23 @@ class Scheduler[A](val question: Question[A],
     } else {
       // get list of workers who may not re-participate
       val blacklist = s.blacklisted_workers(thunks)
+      // filter duplicate work
+      val dedup_thunks = s.mark_duplicates(thunks)
       // post more tasks as needed
-      val new_thunks = Scheduler.post_as_needed(thunks, backend, question, suffered_timeout, blacklist)
+      val new_thunks = Scheduler.post_as_needed(dedup_thunks, backend, question, suffered_timeout, blacklist)
       // The scheduler waits here to give the crowd time to answer.
       // Sleeping also informs the scheduler that this thread may yield
-      // its CPU time.  While we wait, we also save changes.
-      Scheduler.memo_and_sleep(poll_interval_in_s * 1000, thunks ::: new_thunks, question, memo)
+      // its CPU time.  While we wait, we also update memo state.
+      Scheduler.memo_and_sleep(poll_interval_in_s * 1000, dedup_thunks ::: new_thunks, question, memo)
       // ask the backend to retrieve answers for all RUNNING thunks
-      val (running_thunks,dead_thunks) = (thunks ::: new_thunks).partition(_.state == SchedulerState.RUNNING)
+      val (running_thunks,dead_thunks) = (dedup_thunks ::: new_thunks).partition(_.state == SchedulerState.RUNNING)
       assert(running_thunks.size > 0)
       val answered_thunks = backend.retrieve(running_thunks)
       assert(Scheduler.retrieve_invariant(running_thunks, answered_thunks))
       // complete list of thunks
       val all_thunks = answered_thunks ::: dead_thunks
 
-      // memoize thunks
+      // memoize thunks again
       memo.save(question, all_thunks)
       // recursive call
       run_tr(all_thunks, Scheduler.timeout_occurred(answered_thunks))
