@@ -1,7 +1,9 @@
 package edu.umass.cs.automan.core.strategy
 
+import edu.umass.cs.automan.core.answer.AbstractAnswer
+
 import scala.collection.mutable
-import edu.umass.cs.automan.core.scheduler.{SchedulerResult, SchedulerState, Thunk}
+import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 import edu.umass.cs.automan.core.question.Question
 import java.util.UUID
 
@@ -82,8 +84,15 @@ abstract class ValidationStrategy[A](question: Question[A]) {
         ts.head :: ts.tail.map(_.copy_as_duplicate())
     }.flatten.toList
   }
+
+  /**
+   * Returns true if the strategy has enough data to stop scheduling work.
+   * @param thunks The complete list of scheduled thunks.
+   * @return
+   */
   def is_done(thunks: List[Thunk[A]]) : Boolean
-  def select_answer(thunks: List[Thunk[A]]) : Option[SchedulerResult[A]]
+  def select_answer(thunks: List[Thunk[A]]) : AbstractAnswer[A]
+  def select_over_budget_answer(thunks: List[Thunk[A]]) : AbstractAnswer[A]
   /**
    * Computes the number of Thunks needed to satisfy the quality-control
    * algorithm given the already-collected list of Thunks. Returns only
@@ -101,17 +110,17 @@ abstract class ValidationStrategy[A](question: Question[A]) {
     // worker_id should always be set for RETRIEVED and PROCESSED
     val tw_groups = ts.groupBy( t => t.worker_id.get )
     // sort by creation date and take the first
-    tw_groups.map{ case(worker_id,ts) =>
-      ts.sortBy{ t => t.created_at }.head
+    tw_groups.map{ case(worker_id,tz) =>
+      tz.sortBy{ t => t.created_at }.head
     }.toList
   }
 
   protected def completed_thunks(thunks: List[Thunk[A]]) = {
     // thunks should be
     thunks.filter(t =>
-      t.state == SchedulerState.ANSWERED ||  // retrieved from MTurk
-        t.state == SchedulerState.PROCESSED ||  // OR recalled from a memo DB
-        t.state == SchedulerState.ACCEPTED      // OR accepted
+      t.state == SchedulerState.ANSWERED ||   // retrieved from MTurk
+      t.state == SchedulerState.PROCESSED ||  // OR recalled from a memo DB
+      t.state == SchedulerState.ACCEPTED      // OR accepted
     )
   }
 

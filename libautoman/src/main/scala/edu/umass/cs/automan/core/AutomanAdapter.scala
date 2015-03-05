@@ -1,14 +1,11 @@
 package edu.umass.cs.automan.core
 
 import java.util.Locale
-import edu.umass.cs.automan.core.answer.Answer
-import edu.umass.cs.automan.core.info.StateInfo
-import edu.umass.cs.automan.core.logging.LogConfig.LogConfig
+import edu.umass.cs.automan.core.answer.Outcome
 import edu.umass.cs.automan.core.logging.LogConfig.LogConfig
 import edu.umass.cs.automan.core.question._
 import edu.umass.cs.automan.core.logging.{LogConfig, Memo}
-import edu.umass.cs.automan.core.scheduler.{SchedulerState, Scheduler, Thunk}
-import scala.concurrent.{blocking, Future}
+import edu.umass.cs.automan.core.scheduler.{Scheduler, Thunk}
 
 abstract class AutomanAdapter {
   // question types are determined by adapter implementations
@@ -90,7 +87,7 @@ abstract class AutomanAdapter {
 //  def CheckboxDistributionQuestion(init: CBDQ => Unit) : Future[Set[CheckboxOldAnswer]] = scheduleVector(CBDQFactory(), init)
 //  def FreeTextQuestion(init: FTQ => Unit) : Future[FreeTextOldAnswer] = schedule(FTQFactory(), init)
 //  def FreeTextDistributionQuestion(init: FTDQ => Unit) : Future[Set[FreeTextOldAnswer]] = scheduleVector(FTDQFactory(), init)
-  def RadioButtonQuestion(init: Question[Symbol] => Unit) = schedule(RBQFactory(), init)
+  def RadioButtonQuestion(init: RBQ => Unit) = schedule[RBQ,Symbol](RBQFactory(), init)
 //  def RadioButtonDistributionQuestion(init: RBDQ => Unit) : Future[Set[RadioButtonOldAnswer]] = scheduleVector(RBDQFactory(), init)
   def Option(id: Symbol, text: String) : QuestionOption
 
@@ -117,12 +114,8 @@ abstract class AutomanAdapter {
     _memoizer = new Memo(_log_config)
   }
 
-//  def state_snapshot(): StateInfo = {
-//    StateInfo(_schedulers.flatMap { s => s.state })
-//  }
-
   // thread management
-  private def schedule[A](q: Question[A], init: Question[A] => Unit): Answer[A] = {
+  private def schedule[Q <: Question[A],A](q: Q, init: Q => Unit): Outcome[A] = {
     // initialize question with end-user lambda
     init(q)
     // initialize QA strategy
@@ -132,9 +125,8 @@ abstract class AutomanAdapter {
     // add scheduler to list for plugin inspection
     _schedulers = sched :: _schedulers
     // start job
-    q.getAnswer(sched)
+    q.getOutcome(sched)
   }
-
 
   // subclass instantiators; these are needed because
   // the JVM erases our type parameters (RBQ) at runtime

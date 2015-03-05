@@ -2,6 +2,7 @@ package edu.umass.cs.automan.core.scheduler
 
 import java.util.Date
 import edu.umass.cs.automan.core.AutomanAdapter
+import edu.umass.cs.automan.core.answer.AbstractAnswer
 import edu.umass.cs.automan.core.exception.OverBudgetException
 import edu.umass.cs.automan.core.logging.Memo
 import edu.umass.cs.automan.core.question.Question
@@ -23,50 +24,40 @@ class Scheduler[A](val question: Question[A],
     * mechanism is confident in the result, and paying for answers
     * where appropriate.
     */
-  def run(): SchedulerResult[A] = {
+  def run[R <: AbstractAnswer[A]]() : R = {
     // Was this computation interrupted? If there's a memoizer instance
     // restore thunks from scheduler trace.
     val thunks: List[Thunk[A]] = memo.restore(question)
 
-    // set initial conditions and then call the tail-recursive version
-    run_tr(thunks, suffered_timeout = false)
+    // set initial conditions and call scheduler loop
+    run_loop(thunks, suffered_timeout = false)
   }
 
-  @tailrec private def run_tr(thunks: List[Thunk[A]], suffered_timeout: Boolean) : SchedulerResult[A] = {
+  private def run_loop[R <: AbstractAnswer[A]](thunks: List[Thunk[A]], suffered_timeout: Boolean) : R = {
     val s = question.strategy_instance
 
-    if(s.is_done(thunks)) {
-      // select answer
-      val answer = s.select_answer(thunks) match {
-        case Some(result) => result
-        case None => throw new Exception("The computation cannot both be completed and have no answer.")
-      }
+    var _timeout_occurred = false
+    var _all_thunks = thunks
 
-      // pay for answers
-      val all_thunks = Scheduler.accept_and_reject(
-                         s.thunks_to_accept(thunks),
-                         s.thunks_to_reject(thunks),
-                         answer.toString,
-                         backend
-                       )
-
-      // calculate total cost
-      val final_spent = Scheduler.total_cost(all_thunks)
-
-      answer
-    } else {
+    while(!s.is_done(thunks)) {
+      val _thunks = _all_thunks
       // get list of workers who may not re-participate
-      val blacklist = s.blacklisted_workers(thunks)
+      val blacklist = s.blacklisted_workers(_thunks)
       // filter duplicate work
-      val dedup_thunks = s.mark_duplicates(thunks)
+      val dedup_thunks = s.mark_duplicates(_thunks)
       // post more tasks as needed
-      val new_thunks = Scheduler.post_as_needed(dedup_thunks, backend, question, suffered_timeout, blacklist)
+
+      val new_thunks = try {
+        Scheduler.post_as_needed(dedup_thunks, backend, question, suffered_timeout, blacklist)
+      } catch {
+        case o: OverBudgetException[A] => return s.select_over_budget_answer(thunks).asInstanceOf[R]
+      }
       // The scheduler waits here to give the crowd time to answer.
       // Sleeping also informs the scheduler that this thread may yield
       // its CPU time.  While we wait, we also update memo state.
       Scheduler.memo_and_sleep(poll_interval_in_s * 1000, dedup_thunks ::: new_thunks, question, memo)
       // ask the backend to retrieve answers for all RUNNING thunks
-      val (running_thunks,dead_thunks) = (dedup_thunks ::: new_thunks).partition(_.state == SchedulerState.RUNNING)
+      val (running_thunks, dead_thunks) = (dedup_thunks ::: new_thunks).partition(_.state == SchedulerState.RUNNING)
       assert(running_thunks.size > 0)
       val answered_thunks = backend.retrieve(running_thunks)
       assert(Scheduler.retrieve_invariant(running_thunks, answered_thunks))
@@ -75,9 +66,28 @@ class Scheduler[A](val question: Question[A],
 
       // memoize thunks again
       memo.save(question, all_thunks)
-      // recursive call
-      run_tr(all_thunks, Scheduler.timeout_occurred(answered_thunks))
+
+      synchronized {
+        _all_thunks = all_thunks
+        _timeout_occurred = Scheduler.timeout_occurred(answered_thunks)
+      }
     }
+
+    // select answer
+    val answer = s.select_answer(_all_thunks).asInstanceOf[R]
+
+    // pay for answers
+    val _final_thunks = Scheduler.accept_and_reject(
+                          s.thunks_to_accept(_all_thunks),
+                          s.thunks_to_reject(_all_thunks),
+                          answer.value.toString,
+                          backend
+                        )
+
+    // save one more time
+    memo.save(question, _final_thunks)
+
+    answer
   }
 }
 
@@ -119,7 +129,11 @@ object Scheduler {
    * @tparam A The data type of the returned Answer.
    * @return A list of newly-created Thunks.
    */
-  def post_as_needed[A](thunks: List[Thunk[A]], backend: AutomanAdapter, question: Question[A], suffered_timeout: Boolean, blacklist: List[String]) : List[Thunk[A]] = {
+  def post_as_needed[A](thunks: List[Thunk[A]],
+                        backend: AutomanAdapter,
+                        question: Question[A],
+                        suffered_timeout: Boolean,
+                        blacklist: List[String]) : List[Thunk[A]] = {
     val s = question.strategy_instance
     
     // are any thunks still running?
@@ -129,7 +143,8 @@ object Scheduler {
       assert(spawn_invariant(new_thunks))
       // can we afford these?
       if (question.budget < Scheduler.cost_for_thunks(thunks ::: new_thunks)) {
-        throw new OverBudgetException[A](s.select_answer(thunks))
+        val answer = s.select_answer(thunks)
+        throw new OverBudgetException[A](answer.value, answer.cost)
       } else {
         // yes, so post and return all posted thunks
         backend.post(new_thunks, blacklist)

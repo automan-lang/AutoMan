@@ -1,23 +1,20 @@
 package edu.umass.cs.automan.adapters.mturk.question
 
-import java.util.{Date, UUID}
 
-import edu.umass.cs.automan.core.answer.Answer
 import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
-import edu.umass.cs.automan.core.question.{Question, RadioButtonQuestion}
-import edu.umass.cs.automan.core.scheduler.{SchedulerState, Scheduler, BackendResult, Thunk}
-import com.amazonaws.mturk.requester.{HIT, Assignment}
+import edu.umass.cs.automan.core.question.RadioButtonQuestion
+import edu.umass.cs.automan.core.scheduler.BackendResult
+import com.amazonaws.mturk.requester.Assignment
 import edu.umass.cs.automan.core.util.Utilities
 import xml.XML
 import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
 
 class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
-  type QO = MTQuestionOption
+  type QuestionOptionType = MTQuestionOption
   type A = Symbol
 
   override protected var _group_id: String = _
-  protected var _options = List[QO]()
 
   def answer(a: Assignment): BackendResult[A] = {
     new BackendResult[A](
@@ -27,13 +24,10 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
       a.getSubmitTime.getTime
     )
   }
-  override protected[automan] def getAnswer(scheduler: Scheduler[A]): Answer[A] = ???
   def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
     new String(Hex.encodeHex(md.digest(toXML(randomize = false).toString().getBytes)))
   }
-  def options: List[QO] = _options
-  def options_=(os: List[QO]) { _options = os }
   def fromXML(x: scala.xml.Node) : A = {
     // There should only be a SINGLE answer here, like this:
     //    <Answer>
@@ -83,5 +77,5 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
       </Question>
     </QuestionForm>
   }
-  override def randomized_options: List[QO] = Utilities.randomPermute(options)
+  override def randomized_options: List[QuestionOptionType] = Utilities.randomPermute(options)
 }
