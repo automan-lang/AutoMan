@@ -67,8 +67,8 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   def post[A](ts: List[Thunk[A]], exclude_worker_ids: List[String]) : Unit = {
     nonblocking_enqueue(CreateHITReq(ts, exclude_worker_ids))
   }
-  def reject[A](t: Thunk[A]) : Thunk[A] = {
-    blocking_enqueue(RejectReq(t)).asInstanceOf[Thunk[A]]
+  def reject[A](t: Thunk[A], correct_answer: String) : Thunk[A] = {
+    blocking_enqueue(RejectReq(t, correct_answer)).asInstanceOf[Thunk[A]]
   }
   def retrieve[A](ts: List[Thunk[A]]) : List[Thunk[A]] = {
     blocking_enqueue(RetrieveReq(ts)).asInstanceOf[List[Thunk[A]]]
@@ -132,7 +132,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
               case req: CancelReq[_] => do_sync_action(req, () => scheduled_cancel(req.t))
               case req: DisposeQualsReq => do_sync_action(req, () => scheduled_cleanup_qualifications(req.q))
               case req: CreateHITReq[_] => do_sync_action(req, () => scheduled_post(req.ts, req.exclude_worker_ids))
-              case req: RejectReq[_] => do_sync_action(req, () => scheduled_reject(req.t))
+              case req: RejectReq[_] => do_sync_action(req, () => scheduled_reject(req.t, req.answer))
               case req: RetrieveReq[_] => do_sync_action(req, () => scheduled_retrieve(req.ts))
             }
           }
@@ -156,26 +156,28 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     }
   }
   private def scheduled_accept[A](t: Thunk[A]) : Thunk[A] = {
-    DebugLog(String.format("Accepting task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
+    DebugLog(
+      String.format("Accepting task for question_id = %s",
+      t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
-    val mtq = t.question.asInstanceOf[MTurkQuestion]
-
-    backend.approveAssignment(mtq.thunk_assnid_map(t), "Thanks!")
-    t.copy_as_accepted()
+    _hit_states(_hit_ids(HITKey(t))).getAssignmentOption(t) match {
+      case Some(assignment) =>
+        backend.approveAssignment(assignment.getAssignmentId, "Thanks!")
+        t.copy_as_accepted()
+      case None =>
+        throw new Exception("Cannot accept non-existent assignment.")
+    }
   }
   private def scheduled_cancel[A](t: Thunk[A]) : Thunk[A] = {
-    DebugLog(String.format("Cancelling task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
+    DebugLog(String.format("Cancelling task for question_id = %s",
+      t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
-    t.question match {
-      case mtq:MTurkQuestion => {
-        mtq.hits.filter{_.state == HITState.RUNNING}.foreach { hit =>
-          backend.forceExpireHIT(hit.hit.getHITId)
-          hit.state = HITState.RESOLVED
-        }
-        t.copy_as_cancelled()
-      }
-      case _ => throw new Exception("Impossible error.")
-    }
+    val hit_id = _hit_ids(HITKey(t))
+    val hit_state = _hit_states(hit_id)
+    backend.forceExpireHIT(hit_state.HITId)
+    _hit_states += (hit_id -> hit_state.cancel())
+
+    t.copy_as_cancelled()
   }
 
   /**
@@ -343,10 +345,20 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     }
   }
 
-  private def scheduled_reject[A](t: Thunk[A]) : Thunk[A] = {
-    DebugLog(String.format("Rejecting task for question_id = %s", t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
+  private def scheduled_reject[A](t: Thunk[A], correct_answer: String) : Thunk[A] = {
+    DebugLog(String.format("Rejecting task for question_id = %s",
+      t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
-    ???
+    _hit_states(_hit_ids(HITKey(t))).getAssignmentOption(t) match {
+      case Some(assignment) =>
+        backend.rejectAssignment(assignment.getAssignmentId,
+          "AutoMan determined that the correct answer to this question is: \"" + correct_answer +
+          "\".  If you believe this result to be in error, please contact us."
+        )
+        t.copy_as_rejected()
+      case None =>
+        throw new Exception("Cannot accept non-existent assignment.")
+    }
   }
 
   private def BatchKey(t: Thunk[_]) : BatchKey = (t.question.asInstanceOf[MTurkQuestion].group_id, t.cost, t.worker_timeout)
@@ -523,28 +535,6 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
         backend.grantQualification(request.getQualificationRequestId, _batch_no(hitstate.hittype.group_id))
       }
     }
-  }
-
-  private def cancel_hit[A](hit: AutomanHIT, ts: List[Thunk[A]]) : List[Thunk[A]] = {
-    var hitcancelled = false
-    ts.map { t =>
-      if (t.is_timedout && t.state == SchedulerState.RUNNING) {
-        DebugLog("HIT TIMED OUT.", LogLevel.WARN, LogType.ADAPTER, hit.id)
-        val t2 = t.copy_as_timeout()
-        if (!hitcancelled) {
-          DebugLog("Force-expiring HIT.", LogLevel.WARN, LogType.ADAPTER, hit.id)
-          hit.cancel(backend)
-          hitcancelled = true
-        }
-        t2
-      } else {
-        t
-      }
-    }
-  }
-
-  private def set_paid_status[A](t: Thunk[A]) : Unit = {
-    ???
   }
 
   private def mturk_createQualification(q: MTurkQuestion, title: String, question_id: UUID, batch_no: Int) : QualificationRequirement = {

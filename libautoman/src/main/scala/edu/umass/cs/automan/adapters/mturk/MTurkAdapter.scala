@@ -78,7 +78,10 @@ class MTurkAdapter extends AutomanAdapter {
   def Option(id: Symbol, text: String) = new MTQuestionOption(id, text, "")
   def Option(id: Symbol, text: String, image_url: String) = new MTQuestionOption(id, text, image_url)
 
-  protected[automan] def accept[A](t: Thunk[A]) = run_if_initialized((p: Pool) => p.accept(t))
+  protected[automan] def accept[A](t: Thunk[A]) = {
+    assert(t.state == SchedulerState.ANSWERED)
+    run_if_initialized((p: Pool) => p.accept(t))
+  }
   protected[automan] def cancel[A](t: Thunk[A]) = run_if_initialized((p: Pool) => p.cancel(t))
   protected[automan] def backend_budget() = run_if_initialized((p: Pool) => p.backend_budget)
   protected[automan] def post[A](ts: List[Thunk[A]], exclude_worker_ids: List[String]) = {
@@ -92,11 +95,14 @@ class MTurkAdapter extends AutomanAdapter {
       ts2
     })
   }
-  protected[automan] def reject[A](t: Thunk[A]) = run_if_initialized((p: Pool) => p.reject(t))
-  protected[automan] def retrieve[A](ts: List[Thunk[A]]) =
+  protected[automan] def reject[A](t: Thunk[A], correct_answer: String) = {
+    assert(t.state == SchedulerState.ANSWERED)
+    run_if_initialized((p: Pool) => p.reject(t, correct_answer))
+  }
+  protected[automan] def retrieve[A](ts: List[Thunk[A]]) = {
+    assert(ts.forall(_.state == SchedulerState.RUNNING))
     run_if_initialized((p: Pool) => p.retrieve(ts))
-//  protected[automan] def timeout[A](ts: List[Thunk[A]]) : List[Thunk[A]] =
-//    run_if_initialized((p: Pool) => p.timeout(ts))
+  }
   override protected[automan] def question_shutdown_hook[A](q: Question[A]): Unit = {
     super.question_shutdown_hook(q)
     // cleanup qualifications
