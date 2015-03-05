@@ -2,7 +2,7 @@ package edu.umass.cs.automan.core.question
 
 import java.io.File
 import java.util.{Date, UUID}
-import edu.umass.cs.automan.core.answer.Answer
+import edu.umass.cs.automan.core.answer.{AbstractAnswer, Outcome}
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 import edu.umass.cs.automan.core.logging.Memo
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk, Scheduler}
@@ -76,6 +76,6 @@ abstract class Question[A] {
   // private methods
   private[automan] def init_strategy(): Unit
   private[automan] def strategy_instance = _strategy_instance
-  protected[automan] def getAnswer(scheduler: Scheduler[A]): Answer[A]
+  protected[automan] def getOutcome(scheduler: Scheduler[A]): Outcome[A]
   protected[automan] def getQuestionType: QuestionType
 }
