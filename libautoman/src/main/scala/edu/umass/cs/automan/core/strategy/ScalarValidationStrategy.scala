@@ -28,6 +28,8 @@ abstract class ScalarValidationStrategy[A](question: Question[A])
     DebugLog("Most popular answer is " + gsymb, LogLevel.INFO, LogType.STRATEGY, question.id)
     DebugLog("classOf Thunk.answer is " + groups(gsymb).head.answer.get.getClass, LogLevel.INFO, LogType.STRATEGY, question.id)
 
+    // TODO: calculate cost
+
     // return the top result
     val selected_answer = Some(groups(gsymb).head.answer.get)
     Some(SchedulerResult(selected_answer.get, ???, current_confidence(thunks)))

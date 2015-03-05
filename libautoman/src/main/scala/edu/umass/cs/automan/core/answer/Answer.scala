@@ -6,7 +6,7 @@ import edu.umass.cs.automan.core.scheduler.{SchedulerResult, Scheduler}
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
-case class Answer[A](private val f: Future[SchedulerResult[A]], private val scheduler: Scheduler[_,A]) {
+case class Answer[A](private val f: Future[SchedulerResult[A]], private val scheduler: Scheduler[A]) {
   def cost : AbstractOutcome[BigDecimal] = {
     try {
       Outcome(Await.result(f, Duration.Inf).cost)

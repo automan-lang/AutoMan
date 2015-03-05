@@ -132,7 +132,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
               case req: CancelReq[_] => do_sync_action(req, () => scheduled_cancel(req.t))
               case req: DisposeQualsReq => do_sync_action(req, () => scheduled_cleanup_qualifications(req.q))
               case req: CreateHITReq[_] => do_sync_action(req, () => scheduled_post(req.ts, req.exclude_worker_ids))
-              case req: RejectReq[_] => do_sync_action(req, () => scheduled_reject(req.t, req.answer))
+              case req: RejectReq[_] => do_sync_action(req, () => scheduled_reject(req.t, req.correct_answer))
               case req: RetrieveReq[_] => do_sync_action(req, () => scheduled_retrieve(req.ts))
             }
           }
@@ -266,8 +266,6 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
 
     // update hit states with new object
     _hit_states = _hit_states + (hs.HITId -> hs)
-
-    hs
   }
 
   /**
@@ -277,7 +275,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
    * @return True if the group_id has already scheduled tasks on MTurk.
    */
   private def first_run(group_id: String) : Boolean = {
-    !_hit_types.map{ case (gid, _, _) => gid }.toSet.contains(group_id)
+    !_hit_types.map{ case ((gid, _, _), _) => gid }.toSet.contains(group_id)
   }
 
   /**
