@@ -43,6 +43,12 @@ abstract class AutomanAdapter {
 
   // marshaling calls
   // invariant: every Thunk that is passed in is passed back
+  /**
+   * Tell the backend to accept the answer associated with this ANSWERED Thunk.
+   * @param t An ANSWERED Thunk.
+   * @tparam A The data type of the Answer value.
+   * @return An ACCEPTED Thunk.
+   */
   protected[automan] def accept[A](t: Thunk[A]) : Thunk[A]
   protected[automan] def backend_budget(): BigDecimal
   protected[automan] def cancel[A](t: Thunk[A]) : Thunk[A]
@@ -57,7 +63,15 @@ abstract class AutomanAdapter {
    * @return A list of the posted Thunks.
    */
   protected[automan] def post[A](ts: List[Thunk[A]], exclude_worker_ids: List[String]) : List[Thunk[A]]
-  protected[automan] def reject[A](t: Thunk[A]) : Thunk[A]
+
+  /**
+   * Tell the backend to reject the answer associated with this ANSWERED Thunk.
+   * @param t An ANSWERED Thunk.
+   * @param correct_answer A stringified version of the correct answer, for worker feedback.
+   * @tparam A The data type of the Answer value.
+   * @return A REJECTED Thunk.
+   */
+  protected[automan] def reject[A](t: Thunk[A], correct_answer: String) : Thunk[A]
 
   /**
    * Ask the backend to retrieve answers given a list of RUNNING Thunks. Invariant:
@@ -68,7 +82,6 @@ abstract class AutomanAdapter {
    * @return A list of RUNNING, RETRIEVED, or TIMEOUT Thunks.
    */
   protected[automan] def retrieve[A](ts: List[Thunk[A]]) : List[Thunk[A]]
-//  protected[automan] def timeout[A <: Answer](ts: List[Thunk[A]]) : List[Thunk[A]]
   protected[automan] def question_startup_hook[A](q: Question[A]): Unit = {}
   protected[automan] def question_shutdown_hook[A](q: Question[A]): Unit = {}
 

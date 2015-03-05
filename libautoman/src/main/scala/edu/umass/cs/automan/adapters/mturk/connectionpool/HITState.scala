@@ -10,14 +10,14 @@ object HITState {
   // structure and a list of Thunks
   def apply(hit: HIT, ts: List[Thunk[_]], hittype: HITType) : HITState = {
     val t_a_map = ts.map(_.thunk_id -> None).toMap
-    HITState(hit, t_a_map, hittype)
+    HITState(hit, t_a_map, hittype, cancelled = false)
   }
 }
 
 // Note that this class stores references to actual MTurk Assignment objects
 // but compares them by their Assignment IDs, in case Assignments
 // are fetched multiple times.
-case class HITState(hit: HIT, t_a_map: Map[UUID,Option[Assignment]], hittype: HITType) {
+case class HITState(hit: HIT, t_a_map: Map[UUID,Option[Assignment]], hittype: HITType, cancelled: Boolean) {
   val aid_t_map = t_a_map.flatMap { case (t, a_o) => a_o match { case Some(a) => Some(a.getAssignmentId -> t); case None => None }}
 
   def matchAssignments(assns: Array[Assignment]) : HITState = {
@@ -34,8 +34,11 @@ case class HITState(hit: HIT, t_a_map: Map[UUID,Option[Assignment]], hittype: HI
     }
 
     // return new state object
-    HITState(hit, new_t_a_map, hittype)
+    HITState(hit, new_t_a_map, hittype, cancelled)
   }
+
+  def isCancelled : Boolean = cancelled
+  def cancel() : HITState = HITState(hit, t_a_map, hittype, cancelled = true)
 
   private def unmatchedThunks : List[UUID] = {
     t_a_map.flatMap { case (t_id: UUID, a_o: Option[Assignment]) =>
@@ -46,8 +49,9 @@ case class HITState(hit: HIT, t_a_map: Map[UUID,Option[Assignment]], hittype: HI
   def getAssignmentOption(t: Thunk[_]): Option[Assignment] = t_a_map(t.thunk_id)
 
   def addNewThunks(updated_hit: HIT, ts: List[Thunk[_]]) : HITState = {
+    assert(!cancelled)
     assert(updated_hit.getHITId == hit.getHITId)
-    HITState(updated_hit, t_a_map ++ ts.map(_.thunk_id -> None), hittype)
+    HITState(updated_hit, t_a_map ++ ts.map(_.thunk_id -> None), hittype, cancelled)
   }
 
   def HITId = hit.getHITId
