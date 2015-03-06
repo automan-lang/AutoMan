@@ -55,6 +55,9 @@ class Memo(log_config: LogConfig.Value) {
   private val dbQuestion = TableQuery[edu.umass.cs.automan.core.logging.tables.DBQuestion]
   private val dbRadioButtonAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBRadioButtonAnswer]
 
+  // Thunk cache
+  protected var all_thunk_ids = Map[UUID,SchedulerState.Value]()
+
   // get DB handle
   val db_opt = log_config match {
     case LogConfig.NO_LOGGING => None
@@ -63,28 +66,41 @@ class Memo(log_config: LogConfig.Value) {
     }
   }
 
+  def init() : Unit = {
+    init_database_if_required(List())
+  }
+
   // create database tables if they do not already exist
   // (the database itself is automatically created by the driver);
   // and then populate thunk cache
-  private var all_thunk_ids: Map[UUID,SchedulerState.Value] = db_opt match {
-    case Some(db) => {
-      val tables = db.withSession { implicit session => MTable.getTables(None, None, None, None).list.map(_.name.name)}
-      if (!tables.contains(dbQuestion.baseTableRow.tableName)) {
-        db.withSession { implicit s =>
-          (dbThunk.ddl ++ dbThunkHistory.ddl ++ dbQuestion.ddl ++ dbRadioButtonAnswer.ddl).create
-        }
-        Map.empty
-      } else {
-        db withSession { implicit s =>
-          // prepopulate cache with all of the thunk_ids from the database
-          getAllThunksMap
+  protected def init_database_if_required(ddls: List[DerbyDriver.SchemaDescription]) : Unit = {
+    val base_ddls: DerbyDriver.DDL = dbThunk.ddl ++ dbThunkHistory.ddl ++ dbQuestion.ddl ++ dbRadioButtonAnswer.ddl
+    val all_ddls: DerbyDriver.DDL = if (ddls.nonEmpty) {
+      base_ddls ++ ddls.tail.foldLeft(ddls.head){ case (acc,ddl) => acc ++ ddl }
+    } else {
+      base_ddls
+    }
+
+    all_thunk_ids = db_opt match {
+      case Some(db) => {
+        val tables = db.withSession { implicit session => MTable.getTables(None, None, None, None).list.map(_.name.name)}
+        if (!tables.contains(dbQuestion.baseTableRow.tableName)) {
+          db.withSession { implicit s =>
+            (all_ddls).create
+          }
+          Map.empty
+        } else {
+          db withSession { implicit s =>
+            // prepopulate cache with all of the thunk_ids from the database
+            getAllThunksMap
+          }
         }
       }
+      case None => Map.empty
     }
-    case None => Map.empty
   }
 
-  private def allThunksQuery() = {
+  protected[automan] def allThunksQuery() = {
     // subquery: get thunk_id -> most recent state change time
     val MSQ = dbThunkHistory.groupBy(_.thunk_id).map{ case (thunk_id,row) => thunk_id -> row.map(_.state_change_time).max }
 
@@ -102,7 +118,7 @@ class Memo(log_config: LogConfig.Value) {
     dbQuestion join TS_THS on (_.id === _._1.question_id)
   }
 
-  private def getAllThunksMap(implicit session: DBSession) : Map[UUID,SchedulerState.Value] = {
+  protected[automan] def getAllThunksMap(implicit session: DBSession) : Map[UUID,SchedulerState.Value] = {
     allThunksQuery().map { case (dbquestion, (dbthunk, dbthunkhistory)) =>
       dbthunk.thunk_id -> dbthunkhistory.scheduler_state
     }.list.toMap
@@ -178,14 +194,14 @@ class Memo(log_config: LogConfig.Value) {
     }
   }
 
-  private def questionInDB(memo_hash: String)(implicit db: DBSession) : Boolean = {
+  protected[automan] def questionInDB(memo_hash: String)(implicit db: DBSession) : Boolean = {
     dbQuestion.filter(_.memo_hash === memo_hash).firstOption match {
       case Some(q) => true
       case None => false
     }
   }
 
-  private def needsUpdate[A](ts: List[Thunk[A]]) : List[InsertUpdateOrSkip[A]] = {
+  protected[automan] def needsUpdate[A](ts: List[Thunk[A]]) : List[InsertUpdateOrSkip[A]] = {
     ts.map { t =>
       if (!all_thunk_ids.contains(t.thunk_id)) {
         Insert(t)
@@ -197,15 +213,15 @@ class Memo(log_config: LogConfig.Value) {
     }
   }
 
-  private def thunk2ThunkTuple[A](ts: List[Thunk[A]]) : List[(UUID, UUID, BigDecimal, Date, Int, Int)] = {
+  protected[automan] def thunk2ThunkTuple[A](ts: List[Thunk[A]]) : List[(UUID, UUID, BigDecimal, Date, Int, Int)] = {
     ts.map(t => (t.thunk_id, t.question.id, t.cost, t.created_at, t.timeout_in_s, t.worker_timeout))
   }
 
-  private def thunk2ThunkHistoryTuple[A](ts: List[Thunk[A]]) : List[(Int, UUID, Date, SchedulerState)] = {
+  protected[automan] def thunk2ThunkHistoryTuple[A](ts: List[Thunk[A]]) : List[(Int, UUID, Date, SchedulerState)] = {
     ts.map(t => (1, t.thunk_id, new Date(), t.state))
   }
 
-  private def thunk2ThunkAnswerTuple[A](ts: List[Thunk[A]], histories: Seq[(UUID, Int)]) : List[(Int, A, String)] = {
+  protected[automan] def thunk2ThunkAnswerTuple[A](ts: List[Thunk[A]], histories: Seq[(UUID, Int)]) : List[(Int, A, String)] = {
     val history_dict = histories.toMap
     ts.flatMap { t =>
       t.answer match {
@@ -218,7 +234,7 @@ class Memo(log_config: LogConfig.Value) {
     }
   }
 
-  private def insertAnswerTable[A](ts: List[Thunk[A]], histories: Seq[(UUID, Int)])(implicit session: DBSession) = {
+  protected[automan] def insertAnswerTable[A](ts: List[Thunk[A]], histories: Seq[(UUID, Int)])(implicit session: DBSession) = {
     assert(ts.size != 0)
     ts.head.question.getQuestionType match {
       case RadioButtonQuestion =>

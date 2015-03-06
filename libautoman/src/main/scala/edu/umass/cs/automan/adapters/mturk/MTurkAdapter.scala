@@ -7,6 +7,7 @@ import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.adapters.mturk.connectionpool.Pool
 import edu.umass.cs.automan.adapters.mturk.logging.MTMemo
 import edu.umass.cs.automan.adapters.mturk.question.{MTurkQuestion, MTQuestionOption, MTRadioButtonQuestion}
+import edu.umass.cs.automan.core.logging.Memo
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 import edu.umass.cs.automan.core.AutomanAdapter
@@ -35,6 +36,7 @@ class MTurkAdapter extends AutomanAdapter {
   private val SLEEP_MS = 500
 
   private var _access_key_id: Option[String] = None
+  override protected var _memoizer: MTMemo = _
   private var _pool : Option[Pool] = None
   private var _retriable_errors = Set("Server.ServiceUnavailable")
   private var _retry_attempts : Int = 10
@@ -122,8 +124,10 @@ class MTurkAdapter extends AutomanAdapter {
   // initialization routines
   private def setup() {
     val rs = new RequesterService(this.toClientConfig)
+    val pool = new Pool(rs, SLEEP_MS)
     _service = Some(rs)
-    _pool = Some(new Pool(rs, SLEEP_MS))
+    _memoizer.restore_mt_state(pool, rs)
+    _pool = Some(pool)
   }
   private def toClientConfig : ClientConfig = {
     import scala.collection.JavaConversions
@@ -148,8 +152,6 @@ class MTurkAdapter extends AutomanAdapter {
 
   override protected[automan] def memo_init(): Unit = {
     _memoizer = new MTMemo(_log_config)
-
-    // TODO: read saved adapter state
-    ???
+    _memoizer.init()
   }
 }
