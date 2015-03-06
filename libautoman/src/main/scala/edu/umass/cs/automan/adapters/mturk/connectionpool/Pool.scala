@@ -6,6 +6,7 @@ import java.util.{Date, UUID}
 import com.amazonaws.mturk.requester._
 import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
+import edu.umass.cs.automan.adapters.mturk.util.Key
 import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
@@ -14,7 +15,7 @@ import edu.umass.cs.automan.core.util.Stopwatch
 class Pool(backend: RequesterService, sleep_ms: Int) {
   type HITID = String
   type BatchKey = (String,BigDecimal,Int)   // (group_id, cost, timeout); uniquely identifies a batch
-  type HITKey = (BatchKey, UUID)            // (BatchKey, question_id); uniquely identifies a HIT
+  type HITKey = (BatchKey, String)          // (BatchKey, memo_hash); uniquely identifies a HIT
 
   // worker
   private var _worker_thread: Option[Thread] = None
@@ -50,6 +51,26 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   // key: group_id
   // value: batch_no
   private var _batch_no = Map[String,Int]()
+
+  // Memo-related calls
+  protected[mturk] def restoreHITTypes(htm: Map[BatchKey, HITType]) : Unit = {
+    _hit_types = htm
+  }
+  protected[mturk] def restoreHITStates(hss: Map[HITID, HITState]) : Unit = {
+    _hit_states = hss
+  }
+  protected[mturk] def restoreHITIDs(hids: Map[HITKey,HITID]) : Unit = {
+    _hit_ids = hids
+  }
+  protected[mturk] def restoreWhitelist(ww: Map[(String,String),String]) : Unit = {
+    _worker_whitelist = ww
+  }
+  protected[mturk] def restoreDisqualifications(ds: Map[String,String]) : Unit = {
+    _disqualifications = ds
+  }
+  protected[mturk] def restoreBatchNumbers(bn: Map[String,Int]) : Unit = {
+    _batch_no = bn
+  }
 
   // API
   def accept[A](t: Thunk[A]) : Thunk[A] = {
@@ -160,7 +181,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       String.format("Accepting task for question_id = %s",
       t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
-    _hit_states(_hit_ids(HITKey(t))).getAssignmentOption(t) match {
+    _hit_states(_hit_ids(Key.HITKey(t))).getAssignmentOption(t) match {
       case Some(assignment) =>
         backend.approveAssignment(assignment.getAssignmentId, "Thanks!")
         t.copy_as_accepted()
@@ -172,7 +193,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     DebugLog(String.format("Cancelling task for question_id = %s",
       t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
-    val hit_id = _hit_ids(HITKey(t))
+    val hit_id = _hit_ids(Key.HITKey(t))
     val hit_state = _hit_states(hit_id)
     backend.forceExpireHIT(hit_state.HITId)
     _hit_states += (hit_id -> hit_state.cancel())
@@ -245,7 +266,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     val hs = HITState(backend.getHIT(hit.getHITId), ts, hit_type)
 
     // calculate new HIT key
-    val hit_key = (batch_key, question.id)
+    val hit_key = (batch_key, question.memo_hash)
 
     // update HIT key -> HIT ID map
     _hit_ids = _hit_ids + (hit_key -> hs.HITId)
@@ -329,7 +350,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
         val batch_key: BatchKey = (mtq.group_id, cost, worker_timeout)
 
         // A HIT is uniquely determined by question_id, cost, and worker_timeout
-        val hit_key: HITKey = (batch_key, q.id)
+        val hit_key: HITKey = (batch_key, q.memo_hash)
 
         // have we already posted a HIT for these thunks?
         if (_hit_ids.contains(hit_key)) {
@@ -347,7 +368,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     DebugLog(String.format("Rejecting task for question_id = %s",
       t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
-    _hit_states(_hit_ids(HITKey(t))).getAssignmentOption(t) match {
+    _hit_states(_hit_ids(Key.HITKey(t))).getAssignmentOption(t) match {
       case Some(assignment) =>
         backend.rejectAssignment(assignment.getAssignmentId,
           "AutoMan determined that the correct answer to this question is: \"" + correct_answer +
@@ -359,23 +380,18 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     }
   }
 
-  private def BatchKey(t: Thunk[_]) : BatchKey = (t.question.asInstanceOf[MTurkQuestion].group_id, t.cost, t.worker_timeout)
-  private def HITKeyForBatch(batch_key: BatchKey, t: Thunk[_]) : HITKey = (batch_key, t.question.id)
-  private def HITKey(t: Thunk[_]) : HITKey = HITKeyForBatch(BatchKey(t), t)
-  private def HITIDsForBatch(batch_key: BatchKey) : List[HITID] = _hit_ids.flatMap { case ((bkey, _), hit_id) => if (bkey == batch_key) Some(hit_id) else None }.toList
-
   private def scheduled_retrieve[A](ts: List[Thunk[A]]): List[Thunk[A]] = {
     // 1. eagerly get all HIT assignments
     // 2. pair HIT Assignments with Thunks
     // 3. update Thunks with answers
     // 4. timeout Thunks, where appropriate
-    val ts2 = ts.groupBy(BatchKey).map { case (batch_key, bts) =>
+    val ts2 = ts.groupBy(Key.BatchKey).map { case (batch_key, bts) =>
       // get HITType for BatchKey
       val hittype = _hit_types(batch_key)
 
       // iterate through all HITs for this HITType
       // pair all assignments with thunks, yielding a new collection of HITStates
-      val updated_hss = HITIDsForBatch(batch_key).map { hit_id =>
+      val updated_hss = Key.HITIDsForBatch(batch_key, _hit_ids).map { hit_id =>
         val hit_state = _hit_states(hit_id)
 
         // get all of the assignments for this HIT
@@ -400,7 +416,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     val group_id = batch_key._1
 
     // group by HIT
-    ts.groupBy(HITKeyForBatch(batch_key,_)).map { case (hit_key, hts) =>
+    ts.groupBy(Key.HITKeyForBatch(batch_key,_)).map { case (hit_key, hts) =>
       // get HITState for this set of Thunks
       val hs = _hit_states(_hit_ids(hit_key))
 

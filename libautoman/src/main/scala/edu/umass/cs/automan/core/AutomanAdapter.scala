@@ -112,6 +112,7 @@ abstract class AutomanAdapter {
   }
   protected[automan] def memo_init() {
     _memoizer = new Memo(_log_config)
+    _memoizer.init()
   }
 
   // thread management
