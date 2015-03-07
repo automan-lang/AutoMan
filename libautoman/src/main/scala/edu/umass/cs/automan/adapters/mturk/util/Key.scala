@@ -9,7 +9,9 @@ object Key {
   type HITKey = (BatchKey, String)          // (BatchKey, memo_hash); uniquely identifies a HIT
 
   protected[mturk] def BatchKey(t: Thunk[_]) : BatchKey =
-    (t.question.asInstanceOf[MTurkQuestion].group_id, t.cost, t.worker_timeout)
+    BatchKey(t.question.asInstanceOf[MTurkQuestion].group_id, t.cost, t.worker_timeout)
+  protected[mturk] def BatchKey(group_id: String, cost: BigDecimal, timeout_in_s: Int) =
+    (group_id, cost, timeout_in_s)
   protected[mturk] def HITKeyForBatch(batch_key: BatchKey, t: Thunk[_]) : HITKey =
     (batch_key, t.question.memo_hash)
   protected[mturk] def HITKey(t: Thunk[_]) : HITKey =
