@@ -2,7 +2,9 @@ package edu.umass.cs.automan.adapters.mturk.logging.tables
 
 import scala.slick.driver.DerbyDriver.simple._
 
-class DBHIT(tag: Tag) extends Table[(String)](tag, "DBHIT") {
+class DBHIT(tag: Tag) extends Table[(String, String, Boolean)](tag, "DBHIT") {
   def HITId = column[String]("HIT_ID", O.PrimaryKey)
-  override def * = (HITId)
+  def HITTypeId = column[String]("HIT_TYPE_ID")
+  def isCancelled = column[Boolean]("IS_CANCELLED")
+  override def * = (HITId, HITTypeId, isCancelled)
 }

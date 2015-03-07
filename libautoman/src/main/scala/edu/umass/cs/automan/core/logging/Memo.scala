@@ -47,13 +47,13 @@ class Memo(log_config: LogConfig.Value) {
   type DBSession = DerbyDriver.backend.Session
 
   // connection string
-  private val jdbc_conn_string = "jdbc:derby:AutoManMemoDB;create=true"
+  protected[automan] val jdbc_conn_string = "jdbc:derby:AutoManMemoDB;create=true"
 
   // TableQuery aliases
-  private val dbThunk = TableQuery[edu.umass.cs.automan.core.logging.tables.DBThunk]
-  private val dbThunkHistory = TableQuery[edu.umass.cs.automan.core.logging.tables.DBThunkHistory]
-  private val dbQuestion = TableQuery[edu.umass.cs.automan.core.logging.tables.DBQuestion]
-  private val dbRadioButtonAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBRadioButtonAnswer]
+  protected[automan] val dbThunk = TableQuery[edu.umass.cs.automan.core.logging.tables.DBThunk]
+  protected[automan] val dbThunkHistory = TableQuery[edu.umass.cs.automan.core.logging.tables.DBThunkHistory]
+  protected[automan] val dbQuestion = TableQuery[edu.umass.cs.automan.core.logging.tables.DBQuestion]
+  protected[automan] val dbRadioButtonAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBRadioButtonAnswer]
 
   // Thunk cache
   protected var all_thunk_ids = Map[UUID,SchedulerState.Value]()
