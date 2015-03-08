@@ -20,6 +20,7 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
   private val dbHIT = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBHIT]
   private val dbHITType = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBHITType]
   private val dbQualReq = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBQualificationRequirement]
+  private val dbThunkHIT = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBThunkHIT]
 
   def save_mt_state() : Unit = {
     ???
@@ -107,6 +108,15 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
     }.toMap
   }
 
+  private def getHITIDMap(implicit session: DBSession) : Map[Key.HITKey, Key.HITID] = {
+    val query = dbQuestion join
+      dbThunk on (_.id === _.question_id) join
+      dbThunkHIT on (_._2.thunk_id === _.thunkId) join
+      dbHIT on (_._2.HITId === _.HITId) join
+      dbHITType on (_._2.HITTypeId === _.id)
+    query.map { r => ((r._2.groupId, r._1._1._1._2.cost, r._1._1._1._2.worker_timeout_in_s), r._1._1._1._1.memo_hash) -> r._1._2.HITId }.list.toMap
+  }
+
   private def createQualificationFromType(qualtype: QualificationType, batch_no: Int) : QualificationRequirement = {
     new QualificationRequirement(qualtype.getQualificationTypeId, Comparator.EqualTo, batch_no, null, false)
   }
@@ -119,14 +129,15 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
   def restore_mt_state(pool: Pool, backend: RequesterService) : Unit = {
     db_opt match {
       case Some(db) => db withSession { implicit s =>
-        val hit_types: Map[(String, BigDecimal, Int), HITType] = getHITTypeMap
+        val hit_types: Map[Key.BatchKey, HITType] = getHITTypeMap
         val id_hittype: Map[String, HITType] = getHITTypesByHITTypeId(hit_types)
         val hit_states: Map[String, HITState] = getHITStateMap(id_hittype, backend)
+        val hit_ids: Map[Key.HITKey, Key.HITID] = getHITIDMap
 
         pool.restoreBatchNumbers(allBatchNumbers.list.toMap)
         pool.restoreHITTypes(hit_types)
         pool.restoreHITStates(hit_states)
-        pool.restoreHITIDs(???)
+        pool.restoreHITIDs(hit_ids)
         pool.restoreWhitelist(???)
       }
       case None => ()
