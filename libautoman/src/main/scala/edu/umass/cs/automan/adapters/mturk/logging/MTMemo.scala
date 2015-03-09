@@ -21,6 +21,7 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
   private val dbHITType = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBHITType]
   private val dbQualReq = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBQualificationRequirement]
   private val dbThunkHIT = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBThunkHIT]
+  private val dbWorker = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBWorker]
 
   def save_mt_state() : Unit = {
     ???
@@ -62,7 +63,7 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
     new Assignment(null, assignmentId, workerId, hit_id, assignmentStatus, autoApprovalTime, acceptTime, submitTime, approvalTime, rejectionTime, deadline, answer, requesterFeedback)
   }
 
-  private def thunkAssignmentMap : Map[UUID,Option[Assignment]] = {
+  private def thunkAssignmentMap(implicit session: DBSession) : Map[UUID,Option[Assignment]] = {
     dbAssignment.list.map(row => row._13 -> Some(tuple2Assignment(row))).toMap
   }
 
@@ -126,6 +127,10 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
     createQualificationFromType(qual_type, batch_no)
   }
 
+  private def getWorkerWhitelist(implicit session: DBSession) : Map[(String,String),String] = {
+    dbWorker.list.map{ case (workerId, groupId, hittypeid) => (workerId, groupId) -> hittypeid }.toMap
+  }
+
   def restore_mt_state(pool: Pool, backend: RequesterService) : Unit = {
     db_opt match {
       case Some(db) => db withSession { implicit s =>
@@ -138,7 +143,7 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
         pool.restoreHITTypes(hit_types)
         pool.restoreHITStates(hit_states)
         pool.restoreHITIDs(hit_ids)
-        pool.restoreWhitelist(???)
+        pool.restoreWhitelist(getWorkerWhitelist)
       }
       case None => ()
     }
