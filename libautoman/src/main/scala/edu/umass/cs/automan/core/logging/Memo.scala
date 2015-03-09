@@ -201,7 +201,7 @@ class Memo(log_config: LogConfig.Value) {
     }
   }
 
-  protected[automan] def needsUpdate[A](ts: List[Thunk[A]]) : List[InsertUpdateOrSkip[A]] = {
+  protected[automan] def needsUpdate[A](ts: List[Thunk[A]]) : List[InsertUpdateOrSkip[Thunk[A]]] = {
     ts.map { t =>
       if (!all_thunk_ids.contains(t.thunk_id)) {
         Insert(t)
@@ -268,9 +268,9 @@ class Memo(log_config: LogConfig.Value) {
             // determine which records need to be inserted/updated/ignored
             val (inserts, updates) = needsUpdate (ts).foldLeft ((List.empty[Thunk[A]], List.empty[Thunk[A]] ) ) {
               case (acc, ius) => ius match {
-                case Insert (t) => (t :: acc._1, acc._2)
-                case Update (t) => (acc._1, t :: acc._2)
-                case Skip (t) => acc
+                case Insert(t) => (t :: acc._1, acc._2)
+                case Update(t) => (acc._1, t :: acc._2)
+                case Skip(t) => acc
               }
             }
 
