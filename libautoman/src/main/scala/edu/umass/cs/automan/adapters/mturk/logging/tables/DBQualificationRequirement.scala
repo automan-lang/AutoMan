@@ -4,7 +4,7 @@ import com.amazonaws.mturk.requester.Comparator
 import scala.slick.driver.DerbyDriver.simple._
 
 object DBQualificationRequirement {
-  def mapper = MappedColumnType.base[Comparator, Int](
+  def comparatorMapper = MappedColumnType.base[Comparator, Int](
   {
     case Comparator.EqualTo => 0
     case Comparator.Exists => 1
@@ -27,7 +27,7 @@ object DBQualificationRequirement {
 }
 
 class DBQualificationRequirement(tag: Tag) extends Table[(String, Int, Comparator, Boolean, Boolean, String)](tag, "DBQualificationRequirement") {
-  implicit val comparatorMapper = DBQualificationRequirement.mapper
+  implicit val comparatorMapper = DBQualificationRequirement.comparatorMapper
 
   def qualificationTypeId = column[String]("qualificationTypeId", O.PrimaryKey)
   def integerValue = column[Int]("integerValue")

@@ -5,10 +5,10 @@ import java.util.{UUID, Calendar}
 import com.amazonaws.mturk.requester._
 import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.adapters.mturk.connectionpool.{MTState, HITState, HITType, Pool}
-import edu.umass.cs.automan.adapters.mturk.logging.tables.DBQualificationRequirement
+import edu.umass.cs.automan.adapters.mturk.logging.tables.{DBAssignment, DBQualificationRequirement}
 import edu.umass.cs.automan.adapters.mturk.util.Key
-import edu.umass.cs.automan.adapters.mturk.util.Key.GroupID
-import edu.umass.cs.automan.core.logging.{LogConfig, Memo}
+import edu.umass.cs.automan.adapters.mturk.util.Key._
+import edu.umass.cs.automan.core.logging._
 import scala.slick.lifted.TableQuery
 import scala.slick.driver.DerbyDriver.simple._
 
@@ -24,8 +24,148 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
   private val dbThunkHIT = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBThunkHIT]
   private val dbWorker = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBWorker]
 
-  def save_mt_state() : Unit = {
+  def save_mt_state(state: MTState) : Unit = {
+    db_opt match {
+      case Some(db) => db withSession { implicit s =>
+        updateHITTypes(state.hit_types, state.batch_no)
+        updateHITs(state.hit_states, state.hit_ids)
+        updateWhitelist(state.worker_whitelist)
+      }
+      case None => ()
+    }
+  }
 
+  def updateWhitelist(ww: Map[(WorkerID,GroupID),HITTypeID])(implicit session: DBSession) : Unit = {
+    val existing_whitelist = getWorkerWhitelist
+    val inserts = ww.flatMap { case ((worker_id,group_id),hit_type_id) =>
+      if (existing_whitelist.contains((worker_id, group_id))) {
+        None
+      } else {
+        Some((worker_id, group_id,hit_type_id))
+      }
+    }
+
+    // worker whitelist inserts (no updates)
+    dbWorker ++= inserts
+  }
+
+  def updateHITs(hit_states: Map[HITID,HITState], hit_ids: Map[HITKey,HITID])(implicit session: DBSession) : Unit = {
+    implicit val statusMapper = DBAssignment.statusMapper
+
+    val existing_hits = allHITs.list.map { case (hit_id, hit_type_id, is_cancelled) => hit_id -> (hit_id, hit_type_id, is_cancelled) }.toMap
+    val existing_assignments = allAssignments.list.map { assn => assn._1 -> assn }.toMap
+
+    // HITs
+    val (hit_inserts, hit_updates) = hit_states.values.map { hitstate =>
+      if (existing_hits.contains(hitstate.HITId)) {
+        if (existing_hits(hitstate.HITId)._3 != hitstate.isCancelled) {
+          Update(hitstate.HITId)
+        } else {
+          Skip(hitstate.HITId)
+        }
+      } else {
+        Insert(hitstate.HITId)
+      }
+    }.foldLeft(List.empty[HITID], List.empty[HITID]){ case (acc, action) =>
+      action match {
+        case Insert(hitid) => (hitid :: acc._1, acc._2)
+        case Update(hitid) => (acc._1, hitid :: acc._2)
+        case Skip(hitid) => acc
+      }
+    }
+
+    // Assignments
+    // TODO: I actually do need assignment updates for tracking accept/reject (payment/non-payment)
+    val assignment_inserts = hit_states.values.map { hitstate =>
+      hitstate.t_a_map.flatMap { case (thunk_id, assignment_opt) =>
+        assignment_opt match {
+          case Some(assignment) =>
+            if (existing_assignments.contains(assignment.getAssignmentId)) {
+              None
+            } else {
+              Some(assignment,thunk_id)
+            }
+          case None => None
+        }
+      }
+    }.flatten.toList
+
+    // HIT inserts
+    dbHIT ++= HITState2HITTuples(hit_inserts.map { hitid => hit_states(hitid)})
+
+    // HIT updates
+    hit_updates.map { hit_id => dbHIT.filter(_.HITId === hit_id).map(_.isCancelled).update(hit_states(hit_id).isCancelled)}
+
+    // ThunkHIT inserts (no updates needed)
+    dbThunkHIT ++= HITState2ThunkHITTuples(hit_inserts.map { hitid => hit_states(hitid)})
+
+    // Assignment inserts (no updates needed)
+    dbAssignment ++= Assignment2AssignmentTuple(assignment_inserts)
+  }
+
+  private def Assignment2AssignmentTuple(pairs: List[(Assignment,UUID)]) : List[(String, String, String, AssignmentStatus, Calendar, Calendar, Calendar, Calendar, Calendar, Calendar, String, String, UUID)] = {
+    pairs.map { case (assignment, thunk_id) =>
+      (
+        assignment.getAssignmentId,
+        assignment.getWorkerId,
+        assignment.getHITId,
+        assignment.getAssignmentStatus,
+        assignment.getAutoApprovalTime,
+        assignment.getAcceptTime,
+        assignment.getSubmitTime,
+        assignment.getApprovalTime,
+        assignment.getRejectionTime,
+        assignment.getDeadline,
+        assignment.getAnswer,
+        assignment.getRequesterFeedback,
+        thunk_id
+      )
+    }
+  }
+
+  private def HITState2ThunkHITTuples(hitstates: List[HITState]) : List[(String, UUID)] = {
+    hitstates.map { hitstate => hitstate.t_a_map.map { case (thunk_id,_) => (hitstate.HITId, thunk_id) } }.flatten
+  }
+
+  private def HITState2HITTuples(hitstates: List[HITState]) : List[(String, String, Boolean)] = {
+    hitstates.map { hitstate => (hitstate.HITId, hitstate.hittype.id, hitstate.isCancelled) }
+  }
+
+  // HITTypes and Qualifications never need updating; they are insert-only
+  private def updateHITTypes(hts: Map[BatchKey,HITType], batch_no: Map[GroupID, Int])(implicit session: DBSession) : Unit = {
+    val existing_batches: Map[HITTypeID, Int] = allHITTypes.map { r => (r._1, r._5) }.list.toMap
+    val batchkeys: Map[HITTypeID,BatchKey] = hts.map { case (key, hittype) => hittype.id -> key}.toMap
+    val inserts: List[(HITType, Int)] = hts.values.flatMap { ht =>
+      if (existing_batches.contains(ht.id)) {
+        None
+      } else {
+        Some((ht,batch_no(ht.group_id)))
+      }
+    }.toList
+
+    // do HITType inserts
+    dbHITType ++= HITType2HITTypeTuples(batchkeys, inserts)
+
+    // do qualification inserts
+    dbQualReq ++= HITType2QualificationTuples(inserts)
+  }
+
+  private def HITType2QualificationTuples(inserts: List[(HITType,Int)]) : List[(String, Int, Comparator, Boolean, Boolean, String)] = {
+    implicit val comparatorMapper = DBQualificationRequirement.comparatorMapper
+    inserts.map { case (hittype,batch_no) =>
+      val d = hittype.disqualification
+      val qual = (d.getQualificationTypeId, d.getIntegerValue.toInt, d.getComparator, d.getRequiredToPreview.booleanValue(), true, hittype.id)
+      val quals = hittype.quals.map { qr =>
+        (qr.getQualificationTypeId, qr.getIntegerValue.toInt, qr.getComparator, qr.getRequiredToPreview.booleanValue(), false, hittype.id)
+      }
+      qual :: quals
+    }.flatten
+  }
+
+  private def HITType2HITTypeTuples(batchkeys: Map[HITTypeID,BatchKey], inserts: List[(HITType,Int)]) : List[(HITTypeID, GroupID, BigDecimal, Int, Int)] = {
+    inserts.map { case (hittype, batch_no) =>
+      (hittype.id, hittype.group_id, batchkeys(hittype.id)._2, batchkeys(hittype.id)._3, batch_no)
+    }
   }
 
   private def allBatchNumbers = {
@@ -33,7 +173,7 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
   }
 
   private def allHITTypes = {
-    implicit val comparatorMapper = DBQualificationRequirement.mapper
+    implicit val comparatorMapper = DBQualificationRequirement.comparatorMapper
 
     (dbHITType leftJoin dbQualReq on (_.id === _.HITTypeId)).map {
       case(h, q) => (
@@ -58,7 +198,6 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
     dbAssignment
   }
 
-//
   private def tuple2Assignment(tup: (String, String, String, AssignmentStatus, Calendar, Calendar, Calendar, Calendar, Calendar, Calendar, String, String, UUID)) : Assignment = {
     val (assignmentId, workerId, hit_id, assignmentStatus, autoApprovalTime, acceptTime, submitTime, approvalTime, rejectionTime, deadline, answer, requesterFeedback, thunkId) = tup
     new Assignment(null, assignmentId, workerId, hit_id, assignmentStatus, autoApprovalTime, acceptTime, submitTime, approvalTime, rejectionTime, deadline, answer, requesterFeedback)
@@ -142,7 +281,7 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
 
   def restore_mt_state(pool: Pool, backend: RequesterService) : Unit = {
     db_opt match {
-      case Some(db) => db withSession { implicit s =>
+      case Some(db) => db withTransaction { implicit s =>
         val hit_types: Map[Key.BatchKey, HITType] = getHITTypeMap
         val id_hittype: Map[String, HITType] = getHITTypesByHITTypeId(hit_types)
         val hit_states: Map[String, HITState] = getHITStateMap(id_hittype, backend)
