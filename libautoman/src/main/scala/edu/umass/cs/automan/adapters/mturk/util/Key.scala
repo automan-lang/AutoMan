@@ -7,6 +7,10 @@ object Key {
   type HITID = String
   type BatchKey = (String,BigDecimal,Int)   // (group_id, cost, timeout); uniquely identifies a batch
   type HITKey = (BatchKey, String)          // (BatchKey, memo_hash); uniquely identifies a HIT
+  type QualificationID = String
+  type HITTypeID = String
+  type WorkerID = String
+  type GroupID = String
 
   protected[mturk] def BatchKey(t: Thunk[_]) : BatchKey =
     BatchKey(t.question.asInstanceOf[MTurkQuestion].group_id, t.cost, t.worker_timeout)

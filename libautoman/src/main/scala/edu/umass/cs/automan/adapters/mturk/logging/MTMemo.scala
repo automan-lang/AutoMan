@@ -4,9 +4,10 @@ import java.util.{UUID, Calendar}
 
 import com.amazonaws.mturk.requester._
 import com.amazonaws.mturk.service.axis.RequesterService
-import edu.umass.cs.automan.adapters.mturk.connectionpool.{HITState, HITType, Pool}
+import edu.umass.cs.automan.adapters.mturk.connectionpool.{MTState, HITState, HITType, Pool}
 import edu.umass.cs.automan.adapters.mturk.logging.tables.DBQualificationRequirement
 import edu.umass.cs.automan.adapters.mturk.util.Key
+import edu.umass.cs.automan.adapters.mturk.util.Key.GroupID
 import edu.umass.cs.automan.core.logging.{LogConfig, Memo}
 import scala.slick.lifted.TableQuery
 import scala.slick.driver.DerbyDriver.simple._
@@ -24,7 +25,7 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
   private val dbWorker = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBWorker]
 
   def save_mt_state() : Unit = {
-    ???
+
   }
 
   private def allBatchNumbers = {
@@ -131,6 +132,14 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
     dbWorker.list.map{ case (workerId, groupId, hittypeid) => (workerId, groupId) -> hittypeid }.toMap
   }
 
+  private def getQualifications(implicit session: DBSession) : Map[Key.QualificationID, Key.HITTypeID] = {
+    dbQualReq.map { r => (r.qualificationTypeId, r.HITTypeId) }.list.toMap
+  }
+
+  private def getBatchNos(implicit session: DBSession) : Map[GroupID, Int] = {
+    dbHITType.map { r => (r.groupId, r.maxBatchNo)}.list.toMap
+  }
+
   def restore_mt_state(pool: Pool, backend: RequesterService) : Unit = {
     db_opt match {
       case Some(db) => db withSession { implicit s =>
@@ -139,11 +148,16 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
         val hit_states: Map[String, HITState] = getHITStateMap(id_hittype, backend)
         val hit_ids: Map[Key.HITKey, Key.HITID] = getHITIDMap
 
-        pool.restoreBatchNumbers(allBatchNumbers.list.toMap)
-        pool.restoreHITTypes(hit_types)
-        pool.restoreHITStates(hit_states)
-        pool.restoreHITIDs(hit_ids)
-        pool.restoreWhitelist(getWorkerWhitelist)
+        pool.restoreState(
+          MTState(
+            hit_types,
+            hit_states,
+            hit_ids,
+            getWorkerWhitelist,
+            getQualifications,
+            getBatchNos
+          )
+        )
       }
       case None => ()
     }
