@@ -27,49 +27,10 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   private val _responses = scala.collection.mutable.Map[Message, Any]()
 
   // MTurk-related state
+  private var _state = new MTState()
 
-  // key: (group_id,cost,worker_timeout_s)
-  // value: a HITTypeId
-  private var _hit_types = Map[BatchKey,HITType]()
-
-  // key: HIT ID
-  // value: HITState
-  private var _hit_states = Map[HITID,HITState]()
-
-  // key: (question_id,cost,worker_timeout_s)
-  // value: HIT ID
-  private var _hit_ids = Map[HITKey,HITID]()
-
-  // key: (worker_id,group_id)
-  // value: HITTypeId
-  private var _worker_whitelist = Map[(String,String),String]()
-
-  // key: qualification_id
-  // value: HITTypeId
-  private var _disqualifications = Map[String,String]()
-
-  // key: group_id
-  // value: batch_no
-  private var _batch_no = Map[String,Int]()
-
-  // Memo-related calls
-  protected[mturk] def restoreHITTypes(htm: Map[BatchKey, HITType]) : Unit = {
-    _hit_types = htm
-  }
-  protected[mturk] def restoreHITStates(hss: Map[HITID, HITState]) : Unit = {
-    _hit_states = hss
-  }
-  protected[mturk] def restoreHITIDs(hids: Map[HITKey,HITID]) : Unit = {
-    _hit_ids = hids
-  }
-  protected[mturk] def restoreWhitelist(ww: Map[(String,String),String]) : Unit = {
-    _worker_whitelist = ww
-  }
-  protected[mturk] def restoreDisqualifications(ds: Map[String,String]) : Unit = {
-    _disqualifications = ds
-  }
-  protected[mturk] def restoreBatchNumbers(bn: Map[String,Int]) : Unit = {
-    _batch_no = bn
+  def restoreState(state: MTState) : Unit = {
+    _state = state
   }
 
   // API
@@ -181,7 +142,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       String.format("Accepting task for question_id = %s",
       t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
-    _hit_states(_hit_ids(Key.HITKey(t))).getAssignmentOption(t) match {
+    _state.getAssignmentOption(t) match {
       case Some(assignment) =>
         backend.approveAssignment(assignment.getAssignmentId, "Thanks!")
         t.copy_as_accepted()
@@ -193,10 +154,10 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     DebugLog(String.format("Cancelling task for question_id = %s",
       t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
-    val hit_id = _hit_ids(Key.HITKey(t))
-    val hit_state = _hit_states(hit_id)
+    val hit_id = _state.getHITID(t)
+    val hit_state = _state.getHITState(hit_id)
     backend.forceExpireHIT(hit_state.HITId)
-    _hit_states += (hit_id -> hit_state.cancel())
+    _state = _state.updateHITStates(hit_id, hit_state.cancel())
 
     t.copy_as_cancelled()
   }
@@ -210,7 +171,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     val (group_id, cost, worker_timeout) = batch_key
 
     // get current batch number
-    val batch_no = _batch_no(group_id)
+    val batch_no = _state.getBatchNo(group_id)
 
     // create disqualification for batch
     val disqualification = mturk_createQualification(question.asInstanceOf[MTurkQuestion], question.text, question.id, batch_no)
@@ -236,10 +197,10 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     val hittype = HITType(hit_type_id, quals, disqualification, group_id)
 
     // update disqualification map
-    _disqualifications += disqualification.getQualificationTypeId -> hittype.id
+    _state = _state.updateDisqualifications(disqualification.getQualificationTypeId, hittype.id)
 
     // update hittype map
-    _hit_types = _hit_types + (batch_key -> hittype)
+    _state = _state.updateHITTypes(batch_key, hittype)
   }
 
   private def mturk_createHIT(ts: List[Thunk[_]], batch_key: BatchKey, question: Question[_]) : HITState = {
@@ -269,10 +230,10 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     val hit_key = (batch_key, question.memo_hash)
 
     // update HIT key -> HIT ID map
-    _hit_ids = _hit_ids + (hit_key -> hs.HITId)
+    _state = _state.updateHITIDs(hit_key, hs.HITId)
 
     // update HIT ID -> HITState map
-    _hit_states = _hit_states + (hs.HITId -> hs)
+    _state = _state.updateHITStates(hs.HITId, hs)
 
     hs
   }
@@ -286,7 +247,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     val hs = hitstate.addNewThunks(backend.getHIT(hitstate.HITId), ts)
 
     // update hit states with new object
-    _hit_states = _hit_states + (hs.HITId -> hs)
+    _state = _state.updateHITStates(hs.HITId, hs)
   }
 
   /**
@@ -296,7 +257,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
    * @return True if the group_id has already scheduled tasks on MTurk.
    */
   private def first_run(group_id: String) : Boolean = {
-    !_hit_types.map{ case ((gid, _, _), _) => gid }.toSet.contains(group_id)
+    _state.isFirstRun(group_id)
   }
 
   /**
@@ -315,18 +276,18 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     // is not sufficient to trigger the creation of a new HITType, nor do we want
     // it to, because MTurk's extendHIT is sufficient to prevent re-participation
     // for a given HIT.
-    val (group_id, _, worker_timeout) = batch_key
+    val (group_id, _, _) = batch_key
 
     val firstrun = first_run(group_id)
 
-    if (!_hit_types.contains(batch_key)) {
+    if (!_state.hit_types.contains(batch_key)) {
       // update batch counter
-      _batch_no += (if (firstrun) group_id -> 1 else group_id -> (_batch_no(group_id) + 1))
+      _state = _state.initOrUpdateBatchNo(group_id)
 
       // request new HITTypeId from MTurk
       mturk_registerHITType(question, batch_key)
     }
-    _hit_types(batch_key)
+    _state.hit_types(batch_key)
   }
 
   /**
@@ -353,9 +314,9 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
         val hit_key: HITKey = (batch_key, q.memo_hash)
 
         // have we already posted a HIT for these thunks?
-        if (_hit_ids.contains(hit_key)) {
+        if (_state.hit_ids.contains(hit_key)) {
           // if so, get HITState and extend it
-          mturk_extendHIT(tz, tz.head.timeout_in_s, _hit_states(_hit_ids(hit_key)))
+          mturk_extendHIT(tz, tz.head.timeout_in_s, _state.getHITState(hit_key))
         } else {
           // if not, post a new HIT on MTurk
           mturk_createHIT(tz, batch_key, q)
@@ -368,7 +329,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     DebugLog(String.format("Rejecting task for question_id = %s",
       t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
-    _hit_states(_hit_ids(Key.HITKey(t))).getAssignmentOption(t) match {
+    _state.getAssignmentOption(t) match {
       case Some(assignment) =>
         backend.rejectAssignment(assignment.getAssignmentId,
           "AutoMan determined that the correct answer to this question is: \"" + correct_answer +
@@ -387,22 +348,24 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     // 4. timeout Thunks, where appropriate
     val ts2 = ts.groupBy(Key.BatchKey).map { case (batch_key, bts) =>
       // get HITType for BatchKey
-      val hittype = _hit_types(batch_key)
+      val hittype = _state.getHITType(batch_key)
 
       // iterate through all HITs for this HITType
       // pair all assignments with thunks, yielding a new collection of HITStates
-      val updated_hss = Key.HITIDsForBatch(batch_key, _hit_ids).map { hit_id =>
-        val hit_state = _hit_states(hit_id)
+      val updated_hss = _state.getHITIDsForBatch(batch_key).map { hit_id =>
+        val hit_state = _state.getHITState(hit_id)
 
         // get all of the assignments for this HIT
         val assns = backend.getAllAssignmentsForHIT(hit_state.HITId)
 
         // pair with the HIT's thunks and return new HITState
         hit_state.matchAssignments(assns)
+
+        hit_state.HITId -> hit_state
       }
 
       // update HITState map all at once
-      _hit_states ++= updated_hss.map { hs => hs.HITId -> hs }
+      _state.updateHITStates(updated_hss)
 
       // return answered thunks
       answer_thunks(bts, batch_key)
@@ -418,7 +381,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     // group by HIT
     ts.groupBy(Key.HITKeyForBatch(batch_key,_)).map { case (hit_key, hts) =>
       // get HITState for this set of Thunks
-      val hs = _hit_states(_hit_ids(hit_key))
+      val hs = _state.getHITState(hit_key)
 
       // start by granting Qualifications, where appropriate
       mturk_grantQualifications(hs)
@@ -434,10 +397,10 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
 
               // update the worker whitelist and grant qualification (disqualifiaction)
               // if this is the first time we've ever seen this worker
-              if (!_worker_whitelist.contains(worker_id, group_id)) {
-                _worker_whitelist += ((worker_id, group_id) -> hs.hittype.id)
+              if (!_state.worker_whitelist.contains(worker_id, group_id)) {
+                _state = _state.updateWorkerWhitelist(worker_id, group_id, hs.hittype.id)
                 val disqualification_id = hs.hittype.disqualification.getQualificationTypeId
-                backend.assignQualification(disqualification_id, worker_id, _batch_no(hs.hittype.group_id), false)
+                backend.assignQualification(disqualification_id, worker_id, _state.getBatchNo(hs.hittype.group_id), false)
               }
 
               // process answer
@@ -453,7 +416,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
               // 5. Worker w submits work for HITGroup #2.
               // Since this is unlikely, and violates the i.i.d. guarantee that
               // the Scheduler requires, we consider this a duplicate
-              val whitelisted_ht_id = _worker_whitelist(worker_id, group_id)
+              val whitelisted_ht_id = _state.getWhitelistedHITType(worker_id, group_id)
               if (whitelisted_ht_id != hs.hittype.id) {
                 // immediately revoke the qualification in the other group;
                 // we'll deal with duplicates later
@@ -524,8 +487,8 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       val worker_id = request.getSubjectId
 
       // the HITType being requested
-      val hit_type_id = if(_disqualifications.contains(request.getQualificationTypeId)) {
-        _disqualifications(request.getQualificationTypeId)
+      val hit_type_id = if(_state.disqualifications.contains(request.getQualificationTypeId)) {
+        _state.getHITTypeIDforQualificationTypeID(request.getQualificationTypeId)
       } else {
         throw new Exception("User-defined qualifications not yet supported.")
       }
@@ -533,8 +496,8 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       // the group_id for this HITType
       val group_id = hitstate.hittype.group_id
 
-      if (_worker_whitelist.contains(worker_id, group_id)) {
-        if (_worker_whitelist(worker_id, group_id) != hit_type_id) {
+      if (_state.worker_whitelist.contains(worker_id, group_id)) {
+        if (_state.getWhitelistedHITType(worker_id, group_id) != hit_type_id) {
           backend.rejectQualificationRequest(request.getQualificationRequestId,
             "You have already requested a qualification or submitted work for an associated HITType " +
               "that disqualifies you from participating in this HITType."
@@ -545,8 +508,8 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
           )
         }
       } else {
-        _worker_whitelist += ((worker_id,group_id) -> hit_type_id)
-        backend.grantQualification(request.getQualificationRequestId, _batch_no(hitstate.hittype.group_id))
+        _state = _state.updateWorkerWhitelist(worker_id, group_id, hit_type_id)
+        backend.grantQualification(request.getQualificationRequestId, _state.getBatchNo(hitstate.hittype.group_id))
       }
     }
   }
