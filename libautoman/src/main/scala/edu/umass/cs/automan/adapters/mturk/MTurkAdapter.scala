@@ -32,11 +32,11 @@ class MTurkAdapter extends AutomanAdapter {
 //  override type FTDQ = MTFreeTextDistributionQuestion
   override type RBQ = MTRadioButtonQuestion
 //  override type RBDQ = MTRadioButtonDistributionQuestion
+  override type MemoDB = MTMemo
 
   private val SLEEP_MS = 500
 
   private var _access_key_id: Option[String] = None
-  override protected var _memoizer: MTMemo = _
   private var _pool : Option[Pool] = None
   private var _retriable_errors = Set("Server.ServiceUnavailable")
   private var _retry_attempts : Int = 10
@@ -153,5 +153,8 @@ class MTurkAdapter extends AutomanAdapter {
   override protected[automan] def memo_init(): Unit = {
     _memoizer = new MTMemo(_log_config)
     _memoizer.init()
+  }
+  override protected def MemoDBFactory() : MemoDB = {
+    new MTMemo(_log_config)
   }
 }

@@ -16,10 +16,11 @@ abstract class AutomanAdapter {
 //  type FTDQ <: FreeTextDistributionQuestion       // answer vector
   type RBQ  <: RadioButtonQuestion                 // answer scalar
 //  type RBDQ <: RadioButtonDistributionQuestion    // answer vector
+  type MemoDB <: Memo
 
   protected var _default_confidence: Double = 0.95
   protected var _locale: Locale = Locale.getDefault
-  protected var _memoizer: Memo = _
+  protected var _memoizer: MemoDB = _
   protected var _plugins: List[Class[_ <: Plugin]] = List.empty
   protected var _plugins_initialized: List[_ <: Plugin] = List.empty
   protected var _poll_interval_in_s : Int = 30
@@ -111,7 +112,7 @@ abstract class AutomanAdapter {
     _plugins_initialized.foreach { plugin => plugin.shutdown() }
   }
   protected[automan] def memo_init() {
-    _memoizer = new Memo(_log_config)
+    _memoizer = MemoDBFactory()
     _memoizer.init()
   }
 
@@ -138,5 +139,6 @@ abstract class AutomanAdapter {
 //  protected def FTDQFactory() : FTDQ
   protected def RBQFactory() : RBQ
 //  protected def RBDQFactory() : RBDQ
+  protected def MemoDBFactory() : MemoDB
 
 }
