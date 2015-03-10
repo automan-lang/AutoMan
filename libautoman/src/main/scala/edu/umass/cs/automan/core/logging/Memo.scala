@@ -66,13 +66,15 @@ class Memo(log_config: LogConfig.Value) {
     }
   }
 
-  def init() : Unit = {
+  protected[automan] def init() : Unit = {
     init_database_if_required(List())
   }
 
-  // create database tables if they do not already exist
-  // (the database itself is automatically created by the driver);
-  // and then populate thunk cache
+  /**
+   * Run table definitions if this is the first time the database is run.  Overring subclasses
+   * should provide their DDLs as a list to this method instead of overriding it.
+   * @param ddls Slick Table definitions.
+   */
   protected def init_database_if_required(ddls: List[DerbyDriver.SchemaDescription]) : Unit = {
     val base_ddls: DerbyDriver.DDL = dbThunk.ddl ++ dbThunkHistory.ddl ++ dbQuestion.ddl ++ dbRadioButtonAnswer.ddl
     val all_ddls: DerbyDriver.DDL = if (ddls.nonEmpty) {
@@ -85,15 +87,11 @@ class Memo(log_config: LogConfig.Value) {
       case Some(db) => {
         val tables = db.withSession { implicit session => MTable.getTables(None, None, None, None).list.map(_.name.name)}
         if (!tables.contains(dbQuestion.baseTableRow.tableName)) {
-          db.withSession { implicit s =>
-            (all_ddls).create
-          }
+          db.withSession { implicit s => all_ddls.create }
           Map.empty
         } else {
-          db withSession { implicit s =>
-            // prepopulate cache with all of the thunk_ids from the database
-            getAllThunksMap
-          }
+          // prepopulate cache with all of the thunk_ids from the database
+          db withSession { implicit s => getAllThunksMap }
         }
       }
       case None => Map.empty

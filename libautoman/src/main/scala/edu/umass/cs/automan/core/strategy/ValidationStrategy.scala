@@ -71,7 +71,7 @@ abstract class ValidationStrategy[A](question: Question[A]) {
   }
 
   /**
-   * Given a list of ANSWERED thunks, this method returns the same list with
+   * Given a list of thunks, this method returns the same list with
    * all but one thunk marked as DUPLICATE for each subset submitted by each
    * distinct worker.  The thunk left as ANSWERED is chosen arbitrarily (the
    * first one encountered).
@@ -79,10 +79,13 @@ abstract class ValidationStrategy[A](question: Question[A]) {
    * @return A list of ANSWERED and DUPLICATE thunks.
    */
   def mark_duplicates(thunks: List[Thunk[A]]): List[Thunk[A]] = {
-    assert(thunks.forall(_.state == SchedulerState.ANSWERED))
-    thunks.groupBy(_.worker_id).map { case (worker_id, ts) =>
+    val (answered_thunks, unanswered_thunks) = thunks.partition(_.state == SchedulerState.ANSWERED)
+
+    answered_thunks.groupBy(_.worker_id).map { case (worker_id, ts) =>
         ts.head :: ts.tail.map(_.copy_as_duplicate())
     }.flatten.toList
+
+    answered_thunks ::: unanswered_thunks
   }
 
   /**

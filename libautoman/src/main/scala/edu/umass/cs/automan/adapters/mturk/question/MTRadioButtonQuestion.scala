@@ -14,8 +14,6 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
   type QuestionOptionType = MTQuestionOption
   type A = Symbol
 
-  override protected var _group_id: String = _
-
   def answer(a: Assignment): BackendResult[A] = {
     new BackendResult[A](
       fromXML(XML.loadString(a.getAnswer)),
@@ -78,4 +76,6 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
     </QuestionForm>
   }
   override def randomized_options: List[QuestionOptionType] = Utilities.randomPermute(options)
+  override def description: String = _description match { case Some(d) => d; case None => this.title }
+  override def group_id: String = _group_id match { case Some(g) => g; case None => this.id.toString() }
 }
