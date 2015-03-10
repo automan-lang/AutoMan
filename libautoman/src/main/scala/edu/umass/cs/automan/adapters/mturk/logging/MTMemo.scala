@@ -24,6 +24,11 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
   private val dbThunkHIT = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBThunkHIT]
   private val dbWorker = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBWorker]
 
+  override protected[automan] def init() : Unit = {
+    val ddls = List(dbAssignment.ddl, dbHIT.ddl, dbHITType.ddl, dbQualReq.ddl, dbThunkHIT.ddl, dbWorker.ddl)
+    init_database_if_required(ddls)
+  }
+
   def save_mt_state(state: MTState) : Unit = {
     db_opt match {
       case Some(db) => db withSession { implicit s =>
@@ -101,7 +106,7 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
             if (existing_assignments.contains(assignment.getAssignmentId)) {
               val existing_assn = assignmentFromDBAssnRow(existing_assignments(assignment.getAssignmentId))
               if (existing_assn.equals(assignment)) {
-                None
+                Some(Skip(assignment,thunk_id))
               } else {
                 Some(Update(assignment,thunk_id))
               }
@@ -115,6 +120,7 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
       action match {
         case Insert(data) => (data :: acc._1, acc._2)
         case Update(data) => (acc._1, data :: acc._2)
+        case Skip(data) => acc
       }
     }
 
@@ -133,7 +139,7 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
     // Assignment updates
     assignment_updates.foreach { case (a, thunk_id) =>
       dbAssignment
-        .filter(_.assignmentId == a.getAssignmentId)
+        .filter(_.assignmentId === a.getAssignmentId)
         .map{ r => (r.assignmentStatus, r.autoApprovalTime, r.acceptTime, r.submitTime, r.approvalTime, r.rejectionTime, r.deadline, r.requesterFeedback) }
         .update(a.getAssignmentStatus, a.getAutoApprovalTime, a.getAcceptTime, a.getSubmitTime, a.getApprovalTime, a.getRejectionTime, a.getDeadline, a.getRequesterFeedback)
     }
