@@ -49,6 +49,25 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
     dbWorker ++= inserts
   }
 
+  def assignmentFromDBAssnRow(row: (String, String, String, AssignmentStatus, Calendar, Calendar, Calendar, Calendar, Calendar, Calendar, String, String, UUID)) : Assignment = {
+    val (assignmentId, workerId, hit_id, assignmentStatus, autoApprovalTime, acceptTime, submitTime, approvalTime, rejectionTime, deadline, answer, requesterFeedback, thunkId) = row
+    new Assignment(
+      null,
+      assignmentId,
+      workerId,
+      hit_id,
+      assignmentStatus,
+      autoApprovalTime,
+      acceptTime,
+      submitTime,
+      approvalTime,
+      rejectionTime,
+      deadline,
+      answer,
+      requesterFeedback
+    )
+  }
+
   def updateHITs(hit_states: Map[HITID,HITState], hit_ids: Map[HITKey,HITID])(implicit session: DBSession) : Unit = {
     implicit val statusMapper = DBAssignment.statusMapper
 
@@ -75,32 +94,49 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
     }
 
     // Assignments
-    // TODO: I actually do need assignment updates for tracking accept/reject (payment/non-payment)
-    val assignment_inserts = hit_states.values.map { hitstate =>
+    val (assignment_inserts, assignment_updates) = hit_states.values.map { hitstate =>
       hitstate.t_a_map.flatMap { case (thunk_id, assignment_opt) =>
         assignment_opt match {
           case Some(assignment) =>
             if (existing_assignments.contains(assignment.getAssignmentId)) {
-              None
+              val existing_assn = assignmentFromDBAssnRow(existing_assignments(assignment.getAssignmentId))
+              if (existing_assn.equals(assignment)) {
+                None
+              } else {
+                Some(Update(assignment,thunk_id))
+              }
             } else {
-              Some(assignment,thunk_id)
+              Some(Insert(assignment,thunk_id))
             }
           case None => None
         }
       }
-    }.flatten.toList
+    }.flatten.foldLeft(List.empty[(Assignment,UUID)],List.empty[(Assignment,UUID)]) { case (acc,action) =>
+      action match {
+        case Insert(data) => (data :: acc._1, acc._2)
+        case Update(data) => (acc._1, data :: acc._2)
+      }
+    }
 
     // HIT inserts
     dbHIT ++= HITState2HITTuples(hit_inserts.map { hitid => hit_states(hitid)})
 
     // HIT updates
-    hit_updates.map { hit_id => dbHIT.filter(_.HITId === hit_id).map(_.isCancelled).update(hit_states(hit_id).isCancelled)}
+    hit_updates.foreach { hit_id => dbHIT.filter(_.HITId === hit_id).map(_.isCancelled).update(hit_states(hit_id).isCancelled)}
 
     // ThunkHIT inserts (no updates needed)
     dbThunkHIT ++= HITState2ThunkHITTuples(hit_inserts.map { hitid => hit_states(hitid)})
 
-    // Assignment inserts (no updates needed)
+    // Assignment inserts
     dbAssignment ++= Assignment2AssignmentTuple(assignment_inserts)
+
+    // Assignment updates
+    assignment_updates.foreach { case (a, thunk_id) =>
+      dbAssignment
+        .filter(_.assignmentId == a.getAssignmentId)
+        .map{ r => (r.assignmentStatus, r.autoApprovalTime, r.acceptTime, r.submitTime, r.approvalTime, r.rejectionTime, r.deadline, r.requesterFeedback) }
+        .update(a.getAssignmentStatus, a.getAutoApprovalTime, a.getAcceptTime, a.getSubmitTime, a.getApprovalTime, a.getRejectionTime, a.getDeadline, a.getRequesterFeedback)
+    }
   }
 
   private def Assignment2AssignmentTuple(pairs: List[(Assignment,UUID)]) : List[(String, String, String, AssignmentStatus, Calendar, Calendar, Calendar, Calendar, Calendar, Calendar, String, String, UUID)] = {
