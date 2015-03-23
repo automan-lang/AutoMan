@@ -85,7 +85,9 @@ class Memo(log_config: LogConfig.Value) {
 
     all_thunk_ids = db_opt match {
       case Some(db) => {
-        val tables = db.withSession { implicit session => MTable.getTables(None, None, None, None).list.map(_.name.name)}
+        val tables = db.withSession { implicit session =>
+          MTable.getTables(None, None, None, None).list.map(_.name.name)
+        }
         if (!tables.contains(dbQuestion.baseTableRow.tableName)) {
           db.withSession { implicit s => all_ddls.create }
           Map.empty

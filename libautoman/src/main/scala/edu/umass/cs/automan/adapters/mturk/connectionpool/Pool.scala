@@ -107,7 +107,9 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
         while (true) {
 
           val time = Stopwatch {
-            _work_queue.take() match {
+            val work_item = _work_queue.take()
+
+            work_item match {
               case req: ShutdownReq => return
               case req: AcceptReq[_] => do_sync_action(req, () => scheduled_accept(req.t))
               case req: BudgetReq => do_sync_action(req, () => scheduled_get_budget())
@@ -120,7 +122,9 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
           }
 
           // rate-limit
-          Thread.sleep(Math.max(sleep_ms - time.duration_ms, 0))
+          val duration = Math.max(sleep_ms - time.duration_ms, 0)
+          DebugLog("MTurk connection pool sleeping for " + (duration / 1000).toString + " seconds.", LogLevel.INFO, LogType.ADAPTER, null)
+          Thread.sleep(duration)
         } // exit loop
       }
     })
