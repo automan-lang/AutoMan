@@ -117,4 +117,24 @@ object Utilities {
   def dateToTimestamp(d: java.util.Date) : Long = {
     d.getTime() / 1000
   }
+
+  def calAt(d: Date) : Calendar = {
+    calInSeconds(d, 0)  // now
+  }
+
+  def calInSeconds(d: Date, seconds: Int) : Calendar = {
+    val cal = Calendar.getInstance()
+    cal.setTime(d)
+    calInSeconds(cal, seconds)
+  }
+
+  def calInSeconds(c: Calendar, seconds: Int) : Calendar = {
+    val cal = c.clone().asInstanceOf[Calendar]
+    cal.add(Calendar.SECOND, seconds)
+    cal
+  }
+
+  def nowCal() : Calendar = {
+    calAt(new Date())
+  }
 }
