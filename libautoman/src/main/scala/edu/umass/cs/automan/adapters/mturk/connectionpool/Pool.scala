@@ -222,7 +222,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       null,                                                         // autoApprovalDelayInSeconds; defined by HITType
       ts.head.timeout_in_s.toLong,                                  // lifetimeInSeconds
       ts.size,                                                      // maxAssignments
-      "automan",                                                    // requesterAnnotation
+      question.id.toString,                                         // requesterAnnotation
       Array[QualificationRequirement](),                            // qualificationRequirements; defined by HITType
       Array[String]())                                              // responseGroup
     // we immediately query the backend for the HIT's complete details
