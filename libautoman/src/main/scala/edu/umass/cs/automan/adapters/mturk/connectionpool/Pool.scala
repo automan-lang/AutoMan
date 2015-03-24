@@ -35,28 +35,28 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
 
   // API
   def accept[A](t: Thunk[A]) : Thunk[A] = {
-    blocking_enqueue(AcceptReq(t)).asInstanceOf[Thunk[A]]
+    blocking_enqueue[AcceptReq[A], Thunk[A]](AcceptReq(t))
   }
   def backend_budget: BigDecimal = {
-    blocking_enqueue(BudgetReq()).asInstanceOf[BigDecimal]
+    blocking_enqueue[BudgetReq, BigDecimal](BudgetReq())
   }
   def cancel[A](t: Thunk[A]) : Thunk[A] = {
-    blocking_enqueue(CancelReq(t)).asInstanceOf[Thunk[A]]
+    blocking_enqueue[CancelReq[A], Thunk[A]](CancelReq(t))
   }
   def cleanup_qualifications[A](mtq: MTurkQuestion) : Unit = {
-    nonblocking_enqueue(DisposeQualsReq(mtq))
+    nonblocking_enqueue[DisposeQualsReq, Unit](DisposeQualsReq(mtq))
   }
   def post[A](ts: List[Thunk[A]], exclude_worker_ids: List[String]) : Unit = {
-    nonblocking_enqueue(CreateHITReq(ts, exclude_worker_ids))
+    nonblocking_enqueue[CreateHITReq[A], Unit](CreateHITReq(ts, exclude_worker_ids))
   }
   def reject[A](t: Thunk[A], correct_answer: String) : Thunk[A] = {
-    blocking_enqueue(RejectReq(t, correct_answer)).asInstanceOf[Thunk[A]]
+    blocking_enqueue[RejectReq[A], Thunk[A]](RejectReq(t, correct_answer))
   }
   def retrieve[A](ts: List[Thunk[A]]) : List[Thunk[A]] = {
-    blocking_enqueue(RetrieveReq(ts)).asInstanceOf[List[Thunk[A]]]
+    blocking_enqueue[RetrieveReq[A], List[Thunk[A]]](RetrieveReq(ts))
   }
   def shutdown(): Unit = synchronized {
-    nonblocking_enqueue(ShutdownReq())
+    nonblocking_enqueue[ShutdownReq, Unit](ShutdownReq())
   }
 
   // IMPLEMENTATIONS
@@ -66,7 +66,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
 
     initWorkerIfNeeded()
   }
-  def blocking_enqueue[M <: Message, T](req: M) = {
+  def blocking_enqueue[M <: Message, T](req: M) : T = {
     nonblocking_enqueue(req)
 
     // wait for response
@@ -84,7 +84,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     synchronized {
       val ret = _responses(req)
       _responses.remove(req)
-      ret
+      ret.asInstanceOf[T]
     }
   }
   private def initWorkerIfNeeded() : Unit = {

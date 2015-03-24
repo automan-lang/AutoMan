@@ -4,7 +4,7 @@ import java.util.Date
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.AbstractAnswer
 import edu.umass.cs.automan.core.exception.OverBudgetException
-import edu.umass.cs.automan.core.logging.Memo
+import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.util.Stopwatch
 
@@ -27,6 +27,8 @@ class Scheduler[A](val question: Question[A],
     // Was this computation interrupted? If there's a memoizer instance
     // restore thunks from scheduler trace.
     val thunks: List[Thunk[A]] = memo.restore(question)
+
+    DebugLog("Found " + thunks.size + " saved Answers in database.", LogLevel.INFO, LogType.SCHEDULER, question.id)
 
     // set initial conditions and call scheduler loop
     run_loop(thunks, suffered_timeout = false)
@@ -55,11 +57,14 @@ class Scheduler[A](val question: Question[A],
       // Sleeping also informs the scheduler that this thread may yield
       // its CPU time.  While we wait, we also update memo state.
       Scheduler.memo_and_sleep(poll_interval_in_s * 1000, dedup_thunks ::: new_thunks, question, memo)
+
       // ask the backend to retrieve answers for all RUNNING thunks
       val (running_thunks, dead_thunks) = (dedup_thunks ::: new_thunks).partition(_.state == SchedulerState.RUNNING)
       assert(running_thunks.size > 0)
+      DebugLog("Retrieving answers for " + running_thunks.size + " running tasks from backend.", LogLevel.INFO, LogType.SCHEDULER, question.id)
       val answered_thunks = backend.retrieve(running_thunks)
       assert(Scheduler.retrieve_invariant(running_thunks, answered_thunks))
+
       // complete list of thunks
       val all_thunks = answered_thunks ::: dead_thunks
 
@@ -84,6 +89,7 @@ class Scheduler[A](val question: Question[A],
                         )
 
     // save one more time
+    DebugLog("Saving state of " + _final_thunks.size + " thunks to database.", LogLevel.INFO, LogType.SCHEDULER, question.id)
     memo.save(question, _final_thunks)
 
     answer
@@ -93,11 +99,13 @@ class Scheduler[A](val question: Question[A],
 object Scheduler {
   def memo_and_sleep[A](wait_time_ms: Int, ts: List[Thunk[A]], question: Question[A], memo: Memo) : Unit = {
     val t = Stopwatch {
+      DebugLog("Saving state of " + ts.size + " thunks to database.", LogLevel.INFO, LogType.SCHEDULER, question.id)
       memo.save(question, ts)
     }
     val rem_ms = wait_time_ms - t.duration_ms
     if (rem_ms > 0) {
       // wait the remaining amount of time
+      DebugLog("Sleeping " + rem_ms + " seconds.", LogLevel.INFO, LogType.SCHEDULER, question.id)
       Thread.sleep(rem_ms)
     } else {
       // even if we don't need to wait, we should give the JVM
@@ -141,12 +149,16 @@ object Scheduler {
       val new_thunks = s.spawn(thunks, suffered_timeout)
       assert(spawn_invariant(new_thunks))
       // can we afford these?
-      if (question.budget < Scheduler.cost_for_thunks(thunks ::: new_thunks)) {
+      val cost = Scheduler.cost_for_thunks(thunks ::: new_thunks)
+      if (question.budget < cost) {
         val answer = s.select_answer(thunks)
+        DebugLog("Over budget. Need: " + cost.toString() + ", have: " + question.budget.toString(), LogLevel.WARN, LogType.SCHEDULER, question.id)
         throw new OverBudgetException[A](answer.value, answer.cost)
       } else {
         // yes, so post and return all posted thunks
-        backend.post(new_thunks, blacklist)
+        val posted = backend.post(new_thunks, blacklist)
+        DebugLog("Posting " + posted.size + " tasks to backend.", LogLevel.INFO, LogType.SCHEDULER, question.id)
+        posted
       }
     } else {
       List.empty
