@@ -20,6 +20,7 @@ abstract class AutomanAdapter {
 
   protected var _default_confidence: Double = 0.95
   protected var _locale: Locale = Locale.getDefault
+  protected var _log_config: LogConfig = LogConfig.TRACE_MEMOIZE_VERBOSE
   protected var _memoizer: MemoDB = _
   protected var _plugins: List[Class[_ <: Plugin]] = List.empty
   protected var _plugins_initialized: List[_ <: Plugin] = List.empty
@@ -29,7 +30,6 @@ abstract class AutomanAdapter {
   protected var _thunk_conn_string: String = "jdbc:derby:" + _thunk_db + ";create=true"
   protected var _thunk_user: String = ""
   protected var _thunk_pass: String = ""
-  protected var _log_config: LogConfig = LogConfig.TRACE_MEMOIZE_VERBOSE
 
   // user-visible getters and setters
   def default_confidence: Double = _default_confidence

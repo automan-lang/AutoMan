@@ -6,6 +6,7 @@ import com.amazonaws.mturk.util.ClientConfig
 import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.adapters.mturk.connectionpool.Pool
 import edu.umass.cs.automan.adapters.mturk.logging.MTMemo
+import edu.umass.cs.automan.adapters.mturk.mock.{MockServiceState, MockRequesterService}
 import edu.umass.cs.automan.adapters.mturk.question.{MTurkQuestion, MTQuestionOption, MTRadioButtonQuestion}
 import edu.umass.cs.automan.core.logging.Memo
 import edu.umass.cs.automan.core.question.Question
@@ -44,12 +45,15 @@ class MTurkAdapter extends AutomanAdapter {
   private var _secret_access_key: Option[String] = None
   private var _service_url : String = ClientConfig.SANDBOX_SERVICE_URL
   private var _service : Option[RequesterService] = None
+  private var _mock_answers: Option[MockServiceState] = None
 
   // user-visible getters and setters
   def access_key_id: String = _access_key_id match { case Some(id) => id; case None => "" }
   def access_key_id_=(id: String) { _access_key_id = Some(id) }
   def locale: Locale = _locale
   def locale_=(l: Locale) { _locale = l }
+  def mock_answers: MockServiceState = _mock_answers match { case Some(mss) => mss; case None => ??? }
+  def mock_answers_=(mock_answers: MockServiceState) { _mock_answers = Some(mock_answers) }
   def poll_interval = _poll_interval_in_s
   def poll_interval_=(s: Int) { _poll_interval_in_s = s }
   def retriable_errors_=(re: Set[String]) { _retriable_errors = re }
@@ -123,7 +127,10 @@ class MTurkAdapter extends AutomanAdapter {
 
   // initialization routines
   private def setup() {
-    val rs = new RequesterService(this.toClientConfig)
+    val rs = _mock_answers match {
+      case Some(mock_state) => new MockRequesterService(mock_state, this.toClientConfig)
+      case None => new RequesterService(this.toClientConfig)
+    }
     val pool = new Pool(rs, SLEEP_MS)
     _service = Some(rs)
     _memoizer.restore_mt_state(pool, rs)
