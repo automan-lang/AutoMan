@@ -6,7 +6,7 @@ import com.amazonaws.mturk.util.ClientConfig
 import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.adapters.mturk.connectionpool.Pool
 import edu.umass.cs.automan.adapters.mturk.logging.MTMemo
-import edu.umass.cs.automan.adapters.mturk.mock.{MockServiceState, MockRequesterService}
+import edu.umass.cs.automan.adapters.mturk.mock.{MockSetup, OldMockServiceState, MockRequesterService}
 import edu.umass.cs.automan.adapters.mturk.question.{MTurkQuestion, MTQuestionOption, MTRadioButtonQuestion}
 import edu.umass.cs.automan.core.logging.Memo
 import edu.umass.cs.automan.core.question.Question
@@ -45,15 +45,15 @@ class MTurkAdapter extends AutomanAdapter {
   private var _secret_access_key: Option[String] = None
   private var _service_url : String = ClientConfig.SANDBOX_SERVICE_URL
   private var _service : Option[RequesterService] = None
-  private var _mock_answers: Option[MockServiceState] = None
+  private var _use_mock: Option[MockSetup] = None
 
   // user-visible getters and setters
   def access_key_id: String = _access_key_id match { case Some(id) => id; case None => "" }
   def access_key_id_=(id: String) { _access_key_id = Some(id) }
   def locale: Locale = _locale
   def locale_=(l: Locale) { _locale = l }
-  def mock_answers: MockServiceState = _mock_answers match { case Some(mss) => mss; case None => ??? }
-  def mock_answers_=(mock_answers: MockServiceState) { _mock_answers = Some(mock_answers) }
+  def use_mock: MockSetup = _use_mock match { case Some(ms) => ms; case None => ??? }
+  def use_mock_=(mock_setup: MockSetup) { _use_mock = Some(mock_setup) }
   def poll_interval = _poll_interval_in_s
   def poll_interval_=(s: Int) { _poll_interval_in_s = s }
   def retriable_errors_=(re: Set[String]) { _retriable_errors = re }
@@ -109,6 +109,17 @@ class MTurkAdapter extends AutomanAdapter {
     assert(ts.forall(_.state == SchedulerState.RUNNING))
     run_if_initialized((p: Pool) => p.retrieve(ts))
   }
+  override protected[automan] def question_startup_hook[A](q: Question[A]): Unit = {
+    super.question_startup_hook(q)
+    // register question with MockRequesterService if we're
+    // running in simulation mode
+    _service match {
+      case mock: Option[MockRequesterService] =>
+        val mtq = q.asInstanceOf[MTurkQuestion]
+        assert(mtq.mock_answers.size > 0)
+        mock.get.registerQuestion(mtq)
+    }
+  }
   override protected[automan] def question_shutdown_hook[A](q: Question[A]): Unit = {
     super.question_shutdown_hook(q)
     // cleanup qualifications
@@ -127,8 +138,16 @@ class MTurkAdapter extends AutomanAdapter {
 
   // initialization routines
   private def setup() {
-    val rs = _mock_answers match {
-      case Some(mock_state) => new MockRequesterService(mock_state, this.toClientConfig)
+    val rs = _use_mock match {
+      case Some(mock_setup) =>
+        val mss = OldMockServiceState(
+          mock_setup.budget.bigDecimal,
+          Map.empty,
+          List.empty,
+          List.empty,
+          Map.empty
+        )
+        new MockRequesterService(mss, this.toClientConfig)
       case None => new RequesterService(this.toClientConfig)
     }
     val pool = new Pool(rs, SLEEP_MS)
@@ -136,6 +155,7 @@ class MTurkAdapter extends AutomanAdapter {
     _memoizer.restore_mt_state(pool, rs)
     _pool = Some(pool)
   }
+
   private def toClientConfig : ClientConfig = {
     import scala.collection.JavaConversions
 

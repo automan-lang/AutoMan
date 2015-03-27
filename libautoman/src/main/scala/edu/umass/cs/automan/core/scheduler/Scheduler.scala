@@ -24,6 +24,9 @@ class Scheduler[A](val question: Question[A],
     * where appropriate.
     */
   def run[R <: AbstractAnswer[A]]() : R = {
+    // run startup hook
+    backend.question_startup_hook(question)
+
     // Was this computation interrupted? If there's a memoizer instance
     // restore thunks from scheduler trace.
     val thunks: List[Thunk[A]] = memo.restore(question)
@@ -91,6 +94,9 @@ class Scheduler[A](val question: Question[A],
     // save one more time
     DebugLog("Saving state of " + _final_thunks.size + " thunks to database.", LogLevel.INFO, LogType.SCHEDULER, question.id)
     memo.save(question, _final_thunks)
+
+    // run shutdown hook
+    backend.question_shutdown_hook(question)
 
     answer
   }

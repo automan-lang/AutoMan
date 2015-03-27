@@ -1,14 +1,16 @@
 package edu.umass.cs.automan.adapter.mturk
 
 import edu.umass.cs.automan.adapters.mturk.MTurkAdapter
+import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 import edu.umass.cs.automan.automan
-import edu.umass.cs.automan.core.answer.{ScalarOverBudget, ScalarAnswer}
+import edu.umass.cs.automan.core.answer._
 import org.scalatest._
 
 class MTurkAdapterTest extends FlatSpec with Matchers {
+
   "A simple program" should "work" in {
     val a = MTurkAdapter { mt =>
-      mt.mock_answers = ???
+      mt.use_mock = MockSetup(budget = 8.00)
     }
 
     automan(a) {
@@ -22,6 +24,7 @@ class MTurkAdapterTest extends FlatSpec with Matchers {
           a.Option('cookie, "Cookie Monster"),
           a.Option('count, "The Count")
         )
+        q.mock_answers = List('oscar,'kermit,'spongebob,'spongebob,'spongebob)
       }
 
       which_one().answer match {
