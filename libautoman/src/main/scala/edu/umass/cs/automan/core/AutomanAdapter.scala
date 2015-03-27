@@ -80,7 +80,22 @@ abstract class AutomanAdapter {
    * @return A list of RUNNING, RETRIEVED, or TIMEOUT Thunks.
    */
   protected[automan] def retrieve[A](ts: List[Thunk[A]]) : List[Thunk[A]]
+
+  /**
+   * This method is called by the scheduler after question initialization
+   * but before any tasks are scheduled. Override it to provide a
+   * backend-specific startup implementation.
+   * @param q Question
+   * @tparam A The data type of the Answer value.
+   */
   protected[automan] def question_startup_hook[A](q: Question[A]): Unit = {}
+  /**
+   * This method is called by the scheduler after an answer has been
+   * accepted by the scheduler policy. Override it to provide a
+   * backend-specific shutdown implementation.
+   * @param q Question
+   * @tparam A The data type of the Answer value.
+   */
   protected[automan] def question_shutdown_hook[A](q: Question[A]): Unit = {}
 
   // end-user syntax: Question creation
@@ -98,6 +113,7 @@ abstract class AutomanAdapter {
     memo_init()
   }
   protected[automan] def close() = {
+    // TODO: HERE
     plugins_shutdown()
   }
   private def plugins_init() {
