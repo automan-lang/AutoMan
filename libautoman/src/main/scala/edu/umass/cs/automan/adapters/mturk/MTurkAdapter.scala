@@ -1,14 +1,12 @@
 package edu.umass.cs.automan.adapters.mturk
 
-import java.util.{Date, UUID, Locale}
-
+import java.util.Locale
 import com.amazonaws.mturk.util.ClientConfig
 import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.adapters.mturk.connectionpool.Pool
 import edu.umass.cs.automan.adapters.mturk.logging.MTMemo
-import edu.umass.cs.automan.adapters.mturk.mock.{MockSetup, OldMockServiceState, MockRequesterService}
+import edu.umass.cs.automan.adapters.mturk.mock.{MockServiceState, MockSetup, MockRequesterService}
 import edu.umass.cs.automan.adapters.mturk.question.{MTurkQuestion, MTQuestionOption, MTRadioButtonQuestion}
-import edu.umass.cs.automan.core.logging.Memo
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 import edu.umass.cs.automan.core.AutomanAdapter
@@ -113,11 +111,10 @@ class MTurkAdapter extends AutomanAdapter {
     super.question_startup_hook(q)
     // register question with MockRequesterService if we're
     // running in simulation mode
-    _service match {
-      case mock: Option[MockRequesterService] =>
-        val mtq = q.asInstanceOf[MTurkQuestion]
-        assert(mtq.mock_answers.size > 0)
-        mock.get.registerQuestion(mtq)
+    _use_mock match {
+      case Some(mock_setup) =>
+        _service.get.asInstanceOf[MockRequesterService].registerQuestion(q)
+      case _ => ()
     }
   }
   override protected[automan] def question_shutdown_hook[A](q: Question[A]): Unit = {
@@ -140,11 +137,13 @@ class MTurkAdapter extends AutomanAdapter {
   private def setup() {
     val rs = _use_mock match {
       case Some(mock_setup) =>
-        val mss = OldMockServiceState(
+        val mss = MockServiceState(
           mock_setup.budget.bigDecimal,
           Map.empty,
-          List.empty,
-          List.empty,
+          Map.empty,
+          Map.empty,
+          Map.empty,
+          Map.empty,
           Map.empty
         )
         new MockRequesterService(mss, this.toClientConfig)
