@@ -1,16 +1,22 @@
 package edu.umass.cs.automan.adapter.mturk
 
+import java.util.UUID
+
 import edu.umass.cs.automan.adapters.mturk.MTurkAdapter
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 import edu.umass.cs.automan.automan
 import edu.umass.cs.automan.core.answer._
+import edu.umass.cs.automan.core.logging.LogConfig
 import org.scalatest._
 
 class MTurkAdapterTest extends FlatSpec with Matchers {
 
   "A simple program" should "work" in {
     val a = MTurkAdapter { mt =>
+      mt.access_key_id = UUID.randomUUID().toString
+      mt.secret_access_key = UUID.randomUUID().toString
       mt.use_mock = MockSetup(budget = 8.00)
+      mt.logging = LogConfig.NO_LOGGING
     }
 
     automan(a) {
@@ -24,17 +30,14 @@ class MTurkAdapterTest extends FlatSpec with Matchers {
           a.Option('cookie, "Cookie Monster"),
           a.Option('count, "The Count")
         )
-        q.mock_answers = List('oscar,'kermit,'spongebob,'spongebob,'spongebob)
+        q.mock_answers = List('spongebob,'spongebob,'spongebob,'spongebob)
       }
 
       which_one().answer match {
         case ScalarAnswer(value, _, _) =>
-          println("The answer is: " + value)
+          value should be ('spongebob)
         case ScalarOverBudget(value, cost, conf) =>
-          println(
-            "You ran out of money. The best answer is \"" +
-              value + "\" with a confidence of " + conf
-          )
+          fail()
       }
     }
   }

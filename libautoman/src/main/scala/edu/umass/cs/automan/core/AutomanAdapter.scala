@@ -26,10 +26,6 @@ abstract class AutomanAdapter {
   protected var _plugins_initialized: List[_ <: Plugin] = List.empty
   protected var _poll_interval_in_s : Int = 30
   protected var _schedulers: List[Scheduler[_]] = List.empty
-  protected var _thunk_db: String = "ThunkLogDB"
-  protected var _thunk_conn_string: String = "jdbc:derby:" + _thunk_db + ";create=true"
-  protected var _thunk_user: String = ""
-  protected var _thunk_pass: String = ""
 
   // user-visible getters and setters
   def default_confidence: Double = _default_confidence

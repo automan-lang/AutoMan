@@ -30,9 +30,17 @@ import AssignmentStatus._
 
 case class MockSetup(budget: BigDecimal)
 
+case class MockHITType(id: UUID,
+                       autoApprovalDelayInSeconds: lang.Long,
+                       assignmentDurationInSeconds: lang.Long,
+                       reward: Double, title: String,
+                       keywords: String,
+                       description: String,
+                       qualRequirements: Array[QualificationRequirement])
+
 case class MockServiceState(budget: java.math.BigDecimal,
                             questions_by_question_id: Map[UUID,Question[_]],
-                            hit_type_ids: Set[String],
+                            hit_type_by_hit_type_id: Map[String,MockHITType],
                             hits_by_question_id: Map[UUID, List[HIT]],
                             answers_by_assignment_id: Map[UUID,String],
                             assignment_status_by_assignment_id: Map[UUID,(AssignmentStatus.Value,Option[String])],
@@ -56,14 +64,33 @@ case class MockServiceState(budget: java.math.BigDecimal,
       acc + (a_id -> (AssignmentStatus.ANSWERED, Some(hit.getHITId)))
     }
 
+    // update hit list
+    val hitlist = hit :: (
+      if (hits_by_question_id.contains(question_id)) {
+        hits_by_question_id(question_id)
+      } else {
+        List.empty
+      })
+
     // return a new MockServiceState
     MockServiceState(
       budget,
       questions_by_question_id,
-      hit_type_ids,
-      hits_by_question_id,
+      hit_type_by_hit_type_id,
+      hits_by_question_id + (question_id -> hitlist),
       answers_by_assignment_id,
       status_map,
+      assignment_ids_by_question_id
+    )
+  }
+  def addHITType(hit_type: MockHITType) : MockServiceState = {
+    MockServiceState(
+      budget,
+      questions_by_question_id,
+      hit_type_by_hit_type_id + (hit_type.id.toString -> hit_type),
+      hits_by_question_id,
+      answers_by_assignment_id,
+      assignment_status_by_assignment_id,
       assignment_ids_by_question_id
     )
   }
@@ -72,7 +99,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
     MockServiceState(
       budget.add(delta),
       questions_by_question_id,
-      hit_type_ids,
+      hit_type_by_hit_type_id,
       hits_by_question_id,
       answers_by_assignment_id,
       assignment_status_by_assignment_id,
@@ -109,9 +136,8 @@ case class MockServiceState(budget: java.math.BigDecimal,
     assert(hits_by_question_id.size >= 1)
 
     // get HIT
-    val (hit: HIT,question_id: UUID) = hits_by_question_id.map { case (qid: UUID, hlist: List[HIT]) =>
-      (hlist.filter(_.getHITId == hitId).head, qid)
-    }
+    val hit = getHITforHITId(hitId)
+    val question_id = UUID.fromString(hit.getRequesterAnnotation)
 
     // clone
     val cloned_hit = cloneHIT(hit)
@@ -126,7 +152,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
     MockServiceState(
       budget,
       questions_by_question_id,
-      hit_type_ids,
+      hit_type_by_hit_type_id,
       hits_by_question_id + (question_id -> hitlist),
       answers_by_assignment_id,
       assignment_status_by_assignment_id,
@@ -141,7 +167,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
     MockServiceState(
       budget,
       questions_by_question_id + (question.id -> question),
-      hit_type_ids,
+      hit_type_by_hit_type_id,
       hits_by_question_id,
       answers_by_assignment_id,
       assignment_status_by_assignment_id,
@@ -156,7 +182,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
     MockServiceState(
       budget,
       questions_by_question_id,
-      hit_type_ids,
+      hit_type_by_hit_type_id,
       hits_by_question_id,
       answers,
       status,
@@ -167,7 +193,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
     MockServiceState(
       budget,
       questions_by_question_id,
-      hit_type_ids,
+      hit_type_by_hit_type_id,
       hits_by_question_id,
       answers_by_assignment_id,
       am,
@@ -178,7 +204,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
     MockServiceState(
       budget,
       questions_by_question_id,
-      hit_type_ids,
+      hit_type_by_hit_type_id,
       hits_by_question_id,
       answers_by_assignment_id,
       changeAssignmentStatus(assignmentId, new_status, assignment_status_by_assignment_id),
@@ -271,8 +297,8 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
                          responseGroup: Array[String]): HIT = synchronized {
     val question_id = UUID.fromString(requesterAnnotation)
     val hit_id = UUID.randomUUID().toString
+    val hit_type = _state.hit_type_by_hit_type_id(hitTypeId)
 
-    assert(_state.hit_type_ids.contains(hitTypeId))
     val now = Utilities.nowCal()
     val expiry = Utilities.calInSeconds(now, lifetimeInSeconds.toInt)
 
@@ -283,18 +309,18 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
         null,                                       // HIT Group ID
         null,                                       // HIT Layout ID
         now,                                        // creationTime
-        title,                                      // title
-        description,                                // description
+        hit_type.title,                             // title
+        hit_type.description,                       // description
         question_xml,                               // question
-        keywords,                                   // keywords
+        hit_type.keywords,                          // keywords
         HITStatus.Assignable,                       // HIT Status
         maxAssignments,                             // maxAssignments
-        new Price(new java.math.BigDecimal(reward), "USD", "$"),  // reward
-        autoApprovalDelayInSeconds,                 // autoApprovalDelayInSeconds
+        new Price(new java.math.BigDecimal(hit_type.reward), "USD", "$"),  // reward
+        hit_type.autoApprovalDelayInSeconds,        // autoApprovalDelayInSeconds
         expiry,                                     // expiration
-        assignmentDurationInSeconds,                // assignmentDurationInSeconds
+        hit_type.assignmentDurationInSeconds,       // assignmentDurationInSeconds
         requesterAnnotation,                        // requesterAnnotation
-        qualificationRequirements,                  // qualificationRequirements
+        hit_type.qualRequirements,                  // qualificationRequirements
         HITReviewStatus.NotReviewed,                // HITReviewStatus
         0,                                          // numberOfAssignmentsPending
         maxAssignments,                             // numberOfAssignmentsAvailable
@@ -315,13 +341,48 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
   }
 
   override def rejectAssignment(assignmentId: String, requesterFeedback: String): Unit = synchronized {
-    _state = _state.updateAssignmentStatus(assignmentId, AssignmentStatus.REJECTED)
+    _state = _state.updateAssignmentStatus(UUID.fromString(assignmentId), AssignmentStatus.REJECTED)
+  }
+
+  private def answerToAssignment(answer: String) : String = {
+    val assn =
+      <Answer>
+        &lt;QuestionFormAnswers&gt;
+        { answer }
+        &lt;/QuestionFormAnswers&gt;
+      </Answer>
+    assn.toString()
   }
 
   override def getAllAssignmentsForHIT(hitId: String): Array[Assignment] = synchronized {
     val question_id = UUID.fromString(_state.getHITforHITId(hitId).getRequesterAnnotation)
-    _state.assignment_status_by_assignment_id()
-    ???
+
+    val question = _state.questions_by_question_id(question_id).asInstanceOf[MTurkQuestion]
+
+    val assn_ids = _state.assignment_status_by_assignment_id.filter { case (assn_id, (assn_stat, q_id_opt)) =>
+        q_id_opt match {
+          case Some(hit_id) => hit_id == hitId
+          case None => false
+        }
+    }.map(_._1)
+
+    assn_ids.map { assn_id =>
+      new Assignment(
+        null,
+        assn_id.toString,
+        UUID.randomUUID().toString,
+        hitId,
+        com.amazonaws.mturk.requester.AssignmentStatus.Submitted,
+        Utilities.calInSeconds(Utilities.nowCal(), 16400),
+        null,
+        Utilities.nowCal(),
+        null,
+        null,
+        null,
+        answerToAssignment(_state.answers_by_assignment_id(assn_id)),
+        null
+      )
+    }.toArray
   }
 
   override def rejectQualificationRequest(qualificationRequestId: String,
@@ -377,5 +438,26 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
     val assignments = mtq.mock_answers.map { a => UUID.randomUUID() -> mtq.answerToString(a)}.toMap
     _state = _state.addQuestion(question)
     _state = _state.addAssignments(question.id, assignments)
+  }
+
+  override def registerHITType(autoApprovalDelayInSeconds: lang.Long,
+                               assignmentDurationInSeconds: lang.Long,
+                               reward: Double,
+                               title: String,
+                               keywords: String,
+                               description: String,
+                               qualRequirements: Array[QualificationRequirement]): String = {
+    val hit_type = MockHITType(
+      UUID.randomUUID(),
+      autoApprovalDelayInSeconds,
+      assignmentDurationInSeconds,
+      reward,
+      title,
+      keywords,
+      description,
+      qualRequirements
+    )
+    _state = _state.addHITType(hit_type)
+    hit_type.id.toString
   }
 }
