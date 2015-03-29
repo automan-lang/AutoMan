@@ -123,7 +123,9 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
 
           // rate-limit
           val duration = Math.max(sleep_ms - time.duration_ms, 0)
-          DebugLog("MTurk connection pool sleeping for " + (duration / 1000).toString + " seconds.", LogLevel.INFO, LogType.ADAPTER, null)
+          if (duration > 0) {
+            DebugLog("MTurk connection pool sleeping for " + (duration / 1000).toString + " seconds.", LogLevel.INFO, LogType.ADAPTER, null)
+          }
           Thread.sleep(duration)
         } // exit loop
       }

@@ -111,7 +111,7 @@ object Scheduler {
     val rem_ms = wait_time_ms - t.duration_ms
     if (rem_ms > 0) {
       // wait the remaining amount of time
-      DebugLog("Sleeping " + rem_ms + " seconds.", LogLevel.INFO, LogType.SCHEDULER, question.id)
+      DebugLog("Sleeping " + (rem_ms / 1000) + " seconds.", LogLevel.INFO, LogType.SCHEDULER, question.id)
       Thread.sleep(rem_ms)
     } else {
       // even if we don't need to wait, we should give the JVM
