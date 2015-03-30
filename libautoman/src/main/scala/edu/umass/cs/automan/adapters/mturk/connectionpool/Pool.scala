@@ -123,7 +123,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
 
           // rate-limit
           val duration = Math.max(sleep_ms - time.duration_ms, 0)
-          if (duration > 0) {
+          if ((duration/1000) > 0) {
             DebugLog("MTurk connection pool sleeping for " + (duration / 1000).toString + " seconds.", LogLevel.INFO, LogType.ADAPTER, null)
           }
           Thread.sleep(duration)
@@ -365,13 +365,11 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
         val assns = backend.getAllAssignmentsForHIT(hit_state.HITId)
 
         // pair with the HIT's thunks and return new HITState
-        hit_state.matchAssignments(assns)
-
-        hit_state.HITId -> hit_state
+        hit_state.HITId -> hit_state.matchAssignments(assns)
       }
 
       // update HITState map all at once
-      _state.updateHITStates(updated_hss)
+      _state = _state.updateHITStates(updated_hss)
 
       // return answered thunks
       answer_thunks(bts, batch_key)
@@ -410,7 +408,8 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
               }
 
               // process answer
-              val xml = scala.xml.XML.loadString(assignment.getAnswer)
+              val ans = assignment.getAnswer
+              val xml = scala.xml.XML.loadString(ans)
               val answer = t.question.asInstanceOf[MTurkQuestion].fromXML(xml)
 
               // it is possible, although unlikely, that a worker could submit
