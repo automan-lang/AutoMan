@@ -43,12 +43,12 @@ class Scheduler[A](val question: Question[A],
     var _timeout_occurred = false
     var _all_thunks = thunks
 
-    while(!s.is_done(thunks)) {
-      val _thunks = _all_thunks
+    while(!s.is_done(_all_thunks)) {
+      val __thunks = _all_thunks
       // get list of workers who may not re-participate
-      val blacklist = s.blacklisted_workers(_thunks)
+      val blacklist = s.blacklisted_workers(__thunks)
       // filter duplicate work
-      val dedup_thunks = s.mark_duplicates(_thunks)
+      val dedup_thunks = s.mark_duplicates(__thunks)
       // post more tasks as needed
 
       val new_thunks = try {

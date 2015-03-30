@@ -17,7 +17,14 @@ abstract class RadioButtonQuestion extends ScalarQuestion[Symbol] {
   def randomized_options: List[QuestionOptionType]
 
   override protected[automan] def getOutcome(scheduler: Scheduler[Symbol]): ScalarOutcome[Symbol] = {
-    ScalarOutcome( Future{ blocking { scheduler.run() } } )
+    ScalarOutcome(
+      Future{
+        blocking {
+          val foo = scheduler.run()
+          foo
+        }
+      }
+    )
   }
 
   override protected[automan] def getQuestionType = QuestionType.RadioButtonQuestion
