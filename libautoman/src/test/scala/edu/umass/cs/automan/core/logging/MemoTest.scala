@@ -17,6 +17,8 @@ class MemoTest extends FlatSpec with Matchers {
   "The Memo class" should "save and restore execution traces when logging is enabled" in {
     // clear state
     m.wipeDatabase()
+    // recreate database
+    m.init()
 
     val ts = List(
       TestUtil.newThunk(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),

@@ -3,7 +3,7 @@ package edu.umass.cs.automan.core.logging.tables
 import java.util.UUID
 import edu.umass.cs.automan.core.info.QuestionType._
 
-import scala.slick.driver.DerbyDriver.simple._
+import scala.slick.driver.SQLiteDriver.simple._
 
 class DBQuestion(tag: Tag) extends Table[(UUID, String, QuestionType)](tag, "DBQUESTION") {
   implicit val questionTypeMapper =

@@ -10,7 +10,7 @@ import edu.umass.cs.automan.adapters.mturk.util.Key
 import edu.umass.cs.automan.adapters.mturk.util.Key._
 import edu.umass.cs.automan.core.logging._
 import scala.slick.lifted.TableQuery
-import scala.slick.driver.DerbyDriver.simple._
+import scala.slick.driver.SQLiteDriver.simple._
 
 class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
   type DBHITType = (String, String, Int)

@@ -18,7 +18,8 @@ libraryDependencies ++= {
   Seq(
     "org.scala-lang.modules"     %%  "scala-xml"            % "1.0.2",
     "org.scalatest"              %%  "scalatest"            % "2.2.1"    % "test",
-    "org.apache.derby"           %   "derby"                % "10.10.1.1",
+    "org.xerial"                 %   "sqlite-jdbc"          % "3.8.7",
+//    "org.apache.derby"           %   "derby"                % "10.10.1.1",
     "net.java.dev.activeobjects" % "activeobjects"          % "0.8.2",
     "commons-codec"              % "commons-codec"          % "1.4",
     "log4j"                      % "log4j"                  % "1.2.17",
