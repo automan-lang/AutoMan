@@ -2,14 +2,18 @@ package edu.umass.cs.automan.core.question
 
 import java.io.File
 import java.util.{Date, UUID}
+import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.{AbstractAnswer, Outcome}
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 import edu.umass.cs.automan.core.logging.Memo
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk, Scheduler}
 import edu.umass.cs.automan.core.strategy.ValidationStrategy
 
-abstract class Question[A] {
-  type VS <: ValidationStrategy[A]
+abstract class Question {
+  type A <: Any
+  type AA <: AbstractAnswer[A]
+  type VS <: ValidationStrategy
+  type O <: Outcome[A]
 
   class QuestionStillExecutingException extends Exception
 
@@ -76,6 +80,8 @@ abstract class Question[A] {
   // private methods
   private[automan] def init_strategy(): Unit
   private[automan] def strategy_instance = _strategy_instance
-  protected[automan] def getOutcome(scheduler: Scheduler[A]): Outcome[A]
+  protected[automan] def getOutcome(adapter: AutomanAdapter,
+                                    memo: Memo,
+                                    poll_interval_in_s: Int) : O
   protected[automan] def getQuestionType: QuestionType
 }

@@ -182,7 +182,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
     // NOP
   }
 
-  def registerQuestion(question: Question[_]): Unit = synchronized {
+  def registerQuestion(question: Question): Unit = synchronized {
     val mtq = question.asInstanceOf[MTurkQuestion]
     val assignments = mtq.mock_answers.map { a => UUID.randomUUID() -> mtq.answerToString(a)}.toMap
     _state = _state.addQuestion(question)

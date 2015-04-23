@@ -1,6 +1,7 @@
 package edu.umass.cs.automan.core.logging
 
 import edu.umass.cs.automan.adapters.mturk.question.MTRadioButtonQuestion
+import edu.umass.cs.automan.core.question.Question
 import org.scalatest._
 
 class MemoTest extends FlatSpec with Matchers {
@@ -50,10 +51,12 @@ class MemoTest extends FlatSpec with Matchers {
 
     m.save(q, ts2)
 
+    val t = ts2(1)
+
     val ts3 = List(
       ts2(0),
-      ts2(1).copy_with_answer('yes, "ABCD1234"),
-      ts2(2).copy_with_answer('no, "DCBA4321"),
+      ts2(1).copy_with_answer('yes.asInstanceOf[t.question.A], "ABCD1234"),
+      ts2(2).copy_with_answer('no.asInstanceOf[t.question.A], "DCBA4321"),
       ts2(3).copy_as_timeout(),
       ts2(4).copy_as_cancelled(),
       TestUtil.newThunk(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),

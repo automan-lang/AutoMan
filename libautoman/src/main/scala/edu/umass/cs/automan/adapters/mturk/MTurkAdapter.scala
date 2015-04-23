@@ -82,13 +82,13 @@ class MTurkAdapter extends AutomanAdapter {
   def Option(id: Symbol, text: String) = new MTQuestionOption(id, text, "")
   def Option(id: Symbol, text: String, image_url: String) = new MTQuestionOption(id, text, image_url)
 
-  protected[automan] def accept[A](t: Thunk[A]) = {
+  protected[automan] def accept(t: Thunk) = {
     assert(t.state == SchedulerState.ANSWERED)
     run_if_initialized((p: Pool) => p.accept(t))
   }
-  protected[automan] def cancel[A](t: Thunk[A]) = run_if_initialized((p: Pool) => p.cancel(t))
+  protected[automan] def cancel(t: Thunk) = run_if_initialized((p: Pool) => p.cancel(t))
   protected[automan] def backend_budget() = run_if_initialized((p: Pool) => p.backend_budget)
-  protected[automan] def post[A](ts: List[Thunk[A]], exclude_worker_ids: List[String]) = {
+  protected[automan] def post(ts: List[Thunk], exclude_worker_ids: List[String]) = {
     assert(ts.forall(_.state == SchedulerState.READY))
 
     run_if_initialized((p: Pool) => {
@@ -99,15 +99,15 @@ class MTurkAdapter extends AutomanAdapter {
       ts2
     })
   }
-  protected[automan] def reject[A](t: Thunk[A], correct_answer: String) = {
+  protected[automan] def reject(t: Thunk, correct_answer: String) = {
     assert(t.state == SchedulerState.ANSWERED)
     run_if_initialized((p: Pool) => p.reject(t, correct_answer))
   }
-  protected[automan] def retrieve[A](ts: List[Thunk[A]]) = {
+  protected[automan] def retrieve(ts: List[Thunk]) = {
     assert(ts.forall(_.state == SchedulerState.RUNNING))
     run_if_initialized((p: Pool) => p.retrieve(ts))
   }
-  override protected[automan] def question_startup_hook[A](q: Question[A]): Unit = {
+  override protected[automan] def question_startup_hook(q: Question): Unit = {
     super.question_startup_hook(q)
     // register question with MockRequesterService if we're
     // running in simulation mode
@@ -117,7 +117,7 @@ class MTurkAdapter extends AutomanAdapter {
       case _ => ()
     }
   }
-  override protected[automan] def question_shutdown_hook[A](q: Question[A]): Unit = {
+  override protected[automan] def question_shutdown_hook(q: Question): Unit = {
     super.question_shutdown_hook(q)
     // cleanup qualifications
     run_if_initialized((p: Pool) => p.cleanup_qualifications(q.asInstanceOf[MTurkQuestion]))
