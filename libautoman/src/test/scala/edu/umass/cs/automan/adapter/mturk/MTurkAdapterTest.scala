@@ -36,7 +36,7 @@ class MTurkAdapterTest extends FlatSpec with Matchers {
 
       which_one().answer match {
         case ScalarAnswer(value, _, _) =>
-          value should be ('spongebob)
+          (value == 'spongebob) should be (true)
         case ScalarOverBudget(value, cost, conf) =>
           fail()
       }
