@@ -1,6 +1,6 @@
 package edu.umass.cs.automan.core.logging.tables
 
-import scala.slick.driver.DerbyDriver.simple._
+import scala.slick.driver.SQLiteDriver.simple._
 
 object DBRadioButtonAnswer {
   val symbolStringMapper = MappedColumnType.base[Symbol, String](

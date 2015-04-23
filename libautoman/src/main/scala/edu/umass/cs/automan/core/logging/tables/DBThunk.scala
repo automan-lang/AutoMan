@@ -1,7 +1,7 @@
 package edu.umass.cs.automan.core.logging.tables
 
 import java.util.UUID
-import scala.slick.driver.DerbyDriver.simple._
+import scala.slick.driver.SQLiteDriver.simple._
 import java.util.Date
 
 class DBThunk(tag: Tag) extends Table[(UUID, UUID, BigDecimal, Date, Int, Int)](tag, "DBTHUNK") {

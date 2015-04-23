@@ -6,8 +6,8 @@ import edu.umass.cs.automan.core.logging.tables.{DBRadioButtonAnswer, DBThunkHis
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.SchedulerState._
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
-import scala.slick.driver.DerbyDriver
-import scala.slick.driver.DerbyDriver.simple._
+import scala.slick.driver.SQLiteDriver
+import scala.slick.driver.SQLiteDriver.simple._
 import scala.slick.jdbc.meta.MTable
 
 object Memo {
@@ -44,10 +44,10 @@ class Memo(log_config: LogConfig.Value) {
   type DBThunkHistory =(UUID, Date, SchedulerState)
   type DBQuestion = (UUID, String, QuestionType)
   type DBRadioButtonAnswer = (Int, Symbol, String)
-  type DBSession = DerbyDriver.backend.Session
+  type DBSession = SQLiteDriver.backend.Session
 
   // connection string
-  protected[automan] val jdbc_conn_string = "jdbc:derby:AutoManMemoDB;create=true"
+  protected[automan] val jdbc_conn_string = "jdbc:sqlite:AutoManMemoDB"
 
   // TableQuery aliases
   protected[automan] val dbThunk = TableQuery[edu.umass.cs.automan.core.logging.tables.DBThunk]
@@ -62,7 +62,7 @@ class Memo(log_config: LogConfig.Value) {
   val db_opt = log_config match {
     case LogConfig.NO_LOGGING => None
     case _ => {
-      Some(Database.forURL(jdbc_conn_string, driver = "scala.slick.driver.DerbyDriver"))
+      Some(Database.forURL(jdbc_conn_string, driver = "org.sqlite.JDBC"))
     }
   }
 
@@ -70,14 +70,30 @@ class Memo(log_config: LogConfig.Value) {
     init_database_if_required(List())
   }
 
+  protected def database_exists() : Boolean = {
+    db_opt match {
+      case Some(db) => {
+        val tables = db.withSession { implicit session =>
+          MTable.getTables(None, None, None, None).list.map(_.name.name)
+        }
+        if (!tables.contains(dbQuestion.baseTableRow.tableName)) {
+          false
+        } else {
+          true
+        }
+      }
+      case None => true
+    }
+  }
+
   /**
    * Run table definitions if this is the first time the database is run.  Overring subclasses
    * should provide their DDLs as a list to this method instead of overriding it.
    * @param ddls Slick Table definitions.
    */
-  protected def init_database_if_required(ddls: List[DerbyDriver.SchemaDescription]) : Unit = {
-    val base_ddls: DerbyDriver.DDL = dbThunk.ddl ++ dbThunkHistory.ddl ++ dbQuestion.ddl ++ dbRadioButtonAnswer.ddl
-    val all_ddls: DerbyDriver.DDL = if (ddls.nonEmpty) {
+  protected def init_database_if_required(ddls: List[SQLiteDriver.SchemaDescription]) : Unit = {
+    val base_ddls: SQLiteDriver.DDL = dbThunk.ddl ++ dbThunkHistory.ddl ++ dbQuestion.ddl ++ dbRadioButtonAnswer.ddl
+    val all_ddls: SQLiteDriver.DDL = if (ddls.nonEmpty) {
       base_ddls ++ ddls.tail.foldLeft(ddls.head){ case (acc,ddl) => acc ++ ddl }
     } else {
       base_ddls
@@ -85,10 +101,8 @@ class Memo(log_config: LogConfig.Value) {
 
     all_thunk_ids = db_opt match {
       case Some(db) => {
-        val tables = db.withSession { implicit session =>
-          MTable.getTables(None, None, None, None).list.map(_.name.name)
-        }
-        if (!tables.contains(dbQuestion.baseTableRow.tableName)) {
+        if(!database_exists()) {
+          // create the database
           db.withSession { implicit s => all_ddls.create }
           Map.empty
         } else {
@@ -304,11 +318,13 @@ class Memo(log_config: LogConfig.Value) {
   def wipeDatabase() : Unit = {
     db_opt match {
       case Some(db) =>
-        db.withTransaction { implicit session =>
-          dbQuestion.delete
-          dbThunk.delete
-          dbThunkHistory.delete
-          dbRadioButtonAnswer.delete
+        if (database_exists()) {
+          db.withTransaction { implicit session =>
+            dbQuestion.delete
+            dbThunk.delete
+            dbThunkHistory.delete
+            dbRadioButtonAnswer.delete
+          }
         }
       case None => ()
     }

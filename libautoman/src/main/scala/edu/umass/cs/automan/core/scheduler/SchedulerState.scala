@@ -1,6 +1,6 @@
 package edu.umass.cs.automan.core.scheduler
 
-import scala.slick.driver.DerbyDriver.simple._
+import scala.slick.driver.SQLiteDriver.simple._
 
 object SchedulerState extends Enumeration {
   type SchedulerState = Value

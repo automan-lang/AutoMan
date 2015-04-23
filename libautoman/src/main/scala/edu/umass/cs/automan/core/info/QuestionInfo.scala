@@ -4,7 +4,7 @@ import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 import edu.umass.cs.automan.core.scheduler.Thunk
-import scala.slick.driver.DerbyDriver.simple.MappedColumnType
+import scala.slick.driver.SQLiteDriver.simple.MappedColumnType
 
 case class QuestionInfo(computation_id: UUID,
                         name: String,
