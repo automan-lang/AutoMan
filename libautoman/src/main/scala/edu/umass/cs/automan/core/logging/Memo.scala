@@ -11,13 +11,13 @@ import scala.slick.driver.DerbyDriver.simple._
 import scala.slick.jdbc.meta.MTable
 
 object Memo {
-  def sameThunks[A](ts1: List[Thunk[A]], ts2: List[Thunk[A]]) : Boolean = {
+  def sameThunks[A](ts1: List[Thunk], ts2: List[Thunk]) : Boolean = {
     val t1_map = ts1.map { t => t.thunk_id -> t }.toMap
     ts2.foldLeft (true) { case (acc, t) =>
       acc && t1_map.contains(t.thunk_id) && sameThunk(t1_map(t.thunk_id), t)
     }
   }
-  def sameThunk[A](t1: Thunk[A], t2: Thunk[A]) : Boolean = {
+  def sameThunk(t1: Thunk, t2: Thunk) : Boolean = {
     // this is split into separate statements
     // to make debugging easier
     val c1 = t1.thunk_id == t2.thunk_id
@@ -127,10 +127,9 @@ class Memo(log_config: LogConfig.Value) {
   /**
    * Restore all Thunks from the database given a question's memo_hash.
    * @param q An AutoMan question.
-   * @tparam A The data type of the Answer.
    * @return A list of Thunks.
    */
-  def restore[A](q: Question[A]) : List[Thunk[A]] = {
+  def restore(q: Question) : List[Thunk] = {
     db_opt match {
       case Some(db) => {
         val QS_TS_THS = allThunksQuery()
@@ -175,7 +174,7 @@ class Memo(log_config: LogConfig.Value) {
                 worker_id_opt,
                 answer_opt,
                 state_changed_at) =>
-            Thunk[A](
+            Thunk(
               thunk_id,
               q,
               timeout_in_s,
@@ -185,7 +184,7 @@ class Memo(log_config: LogConfig.Value) {
               state,
               from_memo = true,
               worker_id_opt,
-              answer_opt.asInstanceOf[Option[A]],
+              answer_opt.asInstanceOf[Option[Question#A]],
               state_changed_at
             )
         }
@@ -201,7 +200,7 @@ class Memo(log_config: LogConfig.Value) {
     }
   }
 
-  protected[automan] def needsUpdate[A](ts: List[Thunk[A]]) : List[InsertUpdateOrSkip[Thunk[A]]] = {
+  protected[automan] def needsUpdate[A](ts: List[Thunk]) : List[InsertUpdateOrSkip[Thunk]] = {
     ts.map { t =>
       if (!all_thunk_ids.contains(t.thunk_id)) {
         Insert(t)
@@ -213,15 +212,15 @@ class Memo(log_config: LogConfig.Value) {
     }
   }
 
-  protected[automan] def thunk2ThunkTuple[A](ts: List[Thunk[A]]) : List[(UUID, UUID, BigDecimal, Date, Int, Int)] = {
+  protected[automan] def thunk2ThunkTuple(ts: List[Thunk]) : List[(UUID, UUID, BigDecimal, Date, Int, Int)] = {
     ts.map(t => (t.thunk_id, t.question.id, t.cost, t.created_at, t.timeout_in_s, t.worker_timeout))
   }
 
-  protected[automan] def thunk2ThunkHistoryTuple[A](ts: List[Thunk[A]]) : List[(Int, UUID, Date, SchedulerState)] = {
+  protected[automan] def thunk2ThunkHistoryTuple(ts: List[Thunk]) : List[(Int, UUID, Date, SchedulerState)] = {
     ts.map(t => (1, t.thunk_id, new Date(), t.state))
   }
 
-  protected[automan] def thunk2ThunkAnswerTuple[A](ts: List[Thunk[A]], histories: Seq[(UUID, Int)]) : List[(Int, A, String)] = {
+  protected[automan] def thunk2ThunkAnswerTuple(ts: List[Thunk], histories: Seq[(UUID, Int)]) : List[(Int, Question#A, String)] = {
     val history_dict = histories.toMap
     ts.flatMap { t =>
       t.answer match {
@@ -234,7 +233,7 @@ class Memo(log_config: LogConfig.Value) {
     }
   }
 
-  protected[automan] def insertAnswerTable[A](ts: List[Thunk[A]], histories: Seq[(UUID, Int)])(implicit session: DBSession) = {
+  protected[automan] def insertAnswerTable(ts: List[Thunk], histories: Seq[(UUID, Int)])(implicit session: DBSession) = {
     assert(ts.size != 0)
     ts.head.question.getQuestionType match {
       case RadioButtonQuestion =>
@@ -250,9 +249,8 @@ class Memo(log_config: LogConfig.Value) {
   /**
    * Updates the database given a complete list of Thunks.
    * @param ts A non-empty list of Thunks.
-   * @tparam A The data type of the Answer.
    */
-  def save[A](q: Question[A], ts: List[Thunk[A]]) : Unit = {
+  def save(q: Question, ts: List[Thunk]) : Unit = {
     assert(ts.size != 0)  // should never be given zero thunks
 
     db_opt match {
@@ -266,7 +264,7 @@ class Memo(log_config: LogConfig.Value) {
             }
 
             // determine which records need to be inserted/updated/ignored
-            val (inserts, updates) = needsUpdate (ts).foldLeft ((List.empty[Thunk[A]], List.empty[Thunk[A]] ) ) {
+            val (inserts, updates) = needsUpdate (ts).foldLeft ((List.empty[Thunk], List.empty[Thunk] ) ) {
               case (acc, ius) => ius match {
                 case Insert(t) => (t :: acc._1, acc._2)
                 case Update(t) => (acc._1, t :: acc._2)

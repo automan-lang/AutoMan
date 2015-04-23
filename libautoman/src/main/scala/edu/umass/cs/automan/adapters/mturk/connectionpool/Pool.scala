@@ -34,26 +34,26 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   }
 
   // API
-  def accept[A](t: Thunk[A]) : Thunk[A] = {
-    blocking_enqueue[AcceptReq[A], Thunk[A]](AcceptReq(t))
+  def accept[A](t: Thunk) : Thunk = {
+    blocking_enqueue[AcceptReq[A], Thunk](AcceptReq(t))
   }
   def backend_budget: BigDecimal = {
     blocking_enqueue[BudgetReq, BigDecimal](BudgetReq())
   }
-  def cancel[A](t: Thunk[A]) : Thunk[A] = {
-    blocking_enqueue[CancelReq[A], Thunk[A]](CancelReq(t))
+  def cancel[A](t: Thunk) : Thunk = {
+    blocking_enqueue[CancelReq[A], Thunk](CancelReq(t))
   }
   def cleanup_qualifications[A](mtq: MTurkQuestion) : Unit = {
     nonblocking_enqueue[DisposeQualsReq, Unit](DisposeQualsReq(mtq))
   }
-  def post[A](ts: List[Thunk[A]], exclude_worker_ids: List[String]) : Unit = {
+  def post[A](ts: List[Thunk], exclude_worker_ids: List[String]) : Unit = {
     nonblocking_enqueue[CreateHITReq[A], Unit](CreateHITReq(ts, exclude_worker_ids))
   }
-  def reject[A](t: Thunk[A], correct_answer: String) : Thunk[A] = {
-    blocking_enqueue[RejectReq[A], Thunk[A]](RejectReq(t, correct_answer))
+  def reject[A](t: Thunk, correct_answer: String) : Thunk = {
+    blocking_enqueue[RejectReq[A], Thunk](RejectReq(t, correct_answer))
   }
-  def retrieve[A](ts: List[Thunk[A]]) : List[Thunk[A]] = {
-    blocking_enqueue[RetrieveReq[A], List[Thunk[A]]](RetrieveReq(ts))
+  def retrieve[A](ts: List[Thunk]) : List[Thunk] = {
+    blocking_enqueue[RetrieveReq[A], List[Thunk]](RetrieveReq(ts))
   }
   def shutdown(): Unit = synchronized {
     nonblocking_enqueue[ShutdownReq, Unit](ShutdownReq())
@@ -143,7 +143,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       message.notifyAll()
     }
   }
-  private def scheduled_accept[A](t: Thunk[A]) : Thunk[A] = {
+  private def scheduled_accept[A](t: Thunk) : Thunk = {
     DebugLog(
       String.format("Accepting task for question_id = %s",
       t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
@@ -156,7 +156,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
         throw new Exception("Cannot accept non-existent assignment.")
     }
   }
-  private def scheduled_cancel[A](t: Thunk[A]) : Thunk[A] = {
+  private def scheduled_cancel[A](t: Thunk) : Thunk = {
     DebugLog(String.format("Cancelling task for question_id = %s",
       t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
@@ -173,7 +173,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
    * @param question An AutoMan Question[_]
    * @param batch_key Batch parameters
    */
-  private def mturk_registerHITType(question: Question[_], batch_key: BatchKey) : Unit = {
+  private def mturk_registerHITType(question: Question, batch_key: BatchKey) : Unit = {
     val (group_id, cost, worker_timeout) = batch_key
 
     // get current batch number
@@ -209,7 +209,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     _state = _state.updateHITTypes(batch_key, hittype)
   }
 
-  private def mturk_createHIT(ts: List[Thunk[_]], batch_key: BatchKey, question: Question[_]) : HITState = {
+  private def mturk_createHIT(ts: List[Thunk], batch_key: BatchKey, question: Question) : HITState = {
     // get hit_type for batch
     val hit_type = get_or_create_hittype(batch_key, question)
 
@@ -244,7 +244,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     hs
   }
 
-  private def mturk_extendHIT(ts: List[Thunk[_]], timeout_in_s: Int, hitstate: HITState) : Unit = {
+  private def mturk_extendHIT(ts: List[Thunk], timeout_in_s: Int, hitstate: HITState) : Unit = {
     backend.extendHIT(hitstate.HITId, ts.size, timeout_in_s.toLong)
     // we immediately query the backend for the HIT's complete details
     // to update our cached data
@@ -274,7 +274,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
    * @param question An AutoMan question.
    * @return A HITType
    */
-  private def get_or_create_hittype(batch_key: BatchKey, question: Question[_]) : HITType = {
+  private def get_or_create_hittype(batch_key: BatchKey, question: Question) : HITType = {
     // when these properties change from what we've seen before
     // (including the possibility that we've never seen any of these
     // thunks before) we need to create a new HITType;
@@ -302,7 +302,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
    * @param ts  A List of Thunks to post.
    * @param exclude_worker_ids  A list of worker_ids to exclude (via disqualifications)
    */
-  private def scheduled_post(ts: List[Thunk[_]], exclude_worker_ids: List[String]) : Unit = {
+  private def scheduled_post(ts: List[Thunk], exclude_worker_ids: List[String]) : Unit = {
     // One consequence of dealing with groups of thunks is that
     // they may each be associated with a different question; although
     // automan never calls post with heterogeneous set of thunks, we
@@ -331,7 +331,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     }
   }
 
-  private def scheduled_reject[A](t: Thunk[A], correct_answer: String) : Thunk[A] = {
+  private def scheduled_reject[A](t: Thunk, correct_answer: String) : Thunk = {
     DebugLog(String.format("Rejecting task for question_id = %s",
       t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
@@ -347,7 +347,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     }
   }
 
-  private def scheduled_retrieve[A](ts: List[Thunk[A]]): List[Thunk[A]] = {
+  private def scheduled_retrieve[A](ts: List[Thunk]): List[Thunk] = {
     // 1. eagerly get all HIT assignments
     // 2. pair HIT Assignments with Thunks
     // 3. update Thunks with answers
@@ -379,7 +379,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     timeout_thunks_as_needed(ts2)
   }
 
-  private def answer_thunks[A](ts: List[Thunk[A]], batch_key: BatchKey) : List[Thunk[A]] = {
+  private def answer_thunks(ts: List[Thunk], batch_key: BatchKey) : List[Thunk] = {
     val group_id = batch_key._1
 
     // group by HIT
@@ -433,7 +433,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
                     "your participation in our HITs."
                 )
               }
-              t.copy_with_answer(answer.asInstanceOf[A], worker_id)
+              t.copy_with_answer(answer.asInstanceOf[t.question.A], worker_id)
             } else {
               t
             }
@@ -444,7 +444,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     }.flatten.toList
   }
 
-  private def timeout_thunks_as_needed[A](ts: List[Thunk[A]]) : List[Thunk[A]] = {
+  private def timeout_thunks_as_needed[A](ts: List[Thunk]) : List[Thunk] = {
     ts.map { t =>
       if (t.is_timedout) {
         t.copy_as_timeout()
@@ -465,14 +465,14 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     }
   }
 
-  private def mtquestion_for_thunks(ts: List[Thunk[_]]) : MTurkQuestion = {
+  private def mtquestion_for_thunks(ts: List[Thunk]) : MTurkQuestion = {
     // determine which MT question we've been asked about
     question_for_thunks(ts) match {
       case mtq: MTurkQuestion => mtq
       case _ => throw new Exception("MTurkAdapter can only operate on Thunks for MTurkQuestions.")
     }
   }
-  private[mturk] def question_for_thunks(ts: List[Thunk[_]]) : Question[_] = {
+  private[mturk] def question_for_thunks(ts: List[Thunk]) : Question = {
     // determine which question we've been asked about
     val tg = ts.groupBy(_.question)
     if(tg.size != 1) {

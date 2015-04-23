@@ -5,29 +5,29 @@ import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.scheduler._
 import edu.umass.cs.automan.core.question._
 
-abstract class ScalarValidationStrategy[A](question: Question[A])
-  extends ValidationStrategy[A](question) {
+abstract class ScalarValidationStrategy(question: ScalarQuestion)
+  extends ValidationStrategy(question) {
 
-  def current_confidence(thunks: List[Thunk[A]]) : Double
-  def is_confident(thunks: List[Thunk[A]]) : Boolean
-  def is_done(thunks: List[Thunk[A]]) = is_confident(thunks)
+  def current_confidence(thunks: List[Thunk]) : Double
+  def is_confident(thunks: List[Thunk]) : Boolean
+  def is_done(thunks: List[Thunk]) = is_confident(thunks)
 
-  private def biggest_group(thunks: List[Thunk[A]]) : (Option[A], List[Thunk[A]]) = {
+  private def biggest_group(thunks: List[Thunk]) : (Option[Question#A], List[Thunk]) = {
     val rt = completed_workerunique_thunks(thunks)
 
     assert(rt.size != 0)
 
-    // group by answer (which is actually an Option[A] because Thunk.answer is Option[A])
-    val groups: Map[Option[A], List[Thunk[A]]] = rt.groupBy(_.answer)
+    // group by answer (which is actually an Option[Question#A] because Thunk.answer is Option[Question#A])
+    val groups: Map[Option[Question#A], List[Thunk]] = rt.groupBy(_.answer)
 
     // find answer of the largest group
     groups.maxBy { case(group, ts) => ts.size }
   }
-  def answer_selector(thunks: List[Thunk[A]]) : (A,BigDecimal,Double) = {
+  def answer_selector(thunks: List[Thunk]) : (Question#A,BigDecimal,Double) = {
     val bgrp = biggest_group(thunks)
 
-    // find answer (actually an Option[A]) of the largest group
-    val answer_opt: Option[A] = bgrp match { case (group,_) => group }
+    // find answer (actually an Option[Question#A]) of the largest group
+    val answer_opt: Option[Question#A] = bgrp match { case (group,_) => group }
 
     // return the top result
     val value = answer_opt.get
@@ -40,23 +40,23 @@ abstract class ScalarValidationStrategy[A](question: Question[A])
 
     (value, cost, conf)
   }
-  def select_answer(thunks: List[Thunk[A]]) : ScalarAnswer[A] = {
+  def select_answer(thunks: List[Thunk]) : Question#AA = {
     answer_selector(thunks) match { case (value,cost,conf) =>
       DebugLog("Most popular answer is " + value.toString, LogLevel.INFO, LogType.STRATEGY, question.id)
-      ScalarAnswer(value,cost,conf)
+      ScalarAnswer(value,cost,conf).asInstanceOf[Question#AA]
     }
   }
-  def select_over_budget_answer(thunks: List[Thunk[A]]) : ScalarOverBudget[A] = {
+  def select_over_budget_answer(thunks: List[Thunk]) : Question#AA = {
     answer_selector(thunks) match { case (value,cost,conf) =>
       DebugLog("Over budget.  Best answer so far is " + value.toString, LogLevel.INFO, LogType.STRATEGY, question.id)
-      ScalarOverBudget(value,cost,conf)
+      ScalarOverBudget(value,cost,conf).asInstanceOf[Question#AA]
     }
   }
-  override def thunks_to_accept(thunks: List[Thunk[A]]): List[Thunk[A]] = {
+  override def thunks_to_accept(thunks: List[Thunk]): List[Thunk] = {
     biggest_group(thunks) match { case (_, ts) => ts }
   }
 
-  override def thunks_to_reject(thunks: List[Thunk[A]]): List[Thunk[A]] = {
+  override def thunks_to_reject(thunks: List[Thunk]): List[Thunk] = {
     val accepts = thunks_to_accept(thunks).toSet
     thunks.filter { t => !accepts.contains(t) }
   }

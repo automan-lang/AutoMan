@@ -8,7 +8,7 @@ import edu.umass.cs.automan.core.scheduler.Thunk
 object HITState {
   // creates a HITState object from a HIT data
   // structure and a list of Thunks
-  def apply(hit: HIT, ts: List[Thunk[_]], hittype: HITType) : HITState = {
+  def apply(hit: HIT, ts: List[Thunk], hittype: HITType) : HITState = {
     val t_a_map = ts.map(_.thunk_id -> None).toMap
     HITState(hit, t_a_map, hittype, cancelled = false)
   }
@@ -46,9 +46,9 @@ case class HITState(hit: HIT, t_a_map: Map[UUID,Option[Assignment]], hittype: HI
     }.toList
   }
 
-  def getAssignmentOption(t: Thunk[_]): Option[Assignment] = t_a_map(t.thunk_id)
+  def getAssignmentOption(t: Thunk): Option[Assignment] = t_a_map(t.thunk_id)
 
-  def addNewThunks(updated_hit: HIT, ts: List[Thunk[_]]) : HITState = {
+  def addNewThunks(updated_hit: HIT, ts: List[Thunk]) : HITState = {
     assert(!cancelled)
     assert(updated_hit.getHITId == hit.getHITId)
     HITState(updated_hit, t_a_map ++ ts.map(_.thunk_id -> None), hittype, cancelled)

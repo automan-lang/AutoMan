@@ -6,7 +6,7 @@ import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.util.Utilities
 
 case class MockServiceState(budget: java.math.BigDecimal,
-                            questions_by_question_id: Map[UUID,Question[_]],
+                            questions_by_question_id: Map[UUID,Question],
                             hit_type_by_hit_type_id: Map[String,MockHITType],
                             hits_by_question_id: Map[UUID, List[HIT]],
                             answers_by_assignment_id: Map[UUID,String],
@@ -130,7 +130,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
     assert(hits_by_question_id.size >= 1)
     hits_by_question_id.flatMap(_._2).filter(_.getHITId == hitId).head
   }
-  def addQuestion(question: Question[_]) : MockServiceState = {
+  def addQuestion(question: Question) : MockServiceState = {
     MockServiceState(
       budget,
       questions_by_question_id + (question.id -> question),

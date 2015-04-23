@@ -2,27 +2,25 @@ package edu.umass.cs.automan.core.strategy
 
 import java.util
 import java.util.UUID
-
 import edu.umass.cs.automan.core.logging._
-import edu.umass.cs.automan.core.question.ScalarQuestion
+import edu.umass.cs.automan.core.question.{Question, ScalarQuestion}
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
-import edu.umass.cs.automan.core.util.Utilities
 
 object DefaultScalarStrategy {
   val table = new util.HashMap[(Int,Int,Int,Double),Int]()
 }
 
-class DefaultScalarStrategy[A](question: ScalarQuestion[A])
-  extends ScalarValidationStrategy[A](question) {
+class DefaultScalarStrategy(question: ScalarQuestion)
+  extends ScalarValidationStrategy(question) {
   DebugLog("DEFAULTSCALAR strategy loaded.",LogLevel.INFO,LogType.STRATEGY, question.id)
 
-  def current_confidence(thunks: List[Thunk[A]]): Double = {
+  def current_confidence(thunks: List[Thunk]): Double = {
     val valid_ts = completed_workerunique_thunks(thunks)
     if (valid_ts.size == 0) return 0.0 // bail if we have no valid responses
     val biggest_answer = valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
     MonteCarlo.confidenceOfOutcome(question.num_possibilities.toInt, thunks.size, biggest_answer, 1000000)
   }
-  def is_confident(thunks: List[Thunk[A]]): Boolean = {
+  def is_confident(thunks: List[Thunk]): Boolean = {
     if (thunks.size == 0) {
       DebugLog("Have no thunks; confidence is undefined.", LogLevel.INFO, LogType.STRATEGY, question.id)
       false
@@ -42,17 +40,17 @@ class DefaultScalarStrategy[A](question: ScalarQuestion[A])
       }
     }
   }
-  def max_agree(thunks: List[Thunk[A]]) : Int = {
+  def max_agree(thunks: List[Thunk]) : Int = {
     val valid_ts = completed_workerunique_thunks(thunks)
     if (valid_ts.size == 0) return 0
     valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
   }
-  def spawn(thunks: List[Thunk[A]], had_timeout: Boolean): List[Thunk[A]] = {
+  def spawn(thunks: List[Thunk], had_timeout: Boolean): List[Thunk] = {
     // num to spawn (don't spawn more if any are running)
     val num_to_spawn = if (thunks.count(_.state == SchedulerState.RUNNING) == 0) {
       num_to_run(thunks)
     } else {
-      return List[Thunk[A]]() // Be patient!
+      return List[Thunk]() // Be patient!
     }
 
     // determine duration
@@ -90,7 +88,7 @@ class DefaultScalarStrategy[A](question: ScalarQuestion[A])
     new_thunks
   }
 
-  def num_to_run(thunks: List[Thunk[A]]) : Int = {
+  def num_to_run(thunks: List[Thunk]) : Int = {
     // eliminate duplicates from the list of Thunks
     val thunks_no_dupes = thunks.filter(_.state != SchedulerState.DUPLICATE)
 

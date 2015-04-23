@@ -6,9 +6,9 @@ import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 
 object TestUtil {
-  def newThunk[A](question: Question[A], timeout: Int, worker_timeout: Int, cost: BigDecimal, time_delta: Int) = {
+  def newThunk(question: Question, timeout: Int, worker_timeout: Int, cost: BigDecimal, time_delta: Int) = {
     val now = new Date()
-    Thunk[A](
+    Thunk(
       UUID.randomUUID(),
       question,
       timeout,

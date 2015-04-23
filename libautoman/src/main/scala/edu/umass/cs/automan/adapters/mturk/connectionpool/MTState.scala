@@ -41,10 +41,10 @@ case class MTState(hit_types: Map[BatchKey,HITType],
   def updateBatchNo(groupID: GroupID, batchNo: Int) : MTState = {
     MTState(hit_types, hit_states, hit_ids, worker_whitelist, disqualifications, batch_no + (groupID -> batchNo))
   }
-  def getAssignmentOption(t: Thunk[_]) : Option[Assignment] = {
+  def getAssignmentOption(t: Thunk) : Option[Assignment] = {
     hit_states(hit_ids(Key.HITKey(t))).getAssignmentOption(t)
   }
-  def getHITID(t: Thunk[_]) : HITID = {
+  def getHITID(t: Thunk) : HITID = {
     hit_ids(Key.HITKey(t))
   }
   def getHITState(hitID: HITID) : HITState = {
