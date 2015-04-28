@@ -1,7 +1,6 @@
 package edu.umass.cs.automan.adapter.mturk
 
 import java.util.UUID
-
 import edu.umass.cs.automan.adapters.mturk.MTurkAdapter
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 import edu.umass.cs.automan.automan
@@ -9,7 +8,7 @@ import edu.umass.cs.automan.core.answer._
 import edu.umass.cs.automan.core.logging.LogConfig
 import org.scalatest._
 
-class MTurkAdapterTest extends FlatSpec with Matchers {
+class SimpleMTurkAdapterTest extends FlatSpec with Matchers {
 
   "A simple program" should "work" in {
     val a = MTurkAdapter { mt =>
