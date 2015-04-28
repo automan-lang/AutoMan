@@ -8,7 +8,7 @@ import edu.umass.cs.automan.core.answer._
 import edu.umass.cs.automan.core.logging.LogConfig
 import org.scalatest._
 
-class SimpleMTurkAdapterTest extends FlatSpec with Matchers {
+class MTurkRadioTest extends FlatSpec with Matchers {
 
   "A simple program" should "work" in {
     val a = MTurkAdapter { mt =>

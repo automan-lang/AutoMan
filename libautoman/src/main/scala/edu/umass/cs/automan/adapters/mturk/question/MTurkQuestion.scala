@@ -2,6 +2,7 @@ package edu.umass.cs.automan.adapters.mturk.question
 
 import edu.umass.cs.automan.core.scheduler.BackendResult
 import com.amazonaws.mturk.requester.{Assignment, QualificationRequirement}
+import xml.XML
 
 trait MTurkQuestion {
   type R
@@ -33,7 +34,14 @@ trait MTurkQuestion {
   def qualifications: List[QualificationRequirement] = _qualifications
 
   // private API
-  protected[mturk] def answer(a: Assignment): BackendResult[A]
+  protected[mturk] def answer(a: Assignment): BackendResult[A] = {
+    new BackendResult[A](
+      fromXML(XML.loadString(a.getAnswer)),
+      a.getWorkerId,
+      a.getAcceptTime.getTime,
+      a.getSubmitTime.getTime
+    )
+  }
   protected[mturk] def answerToString(a: A) : String
   protected[mturk] def fromXML(x: scala.xml.Node) : A
   protected[mturk] def toXML(randomize: Boolean) : scala.xml.Node

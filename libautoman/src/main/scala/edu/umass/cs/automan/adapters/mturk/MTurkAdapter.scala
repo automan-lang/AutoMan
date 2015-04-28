@@ -6,7 +6,7 @@ import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.adapters.mturk.connectionpool.Pool
 import edu.umass.cs.automan.adapters.mturk.logging.MTMemo
 import edu.umass.cs.automan.adapters.mturk.mock.{MockServiceState, MockSetup, MockRequesterService}
-import edu.umass.cs.automan.adapters.mturk.question.{MTurkQuestion, MTQuestionOption, MTRadioButtonQuestion}
+import edu.umass.cs.automan.adapters.mturk.question._
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 import edu.umass.cs.automan.core.AutomanAdapter
@@ -25,7 +25,7 @@ object MTurkAdapter {
 class MTurkAdapter extends AutomanAdapter {
   // these types provide MTurk implementations for
   // AutomanAdapter virtual methods
-//  override type CBQ = MTCheckboxQuestion
+  override type CBQ = MTCheckboxQuestion
 //  override type CBDQ = MTCheckboxDistributionQuestion
 //  override type FTQ = MTFreeTextQuestion
 //  override type FTDQ = MTFreeTextDistributionQuestion
@@ -72,7 +72,7 @@ class MTurkAdapter extends AutomanAdapter {
   def secret_access_key: String = _secret_access_key match { case Some(s) => s; case None => "" }
   def secret_access_key_=(s: String) { _secret_access_key = Some(s) }
 
-//  protected def CBQFactory() = new MTCheckboxQuestion
+  protected def CBQFactory() = new MTCheckboxQuestion
 //  protected def CBDQFactory() = new MTCheckboxDistributionQuestion
 //  protected def FTQFactory() = new MTFreeTextQuestion
 //  protected def FTDQFactory() = new MTFreeTextDistributionQuestion
