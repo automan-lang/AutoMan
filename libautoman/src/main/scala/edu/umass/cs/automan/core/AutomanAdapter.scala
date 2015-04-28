@@ -10,7 +10,7 @@ import edu.umass.cs.automan.core.scheduler.{Scheduler, Thunk}
 abstract class AutomanAdapter {
   // question types are determined by adapter implementations
   // answer types are invariant
-//  type CBQ <: CheckboxQuestion                    // answer scalar
+  type CBQ <: CheckboxQuestion                    // answer scalar
 //  type CBDQ <: CheckboxDistributionQuestion       // answer vector
 //  type FTQ <: FreeTextQuestion                    // answer scalar
 //  type FTDQ <: FreeTextDistributionQuestion       // answer vector
@@ -88,7 +88,7 @@ abstract class AutomanAdapter {
   protected[automan] def question_shutdown_hook(q: Question): Unit = {}
 
   // end-user syntax: Question creation
-//  def CheckboxQuestion(init: CBQ => Unit) : Future[CheckboxOldAnswer] = schedule(CBQFactory(), init)
+ def CheckboxQuestion(init: CBQ => Unit) = schedule[CBQ](CBQFactory(), init)
 //  def CheckboxDistributionQuestion(init: CBDQ => Unit) : Future[Set[CheckboxOldAnswer]] = scheduleVector(CBDQFactory(), init)
 //  def FreeTextQuestion(init: FTQ => Unit) : Future[FreeTextOldAnswer] = schedule(FTQFactory(), init)
 //  def FreeTextDistributionQuestion(init: FTDQ => Unit) : Future[Set[FreeTextOldAnswer]] = scheduleVector(FTDQFactory(), init)
@@ -102,7 +102,6 @@ abstract class AutomanAdapter {
     memo_init()
   }
   protected[automan] def close() = {
-    // TODO: HERE
     plugins_shutdown()
   }
   private def plugins_init() {
@@ -134,7 +133,7 @@ abstract class AutomanAdapter {
   // subclass instantiators; these are needed because
   // the JVM erases our type parameters (RBQ) at runtime
   // and thus 'new RBQ' does not suffice in the DSL call above
-//  protected def CBQFactory() : CBQ
+  protected def CBQFactory() : CBQ
 //  protected def CBDQFactory() : CBDQ
 //  protected def FTQFactory() : FTQ
 //  protected def FTDQFactory() : FTDQ

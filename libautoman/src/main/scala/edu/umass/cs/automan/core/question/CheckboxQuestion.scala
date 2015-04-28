@@ -8,8 +8,8 @@ import edu.umass.cs.automan.core.scheduler.Scheduler
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 
-abstract class RadioButtonQuestion extends ScalarQuestion {
-  type A = Symbol
+abstract class CheckboxQuestion extends ScalarQuestion {
+  type A = Set[Symbol]
   type AA = ScalarAnswer[A]
   type O = ScalarOutcome[A]
   type QuestionOptionType <: QuestionOption
@@ -18,11 +18,13 @@ abstract class RadioButtonQuestion extends ScalarQuestion {
 
   def options: List[QuestionOptionType] = _options
   def options_=(os: List[QuestionOptionType]) { _options = os }
-  def num_possibilities: BigInt = BigInt(_options.size)
+  def num_possibilities: BigInt = {
+      val base = BigInt(2)
+      base.pow(options.size)
+    }
   def randomized_options: List[QuestionOptionType]
 
-  override protected[automan] def getQuestionType = QuestionType.RadioButtonQuestion
-
+  override protected[automan] def getQuestionType = QuestionType.CheckboxQuestion
   override protected[automan] def getOutcome(adapter: AutomanAdapter, memo: Memo, poll_interval_in_s: Int) : O = {
     val scheduler = new Scheduler(this, adapter, memo, poll_interval_in_s)
     val f = Future{
