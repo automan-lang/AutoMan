@@ -1,6 +1,7 @@
 package edu.umass.cs.automan.adapters.mturk.question
 
 import java.util.UUID
+import edu.umass.cs.automan.adapters.mturk.mock.RadioButtonMockResponse
 import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
 import edu.umass.cs.automan.core.question.RadioButtonQuestion
 import edu.umass.cs.automan.core.scheduler.BackendResult
@@ -24,8 +25,8 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
   override def group_id: String = _group_id match { case Some(g) => g; case None => this.id.toString() }
 
   // private API
-  override protected[mturk] def answerToString(a: A) : String = {
-      a.toString().drop(1)
+  override protected[mturk] def toMockResponse(question_id: UUID, a: A) : RadioButtonMockResponse = {
+    RadioButtonMockResponse(question_id, a)
   }
   override protected[mturk] def fromXML(x: scala.xml.Node) : A = {
     // There should only be a SINGLE answer here, like this:

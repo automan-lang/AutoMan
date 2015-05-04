@@ -91,18 +91,6 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
     _state = _state.updateAssignmentStatus(UUID.fromString(assignmentId), AssignmentStatus.REJECTED)
   }
 
-  private def answerToAssignment(answer: String, question_id: UUID) : String = {
-    val xml_decl = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>"
-    val assn =
-      <QuestionFormAnswers xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionFormAnswers.xsd">
-        <Answer>
-          <QuestionIdentifier>{ question_id.toString }</QuestionIdentifier>
-          <SelectionIdentifier>{ answer }</SelectionIdentifier>
-        </Answer>
-      </QuestionFormAnswers>
-    xml_decl + assn.toString()
-  }
-
   override def getAllAssignmentsForHIT(hitId: String): Array[Assignment] = synchronized {
     val question_id = UUID.fromString(_state.getHITforHITId(hitId).getRequesterAnnotation)
 
@@ -128,7 +116,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
         null,
         null,
         null,
-        answerToAssignment(_state.answers_by_assignment_id(assn_id), question_id),
+        _state.answers_by_assignment_id(assn_id).toXML,
         null
       )
     }.toArray
@@ -184,7 +172,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
 
   def registerQuestion(question: Question): Unit = synchronized {
     val mtq = question.asInstanceOf[MTurkQuestion]
-    val assignments = mtq.mock_answers.map { a => UUID.randomUUID() -> mtq.answerToString(a)}.toMap
+    val assignments = mtq.mock_answers.map { a => UUID.randomUUID() -> mtq.toMockResponse(question.id, a)}.toMap
     _state = _state.addQuestion(question)
     _state = _state.addAssignments(question.id, assignments)
   }

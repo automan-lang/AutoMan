@@ -9,7 +9,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
                             questions_by_question_id: Map[UUID,Question],
                             hit_type_by_hit_type_id: Map[String,MockHITType],
                             hits_by_question_id: Map[UUID, List[HIT]],
-                            answers_by_assignment_id: Map[UUID,String],
+                            answers_by_assignment_id: Map[UUID,MockResponse],
                             assignment_status_by_assignment_id: Map[UUID,(AssignmentStatus.Value,Option[String])],
                             assignment_ids_by_question_id: Map[UUID, List[UUID]]) {
   def addHIT(question_id: UUID, hit: HIT) : MockServiceState = {
@@ -141,7 +141,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
       assignment_ids_by_question_id
     )
   }
-  def addAssignments(question_id: UUID, assignments: Map[UUID,String]) : MockServiceState = {
+  def addAssignments(question_id: UUID, assignments: Map[UUID,MockResponse]) : MockServiceState = {
     val answers = answers_by_assignment_id ++ assignments
     val status = assignment_status_by_assignment_id ++
                  assignments.map { case (id,a) => id -> (AssignmentStatus.UNANSWERED, None) }
