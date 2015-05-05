@@ -27,27 +27,27 @@ case class MockServiceState(budget: java.math.BigDecimal,
     assert(reserved_ids.size == num)
 
     // update status map
-    val status_map = reserved_ids.foldLeft(assignment_status_by_assignment_id) { case (acc, a_id) =>
-      acc + (a_id -> (AssignmentStatus.ANSWERED, Some(hit.getHITId)))
+    val state2 = reserved_ids.foldLeft(this) { case (state: MockServiceState, a_id: UUID) =>
+        state.updateAssignmentStatus(a_id, AssignmentStatus.ANSWERED)
     }
 
     // update hit list
     val hitlist = hit :: (
-      if (hits_by_question_id.contains(question_id)) {
-        hits_by_question_id(question_id)
+      if (state2.hits_by_question_id.contains(question_id)) {
+        state2.hits_by_question_id(question_id)
       } else {
         List.empty
       })
 
     // return a new MockServiceState
     MockServiceState(
-      budget,
-      questions_by_question_id,
-      hit_type_by_hit_type_id,
-      hits_by_question_id + (question_id -> hitlist),
-      answers_by_assignment_id,
-      status_map,
-      assignment_ids_by_question_id
+      state2.budget,
+      state2.questions_by_question_id,
+      state2.hit_type_by_hit_type_id,
+      state2.hits_by_question_id + (question_id -> hitlist),
+      state2.answers_by_assignment_id,
+      state2.assignment_status_by_assignment_id,
+      state2.assignment_ids_by_question_id
     )
   }
   def addHITType(hit_type: MockHITType) : MockServiceState = {
@@ -183,14 +183,30 @@ case class MockServiceState(budget: java.math.BigDecimal,
     val current_status = assn_map(assignmentId)._1
 
     // Ensure that only valid state transitions are allowed
-    assert(
-      new_status match {
-        case AssignmentStatus.APPROVED => current_status == AssignmentStatus.ANSWERED
-        case AssignmentStatus.REJECTED => current_status == AssignmentStatus.ANSWERED
-        case AssignmentStatus.ANSWERED => current_status == AssignmentStatus.UNANSWERED
-        case _ => false
-      }
-    )
+//    new_status match {
+//      case AssignmentStatus.APPROVED => assert(current_status == AssignmentStatus.ANSWERED)
+//      case AssignmentStatus.REJECTED => assert(current_status == AssignmentStatus.ANSWERED)
+//      case AssignmentStatus.ANSWERED => assert(current_status == AssignmentStatus.UNANSWERED)
+//      case _ => assert(false)
+//    }
+    println("DEBUG: changing assignment " + assignmentId.toString.take(5) + " from " + current_status + " to " + new_status)
+
+    new_status match {
+      case AssignmentStatus.APPROVED =>
+        if(current_status != AssignmentStatus.ANSWERED) {
+          println(current_status.toString + " is not ANSWERED!")
+        }
+      case AssignmentStatus.REJECTED =>
+        if(current_status != AssignmentStatus.ANSWERED) {
+          println(current_status.toString + " is not ANSWERED!")
+        }
+      case AssignmentStatus.ANSWERED =>
+        if(current_status != AssignmentStatus.UNANSWERED) {
+          println(current_status.toString + " is not UNANSWERED!")
+        }
+      case _ => println("foobar")
+    }
+
 
     assn_map + (assignmentId -> (new_status, assn_map(assignmentId)._2))
   }

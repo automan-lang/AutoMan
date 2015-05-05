@@ -26,7 +26,8 @@ case class HITState(hit: HIT, t_a_map: Map[UUID,Option[Assignment]], hittype: HI
     // we compare IDs since we may get duplicate Assignment
     // and Thunk objects as we run
     val (new_t_a_map,_) = assns.foldLeft(t_a_map,unmatchedThunks){ case ((tam, ts), a) =>
-        if (!aid_t_map.contains(a.getAssignmentId) && ts.nonEmpty) {
+        if (ts.nonEmpty) {
+//        if (!aid_t_map.contains(a.getAssignmentId) && ts.nonEmpty) {
           (tam + (ts.head -> Some(a)), ts.tail)
         } else {
           (tam, ts)
