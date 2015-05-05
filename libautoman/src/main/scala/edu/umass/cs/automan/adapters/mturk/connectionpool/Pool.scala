@@ -102,7 +102,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   }
   private def initWorkerThread(): Thread = {
     DebugLog("No worker thread; starting one up.", LogLevel.INFO, LogType.ADAPTER, null)
-    new Thread(new Runnable() {
+    val t = new Thread(new Runnable() {
       override def run() {
         while (true) {
 
@@ -110,7 +110,10 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
             val work_item = _work_queue.take()
 
             work_item match {
-              case req: ShutdownReq => return
+              case req: ShutdownReq => {
+                DebugLog("Connection pool shutdown requested.", LogLevel.INFO, LogType.ADAPTER, null)
+                return
+              }
               case req: AcceptReq[_] => do_sync_action(req, () => scheduled_accept(req.t))
               case req: BudgetReq => do_sync_action(req, () => scheduled_get_budget())
               case req: CancelReq[_] => do_sync_action(req, () => scheduled_cancel(req.t))
@@ -123,13 +126,19 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
 
           // rate-limit
           val duration = Math.max(sleep_ms - time.duration_ms, 0)
-          if ((duration/1000) > 0) {
-            DebugLog("MTurk connection pool sleeping for " + (duration / 1000).toString + " seconds.", LogLevel.INFO, LogType.ADAPTER, null)
+          if (duration > 0) {
+            DebugLog("MTurk connection pool sleeping for " + (duration).toString + " milliseconds.", LogLevel.INFO, LogType.ADAPTER, null)
+            Thread.sleep(duration)
+          } else {
+            DebugLog("MTurk connection pool thread yield.", LogLevel.INFO, LogType.ADAPTER, null)
+//            Thread.`yield`()
           }
-          Thread.sleep(duration)
         } // exit loop
+
       }
     })
+    t.setName("MTurk Connection Pool Thread")
+    t
   }
   private def do_sync_action[T](message: Message, action: () => T) : Unit = {
     message.synchronized {
