@@ -74,7 +74,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       req.synchronized {
         // enqueue inside sync so that we don't miss notify
         nonblocking_enqueue(req)
-        req.wait() // block until cancelled thunk is available
+        req.wait() // release lock and block until notify is sent
       }
     }
 

@@ -2,7 +2,6 @@ package edu.umass.cs.automan.adapters.mturk.mock
 
 import java.lang
 import java.lang.{Boolean, Double}
-import com.amazonaws.mturk.addon.BatchItemCallback
 import com.amazonaws.mturk.requester._
 import com.amazonaws.mturk.service.axis.RequesterService
 import com.amazonaws.mturk.util.ClientConfig
@@ -10,8 +9,6 @@ import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.util._
 import java.util.UUID
-import HITBackendStatus._
-import AssignmentStatus._
 
 /**
  * An object used to simulate a Mechanical Turk backend. Can be used by
@@ -96,8 +93,8 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
 
     val question = _state.questions_by_question_id(question_id).asInstanceOf[MTurkQuestion]
 
-    val assn_ids = _state.assignment_status_by_assignment_id.filter { case (assn_id, (assn_stat, q_id_opt)) =>
-        q_id_opt match {
+    val assn_ids = _state.assignment_status_by_assignment_id.filter { case (assn_id, (assn_stat, hit_id_opt)) =>
+        hit_id_opt match {
           case Some(hit_id) => hit_id == hitId
           case None => false
         }

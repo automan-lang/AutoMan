@@ -1,5 +1,6 @@
 package edu.umass.cs.automan.adapters.mturk.mock
 
+import java.io.Serializable
 import java.util.UUID
 import com.amazonaws.mturk.requester.HIT
 import edu.umass.cs.automan.core.question.Question
@@ -28,7 +29,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
 
     // update status map
     val state2 = reserved_ids.foldLeft(this) { case (state: MockServiceState, a_id: UUID) =>
-        state.updateAssignmentStatus(a_id, AssignmentStatus.ANSWERED)
+        state.updateAssignmentStatus(a_id, Some(hit.getHITId), AssignmentStatus.ANSWERED)
     }
 
     // update hit list
@@ -168,46 +169,35 @@ case class MockServiceState(budget: java.math.BigDecimal,
     )
   }
   def updateAssignmentStatus(assignmentId: UUID, new_status: AssignmentStatus.Value) : MockServiceState = {
+    updateAssignmentStatus(assignmentId, None, new_status)
+  }
+  def updateAssignmentStatus(assignmentId: UUID, hit_id_opt: Option[String], new_status: AssignmentStatus.Value) : MockServiceState = {
     MockServiceState(
       budget,
       questions_by_question_id,
       hit_type_by_hit_type_id,
       hits_by_question_id,
       answers_by_assignment_id,
-      changeAssignmentStatus(assignmentId, new_status, assignment_status_by_assignment_id),
+      changeAssignmentStatus(assignmentId, hit_id_opt, new_status, assignment_status_by_assignment_id),
       assignment_ids_by_question_id
     )
   }
-  private def changeAssignmentStatus(assignmentId: UUID, new_status: AssignmentStatus.Value, assn_map: Map[UUID,(AssignmentStatus.Value,Option[String])])
+  private def changeAssignmentStatus(assignmentId: UUID, hit_id_opt: Option[String], new_status: AssignmentStatus.Value, assn_map: Map[UUID,(AssignmentStatus.Value,Option[String])])
   : Map[UUID,(AssignmentStatus.Value,Option[String])] = {
     val current_status = assn_map(assignmentId)._1
 
     // Ensure that only valid state transitions are allowed
-//    new_status match {
-//      case AssignmentStatus.APPROVED => assert(current_status == AssignmentStatus.ANSWERED)
-//      case AssignmentStatus.REJECTED => assert(current_status == AssignmentStatus.ANSWERED)
-//      case AssignmentStatus.ANSWERED => assert(current_status == AssignmentStatus.UNANSWERED)
-//      case _ => assert(false)
-//    }
-    println("DEBUG: changing assignment " + assignmentId.toString.take(5) + " from " + current_status + " to " + new_status)
-
     new_status match {
-      case AssignmentStatus.APPROVED =>
-        if(current_status != AssignmentStatus.ANSWERED) {
-          println(current_status.toString + " is not ANSWERED!")
-        }
-      case AssignmentStatus.REJECTED =>
-        if(current_status != AssignmentStatus.ANSWERED) {
-          println(current_status.toString + " is not ANSWERED!")
-        }
-      case AssignmentStatus.ANSWERED =>
-        if(current_status != AssignmentStatus.UNANSWERED) {
-          println(current_status.toString + " is not UNANSWERED!")
-        }
-      case _ => println("foobar")
+      case AssignmentStatus.APPROVED => assert(current_status == AssignmentStatus.ANSWERED)
+      case AssignmentStatus.REJECTED => assert(current_status == AssignmentStatus.ANSWERED)
+      case AssignmentStatus.ANSWERED => assert(current_status == AssignmentStatus.UNANSWERED)
+      case _ => assert(false)
     }
 
-
-    assn_map + (assignmentId -> (new_status, assn_map(assignmentId)._2))
+    val hio = hit_id_opt match {
+      case None => assn_map(assignmentId)._2
+      case Some(h) => Some(h)
+    }
+    assn_map + (assignmentId -> (new_status, hio))
   }
 }
