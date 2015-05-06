@@ -14,23 +14,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
                             assignment_status_by_assignment_id: Map[UUID,(AssignmentStatus.Value,Option[String])],
                             assignment_ids_by_question_id: Map[UUID, List[UUID]]) {
   def addHIT(question_id: UUID, hit: HIT) : MockServiceState = {
-    val num = hit.getMaxAssignments
-
-    // reserve the correct number of unreserved assignments for the hit
-    val reserved_ids = assignment_ids_by_question_id(question_id).flatMap { a_id =>
-      if (assignment_status_by_assignment_id(a_id)._1 == AssignmentStatus.UNANSWERED) {
-        Some(a_id)
-      } else {
-        None
-      }
-    }.take(num)
-
-    assert(reserved_ids.size == num)
-
-    // update status map
-    val state2 = reserved_ids.foldLeft(this) { case (state: MockServiceState, a_id: UUID) =>
-        state.updateAssignmentStatus(a_id, Some(hit.getHITId), AssignmentStatus.ANSWERED)
-    }
+    val state2 = reserveAssignments(question_id, hit.getHITId, hit.getMaxAssignments)
 
     // update hit list
     val hitlist = hit :: (
@@ -50,6 +34,23 @@ case class MockServiceState(budget: java.math.BigDecimal,
       state2.assignment_status_by_assignment_id,
       state2.assignment_ids_by_question_id
     )
+  }
+  def reserveAssignments(question_id: UUID, hit_id: String, num: Int) : MockServiceState = {
+    // reserve the correct number of unreserved assignments for the hit
+    val reserved_ids = assignment_ids_by_question_id(question_id).flatMap { a_id =>
+      if (assignment_status_by_assignment_id(a_id)._1 == AssignmentStatus.UNANSWERED) {
+        Some(a_id)
+      } else {
+        None
+      }
+    }.take(num)
+
+    assert(reserved_ids.size == num)
+
+    // update status map
+    reserved_ids.foldLeft(this) { case (state: MockServiceState, a_id: UUID) =>
+        state.updateAssignmentStatus(a_id, Some(hit_id), AssignmentStatus.ANSWERED)
+    }
   }
   def addHITType(hit_type: MockHITType) : MockServiceState = {
     MockServiceState(
@@ -114,17 +115,20 @@ case class MockServiceState(budget: java.math.BigDecimal,
     cloned_hit.setExpiration(Utilities.calInSeconds(cloned_hit.getExpiration, deltaSec))
     cloned_hit.setMaxAssignments(cloned_hit.getMaxAssignments + deltaAssignments)
 
+    // reserve assignments
+    val state2 = reserveAssignments(question_id, hitId, deltaAssignments)
+
     // update hit list
-    val hitlist = cloned_hit :: hits_by_question_id(question_id).filter(_.getHITId != hitId)
+    val hitlist = cloned_hit :: state2.hits_by_question_id(question_id).filter(_.getHITId != hitId)
 
     MockServiceState(
-      budget,
-      questions_by_question_id,
-      hit_type_by_hit_type_id,
-      hits_by_question_id + (question_id -> hitlist),
-      answers_by_assignment_id,
-      assignment_status_by_assignment_id,
-      assignment_ids_by_question_id
+      state2.budget,
+      state2.questions_by_question_id,
+      state2.hit_type_by_hit_type_id,
+      state2.hits_by_question_id + (question_id -> hitlist),
+      state2.answers_by_assignment_id,
+      state2.assignment_status_by_assignment_id,
+      state2.assignment_ids_by_question_id
     )
   }
   def getHITforHITId(hitId: String) : HIT = {
