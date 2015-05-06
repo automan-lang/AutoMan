@@ -21,7 +21,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   private var _worker_thread: Thread = startWorker()
 
   // work queue
-  private val _work_queue: PriorityBlockingQueue[Message] = new PriorityBlockingQueue[Message]()
+  private val _requests: PriorityBlockingQueue[Message] = new PriorityBlockingQueue[Message]()
 
   // response data
   private val _responses = scala.collection.mutable.Map[Message, Any]()
@@ -62,7 +62,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   // IMPLEMENTATIONS
   def nonblocking_enqueue[M <: Message, T](req: M) = {
     // put job in queue
-    _work_queue.add(req)
+    _requests.add(req)
   }
   def blocking_enqueue[M <: Message, T](req: M) : T = {
     // wait for response
@@ -97,7 +97,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
         while (true) {
 
           val time = Stopwatch {
-            val work_item = _work_queue.take()
+            val work_item = _requests.take()
 
             work_item match {
               case req: ShutdownReq => {
