@@ -18,7 +18,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   type HITKey = (BatchKey, String)          // (BatchKey, memo_hash); uniquely identifies a HIT
 
   // worker
-  private var _worker_thread: Option[Thread] = None
+  private var _worker_thread: Thread = startWorker()
 
   // work queue
   private val _work_queue: PriorityBlockingQueue[Message] = new PriorityBlockingQueue[Message]()
@@ -63,12 +63,8 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   def nonblocking_enqueue[M <: Message, T](req: M) = {
     // put job in queue
     _work_queue.add(req)
-
-    initWorkerIfNeeded()
   }
   def blocking_enqueue[M <: Message, T](req: M) : T = {
-    nonblocking_enqueue(req)
-
     // wait for response
     // while loop is because the JVM is
     // permitted to send spurious wakeups
@@ -76,6 +72,8 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       // Note that the purpose of this second lock
       // is to provide blocking semantics
       req.synchronized {
+        // enqueue inside sync so that we don't miss notify
+        nonblocking_enqueue(req)
         req.wait() // block until cancelled thunk is available
       }
     }
@@ -87,18 +85,10 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       ret.asInstanceOf[T]
     }
   }
-  private def initWorkerIfNeeded() : Unit = {
-    // if there's no thread already servicing the queue,
-    // lock and start one up
-    synchronized {
-      _worker_thread match {
-        case Some(thread) => Unit // do nothing
-        case None =>
-          val t = initWorkerThread()
-          _worker_thread = Some(t)
-          t.start()
-      }
-    }
+  private def startWorker() : Thread = {
+    val t = initWorkerThread()
+    t.start()
+    t
   }
   private def initWorkerThread(): Thread = {
     DebugLog("No worker thread; starting one up.", LogLevel.INFO, LogType.ADAPTER, null)
@@ -127,11 +117,11 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
           // rate-limit
           val duration = Math.max(sleep_ms - time.duration_ms, 0)
           if (duration > 0) {
-            DebugLog("MTurk connection pool sleeping for " + (duration).toString + " milliseconds.", LogLevel.INFO, LogType.ADAPTER, null)
+            DebugLog("MTurk connection pool sleeping for " + duration.toString + " milliseconds.", LogLevel.INFO, LogType.ADAPTER, null)
             Thread.sleep(duration)
           } else {
             DebugLog("MTurk connection pool thread yield.", LogLevel.INFO, LogType.ADAPTER, null)
-//            Thread.`yield`()
+            Thread.`yield`()
           }
         } // exit loop
 
@@ -227,7 +217,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       null,                                                         // title; defined by HITType
       null,                                                         // description
       null,                                                         // keywords; defined by HITType
-      question.asInstanceOf[MTurkQuestion].toXML(true).toString(),  // question
+      question.asInstanceOf[MTurkQuestion].toXML(randomize = true).toString(),  // question
       null,                                                         // reward; defined by HITType
       null,                                                         // assignmentDurationInSeconds; defined by HITType
       null,                                                         // autoApprovalDelayInSeconds; defined by HITType
