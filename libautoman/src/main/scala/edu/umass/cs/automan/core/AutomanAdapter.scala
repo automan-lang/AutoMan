@@ -14,8 +14,8 @@ abstract class AutomanAdapter {
 //  type CBDQ <: CheckboxDistributionQuestion       // answer vector
   type FTQ <: FreeTextQuestion                    // answer scalar
 //  type FTDQ <: FreeTextDistributionQuestion       // answer vector
-  type RBQ  <: RadioButtonQuestion                 // answer scalar
-//  type RBDQ <: RadioButtonDistributionQuestion    // answer vector
+  type RBQ  <: RadioButtonQuestion                // answer scalar
+  type RBDQ <: RadioButtonDistributionQuestion    // answer vector
   type MemoDB <: Memo
 
   protected var _default_confidence: Double = 0.95
@@ -93,6 +93,7 @@ abstract class AutomanAdapter {
   def FreeTextQuestion(init: FTQ => Unit) = schedule(FTQFactory(), init)
 //  def FreeTextDistributionQuestion(init: FTDQ => Unit) : Future[Set[FreeTextOldAnswer]] = scheduleVector(FTDQFactory(), init)
   def RadioButtonQuestion(init: RBQ => Unit) = schedule(RBQFactory(), init)
+  def RadioButtonDistributionQuestion(init: RBDQ => Unit) = schedule(RBDQFactory(), init)
 //  def RadioButtonDistributionQuestion(init: RBDQ => Unit) : Future[Set[RadioButtonOldAnswer]] = scheduleVector(RBDQFactory(), init)
   def Option(id: Symbol, text: String) : QuestionOption
 
@@ -138,7 +139,7 @@ abstract class AutomanAdapter {
   protected def FTQFactory() : FTQ
 //  protected def FTDQFactory() : FTDQ
   protected def RBQFactory() : RBQ
-//  protected def RBDQFactory() : RBDQ
+  protected def RBDQFactory() : RBDQ
   protected def MemoDBFactory() : MemoDB
 
 }
