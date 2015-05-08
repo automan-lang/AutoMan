@@ -12,7 +12,7 @@ abstract class AutomanAdapter {
   // answer types are invariant
   type CBQ <: CheckboxQuestion                    // answer scalar
 //  type CBDQ <: CheckboxDistributionQuestion       // answer vector
-//  type FTQ <: FreeTextQuestion                    // answer scalar
+  type FTQ <: FreeTextQuestion                    // answer scalar
 //  type FTDQ <: FreeTextDistributionQuestion       // answer vector
   type RBQ  <: RadioButtonQuestion                 // answer scalar
 //  type RBDQ <: RadioButtonDistributionQuestion    // answer vector
@@ -88,11 +88,11 @@ abstract class AutomanAdapter {
   protected[automan] def question_shutdown_hook(q: Question): Unit = {}
 
   // end-user syntax: Question creation
- def CheckboxQuestion(init: CBQ => Unit) = schedule[CBQ](CBQFactory(), init)
+ def CheckboxQuestion(init: CBQ => Unit) = schedule(CBQFactory(), init)
 //  def CheckboxDistributionQuestion(init: CBDQ => Unit) : Future[Set[CheckboxOldAnswer]] = scheduleVector(CBDQFactory(), init)
-//  def FreeTextQuestion(init: FTQ => Unit) : Future[FreeTextOldAnswer] = schedule(FTQFactory(), init)
+  def FreeTextQuestion(init: FTQ => Unit) = schedule(FTQFactory(), init)
 //  def FreeTextDistributionQuestion(init: FTDQ => Unit) : Future[Set[FreeTextOldAnswer]] = scheduleVector(FTDQFactory(), init)
-  def RadioButtonQuestion(init: RBQ => Unit) = schedule[RBQ](RBQFactory(), init)
+  def RadioButtonQuestion(init: RBQ => Unit) = schedule(RBQFactory(), init)
 //  def RadioButtonDistributionQuestion(init: RBDQ => Unit) : Future[Set[RadioButtonOldAnswer]] = scheduleVector(RBDQFactory(), init)
   def Option(id: Symbol, text: String) : QuestionOption
 
@@ -135,7 +135,7 @@ abstract class AutomanAdapter {
   // and thus 'new RBQ' does not suffice in the DSL call above
   protected def CBQFactory() : CBQ
 //  protected def CBDQFactory() : CBDQ
-//  protected def FTQFactory() : FTQ
+  protected def FTQFactory() : FTQ
 //  protected def FTDQFactory() : FTDQ
   protected def RBQFactory() : RBQ
 //  protected def RBDQFactory() : RBDQ
