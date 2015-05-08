@@ -91,18 +91,20 @@ class Scheduler(val question: Question,
 
     // pay for answers, but only if we're terminating normally
     if (!over_budget) {
+      val cancelled_thunks = s.thunks_to_cancel(_all_thunks)
       val accepted_thunks = s.thunks_to_accept(_all_thunks)
       val rejected_thunks = s.thunks_to_reject(_all_thunks)
-      accept_and_reject(
+      accept_reject_and_cancel(
         accepted_thunks,
         rejected_thunks,
+        cancelled_thunks,
         s.rejection_response(accepted_thunks),
         backend
       )
     }
 
     // save one more time
-    DebugLog("Saving state of " + _all_thunks.size + " thunks to database.", LogLevel.INFO, LogType.SCHEDULER, question.id)
+    DebugLog("Saving final state of " + _all_thunks.size + " thunks to database.", LogLevel.INFO, LogType.SCHEDULER, question.id)
     memo.save(question, _all_thunks)
 
     // run shutdown hook
@@ -179,13 +181,20 @@ class Scheduler(val question: Question,
 
   /**
    * Accepts and rejects tasks on the backend.  Returns all Thunks.
+   * @param to_cancel A list of Thunks to be canceled.
    * @param to_accept A list of Thunks to be accepted.
    * @param to_reject A list of Thunks to be rejected.
    * @param correct_answer A stringified version of the correct answer.
    * @param backend A reference to the backend AutomanAdapter.
    * @return The amount of money spent.
    */
-  def accept_and_reject[A](to_accept: List[Thunk], to_reject: List[Thunk], correct_answer: String, backend: AutomanAdapter) : List[Thunk] = {
+  def accept_reject_and_cancel[A](to_accept: List[Thunk],
+                                  to_reject: List[Thunk],
+                                  to_cancel: List[Thunk],
+                                  correct_answer: String,
+                                  backend: AutomanAdapter) : List[Thunk] = {
+    val canceled = to_cancel.map(backend.cancel)
+    assert(all_set_invariant(to_cancel, canceled, SchedulerState.CANCELLED))
     val accepted = to_accept.map(backend.accept)
     assert(all_set_invariant(to_accept, accepted, SchedulerState.ACCEPTED))
     val rejected = to_reject.map(backend.reject(_, correct_answer))
