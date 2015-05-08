@@ -91,10 +91,12 @@ class DefaultScalarStrategy(question: ScalarQuestion)
     val np: Int = if(question.num_possibilities > BigInt(Int.MaxValue)) 1000 else question.num_possibilities.toInt
 
     // number needed for agreement, adjusted for programmer time-value
-    val n = math.min(math.floor(question.budget.toDouble/question.reward.toDouble),
-                     math.floor(question.time_value_per_hour.toDouble/question.wage.toDouble)
+    val n = math.max(
+              2,
+              math.min(math.floor(question.budget.toDouble/question.reward.toDouble),
+                       math.floor(question.time_value_per_hour.toDouble/question.wage.toDouble)
+              )
             )
-
     n.toInt
   }
 
