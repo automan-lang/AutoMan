@@ -6,10 +6,6 @@ import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.question.{Question, ScalarQuestion}
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 
-object DefaultScalarStrategy {
-  val table = new util.HashMap[(Int,Int,Int,Double),Int]()
-}
-
 class DefaultScalarStrategy(question: ScalarQuestion)
   extends ScalarValidationStrategy(question) {
   DebugLog("DEFAULTSCALAR strategy loaded.",LogLevel.INFO,LogType.STRATEGY, question.id)
@@ -95,40 +91,11 @@ class DefaultScalarStrategy(question: ScalarQuestion)
     val np: Int = if(question.num_possibilities > BigInt(Int.MaxValue)) 1000 else question.num_possibilities.toInt
 
     // number needed for agreement, adjusted for programmer time-value
-    val n = math.max(expected_for_agreement(np, thunks_no_dupes.size, max_agree(thunks_no_dupes), question.confidence).toDouble,
-             math.min(math.floor(question.budget.toDouble/question.reward.toDouble),
-                      math.floor(question.time_value_per_hour.toDouble/question.wage.toDouble)
-             )
-    )
+    val n = math.min(math.floor(question.budget.toDouble/question.reward.toDouble),
+                     math.floor(question.time_value_per_hour.toDouble/question.wage.toDouble)
+            )
 
     n.toInt
-  }
-  
-  def expected_for_agreement(num_possibilities: Int, trials: Int,  max_agr: Int, confidence: Double) : Int = {
-    DefaultScalarStrategy.table.synchronized {
-      // check table
-      if (!DefaultScalarStrategy.table.containsKey((num_possibilities, trials, max_agr, confidence))) {
-        // do the computation
-        var to_run = 0
-        var done = false
-        while(!done) {
-          val min_required = MonteCarlo.requiredForAgreement(num_possibilities, trials + to_run, confidence, 1000000)
-          val expected = max_agr + to_run
-          if (min_required < 0 || min_required > expected) {
-            to_run += 1
-          } else {
-            done = true
-          }
-        }
-
-        // insert into table
-        DefaultScalarStrategy.table.put((num_possibilities, trials, max_agr, confidence), to_run)
-
-        to_run
-      } else {
-        DefaultScalarStrategy.table.get((num_possibilities, trials, max_agr, confidence))
-      }
-    }
   }
 
   def choose_starting_n() : Int = {

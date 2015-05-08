@@ -30,7 +30,7 @@ class MTurkAdapter extends AutomanAdapter {
   override type FTQ = MTFreeTextQuestion
 //  override type FTDQ = MTFreeTextDistributionQuestion
   override type RBQ = MTRadioButtonQuestion
-//  override type RBDQ = MTRadioButtonDistributionQuestion
+  override type RBDQ = MTRadioButtonDistributionQuestion
   override type MemoDB = MTMemo
 
   private val SLEEP_MS = 500
@@ -77,7 +77,7 @@ class MTurkAdapter extends AutomanAdapter {
   protected def FTQFactory() = new MTFreeTextQuestion
 //  protected def FTDQFactory() = new MTFreeTextDistributionQuestion
   protected def RBQFactory() = new MTRadioButtonQuestion
-//  protected def RBDQFactory() = new MTRadioButtonDistributionQuestion
+  protected def RBDQFactory() = new MTRadioButtonDistributionQuestion
 
   def Option(id: Symbol, text: String) = new MTQuestionOption(id, text, "")
   def Option(id: Symbol, text: String, image_url: String) = new MTQuestionOption(id, text, image_url)

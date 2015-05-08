@@ -1,5 +1,7 @@
 package edu.umass.cs.automan.core.strategy
 
+import java.util.UUID
+
 import edu.umass.cs.automan.core.answer._
 import edu.umass.cs.automan.core.question._
 import edu.umass.cs.automan.core.scheduler._
@@ -16,13 +18,13 @@ abstract class DistributionValidationStrategy(question: DistributionQuestion)
   }
   def select_answer(thunks: List[Thunk]) : Question#AA = {
     val valid_thunks: List[Thunk] = completed_workerunique_thunks(thunks)
-    val distribution: Set[Question#A] = valid_thunks.map { t => t.answer.get }.toSet
+    val distribution: Set[(String,Question#A)] = valid_thunks.map { t => (t.worker_id.get, t.answer.get) }.toSet
     val cost: BigDecimal = valid_thunks.map { t => t.cost }.foldLeft(BigDecimal(0)){ (acc, c ) => acc + c }
     DistributionAnswer(distribution, cost).asInstanceOf[Question#AA]
   }
   def select_over_budget_answer(thunks: List[Thunk]) : Question#AA = {
     val valid_thunks: List[Thunk] = completed_workerunique_thunks(thunks)
-    val distribution: Set[Question#A] = valid_thunks.map { t => t.answer.get }.toSet
+    val distribution: Set[(String,Question#A)] = valid_thunks.map { t => (t.worker_id.get, t.answer.get) }.toSet
     val cost: BigDecimal = valid_thunks.map { t => t.cost }.foldLeft(BigDecimal(0)){ (acc, c ) => acc + c }
     DistributionOverBudget(distribution, cost).asInstanceOf[Question#AA]
   }
