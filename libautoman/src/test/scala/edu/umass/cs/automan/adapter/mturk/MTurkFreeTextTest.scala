@@ -8,9 +8,9 @@ import edu.umass.cs.automan.core.answer._
 import edu.umass.cs.automan.core.logging.LogConfig
 import org.scalatest._
 
-class MTurkCheckTest extends FlatSpec with Matchers {
+class MTurkFreeTextTest extends FlatSpec with Matchers {
 
-  "A checkbox program" should "work" in {
+  "A freetext program" should "work" in {
     val a = MTurkAdapter { mt =>
       mt.access_key_id = UUID.randomUUID().toString
       mt.secret_access_key = UUID.randomUUID().toString
@@ -20,22 +20,16 @@ class MTurkCheckTest extends FlatSpec with Matchers {
     }
 
     automan(a) {
-      def which_one() = a.CheckboxQuestion { q =>
+      def which_one() = a.FreeTextQuestion { q =>
         q.budget = 8.00
-        q.text = "Which characters are not Oscar, Kermit, or Cookie Monster?"
-        q.options = List(
-          a.Option('oscar, "Oscar the Grouch"),
-          a.Option('kermit, "Kermit the Frog"),
-          a.Option('spongebob, "Spongebob Squarepants"),
-          a.Option('cookie, "Cookie Monster"),
-          a.Option('count, "The Count")
-        )
-        q.mock_answers = List(Set('spongebob,'count),Set('spongebob),Set('count,'spongebob),Set('count,'spongebob))
+        q.text = "Which 4-letter metasyntactic variable starts with 'q'?"
+        q.pattern = "AAAA"
+        q.mock_answers = List("quux","foo","bar","norf","quux")
       }
 
       which_one().answer match {
         case ScalarAnswer(value, _, _) =>
-          (value == Set('spongebob,'count)) should be (true)
+          (value == "quux") should be (true)
         case ScalarOverBudget(value, cost, conf) =>
           fail()
       }

@@ -10,7 +10,7 @@ import org.scalatest._
 
 class MTurkRadioTest extends FlatSpec with Matchers {
 
-  "A simple program" should "work" in {
+  "A radio button program" should "work" in {
     val a = MTurkAdapter { mt =>
       mt.access_key_id = UUID.randomUUID().toString
       mt.secret_access_key = UUID.randomUUID().toString
