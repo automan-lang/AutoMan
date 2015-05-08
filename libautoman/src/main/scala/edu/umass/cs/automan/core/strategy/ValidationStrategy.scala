@@ -61,6 +61,12 @@ abstract class ValidationStrategy(question: Question) {
    */
   def spawn(thunks: List[Thunk], suffered_timeout: Boolean): List[Thunk]
   def thunks_to_accept(thunks: List[Thunk]): List[Thunk]
+  def thunks_to_cancel(thunks: List[Thunk]): List[Thunk] = {
+    thunks.filter { t =>
+      t.state == SchedulerState.READY ||
+      t.state == SchedulerState.RUNNING
+    }
+  }
   def thunks_to_reject(thunks: List[Thunk]): List[Thunk]
 
   protected def unique_by_date(ts: List[Thunk]) = {

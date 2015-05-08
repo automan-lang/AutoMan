@@ -67,11 +67,11 @@ abstract class ScalarValidationStrategy(question: ScalarQuestion)
       ScalarOverBudget(value,cost,conf).asInstanceOf[Question#AA]
     }
   }
-  override def thunks_to_accept(thunks: List[Thunk]): List[Thunk] = {
+  def thunks_to_accept(thunks: List[Thunk]): List[Thunk] = {
     biggest_group(thunks) match { case (_, ts) => ts }
   }
 
-  override def thunks_to_reject(thunks: List[Thunk]): List[Thunk] = {
+  def thunks_to_reject(thunks: List[Thunk]): List[Thunk] = {
     val accepts = thunks_to_accept(thunks).toSet
     thunks.filter { t => !accepts.contains(t) }
   }

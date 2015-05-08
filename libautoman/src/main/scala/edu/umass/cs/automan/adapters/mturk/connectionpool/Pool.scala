@@ -41,7 +41,13 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     blocking_enqueue[BudgetReq, BigDecimal](BudgetReq())
   }
   def cancel[A](t: Thunk) : Thunk = {
-    blocking_enqueue[CancelReq[A], Thunk](CancelReq(t))
+    // don't bother to schedule cancellation if the task
+    // is not actually running
+    if (t.state == SchedulerState.RUNNING) {
+      blocking_enqueue[CancelReq[A], Thunk](CancelReq(t))
+    } else {
+      t.copy_as_cancelled()
+    }
   }
   def cleanup_qualifications[A](mtq: MTurkQuestion) : Unit = {
     nonblocking_enqueue[DisposeQualsReq, Unit](DisposeQualsReq(mtq))
@@ -161,8 +167,12 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
 
     val hit_id = _state.getHITID(t)
     val hit_state = _state.getHITState(hit_id)
-    backend.forceExpireHIT(hit_state.HITId)
-    _state = _state.updateHITStates(hit_id, hit_state.cancel())
+
+    // only cancel HIT if it is not already cancelled
+    if (!hit_state.isCancelled) {
+      backend.forceExpireHIT(hit_state.HITId)
+      _state = _state.updateHITStates(hit_id, hit_state.cancel())
+    }
 
     t.copy_as_cancelled()
   }

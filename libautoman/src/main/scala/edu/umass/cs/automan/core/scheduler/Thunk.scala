@@ -22,7 +22,9 @@ case class Thunk(thunk_id: UUID,
     calendar.getTime
   }
 
-  DebugLog("New Thunk " + thunk_id.toString +  "; will expire at: " + expires_at.toString, LogLevel.INFO, LogType.SCHEDULER, question.id)
+  if(state == SchedulerState.READY) {
+    DebugLog("New Thunk " + thunk_id.toString + "; with cost: $" + cost.toString() + "; will expire at: " + expires_at.toString, LogLevel.INFO, LogType.SCHEDULER, question.id)
+  }
 
   def is_timedout: Boolean = {
     expires_at.before(new Date())
