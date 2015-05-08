@@ -1,12 +1,7 @@
 package edu.umass.cs.automan.core.question
 
-import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.{ScalarOutcome, AbstractScalarAnswer}
-import edu.umass.cs.automan.core.logging.Memo
 import edu.umass.cs.automan.core.strategy.DefaultScalarStrategy
-import edu.umass.cs.automan.core.scheduler.Scheduler
-import scala.concurrent._
-import scala.concurrent.ExecutionContext.Implicits.global
 
 abstract class ScalarQuestion extends Question {
   type AA <: AbstractScalarAnswer[A]

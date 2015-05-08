@@ -330,16 +330,13 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     }
   }
 
-  private def scheduled_reject[A](t: Thunk, correct_answer: String) : Thunk = {
+  private def scheduled_reject[A](t: Thunk, rejection_response: String) : Thunk = {
     DebugLog(String.format("Rejecting task for question_id = %s",
       t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
     _state.getAssignmentOption(t) match {
       case Some(assignment) =>
-        backend.rejectAssignment(assignment.getAssignmentId,
-          "AutoMan determined that the correct answer to this question is: \"" + correct_answer +
-          "\".  If you believe this result to be in error, please contact us."
-        )
+        backend.rejectAssignment(assignment.getAssignmentId, rejection_response)
         t.copy_as_rejected()
       case None =>
         throw new Exception("Cannot accept non-existent assignment.")

@@ -10,7 +10,7 @@ object DebugLog {
         case _ =>
           source match {
             case LogType.SCHEDULER => "question_id = " + id.toString + ", "
-            case LogType.STRATEGY => "computation_id = " + id.toString + ", "
+            case LogType.STRATEGY => "question_id = " + id.toString + ", "
             case LogType.ADAPTER => "question_id = " + id.toString + ", "
             case LogType.MEMOIZER => ""
           }

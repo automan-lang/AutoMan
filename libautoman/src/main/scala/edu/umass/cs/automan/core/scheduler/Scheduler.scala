@@ -44,19 +44,19 @@ class Scheduler(val question: Question,
 
     var _timeout_occurred = false
     var _all_thunks = thunks
+    var over_budget = false
 
-    while(!s.is_done(_all_thunks)) {
+    while(!s.is_done(_all_thunks) && !over_budget) {
       val __thunks = _all_thunks
       // get list of workers who may not re-participate
       val blacklist = s.blacklisted_workers(__thunks)
       // filter duplicate work
       val dedup_thunks = s.mark_duplicates(__thunks)
       // post more tasks as needed
-
       val new_thunks = try {
         post_as_needed(dedup_thunks, backend, question, suffered_timeout, blacklist)
       } catch {
-        case o: OverBudgetException[_] => return s.select_over_budget_answer(thunks)
+        case o: OverBudgetException[_] => over_budget = true; List.empty[Thunk]
       }
       // The scheduler waits here to give the crowd time to answer.
       // Sleeping also informs the scheduler that this thread may yield
@@ -83,19 +83,27 @@ class Scheduler(val question: Question,
     }
 
     // select answer
-    val answer = s.select_answer(_all_thunks)
+    val answer = if (!over_budget) {
+      s.select_answer(_all_thunks)
+    } else {
+      s.select_over_budget_answer(thunks)
+    }
 
-    // pay for answers
-    val _final_thunks = accept_and_reject(
-                          s.thunks_to_accept(_all_thunks),
-                          s.thunks_to_reject(_all_thunks),
-                          answer.value.toString,
-                          backend
-                        )
+    // pay for answers, but only if we're terminating normally
+    if (!over_budget) {
+      val accepted_thunks = s.thunks_to_accept(_all_thunks)
+      val rejected_thunks = s.thunks_to_reject(_all_thunks)
+      accept_and_reject(
+        accepted_thunks,
+        rejected_thunks,
+        s.rejection_response(accepted_thunks),
+        backend
+      )
+    }
 
     // save one more time
-    DebugLog("Saving state of " + _final_thunks.size + " thunks to database.", LogLevel.INFO, LogType.SCHEDULER, question.id)
-    memo.save(question, _final_thunks)
+    DebugLog("Saving state of " + _all_thunks.size + " thunks to database.", LogLevel.INFO, LogType.SCHEDULER, question.id)
+    memo.save(question, _all_thunks)
 
     // run shutdown hook
     backend.question_shutdown_hook(question)
@@ -155,9 +163,9 @@ class Scheduler(val question: Question,
       // can we afford these?
       val cost = cost_for_thunks(thunks ::: new_thunks)
       if (question.budget < cost) {
-        val answer = s.select_answer(thunks)
+        val answer = s.select_over_budget_answer(thunks)
         DebugLog("Over budget. Need: " + cost.toString() + ", have: " + question.budget.toString(), LogLevel.WARN, LogType.SCHEDULER, question.id)
-        throw new OverBudgetException[Question#A](answer.value, answer.cost)
+        throw new OverBudgetException(answer, cost)
       } else {
         // yes, so post and return all posted thunks
         val posted = backend.post(new_thunks, blacklist)
