@@ -12,17 +12,6 @@ abstract class ScalarValidationStrategy(question: ScalarQuestion)
   def is_confident(thunks: List[Thunk]) : Boolean
   def is_done(thunks: List[Thunk]) = is_confident(thunks)
 
-  private def biggest_group(thunks: List[Thunk]) : (Option[Question#A], List[Thunk]) = {
-    val rt = completed_workerunique_thunks(thunks)
-
-    assert(rt.size != 0)
-
-    // group by answer (which is actually an Option[Question#A] because Thunk.answer is Option[Question#A])
-    val groups: Map[Option[Question#A], List[Thunk]] = rt.groupBy(_.answer)
-
-    // find answer of the largest group
-    groups.maxBy { case(group, ts) => ts.size }
-  }
   def answer_selector(thunks: List[Thunk]) : (Question#A,BigDecimal,Double) = {
     val bgrp = biggest_group(thunks)
 
@@ -39,6 +28,32 @@ abstract class ScalarValidationStrategy(question: ScalarQuestion)
     val cost = (bgrp match { case (_,ts) => ts }).foldLeft(BigDecimal(0)){ case (acc,t) => acc + t.cost }
 
     (value, cost, conf)
+  }
+  private def biggest_group(thunks: List[Thunk]) : (Option[Question#A], List[Thunk]) = {
+    val rt = completed_workerunique_thunks(thunks)
+
+    assert(rt.size != 0)
+
+    // group by answer (which is actually an Option[Question#A] because Thunk.answer is Option[Question#A])
+    val groups: Map[Option[Question#A], List[Thunk]] = rt.groupBy(_.answer)
+
+    // find answer of the largest group
+    groups.maxBy { case(group, ts) => ts.size }
+  }
+  def rejection_response(thunks: List[Thunk]): String = {
+    if (thunks.size == 0) {
+      "Your answer is incorrect.  " +
+      "We value your feedback, so if you think that we are in error, please contact us."
+    } else {
+      thunks.head.answer match {
+        case Some(a) =>
+          "Your answer is incorrect.  The correct answer is '" + a + "'.  " + "" +
+          "We value your feedback, so if you think that we are in error, please contact us."
+        case None =>
+          "Your answer is incorrect.  " +
+          "We value your feedback, so if you think that we are in error, please contact us."
+      }
+    }
   }
   def select_answer(thunks: List[Thunk]) : Question#AA = {
     answer_selector(thunks) match { case (value,cost,conf) =>

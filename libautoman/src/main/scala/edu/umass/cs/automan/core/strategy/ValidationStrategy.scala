@@ -1,60 +1,7 @@
 package edu.umass.cs.automan.core.strategy
 
-import edu.umass.cs.automan.core.answer.AbstractAnswer
-
-import scala.collection.mutable
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 import edu.umass.cs.automan.core.question.Question
-import java.util.UUID
-
-object ValidationStrategy {
-  // this data structure tracks worker re-participation
-  // across all assignments for like-tasks
-  // key: (title, text, computation_id)
-  // value: (num_workers, num_tasks)
-  // intra-question figures are inserted by the ValidationStrategy
-  // inter-question figures are computed by summing the values for a
-  // fixed (title, description) and a free UUID.
-  private val _global_uniqueness = new mutable.HashMap[(String,String,UUID),(Int,Int)]()
-  protected[strategy] def overwrite(title: String, text: String, computation_id: UUID, num_workers: Int, num_tasks: Int) {
-    val key: (String, String, UUID) = (title, text, computation_id)
-    val value: (Int, Int) = (num_workers, num_tasks)
-
-    this.synchronized {
-      if (_global_uniqueness.contains((title,text,computation_id))) {
-        // update
-        _global_uniqueness.update(key,value)
-      } else {
-        // initial insert
-        _global_uniqueness.put(key, value)
-      }
-    }
-  }
-
-  // the proportion of work that is done by unique workers
-  protected[strategy] def work_uniqueness(title: String, text: String) : Option[Double] = {
-    this.synchronized {
-      val stats: List[(Int, Int)] =
-        _global_uniqueness.filter{ case (key, _) =>
-          // get matching elements
-          val (gtitle,gtext,_) = key
-          title.equals(gtitle) && text.equals(gtext)
-          // extract values as list of tuples
-        }.toList.map { case (key, value) =>
-          val (num_workers,num_tasks) = value
-          (num_workers,num_tasks)
-        }
-      val total_workers: Int = stats.map { _._1 }.sum
-      val total_tasks: Int = stats.map { _._2 }.sum
-      if (total_workers == 0 || total_tasks == 0) {
-        None
-      } else {
-        Some(total_workers.toDouble / total_tasks.toDouble)
-      }
-    }
-  }
-
-}
 
 abstract class ValidationStrategy(question: Question) {
   class PrematureValidationCompletionException(methodname: String, classname: String)
@@ -94,6 +41,13 @@ abstract class ValidationStrategy(question: Question) {
    * @return
    */
   def is_done(thunks: List[Thunk]) : Boolean
+
+  /**
+   * Returns a string explaining why the worker's answer was not accepted.
+   * @param thunks The list of accepted tasks. Used to determine the correct answer.
+   * @return Explanation string.
+   */
+  def rejection_response(thunks: List[Thunk]) : String
   def select_answer(thunks: List[Thunk]) : Question#AA
   def select_over_budget_answer(thunks: List[Thunk]) : Question#AA
   /**

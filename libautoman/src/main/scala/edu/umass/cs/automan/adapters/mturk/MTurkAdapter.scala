@@ -99,9 +99,9 @@ class MTurkAdapter extends AutomanAdapter {
       ts2
     })
   }
-  protected[automan] def reject(t: Thunk, correct_answer: String) = {
+  protected[automan] def reject(t: Thunk, rejection_response: String) = {
     assert(t.state == SchedulerState.ANSWERED)
-    run_if_initialized((p: Pool) => p.reject(t, correct_answer))
+    run_if_initialized((p: Pool) => p.reject(t, rejection_response))
   }
   protected[automan] def retrieve(ts: List[Thunk]) = {
     assert(ts.forall(_.state == SchedulerState.RUNNING))

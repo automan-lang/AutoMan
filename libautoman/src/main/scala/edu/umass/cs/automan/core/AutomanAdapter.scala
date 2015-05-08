@@ -58,10 +58,10 @@ abstract class AutomanAdapter {
   /**
    * Tell the backend to reject the answer associated with this ANSWERED Thunk.
    * @param t An ANSWERED Thunk.
-   * @param correct_answer A stringified version of the correct answer, for worker feedback.
+   * @param rejection_response Reason for rejection, e.g., the correct answer was different.
    * @return A REJECTED Thunk.
    */
-  protected[automan] def reject(t: Thunk, correct_answer: String) : Thunk
+  protected[automan] def reject(t: Thunk, rejection_response: String) : Thunk
 
   /**
    * Ask the backend to retrieve answers given a list of RUNNING Thunks. Invariant:
