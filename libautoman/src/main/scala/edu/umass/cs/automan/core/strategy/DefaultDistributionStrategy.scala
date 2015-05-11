@@ -10,16 +10,11 @@ class DefaultDistributionStrategy(question: DistributionQuestion)
   extends DistributionValidationStrategy(question) {
 
   def num_to_run(thunks: List[Thunk]) : Int = {
-    val np: Int = if(question.num_possibilities > BigInt(Int.MaxValue)) 1000 else question.num_possibilities.toInt
-
-    // update # of unique workers
-    val num_unique_workers = completed_thunks(thunks).map { t => t.worker_id }.distinct.size
-
     // additional number needed to reach num_samples
     Math.max(question.sample_size - outstanding_thunks(thunks).size, 0)
   }
 
-  override def spawn(thunks: List[Thunk], suffered_timeout: Boolean): List[Thunk] = {
+  override def spawn(thunks: List[Thunk], round: Int, suffered_timeout: Boolean): List[Thunk] = {
     // this will not wait for the end of a round to spawn new tasks
     // (although the scheduler may)
     val num_to_spawn = if (outstanding_thunks(thunks).size < question.sample_size) {

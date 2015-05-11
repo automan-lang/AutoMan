@@ -38,9 +38,10 @@ abstract class ValidationStrategy(question: Question) {
   /**
    * Returns true if the strategy has enough data to stop scheduling work.
    * @param thunks The complete list of scheduled thunks.
+   * @param round The number of times tasks were scheduled.
    * @return
    */
-  def is_done(thunks: List[Thunk]) : Boolean
+  def is_done(thunks: List[Thunk], round: Int) : Boolean
 
   /**
    * Returns a string explaining why the worker's answer was not accepted.
@@ -48,8 +49,23 @@ abstract class ValidationStrategy(question: Question) {
    * @return Explanation string.
    */
   def rejection_response(thunks: List[Thunk]) : String
+
+  /**
+   * Returns the top answer.
+   * @param thunks The complete list of thunks.
+   * @return Top answer
+   */
   def select_answer(thunks: List[Thunk]) : Question#AA
+
+  /**
+   * Returns an appropriate response for when the computation ran out of money.
+   * @param thunks The complete list of thunks.
+   * @param need The smallest amount of money needed to complete the computation under optimistic assumptions.
+   * @param have The amount of money we have.
+   * @return A low-confidence or over-budget answer.
+   */
   def select_over_budget_answer(thunks: List[Thunk], need: BigDecimal, have: BigDecimal) : Question#AA
+
   /**
    * Computes the number of Thunks needed to satisfy the quality-control
    * algorithm given the already-collected list of Thunks. Returns only
@@ -59,8 +75,10 @@ abstract class ValidationStrategy(question: Question) {
    * @param suffered_timeout True if any of the latest batch of Thunks suffered a timeout.
    * @return A list of new Thunks to schedule on the backend.
    */
-  def spawn(thunks: List[Thunk], suffered_timeout: Boolean): List[Thunk]
+  def spawn(thunks: List[Thunk], round: Int, suffered_timeout: Boolean): List[Thunk]
+
   def thunks_to_accept(thunks: List[Thunk]): List[Thunk]
+
   def thunks_to_cancel(thunks: List[Thunk]): List[Thunk] = {
     thunks.filter { t =>
       t.state == SchedulerState.READY ||
