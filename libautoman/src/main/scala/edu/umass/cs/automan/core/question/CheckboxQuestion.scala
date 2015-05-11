@@ -10,8 +10,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 abstract class CheckboxQuestion extends ScalarQuestion {
   type A = Set[Symbol]
-  type AA = ScalarAnswer[A]
-  type O = ScalarOutcome[A]
   type QuestionOptionType <: QuestionOption
 
   protected var _options: List[QuestionOptionType] = List[QuestionOptionType]()

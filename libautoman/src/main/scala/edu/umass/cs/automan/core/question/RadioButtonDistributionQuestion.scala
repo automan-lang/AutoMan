@@ -12,7 +12,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 abstract class RadioButtonDistributionQuestion extends DistributionQuestion {
   type A = Symbol
-  type AA = DistributionAnswer[A]
+  type AA = Answers[A]
   type O = DistributionOutcome[A]
   type QuestionOptionType <: QuestionOption
 

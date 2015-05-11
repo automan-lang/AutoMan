@@ -4,9 +4,9 @@ import edu.umass.cs.automan.core.answer.{ScalarOutcome, AbstractScalarAnswer}
 import edu.umass.cs.automan.core.strategy.DefaultScalarStrategy
 
 abstract class ScalarQuestion extends Question {
-  type AA <: AbstractScalarAnswer[A]
+  type AA = AbstractScalarAnswer[A]
   type VS = DefaultScalarStrategy
-  type O <: ScalarOutcome[A]
+  type O = ScalarOutcome[A]
   
   protected var _confidence: Double = 0.95
 

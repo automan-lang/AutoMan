@@ -11,4 +11,4 @@ sealed abstract class Outcome[T](f: Future[AbstractAnswer[T]]) {
 
 case class ScalarOutcome[T](f: Future[AbstractScalarAnswer[T]]) extends Outcome[T](f)
 
-case class DistributionOutcome[T](f: Future[AbstractDistributionAnswer[T]]) extends Outcome[T](f)
+case class DistributionOutcome[T](f: Future[AbstractVectorAnswer[T]]) extends Outcome[T](f)

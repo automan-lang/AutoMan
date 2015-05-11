@@ -1,9 +1,10 @@
-package edu.umass.cs.automan.core.logging
+package edu.umass.cs.automan
 
-import java.util.{UUID, Date}
+import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
+
 import scala.reflect.ClassTag
 import scala.util.Random
 

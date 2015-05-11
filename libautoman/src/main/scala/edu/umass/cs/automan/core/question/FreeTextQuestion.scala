@@ -10,8 +10,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 abstract class FreeTextQuestion extends ScalarQuestion {
   type A = String
-  type AA = ScalarAnswer[A]
-  type O = ScalarOutcome[A]
   type QuestionOptionType <: QuestionOption
 
   protected var _allow_empty: Boolean = false

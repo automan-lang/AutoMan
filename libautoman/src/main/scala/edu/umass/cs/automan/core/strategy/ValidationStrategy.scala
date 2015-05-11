@@ -49,7 +49,7 @@ abstract class ValidationStrategy(question: Question) {
    */
   def rejection_response(thunks: List[Thunk]) : String
   def select_answer(thunks: List[Thunk]) : Question#AA
-  def select_over_budget_answer(thunks: List[Thunk]) : Question#AA
+  def select_over_budget_answer(thunks: List[Thunk], need: BigDecimal, have: BigDecimal) : Question#AA
   /**
    * Computes the number of Thunks needed to satisfy the quality-control
    * algorithm given the already-collected list of Thunks. Returns only

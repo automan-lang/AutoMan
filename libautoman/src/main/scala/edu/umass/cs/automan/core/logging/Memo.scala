@@ -262,10 +262,10 @@ class Memo(log_config: LogConfig.Value) {
 
   /**
    * Updates the database given a complete list of Thunks.
-   * @param ts A non-empty list of Thunks.
+   * @param ts A list of Thunks.
    */
   def save(q: Question, ts: List[Thunk]) : Unit = {
-    assert(ts.size != 0)  // should never be given zero thunks
+    if(ts.size == 0) return
 
     db_opt match {
       case Some(db) =>

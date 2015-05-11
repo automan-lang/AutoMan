@@ -1,15 +1,15 @@
-package edu.umass.cs.automan.adapter.mturk
+package edu.umass.cs.automan.core.scheduler
 
 import java.util.UUID
+
 import edu.umass.cs.automan.adapters.mturk.MTurkAdapter
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 import edu.umass.cs.automan.automan
-import edu.umass.cs.automan.core.answer._
+import edu.umass.cs.automan.core.answer.{OverBudgetAnswer, LowConfidenceAnswer, Answer}
 import edu.umass.cs.automan.core.logging.LogConfig
-import org.scalatest._
+import org.scalatest.{Matchers, FlatSpec}
 
-class MTurkRadioTest extends FlatSpec with Matchers {
-
+class OverBudgetTest extends FlatSpec with Matchers {
   "A radio button program" should "work" in {
     val a = MTurkAdapter { mt =>
       mt.access_key_id = UUID.randomUUID().toString
@@ -21,7 +21,7 @@ class MTurkRadioTest extends FlatSpec with Matchers {
 
     automan(a) {
       def which_one() = a.RadioButtonQuestion { q =>
-        q.budget = 8.00
+        q.budget = 0.00
         q.text = "Which one of these does not belong?"
         q.options = List(
           a.Option('oscar, "Oscar the Grouch"),
@@ -34,10 +34,12 @@ class MTurkRadioTest extends FlatSpec with Matchers {
       }
 
       which_one().answer match {
-        case Answer(value, _, _) =>
-          (value == 'spongebob) should be (true)
-        case LowConfidenceAnswer(value, cost, conf) =>
+        case Answer(_, _, _) =>
           fail()
+        case LowConfidenceAnswer(_, _, _) =>
+          fail()
+        case OverBudgetAnswer(need, have) =>
+          (need > have) should be (true)
       }
     }
   }
