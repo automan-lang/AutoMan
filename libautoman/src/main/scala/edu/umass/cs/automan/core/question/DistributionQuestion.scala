@@ -4,7 +4,7 @@ import edu.umass.cs.automan.core.answer._
 import edu.umass.cs.automan.core.strategy.DefaultDistributionStrategy
 
 abstract class DistributionQuestion extends Question {
-  type AA <: AbstractDistributionAnswer[A]
+  type AA <: AbstractVectorAnswer[A]
   type VS = DefaultDistributionStrategy
   type O <: DistributionOutcome[A]
 

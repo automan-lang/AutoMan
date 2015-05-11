@@ -20,13 +20,17 @@ abstract class DistributionValidationStrategy(question: DistributionQuestion)
     val valid_thunks: List[Thunk] = completed_workerunique_thunks(thunks)
     val distribution: Set[(String,Question#A)] = valid_thunks.map { t => (t.worker_id.get, t.answer.get) }.toSet
     val cost: BigDecimal = valid_thunks.map { t => t.cost }.foldLeft(BigDecimal(0)){ (acc, c ) => acc + c }
-    DistributionAnswer(distribution, cost).asInstanceOf[Question#AA]
+    Answers(distribution, cost).asInstanceOf[Question#AA]
   }
-  def select_over_budget_answer(thunks: List[Thunk]) : Question#AA = {
+  def select_over_budget_answer(thunks: List[Thunk], need: BigDecimal, have: BigDecimal) : Question#AA = {
     val valid_thunks: List[Thunk] = completed_workerunique_thunks(thunks)
-    val distribution: Set[(String,Question#A)] = valid_thunks.map { t => (t.worker_id.get, t.answer.get) }.toSet
-    val cost: BigDecimal = valid_thunks.map { t => t.cost }.foldLeft(BigDecimal(0)){ (acc, c ) => acc + c }
-    DistributionOverBudget(distribution, cost).asInstanceOf[Question#AA]
+    if (valid_thunks.size == 0) {
+      OverBudgetAnswers(need, have).asInstanceOf[Question#AA]
+    } else {
+      val distribution: Set[(String, Question#A)] = valid_thunks.map { t => (t.worker_id.get, t.answer.get) }.toSet
+      val cost: BigDecimal = valid_thunks.map { t => t.cost }.foldLeft(BigDecimal(0)) { (acc, c) => acc + c }
+      LowConfidenceAnswers(distribution, cost).asInstanceOf[Question#AA]
+    }
   }
   override def thunks_to_accept(thunks: List[Thunk]): List[Thunk] = {
     completed_workerunique_thunks(thunks)

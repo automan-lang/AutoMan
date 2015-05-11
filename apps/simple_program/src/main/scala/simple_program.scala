@@ -26,9 +26,9 @@ object simple_program extends App {
     }
 
     which_one().answer match {
-      case ScalarAnswer(value, _, _) =>
+      case Answer(value, _, _) =>
         println("The answer is: " + value)
-      case ScalarOverBudget(value, cost, conf) =>
+      case LowConfidenceAnswer(value, cost, conf) =>
         println(
           "You ran out of money. The best answer is \"" +
           value + "\" with a confidence of " + conf

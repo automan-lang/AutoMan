@@ -10,8 +10,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 abstract class RadioButtonQuestion extends ScalarQuestion {
   type A = Symbol
-  type AA = ScalarAnswer[A]
-  type O = ScalarOutcome[A]
   type QuestionOptionType <: QuestionOption
 
   protected var _options: List[QuestionOptionType] = List[QuestionOptionType]()

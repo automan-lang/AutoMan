@@ -3,9 +3,9 @@ package edu.umass.cs.automan.adapter.mturk
 import java.util.UUID
 import edu.umass.cs.automan.adapters.mturk.MTurkAdapter
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
-import edu.umass.cs.automan.automan
+import edu.umass.cs.automan.{TestUtil, automan}
 import edu.umass.cs.automan.core.answer._
-import edu.umass.cs.automan.core.logging.{TestUtil, LogConfig}
+import edu.umass.cs.automan.core.logging.LogConfig
 import org.scalatest._
 
 class MTurkRadioDistribTest extends FlatSpec with Matchers {
@@ -46,10 +46,10 @@ class MTurkRadioDistribTest extends FlatSpec with Matchers {
       }
 
       which_one().answer match {
-        case DistributionAnswer(values, cost) =>
+        case Answers(values, cost) =>
           TestUtil.compareDistributions(mock_answers, values) should be (true)
           cost should be (reward * sample_size)
-        case DistributionOverBudget(_, _) =>
+        case LowConfidenceAnswers(_, _) =>
           fail()
       }
     }

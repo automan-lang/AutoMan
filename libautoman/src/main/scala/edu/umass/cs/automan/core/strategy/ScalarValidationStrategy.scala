@@ -1,6 +1,6 @@
 package edu.umass.cs.automan.core.strategy
 
-import edu.umass.cs.automan.core.answer.{ScalarOverBudget, ScalarAnswer, AbstractScalarAnswer}
+import edu.umass.cs.automan.core.answer.{OverBudgetAnswer, LowConfidenceAnswer, Answer, AbstractScalarAnswer}
 import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.scheduler._
 import edu.umass.cs.automan.core.question._
@@ -58,13 +58,20 @@ abstract class ScalarValidationStrategy(question: ScalarQuestion)
   def select_answer(thunks: List[Thunk]) : Question#AA = {
     answer_selector(thunks) match { case (value,cost,conf) =>
       DebugLog("Most popular answer is " + value.toString, LogLevel.INFO, LogType.STRATEGY, question.id)
-      ScalarAnswer(value,cost,conf).asInstanceOf[Question#AA]
+      Answer(value,cost,conf).asInstanceOf[Question#AA]
     }
   }
-  def select_over_budget_answer(thunks: List[Thunk]) : Question#AA = {
-    answer_selector(thunks) match { case (value,cost,conf) =>
-      DebugLog("Over budget.  Best answer so far is " + value.toString, LogLevel.INFO, LogType.STRATEGY, question.id)
-      ScalarOverBudget(value,cost,conf).asInstanceOf[Question#AA]
+  def select_over_budget_answer(thunks: List[Thunk], need: BigDecimal, have: BigDecimal) : Question#AA = {
+    // if we've never scheduled anything,
+    // there will be no largest group
+    if(completed_workerunique_thunks(thunks).size == 0) {
+      OverBudgetAnswer(need, have).asInstanceOf[Question#AA]
+    } else {
+      answer_selector(thunks) match {
+        case (value, cost, conf) =>
+          DebugLog("Over budget.  Best answer so far is " + value.toString, LogLevel.INFO, LogType.STRATEGY, question.id)
+          LowConfidenceAnswer(value, cost, conf).asInstanceOf[Question#AA]
+      }
     }
   }
   def thunks_to_accept(thunks: List[Thunk]): List[Thunk] = {
