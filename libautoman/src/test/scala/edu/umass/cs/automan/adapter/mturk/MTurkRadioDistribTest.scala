@@ -49,7 +49,7 @@ class MTurkRadioDistribTest extends FlatSpec with Matchers {
         case Answers(values, cost) =>
           TestUtil.compareDistributions(mock_answers, values) should be (true)
           cost should be (reward * sample_size)
-        case LowConfidenceAnswers(_, _) =>
+        case _ =>
           fail()
       }
     }
