@@ -44,16 +44,17 @@ class Scheduler(val question: Question,
 
     var _timeout_occurred = false
     var _all_thunks = thunks
+    var _round = 1
 
     val answer = try {
-      while(!s.is_done(_all_thunks)) {
+      while(!s.is_done(_all_thunks, _round)) {
         val __thunks = _all_thunks
         // get list of workers who may not re-participate
         val blacklist = s.blacklisted_workers(__thunks)
         // filter duplicate work
         val dedup_thunks = s.mark_duplicates(__thunks)
         // post more tasks as needed
-        val new_thunks = post_as_needed(dedup_thunks, backend, question, suffered_timeout, blacklist)
+        val new_thunks = post_as_needed(dedup_thunks, _round, backend, question, suffered_timeout, blacklist)
 
         // The scheduler waits here to give the crowd time to answer.
         // Sleeping also informs the scheduler that this thread may yield
@@ -76,6 +77,7 @@ class Scheduler(val question: Question,
         synchronized {
           _all_thunks = all_thunks
           _timeout_occurred = timeout_occurred(answered_thunks)
+          _round += 1
         }
       }
 
@@ -141,11 +143,13 @@ class Scheduler(val question: Question,
   /**
    * Post new tasks if needed. Returns only newly-created thunks.
    * @param thunks The complete list of thunks.
+   * @param round How many QC rounds performed so far
    * @param question Question data.
    * @param suffered_timeout True if any thunks suffered a timeout on the last iteration.
    * @return A list of newly-created Thunks.
    */
   def post_as_needed(thunks: List[Thunk],
+                     round: Int,
                      backend: AutomanAdapter,
                      question: Question,
                      suffered_timeout: Boolean,
@@ -155,7 +159,7 @@ class Scheduler(val question: Question,
     // are any thunks still running?
     if (thunks.count(_.state == SchedulerState.RUNNING) == 0) {
       // no, so post more
-      val new_thunks = s.spawn(thunks, suffered_timeout)
+      val new_thunks = s.spawn(thunks, round, suffered_timeout)
       assert(spawn_invariant(new_thunks))
       // can we afford these?
       val cost = cost_for_thunks(thunks ::: new_thunks)

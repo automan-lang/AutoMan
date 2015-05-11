@@ -1,6 +1,6 @@
 package edu.umass.cs.automan.core.strategy
 
-import edu.umass.cs.automan.core.answer.{OverBudgetAnswer, LowConfidenceAnswer, Answer, AbstractScalarAnswer}
+import edu.umass.cs.automan.core.answer.{OverBudgetAnswer, LowConfidenceAnswer, Answer}
 import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.scheduler._
 import edu.umass.cs.automan.core.question._
@@ -9,8 +9,8 @@ abstract class ScalarValidationStrategy(question: ScalarQuestion)
   extends ValidationStrategy(question) {
 
   def current_confidence(thunks: List[Thunk]) : Double
-  def is_confident(thunks: List[Thunk]) : Boolean
-  def is_done(thunks: List[Thunk]) = is_confident(thunks)
+  def is_confident(thunks: List[Thunk], round: Int) : Boolean
+  def is_done(thunks: List[Thunk], round: Int) = is_confident(thunks, round)
 
   def answer_selector(thunks: List[Thunk]) : (Question#A,BigDecimal,Double) = {
     val bgrp = biggest_group(thunks)
@@ -58,7 +58,7 @@ abstract class ScalarValidationStrategy(question: ScalarQuestion)
   def select_answer(thunks: List[Thunk]) : Question#AA = {
     answer_selector(thunks) match { case (value,cost,conf) =>
       DebugLog("Most popular answer is " + value.toString, LogLevel.INFO, LogType.STRATEGY, question.id)
-      Answer(value,cost,conf).asInstanceOf[Question#AA]
+      Answer(value, cost, conf).asInstanceOf[Question#AA]
     }
   }
   def select_over_budget_answer(thunks: List[Thunk], need: BigDecimal, have: BigDecimal) : Question#AA = {

@@ -1,6 +1,5 @@
 package edu.umass.cs.automan.core.strategy
 
-import java.util
 import java.util.UUID
 import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.question.{Question, ScalarQuestion}
@@ -10,13 +9,16 @@ class DefaultScalarStrategy(question: ScalarQuestion)
   extends ScalarValidationStrategy(question) {
   DebugLog("DEFAULTSCALAR strategy loaded.",LogLevel.INFO,LogType.STRATEGY, question.id)
 
+  def bonferroni_confidence(confidence: Double, rounds: Int) : Double = {
+    1 - (1 - confidence / rounds.toDouble)
+  }
   def current_confidence(thunks: List[Thunk]): Double = {
     val valid_ts = completed_workerunique_thunks(thunks)
     if (valid_ts.size == 0) return 0.0 // bail if we have no valid responses
     val biggest_answer = valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
     MonteCarlo.confidenceOfOutcome(question.num_possibilities.toInt, thunks.size, biggest_answer, 1000000)
   }
-  def is_confident(thunks: List[Thunk]): Boolean = {
+  def is_confident(thunks: List[Thunk], round: Int): Boolean = {
     if (thunks.size == 0) {
       DebugLog("Have no thunks; confidence is undefined.", LogLevel.INFO, LogType.STRATEGY, question.id)
       false
@@ -25,8 +27,8 @@ class DefaultScalarStrategy(question: ScalarQuestion)
       if (valid_ts.size == 0) return false // bail if we have no valid responses
       val biggest_answer = valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
 
-      // TODO: MonteCarlo simulator needs to take BigInts!
-      val min_agree = MonteCarlo.requiredForAgreement(question.num_possibilities.toInt, thunks.size, question.confidence, 1000000)
+      // TODO: MonteCarlo simulator should take BigInts
+      val min_agree = MonteCarlo.requiredForAgreement(question.num_possibilities.toInt, thunks.size, bonferroni_confidence(question.confidence, round), 1000000)
       if (biggest_answer >= min_agree) {
         DebugLog("Reached or exceeded alpha = " + (1 - question.confidence).toString, LogLevel.INFO, LogType.STRATEGY, question.id)
         true
@@ -41,10 +43,10 @@ class DefaultScalarStrategy(question: ScalarQuestion)
     if (valid_ts.size == 0) return 0
     valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
   }
-  def spawn(thunks: List[Thunk], had_timeout: Boolean): List[Thunk] = {
+  def spawn(thunks: List[Thunk], round: Int, had_timeout: Boolean): List[Thunk] = {
     // num to spawn (don't spawn more if any are running)
     val num_to_spawn = if (thunks.count(_.state == SchedulerState.RUNNING) == 0) {
-      num_to_run(thunks)
+      num_to_run(thunks, round)
     } else {
       return List[Thunk]() // Be patient!
     }
@@ -84,20 +86,33 @@ class DefaultScalarStrategy(question: ScalarQuestion)
     new_thunks
   }
 
-  def num_to_run(thunks: List[Thunk]) : Int = {
+  def num_to_run(thunks: List[Thunk], round: Int) : Int = {
     // eliminate duplicates from the list of Thunks
     val thunks_no_dupes = thunks.filter(_.state != SchedulerState.DUPLICATE)
 
     val np: Int = if(question.num_possibilities > BigInt(Int.MaxValue)) 1000 else question.num_possibilities.toInt
 
-    // number needed for agreement, adjusted for programmer time-value
-    val n = math.max(
-              2,
-              math.min(math.floor(question.budget.toDouble/question.reward.toDouble),
-                       math.floor(question.time_value_per_hour.toDouble/question.wage.toDouble)
-              )
-            )
-    n.toInt
+    math.max(
+      expected_for_agreement(np, thunks.size, max_agree(thunks), bonferroni_confidence(question.confidence, round)).toDouble,
+      math.min(math.floor(question.budget.toDouble/question.reward.toDouble),
+        math.floor(question.time_value_per_hour.toDouble/question.wage.toDouble)
+      )
+    ).toInt
+  }
+
+  def expected_for_agreement(num_possibilities: Int, trials: Int,  max_agr: Int, confidence: Double) : Int = {
+    var to_run = 0
+    var done = false
+    while(!done) {
+      val min_required = MonteCarlo.requiredForAgreement(num_possibilities, trials + to_run, confidence, 1000000)
+      val expected = max_agr + to_run
+      if (min_required < 0 || min_required > expected) {
+        to_run += 1
+      } else {
+        done = true
+      }
+    }
+    to_run
   }
 
   def choose_starting_n() : Int = {
@@ -106,7 +121,10 @@ class DefaultScalarStrategy(question: ScalarQuestion)
 
     // formula is:
     // (# of ways to have unanimous answer) * (probability of a given choice)^(trials)
-    while (question.num_possibilities.toDouble * math.pow(1.0/question.num_possibilities.toDouble, duplicates_required) > (1.0 - question.confidence)) {
+    while (
+      question.num_possibilities.toDouble * math.pow(1.0/question.num_possibilities.toDouble, duplicates_required)
+      > (1.0 - question.confidence)
+    ) {
       duplicates_required += 1
     }
 

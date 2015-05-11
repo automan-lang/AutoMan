@@ -11,6 +11,8 @@ import org.scalatest._
 class MTurkFreeTextTest extends FlatSpec with Matchers {
 
   "A freetext program" should "work" in {
+    val confidence = 0.95
+
     val a = MTurkAdapter { mt =>
       mt.access_key_id = UUID.randomUUID().toString
       mt.secret_access_key = UUID.randomUUID().toString
@@ -21,6 +23,7 @@ class MTurkFreeTextTest extends FlatSpec with Matchers {
 
     automan(a) {
       def which_one() = a.FreeTextQuestion { q =>
+        q.confidence = 0.95
         q.budget = 8.00
         q.text = "Which 4-letter metasyntactic variable starts with 'q'?"
         q.pattern = "AAAA"
@@ -28,8 +31,10 @@ class MTurkFreeTextTest extends FlatSpec with Matchers {
       }
 
       which_one().answer match {
-        case Answer(value, _, _) =>
+        case Answer(value, _, conf) =>
+          println("Answer: '" + value + "', confidence: " + conf)
           (value == "quux") should be (true)
+          (conf >= confidence) should be (true)
         case _ =>
           fail()
       }

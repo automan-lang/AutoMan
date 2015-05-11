@@ -1,7 +1,5 @@
 package edu.umass.cs.automan.core.strategy
 
-import java.util.UUID
-
 import edu.umass.cs.automan.core.answer._
 import edu.umass.cs.automan.core.question._
 import edu.umass.cs.automan.core.scheduler._
@@ -9,7 +7,7 @@ import edu.umass.cs.automan.core.scheduler._
 abstract class DistributionValidationStrategy(question: DistributionQuestion)
   extends ValidationStrategy(question) {
 
-  def is_done(thunks: List[Thunk]) = {
+  def is_done(thunks: List[Thunk], round: Int) = {
     val done = completed_workerunique_thunks(thunks).size
     done >= question.sample_size
   }
