@@ -48,6 +48,6 @@ class DBAssignment(tag: Tag) extends Table[(String, String, String, AssignmentSt
   def deadline = column[Calendar]("deadline")
   def answer = column[String]("answer")
   def requesterFeedback = column[String]("requesterFeedback")
-  def thunkId = column[UUID]("thunkId")
-  override def * = (assignmentId, workerId, HITId, assignmentStatus, autoApprovalTime, acceptTime, submitTime, approvalTime, rejectionTime, deadline, answer, requesterFeedback, thunkId)
+  def taskId = column[UUID]("taskId")
+  override def * = (assignmentId, workerId, HITId, assignmentStatus, autoApprovalTime, acceptTime, submitTime, approvalTime, rejectionTime, deadline, answer, requesterFeedback, taskId)
 }

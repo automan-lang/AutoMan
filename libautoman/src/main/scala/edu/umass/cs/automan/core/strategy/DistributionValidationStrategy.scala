@@ -7,34 +7,34 @@ import edu.umass.cs.automan.core.scheduler._
 abstract class DistributionValidationStrategy(question: DistributionQuestion)
   extends ValidationStrategy(question) {
 
-  def is_done(thunks: List[Thunk], round: Int) = {
-    val done = completed_workerunique_thunks(thunks).size
+  def is_done(tasks: List[Task], round: Int) = {
+    val done = completed_workerunique_tasks(tasks).size
     done >= question.sample_size
   }
-  def rejection_response(thunks: List[Thunk]): String = {
+  def rejection_response(tasks: List[Task]): String = {
     "We can only accept a single answer per worker."
   }
-  def select_answer(thunks: List[Thunk]) : Question#AA = {
-    val valid_thunks: List[Thunk] = completed_workerunique_thunks(thunks)
-    val distribution: Set[(String,Question#A)] = valid_thunks.map { t => (t.worker_id.get, t.answer.get) }.toSet
-    val cost: BigDecimal = valid_thunks.map { t => t.cost }.foldLeft(BigDecimal(0)){ (acc, c ) => acc + c }
+  def select_answer(tasks: List[Task]) : Question#AA = {
+    val valid_tasks: List[Task] = completed_workerunique_tasks(tasks)
+    val distribution: Set[(String,Question#A)] = valid_tasks.map { t => (t.worker_id.get, t.answer.get) }.toSet
+    val cost: BigDecimal = valid_tasks.map { t => t.cost }.foldLeft(BigDecimal(0)){ (acc, c ) => acc + c }
     Answers(distribution, cost).asInstanceOf[Question#AA]
   }
-  def select_over_budget_answer(thunks: List[Thunk], need: BigDecimal, have: BigDecimal) : Question#AA = {
-    val valid_thunks: List[Thunk] = completed_workerunique_thunks(thunks)
-    if (valid_thunks.size == 0) {
+  def select_over_budget_answer(tasks: List[Task], need: BigDecimal, have: BigDecimal) : Question#AA = {
+    val valid_tasks: List[Task] = completed_workerunique_tasks(tasks)
+    if (valid_tasks.size == 0) {
       OverBudgetAnswers(need, have).asInstanceOf[Question#AA]
     } else {
-      val distribution: Set[(String, Question#A)] = valid_thunks.map { t => (t.worker_id.get, t.answer.get) }.toSet
-      val cost: BigDecimal = valid_thunks.map { t => t.cost }.foldLeft(BigDecimal(0)) { (acc, c) => acc + c }
+      val distribution: Set[(String, Question#A)] = valid_tasks.map { t => (t.worker_id.get, t.answer.get) }.toSet
+      val cost: BigDecimal = valid_tasks.map { t => t.cost }.foldLeft(BigDecimal(0)) { (acc, c) => acc + c }
       LowConfidenceAnswers(distribution, cost).asInstanceOf[Question#AA]
     }
   }
-  override def thunks_to_accept(thunks: List[Thunk]): List[Thunk] = {
-    completed_workerunique_thunks(thunks)
+  override def tasks_to_accept(tasks: List[Task]): List[Task] = {
+    completed_workerunique_tasks(tasks)
   }
-  override def thunks_to_reject(thunks: List[Thunk]): List[Thunk] = {
-    val accepts = thunks_to_accept(thunks).toSet
-    thunks.filter { t => !accepts.contains(t) }
+  override def tasks_to_reject(tasks: List[Task]): List[Task] = {
+    val accepts = tasks_to_accept(tasks).toSet
+    tasks.filter { t => !accepts.contains(t) }
   }
 }

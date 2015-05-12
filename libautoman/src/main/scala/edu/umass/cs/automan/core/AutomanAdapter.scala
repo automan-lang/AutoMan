@@ -5,7 +5,7 @@ import edu.umass.cs.automan.core.answer.Outcome
 import edu.umass.cs.automan.core.logging.LogConfig.LogConfig
 import edu.umass.cs.automan.core.question._
 import edu.umass.cs.automan.core.logging.{LogConfig, Memo}
-import edu.umass.cs.automan.core.scheduler.{Scheduler, Thunk}
+import edu.umass.cs.automan.core.scheduler.{Scheduler, Task}
 
 abstract class AutomanAdapter {
   // question types are determined by adapter implementations
@@ -35,42 +35,42 @@ abstract class AutomanAdapter {
   def logging_=(lc: LogConfig.Value) { _log_config = lc }
 
   // marshaling calls
-  // invariant: every Thunk that is passed in is passed back
+  // invariant: every task that is passed in is passed back
   /**
-   * Tell the backend to accept the answer associated with this ANSWERED Thunk.
-   * @param t An ANSWERED Thunk.
-   * @return An ACCEPTED Thunk.
+   * Tell the backend to accept the answer associated with this ANSWERED task.
+   * @param t An ANSWERED task.
+   * @return An ACCEPTED task.
    */
-  protected[automan] def accept(t: Thunk) : Thunk
+  protected[automan] def accept(t: Task) : Task
   protected[automan] def backend_budget(): BigDecimal
-  protected[automan] def cancel(t: Thunk) : Thunk
+  protected[automan] def cancel(t: Task) : Task
   /**
-   * Post tasks on the backend, one task for each Thunk.  All Thunks given should
-   * be marked READY. The method returns the complete list of Thunks passed
+   * Post tasks on the backend, one task for each task.  All tasks given should
+   * be marked READY. The method returns the complete list of tasks passed
    * but with new states. Nonblocking. Invariant: the size of the list of input
-   * Thunks == the size of the list of the output Thunks.
-   * @param ts A list of new Thunks.
+   * tasks == the size of the list of the output tasks.
+   * @param ts A list of new tasks.
    * @param exclude_worker_ids Worker IDs to exclude, if any.
-   * @return A list of the posted Thunks.
+   * @return A list of the posted tasks.
    */
-  protected[automan] def post(ts: List[Thunk], exclude_worker_ids: List[String]) : List[Thunk]
+  protected[automan] def post(ts: List[Task], exclude_worker_ids: List[String]) : List[Task]
 
   /**
-   * Tell the backend to reject the answer associated with this ANSWERED Thunk.
-   * @param t An ANSWERED Thunk.
+   * Tell the backend to reject the answer associated with this ANSWERED task.
+   * @param t An ANSWERED task.
    * @param rejection_response Reason for rejection, e.g., the correct answer was different.
-   * @return A REJECTED Thunk.
+   * @return A REJECTED task.
    */
-  protected[automan] def reject(t: Thunk, rejection_response: String) : Thunk
+  protected[automan] def reject(t: Task, rejection_response: String) : Task
 
   /**
-   * Ask the backend to retrieve answers given a list of RUNNING Thunks. Invariant:
-   * the size of the list of input Thunks == the size of the list of the output
-   * Thunks.
-   * @param ts A list of RUNNING thunks.
-   * @return A list of RUNNING, RETRIEVED, or TIMEOUT Thunks.
+   * Ask the backend to retrieve answers given a list of RUNNING tasks. Invariant:
+   * the size of the list of input tasks == the size of the list of the output
+   * tasks.
+   * @param ts A list of RUNNING tasks.
+   * @return A list of RUNNING, RETRIEVED, or TIMEOUT tasks.
    */
-  protected[automan] def retrieve(ts: List[Thunk]) : List[Thunk]
+  protected[automan] def retrieve(ts: List[Task]) : List[Task]
 
   /**
    * This method is called by the scheduler after question initialization

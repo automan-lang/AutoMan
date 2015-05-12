@@ -3,7 +3,7 @@ package edu.umass.cs.automan.adapters.mturk.connectionpool
 import com.amazonaws.mturk.requester.Assignment
 import edu.umass.cs.automan.adapters.mturk.util.Key
 import edu.umass.cs.automan.adapters.mturk.util.Key._
-import edu.umass.cs.automan.core.scheduler.Thunk
+import edu.umass.cs.automan.core.scheduler.Task
 
 case class MTState(hit_types: Map[BatchKey,HITType],
                    hit_states: Map[HITID,HITState],
@@ -41,10 +41,10 @@ case class MTState(hit_types: Map[BatchKey,HITType],
   def updateBatchNo(groupID: GroupID, batchNo: Int) : MTState = {
     MTState(hit_types, hit_states, hit_ids, worker_whitelist, disqualifications, batch_no + (groupID -> batchNo))
   }
-  def getAssignmentOption(t: Thunk) : Option[Assignment] = {
+  def getAssignmentOption(t: Task) : Option[Assignment] = {
     hit_states(hit_ids(Key.HITKey(t))).getAssignmentOption(t)
   }
-  def getHITID(t: Thunk) : HITID = {
+  def getHITID(t: Task) : HITID = {
     hit_ids(Key.HITKey(t))
   }
   def getHITState(hitID: HITID) : HITState = {

@@ -3,15 +3,15 @@ package edu.umass.cs.automan
 import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.core.question.Question
-import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
+import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 
 import scala.reflect.ClassTag
 import scala.util.Random
 
 object TestUtil {
-  def newThunk(question: Question, timeout: Int, worker_timeout: Int, cost: BigDecimal, time_delta: Int) = {
+  def newTask(question: Question, timeout: Int, worker_timeout: Int, cost: BigDecimal, time_delta: Int) = {
     val now = new Date()
-    Thunk(
+    Task(
       UUID.randomUUID(),
       question,
       timeout,
@@ -48,6 +48,7 @@ object TestUtil {
         i
       }
     }
+
 
     // init rng
     val rng = new Random()

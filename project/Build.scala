@@ -24,15 +24,10 @@ object AutoManBuild extends Build {
       .settings(
         memoClean := {
           val memo_db = new File("AutoManMemoDB")
-          val thunk_db = new File("ThunkLogDB")
           val derby_log = new File("derby.log")
           if (memo_db.exists()) {
             println(String.format("Removing %s", memo_db.toString))
             Common.DeleteRecursive(memo_db)
-          }
-          if (thunk_db.exists()) {
-            println(String.format("Removing %s", thunk_db.toString))
-            Common.DeleteRecursive(thunk_db)
           }
           if (derby_log.exists()) {
             println(String.format("Removing %s", derby_log.toString))

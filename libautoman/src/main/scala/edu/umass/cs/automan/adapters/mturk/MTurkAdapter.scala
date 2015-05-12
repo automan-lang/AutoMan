@@ -9,7 +9,7 @@ import edu.umass.cs.automan.adapters.mturk.mock.{MockServiceState, MockSetup, Mo
 import edu.umass.cs.automan.adapters.mturk.question._
 import edu.umass.cs.automan.core.logging.DebugLog
 import edu.umass.cs.automan.core.question.Question
-import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
+import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 import edu.umass.cs.automan.core.AutomanAdapter
 
 object MTurkAdapter {
@@ -83,28 +83,28 @@ class MTurkAdapter extends AutomanAdapter {
   def Option(id: Symbol, text: String) = new MTQuestionOption(id, text, "")
   def Option(id: Symbol, text: String, image_url: String) = new MTQuestionOption(id, text, image_url)
 
-  protected[automan] def accept(t: Thunk) = {
+  protected[automan] def accept(t: Task) = {
     assert(t.state == SchedulerState.ANSWERED)
     run_if_initialized((p: Pool) => p.accept(t))
   }
-  protected[automan] def cancel(t: Thunk) = run_if_initialized((p: Pool) => p.cancel(t))
+  protected[automan] def cancel(t: Task) = run_if_initialized((p: Pool) => p.cancel(t))
   protected[automan] def backend_budget() = run_if_initialized((p: Pool) => p.backend_budget)
-  protected[automan] def post(ts: List[Thunk], exclude_worker_ids: List[String]) = {
+  protected[automan] def post(ts: List[Task], exclude_worker_ids: List[String]) = {
     assert(ts.forall(_.state == SchedulerState.READY))
 
     run_if_initialized((p: Pool) => {
-      // mark thunks as RUNNING so that the scheduler
+      // mark tasks as RUNNING so that the scheduler
       // knows to attempt to retrieve their answers later
       val ts2 = ts.map { _.copy_as_running() }
       p.post(ts2, exclude_worker_ids)
       ts2
     })
   }
-  protected[automan] def reject(t: Thunk, rejection_response: String) = {
+  protected[automan] def reject(t: Task, rejection_response: String) = {
     assert(t.state == SchedulerState.ANSWERED)
     run_if_initialized((p: Pool) => p.reject(t, rejection_response))
   }
-  protected[automan] def retrieve(ts: List[Thunk]) = {
+  protected[automan] def retrieve(ts: List[Task]) = {
     assert(ts.forall(_.state == SchedulerState.RUNNING))
     run_if_initialized((p: Pool) => p.retrieve(ts))
   }

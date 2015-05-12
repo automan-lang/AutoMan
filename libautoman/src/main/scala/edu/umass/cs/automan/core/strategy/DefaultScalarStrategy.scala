@@ -2,8 +2,8 @@ package edu.umass.cs.automan.core.strategy
 
 import java.util.UUID
 import edu.umass.cs.automan.core.logging._
-import edu.umass.cs.automan.core.question.{Question, ScalarQuestion}
-import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
+import edu.umass.cs.automan.core.question.ScalarQuestion
+import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 
 class DefaultScalarStrategy(question: ScalarQuestion)
   extends ScalarValidationStrategy(question) {
@@ -12,42 +12,42 @@ class DefaultScalarStrategy(question: ScalarQuestion)
   def bonferroni_confidence(confidence: Double, rounds: Int) : Double = {
     1 - (1 - confidence) / rounds.toDouble
   }
-  def current_confidence(thunks: List[Thunk]): Double = {
-    val valid_ts = completed_workerunique_thunks(thunks)
+  def current_confidence(tasks: List[Task]): Double = {
+    val valid_ts = completed_workerunique_tasks(tasks)
     if (valid_ts.size == 0) return 0.0 // bail if we have no valid responses
     val biggest_answer = valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
-    val conf = 1.0 - MonteCarlo.CalculateProbability(question.num_possibilities.toInt, thunks.size, biggest_answer, MonteCarlo.NumberOfSimulations)
+    val conf = 1.0 - MonteCarlo.CalculateProbability(question.num_possibilities.toInt, tasks.size, biggest_answer, MonteCarlo.NumberOfSimulations)
     conf
   }
-  def is_confident(thunks: List[Thunk], round: Int): Boolean = {
-    if (thunks.size == 0) {
-      DebugLog("Have no thunks; confidence is undefined.", LogLevel.INFO, LogType.STRATEGY, question.id)
+  def is_confident(tasks: List[Task], round: Int): Boolean = {
+    if (tasks.size == 0) {
+      DebugLog("Have no tasks; confidence is undefined.", LogLevel.INFO, LogType.STRATEGY, question.id)
       false
     } else {
-      val conf = current_confidence(thunks)
+      val conf = current_confidence(tasks)
       val thresh = bonferroni_confidence(question.confidence, round)
       if (conf >= thresh) {
         DebugLog("Reached or exceeded alpha = " + (1 - thresh).toString, LogLevel.INFO, LogType.STRATEGY, question.id)
         true
       } else {
-        val valid_ts = completed_workerunique_thunks(thunks)
+        val valid_ts = completed_workerunique_tasks(tasks)
         val biggest_answer = valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
         DebugLog("Need more tasks for alpha = " + (1 - thresh) + "; have " + biggest_answer, LogLevel.INFO, LogType.STRATEGY, question.id)
         false
       }
     }
   }
-  def max_agree(thunks: List[Thunk]) : Int = {
-    val valid_ts = completed_workerunique_thunks(thunks)
+  def max_agree(tasks: List[Task]) : Int = {
+    val valid_ts = completed_workerunique_tasks(tasks)
     if (valid_ts.size == 0) return 0
     valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
   }
-  def spawn(thunks: List[Thunk], round: Int, had_timeout: Boolean): List[Thunk] = {
+  def spawn(tasks: List[Task], round: Int, had_timeout: Boolean): List[Task] = {
     // num to spawn (don't spawn more if any are running)
-    val num_to_spawn = if (thunks.count(_.state == SchedulerState.RUNNING) == 0) {
-      num_to_run(thunks, round)
+    val num_to_spawn = if (tasks.count(_.state == SchedulerState.RUNNING) == 0) {
+      num_to_run(tasks, round)
     } else {
-      return List[Thunk]() // Be patient!
+      return List[Task]() // Be patient!
     }
 
     // determine duration
@@ -57,15 +57,15 @@ class DefaultScalarStrategy(question: ScalarQuestion)
     }
 
     DebugLog("You should spawn " + num_to_spawn +
-                        " more Thunks at $" + question.reward + "/thunk, " +
+                        " more Tasks at $" + question.reward + "/task, " +
                           question.question_timeout_in_s + "s until question timeout, " +
                           question.worker_timeout_in_s + "s until worker task timeout.", LogLevel.INFO, LogType.STRATEGY,
                           question.id)
 
-    // allocate Thunk objects
-    val new_thunks = (0 until num_to_spawn).map { i =>
+    // allocate Task objects
+    val new_tasks = (0 until num_to_spawn).map { i =>
       val now = new java.util.Date()
-      val t = new Thunk(
+      val t = new Task(
         UUID.randomUUID(),
         question,
         question.question_timeout_in_s,
@@ -82,18 +82,18 @@ class DefaultScalarStrategy(question: ScalarQuestion)
       t
     }.toList
 
-    new_thunks
+    new_tasks
   }
 
-  def num_to_run(thunks: List[Thunk], round: Int) : Int = {
-    // eliminate duplicates from the list of Thunks
-    val thunks_no_dupes = thunks.filter(_.state != SchedulerState.DUPLICATE)
+  def num_to_run(tasks: List[Task], round: Int) : Int = {
+    // eliminate duplicates from the list of Tasks
+    val tasks_no_dupes = tasks.filter(_.state != SchedulerState.DUPLICATE)
 
     val options: Int = if(question.num_possibilities > BigInt(Int.MaxValue)) 1000 else question.num_possibilities.toInt
 
     val adjusted_conf = bonferroni_confidence(question.confidence, round)
 
-    val expected = MonteCarlo.HowManyMoreTrials(thunks_no_dupes.size, max_agree(thunks_no_dupes), options, adjusted_conf)
+    val expected = MonteCarlo.HowManyMoreTrials(tasks_no_dupes.size, max_agree(tasks_no_dupes), options, adjusted_conf)
     val biggest_bang =
       math.min(
         math.floor(question.budget.toDouble/question.reward.toDouble),
