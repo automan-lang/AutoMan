@@ -11,6 +11,7 @@ import scala.slick.driver.SQLiteDriver.simple._
 import scala.slick.jdbc.meta.MTable
 
 object Memo {
+
   def sameTasks[A](ts1: List[Task], ts2: List[Task]) : Boolean = {
     val t1_map = ts1.map { t => t.task_id -> t }.toMap
     ts2.foldLeft (true) { case (acc, t) =>
@@ -44,6 +45,7 @@ class Memo(log_config: LogConfig.Value) {
   type DBTaskHistory =(UUID, Date, SchedulerState)
   type DBQuestion = (UUID, String, QuestionType)
   type DBRadioButtonAnswer = (Int, Symbol, String)
+  type DBCheckboxAnswer = (Int, Set[Symbol], String)
   type DBSession = SQLiteDriver.backend.Session
 
   // connection string
@@ -54,6 +56,7 @@ class Memo(log_config: LogConfig.Value) {
   protected[automan] val dbTaskHistory = TableQuery[edu.umass.cs.automan.core.logging.tables.DBTaskHistory]
   protected[automan] val dbQuestion = TableQuery[edu.umass.cs.automan.core.logging.tables.DBQuestion]
   protected[automan] val dbRadioButtonAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBRadioButtonAnswer]
+  protected[automan] val dbCheckboxAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBCheckboxAnswer]
 
   // Task cache
   protected var all_task_ids = Map[UUID,SchedulerState.Value]()
@@ -173,7 +176,7 @@ class Memo(log_config: LogConfig.Value) {
           case _ => throw new NotImplementedError()
         }
 
-          // execute query
+        // execute query
         val results = db.withSession { implicit s => A_QS_TS_THS.list }
 
           // make and return tasks
@@ -251,8 +254,9 @@ class Memo(log_config: LogConfig.Value) {
     assert(ts.size != 0)
     ts.head.question.getQuestionType match {
       case RadioButtonQuestion =>
-        dbRadioButtonAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[(Int, Symbol, String)]]
-      case RadioButtonDistributionQuestion => ???
+        dbRadioButtonAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBRadioButtonAnswer]]
+      case RadioButtonDistributionQuestion =>
+        dbCheckboxAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBCheckboxAnswer]]
       case CheckboxQuestion => ???
       case CheckboxDistributionQuestion => ???
       case FreeTextQuestion => ???

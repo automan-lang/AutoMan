@@ -87,7 +87,7 @@ abstract class AutomanAdapter {
    */
   protected[automan] def question_shutdown_hook(q: Question): Unit = {}
 
-  // end-user syntax: Question creation
+  // User API
  def CheckboxQuestion(init: CBQ => Unit) = schedule(CBQFactory(), init)
 //  def CheckboxDistributionQuestion(init: CBDQ => Unit) : Future[Set[CheckboxOldAnswer]] = scheduleVector(CBDQFactory(), init)
   def FreeTextQuestion(init: FTQ => Unit) = schedule(FTQFactory(), init)
@@ -96,6 +96,11 @@ abstract class AutomanAdapter {
   def RadioButtonDistributionQuestion(init: RBDQ => Unit) = schedule(RBDQFactory(), init)
 //  def RadioButtonDistributionQuestion(init: RBDQ => Unit) : Future[Set[RadioButtonOldAnswer]] = scheduleVector(RBDQFactory(), init)
   def Option(id: Symbol, text: String) : QuestionOption
+  def clearMemoDB(): Unit = {
+    if (_memoizer != null) {
+      _memoizer.wipeDatabase()
+    }
+  }
 
   // state management
   protected[automan] def init() {
