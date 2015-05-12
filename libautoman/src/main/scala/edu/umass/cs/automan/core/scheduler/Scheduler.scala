@@ -45,9 +45,10 @@ class Scheduler(val question: Question,
     var _timeout_occurred = false
     var _all_tasks = tasks
     var _round = 1
+    var _done = false
 
     val answer = try {
-      while(!s.is_done(_all_tasks, _round)) {
+      while(!_done) {
         val __tasks = _all_tasks
         // get list of workers who may not re-participate
         val blacklist = s.blacklisted_workers(__tasks)
@@ -73,6 +74,9 @@ class Scheduler(val question: Question,
 
         // memoize tasks again
         memo.save(question, all_tasks)
+
+        // continue?
+        _done = s.is_done(all_tasks, _round)
 
         synchronized {
           _all_tasks = all_tasks
