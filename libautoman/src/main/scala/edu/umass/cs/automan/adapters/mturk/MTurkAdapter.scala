@@ -7,6 +7,7 @@ import edu.umass.cs.automan.adapters.mturk.connectionpool.Pool
 import edu.umass.cs.automan.adapters.mturk.logging.MTMemo
 import edu.umass.cs.automan.adapters.mturk.mock.{MockServiceState, MockSetup, MockRequesterService}
 import edu.umass.cs.automan.adapters.mturk.question._
+import edu.umass.cs.automan.core.logging.DebugLog
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk}
 import edu.umass.cs.automan.core.AutomanAdapter
