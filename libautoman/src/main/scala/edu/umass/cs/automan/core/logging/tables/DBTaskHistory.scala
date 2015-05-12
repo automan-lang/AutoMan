@@ -6,20 +6,20 @@ import edu.umass.cs.automan.core.scheduler.SchedulerState.SchedulerState
 import scala.slick.driver.SQLiteDriver.simple._
 import java.util.Date
 
-object DBThunkHistory {
+object DBTaskHistory {
   val javaUtilDateMapper =
     MappedColumnType.base[java.util.Date, java.sql.Timestamp] (
       d => new java.sql.Timestamp(d.getTime),
       d => new java.util.Date(d.getTime))
 }
 
-class DBThunkHistory(tag: Tag) extends Table[(Int, UUID, Date, SchedulerState)](tag, "DBTHUNK_HISTORY") {
-  implicit val javaUtilDateMapper = DBThunkHistory.javaUtilDateMapper
+class DBTaskHistory(tag: Tag) extends Table[(Int, UUID, Date, SchedulerState)](tag, "DBTASK_HISTORY") {
+  implicit val javaUtilDateMapper = DBTaskHistory.javaUtilDateMapper
   implicit val schedulerStateMapper = SchedulerState.mapper
 
   def history_id = column[Int]("HISTORY_ID", O.PrimaryKey, O.AutoInc)
-  def thunk_id = column[UUID]("THUNK_ID", O.NotNull)
+  def task_id = column[UUID]("TASK_ID", O.NotNull)
   def state_change_time = column[Date]("STATE_CHANGE_TIME", O.NotNull)
   def scheduler_state = column[SchedulerState]("SCHEDULER_STATE", O.NotNull)
-  override def * = (history_id, thunk_id, state_change_time, scheduler_state)
+  override def * = (history_id, task_id, state_change_time, scheduler_state)
 }

@@ -1,7 +1,7 @@
 package edu.umass.cs.automan.adapters.mturk.util
 
 import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
-import edu.umass.cs.automan.core.scheduler.Thunk
+import edu.umass.cs.automan.core.scheduler.Task
 
 object Key {
   type HITID = String
@@ -12,13 +12,13 @@ object Key {
   type WorkerID = String
   type GroupID = String
 
-  protected[mturk] def BatchKey(t: Thunk) : BatchKey =
+  protected[mturk] def BatchKey(t: Task) : BatchKey =
     BatchKey(t.question.asInstanceOf[MTurkQuestion].group_id, t.cost, t.worker_timeout)
   protected[mturk] def BatchKey(group_id: String, cost: BigDecimal, timeout_in_s: Int) =
     (group_id, cost, timeout_in_s)
-  protected[mturk] def HITKeyForBatch(batch_key: BatchKey, t: Thunk) : HITKey =
+  protected[mturk] def HITKeyForBatch(batch_key: BatchKey, t: Task) : HITKey =
     (batch_key, t.question.memo_hash)
-  protected[mturk] def HITKey(t: Thunk) : HITKey =
+  protected[mturk] def HITKey(t: Task) : HITKey =
     HITKeyForBatch(BatchKey(t), t)
   protected[mturk] def HITIDsForBatch(batch_key: BatchKey, hit_ids: Map[HITKey,HITID]) : List[HITID] =
     hit_ids.flatMap { case ((bkey, _), hit_id) => if (bkey == batch_key) Some(hit_id) else None }.toList

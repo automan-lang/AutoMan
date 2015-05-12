@@ -6,7 +6,7 @@ import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.{AbstractAnswer, Outcome}
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 import edu.umass.cs.automan.core.logging.Memo
-import edu.umass.cs.automan.core.scheduler.{SchedulerState, Thunk, Scheduler}
+import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task, Scheduler}
 import edu.umass.cs.automan.core.strategy.ValidationStrategy
 
 abstract class Question {

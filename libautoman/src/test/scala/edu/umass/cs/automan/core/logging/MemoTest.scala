@@ -21,18 +21,18 @@ class MemoTest extends FlatSpec with Matchers {
     m.init()
 
     val ts = List(
-      TestUtil.newThunk(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
-      TestUtil.newThunk(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
-      TestUtil.newThunk(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
-      TestUtil.newThunk(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
-      TestUtil.newThunk(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0)
+      TestUtil.newTask(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
+      TestUtil.newTask(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
+      TestUtil.newTask(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
+      TestUtil.newTask(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
+      TestUtil.newTask(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0)
     )
 
     m.save(q, ts)
 
     val ts2 = m.restore(q)
 
-    Memo.sameThunks(ts, ts2) should be (true)
+    Memo.sameTasks(ts, ts2) should be (true)
   }
 
   "The Memo class" should "save and restore complex execution traces when logging is enabled" in {
@@ -40,11 +40,11 @@ class MemoTest extends FlatSpec with Matchers {
     m.wipeDatabase()
 
     val ts = List(
-      TestUtil.newThunk(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
-      TestUtil.newThunk(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
-      TestUtil.newThunk(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
-      TestUtil.newThunk(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
-      TestUtil.newThunk(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0)
+      TestUtil.newTask(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
+      TestUtil.newTask(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
+      TestUtil.newTask(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
+      TestUtil.newTask(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
+      TestUtil.newTask(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0)
     )
 
     m.save(q, ts)
@@ -61,14 +61,14 @@ class MemoTest extends FlatSpec with Matchers {
       ts2(2).copy_with_answer('no.asInstanceOf[t.question.A], "DCBA4321"),
       ts2(3).copy_as_timeout(),
       ts2(4).copy_as_cancelled(),
-      TestUtil.newThunk(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
-      TestUtil.newThunk(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0)
+      TestUtil.newTask(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
+      TestUtil.newTask(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0)
     )
 
     m.save(q, ts3)
 
     val ts4 = m.restore(q)
 
-    Memo.sameThunks(ts3, ts4) should be (true)
+    Memo.sameTasks(ts3, ts4) should be (true)
   }
 }

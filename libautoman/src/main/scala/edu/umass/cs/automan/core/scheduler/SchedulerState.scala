@@ -10,8 +10,8 @@ object SchedulerState extends Enumeration {
       DUPLICATE,  // answer was submitted by worker who already submitted work
       ACCEPTED,   // answer has been paid for
       REJECTED,   // answer is incorrect (and will not be paid for)
-      PROCESSED,  // answer was accepted/rejected in previous execution (for memo-recalled Thunks)
-      TIMEOUT,    // thunk timed out (reschedule)
+      PROCESSED,  // answer was accepted/rejected in previous execution (for memo-recalled Tasks)
+      TIMEOUT,    // Task timed out (reschedule)
       CANCELLED
   = Value
 

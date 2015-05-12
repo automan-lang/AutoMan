@@ -21,11 +21,11 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
   private val dbHIT = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBHIT]
   private val dbHITType = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBHITType]
   private val dbQualReq = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBQualificationRequirement]
-  private val dbThunkHIT = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBThunkHIT]
+  private val dbTaskHIT = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBTaskHIT]
   private val dbWorker = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBWorker]
 
   override protected[automan] def init() : Unit = {
-    val ddls = List(dbAssignment.ddl, dbHIT.ddl, dbHITType.ddl, dbQualReq.ddl, dbThunkHIT.ddl, dbWorker.ddl)
+    val ddls = List(dbAssignment.ddl, dbHIT.ddl, dbHITType.ddl, dbQualReq.ddl, dbTaskHIT.ddl, dbWorker.ddl)
     init_database_if_required(ddls)
   }
 
@@ -55,7 +55,7 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
   }
 
   def assignmentFromDBAssnRow(row: (String, String, String, AssignmentStatus, Calendar, Calendar, Calendar, Calendar, Calendar, Calendar, String, String, UUID)) : Assignment = {
-    val (assignmentId, workerId, hit_id, assignmentStatus, autoApprovalTime, acceptTime, submitTime, approvalTime, rejectionTime, deadline, answer, requesterFeedback, thunkId) = row
+    val (assignmentId, workerId, hit_id, assignmentStatus, autoApprovalTime, acceptTime, submitTime, approvalTime, rejectionTime, deadline, answer, requesterFeedback, taskId) = row
     new Assignment(
       null,
       assignmentId,
@@ -100,18 +100,18 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
 
     // Assignments
     val (assignment_inserts, assignment_updates) = hit_states.values.map { hitstate =>
-      hitstate.t_a_map.flatMap { case (thunk_id, assignment_opt) =>
+      hitstate.t_a_map.flatMap { case (task_id, assignment_opt) =>
         assignment_opt match {
           case Some(assignment) =>
             if (existing_assignments.contains(assignment.getAssignmentId)) {
               val existing_assn = assignmentFromDBAssnRow(existing_assignments(assignment.getAssignmentId))
               if (existing_assn.equals(assignment)) {
-                Some(Skip(assignment,thunk_id))
+                Some(Skip(assignment,task_id))
               } else {
-                Some(Update(assignment,thunk_id))
+                Some(Update(assignment,task_id))
               }
             } else {
-              Some(Insert(assignment,thunk_id))
+              Some(Insert(assignment,task_id))
             }
           case None => None
         }
@@ -130,14 +130,14 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
     // HIT updates
     hit_updates.foreach { hit_id => dbHIT.filter(_.HITId === hit_id).map(_.isCancelled).update(hit_states(hit_id).isCancelled)}
 
-    // ThunkHIT inserts (no updates needed)
-    dbThunkHIT ++= HITState2ThunkHITTuples(hit_inserts.map { hitid => hit_states(hitid)})
+    // TaskHIT inserts (no updates needed)
+    dbTaskHIT ++=HITState2TaskHITTuples(hit_inserts.map { hitid => hit_states(hitid)})
 
     // Assignment inserts
     dbAssignment ++= Assignment2AssignmentTuple(assignment_inserts)
 
     // Assignment updates
-    assignment_updates.foreach { case (a, thunk_id) =>
+    assignment_updates.foreach { case (a, task_id) =>
       dbAssignment
         .filter(_.assignmentId === a.getAssignmentId)
         .map{ r => (r.assignmentStatus, r.autoApprovalTime, r.acceptTime, r.submitTime, r.approvalTime, r.rejectionTime, r.deadline, r.requesterFeedback) }
@@ -146,7 +146,7 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
   }
 
   private def Assignment2AssignmentTuple(pairs: List[(Assignment,UUID)]) : List[(String, String, String, AssignmentStatus, Calendar, Calendar, Calendar, Calendar, Calendar, Calendar, String, String, UUID)] = {
-    pairs.map { case (assignment, thunk_id) =>
+    pairs.map { case (assignment, task_id) =>
       (
         assignment.getAssignmentId,
         assignment.getWorkerId,
@@ -160,13 +160,13 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
         assignment.getDeadline,
         assignment.getAnswer,
         assignment.getRequesterFeedback,
-        thunk_id
+        task_id
       )
     }
   }
 
-  private def HITState2ThunkHITTuples(hitstates: List[HITState]) : List[(String, UUID)] = {
-    hitstates.map { hitstate => hitstate.t_a_map.map { case (thunk_id,_) => (hitstate.HITId, thunk_id) } }.flatten
+  private def HITState2TaskHITTuples(hitstates: List[HITState]) : List[(String, UUID)] = {
+    hitstates.map { hitstate => hitstate.t_a_map.map { case (task_id,_) => (hitstate.HITId, task_id) } }.flatten
   }
 
   private def HITState2HITTuples(hitstates: List[HITState]) : List[(String, String, Boolean)] = {
@@ -241,11 +241,11 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
   }
 
   private def tuple2Assignment(tup: (String, String, String, AssignmentStatus, Calendar, Calendar, Calendar, Calendar, Calendar, Calendar, String, String, UUID)) : Assignment = {
-    val (assignmentId, workerId, hit_id, assignmentStatus, autoApprovalTime, acceptTime, submitTime, approvalTime, rejectionTime, deadline, answer, requesterFeedback, thunkId) = tup
+    val (assignmentId, workerId, hit_id, assignmentStatus, autoApprovalTime, acceptTime, submitTime, approvalTime, rejectionTime, deadline, answer, requesterFeedback, taskId) = tup
     new Assignment(null, assignmentId, workerId, hit_id, assignmentStatus, autoApprovalTime, acceptTime, submitTime, approvalTime, rejectionTime, deadline, answer, requesterFeedback)
   }
 
-  private def thunkAssignmentMap(implicit session: DBSession) : Map[UUID,Option[Assignment]] = {
+  private def taskAssignmentMap(implicit session: DBSession) : Map[UUID,Option[Assignment]] = {
     dbAssignment.list.map(row => row._13 -> Some(tuple2Assignment(row))).toMap
   }
 
@@ -257,7 +257,7 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
       val hit_type_id = hit_ids(hit_id)._1
       val hit_type = htid_map(hit_type_id)
       val cancelled = hit_ids(hit_id)._2
-      hit_id -> HITState(hit, thunkAssignmentMap, hit_type, cancelled)
+      hit_id -> HITState(hit, taskAssignmentMap, hit_type, cancelled)
     }.toMap
   }
 
@@ -293,8 +293,8 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
 
   private def getHITIDMap(implicit session: DBSession) : Map[Key.HITKey, Key.HITID] = {
     val query = dbQuestion join
-      dbThunk on (_.id === _.question_id) join
-      dbThunkHIT on (_._2.thunk_id === _.thunkId) join
+      dbTask on (_.id === _.question_id) join
+      dbTaskHIT on (_._2.task_id === _.taskId) join
       dbHIT on (_._2.HITId === _.HITId) join
       dbHITType on (_._2.HITTypeId === _.id)
     query.map { r => ((r._2.groupId, r._1._1._1._2.cost, r._1._1._1._2.worker_timeout_in_s), r._1._1._1._1.memo_hash) -> r._1._2.HITId }.list.toMap
