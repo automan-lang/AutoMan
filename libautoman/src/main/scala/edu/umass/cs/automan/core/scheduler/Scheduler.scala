@@ -123,10 +123,6 @@ class Scheduler(val question: Question,
     }
   }
 
-  def cost_for_tasks(tasks: List[Task]) : BigDecimal = {
-    tasks.foldLeft(BigDecimal(0)) { case (acc, t) => acc + t.cost }
-  }
-
   /**
    * Check to see whether a timeout occurred given a list of tasks.
    * @param tasks A list of tasks.
@@ -158,7 +154,7 @@ class Scheduler(val question: Question,
       val new_tasks = s.spawn(tasks, round, suffered_timeout)
       assert(spawn_invariant(new_tasks))
       // can we afford these?
-      val cost = cost_for_tasks(tasks ::: new_tasks)
+      val cost = total_cost(tasks ::: new_tasks)
       if (question.budget < cost) {
         DebugLog("Over budget. Need: " + cost.toString() + ", have: " + question.budget.toString(), LogLevel.WARN, LogType.SCHEDULER, question.id)
         throw new OverBudgetException(cost, question.budget)
@@ -208,7 +204,9 @@ class Scheduler(val question: Question,
    * @return The amount spent.
    */
   def total_cost[A](tasks: List[Task]) : BigDecimal = {
-    tasks.filter(_.state == SchedulerState.ACCEPTED).foldLeft(BigDecimal(0)) { case (acc,t) => acc + t.cost }
+    tasks.filter { t =>
+      t.state == SchedulerState.ACCEPTED && !t.from_memo
+    }.foldLeft(BigDecimal(0)) { case (acc,t) => acc + t.cost }
   }
 
   // INVARIANTS

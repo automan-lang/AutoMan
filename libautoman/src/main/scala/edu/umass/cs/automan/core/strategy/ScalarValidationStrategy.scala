@@ -11,7 +11,6 @@ abstract class ScalarValidationStrategy(question: ScalarQuestion)
   def current_confidence(tasks: List[Task]) : Double
   def is_confident(tasks: List[Task], round: Int) : Boolean
   def is_done(tasks: List[Task], round: Int) = is_confident(tasks, round)
-
   def answer_selector(tasks: List[Task]) : (Question#A,BigDecimal,Double) = {
     val bgrp = biggest_group(tasks)
 
@@ -25,7 +24,8 @@ abstract class ScalarValidationStrategy(question: ScalarQuestion)
     val conf = current_confidence(tasks)
 
     // calculate cost
-    val cost = (bgrp match { case (_,ts) => ts }).foldLeft(BigDecimal(0)){ case (acc,t) => acc + t.cost }
+    val cost = (bgrp match { case (_,ts) => ts.filterNot(_.from_memo) })
+      .foldLeft(BigDecimal(0)){ case (acc,t) => acc + t.cost }
 
     (value, cost, conf)
   }
