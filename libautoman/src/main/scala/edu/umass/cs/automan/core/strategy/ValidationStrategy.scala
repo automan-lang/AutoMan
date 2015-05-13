@@ -83,7 +83,7 @@ abstract class ValidationStrategy(question: Question) {
     tasks.filter { t =>
       t.state == SchedulerState.READY ||
       t.state == SchedulerState.RUNNING
-    }
+    }.filter(_.state != SchedulerState.CANCELLED )
   }
   def tasks_to_reject(tasks: List[Task]): List[Task]
 
@@ -100,7 +100,7 @@ abstract class ValidationStrategy(question: Question) {
     // tasks should be
     tasks.filter(t =>
       t.state == SchedulerState.ANSWERED ||   // retrieved from MTurk
-      t.state == SchedulerState.PROCESSED ||  // OR recalled from a memo DB
+      t.state == SchedulerState.REJECTED ||   // OR rejected
       t.state == SchedulerState.ACCEPTED      // OR accepted
     )
   }

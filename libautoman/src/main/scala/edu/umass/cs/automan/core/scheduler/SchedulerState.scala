@@ -10,7 +10,6 @@ object SchedulerState extends Enumeration {
       DUPLICATE,  // answer was submitted by worker who already submitted work
       ACCEPTED,   // answer has been paid for
       REJECTED,   // answer is incorrect (and will not be paid for)
-      PROCESSED,  // answer was accepted/rejected in previous execution (for memo-recalled Tasks)
       TIMEOUT,    // Task timed out (reschedule)
       CANCELLED
   = Value
@@ -22,7 +21,6 @@ object SchedulerState extends Enumeration {
       {
         case SchedulerState.ACCEPTED => 0
         case SchedulerState.CANCELLED => 1
-        case SchedulerState.PROCESSED => 2
         case SchedulerState.READY => 3
         case SchedulerState.REJECTED => 4
         case SchedulerState.ANSWERED => 5
@@ -33,7 +31,6 @@ object SchedulerState extends Enumeration {
       {
         case 0 => SchedulerState.ACCEPTED
         case 1 => SchedulerState.CANCELLED
-        case 2 => SchedulerState.PROCESSED
         case 3 => SchedulerState.READY
         case 4 => SchedulerState.REJECTED
         case 5 => SchedulerState.ANSWERED
