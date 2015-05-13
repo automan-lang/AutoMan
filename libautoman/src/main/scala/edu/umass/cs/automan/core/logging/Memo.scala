@@ -177,7 +177,7 @@ class Memo(log_config: LogConfig.Value) {
         }
 
         // execute query
-        val results = db.withSession { implicit s => A_QS_TS_THS.list }
+        val results = db.withSession { implicit s => A_QS_TS_THS.list }.distinct
 
           // make and return tasks
         results.map {

@@ -36,9 +36,9 @@ libraryDependencies ++= {
     "commons-beanutils"          % "commons-beanutils-core" % "1.7.0",
     "org.specs2"                 %%  "specs2-core"          % "2.3.11" % "test",
     "com.typesafe.slick"         %% "slick"                 % "2.1.0",
-//    "org.slf4j"                  % "slf4j-nop"              % "1.6.4",
-    "org.slf4j"                  % "slf4j-api"              % "1.7.5",
-    "org.slf4j"                  % "slf4j-simple"           % "1.7.5"
+    "org.slf4j"                  % "slf4j-nop"              % "1.6.4"
+//    "org.slf4j"                  % "slf4j-api"              % "1.7.5",
+//    "org.slf4j"                  % "slf4j-simple"           % "1.7.5"
   )
 }
 

@@ -45,7 +45,7 @@ class Scheduler(val question: Question,
     var _timeout_occurred = false
     var _all_tasks = tasks
     var _round = 1
-    var _done = false
+    var _done = s.is_done(_all_tasks, _round) // check for restored memo tasks
 
     val answer = try {
       while(!_done) {
