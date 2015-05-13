@@ -6,6 +6,7 @@ import edu.umass.cs.automan.core.answer.{ScalarOutcome, Outcome, AbstractAnswer}
 import edu.umass.cs.automan.core.exception.OverBudgetException
 import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.question.Question
+import edu.umass.cs.automan.core.strategy.ValidationStrategy
 import edu.umass.cs.automan.core.util.Stopwatch
 
 import scala.concurrent._
@@ -86,19 +87,10 @@ class Scheduler(val question: Question,
       }
 
       // pay for answers
-      val cancelled_tasks = s.tasks_to_cancel(_all_tasks)
-      val accepted_tasks = s.tasks_to_accept(_all_tasks)
-      val rejected_tasks = s.tasks_to_reject(_all_tasks)
-      accept_reject_and_cancel(
-        accepted_tasks,
-        rejected_tasks,
-        cancelled_tasks,
-        s.rejection_response(accepted_tasks),
-        backend
-      )
+      _all_tasks = accept_reject_and_cancel(_all_tasks, s, backend)
 
+      // return answer
       s.select_answer(_all_tasks)
-
     } catch {
       case o: OverBudgetException =>
         s.select_over_budget_answer(_all_tasks, o.need, o.have)
@@ -183,25 +175,31 @@ class Scheduler(val question: Question,
 
   /**
    * Accepts and rejects tasks on the backend.  Returns all tasks.
-   * @param to_cancel A list of tasks to be canceled.
-   * @param to_accept A list of tasks to be accepted.
-   * @param to_reject A list of tasks to be rejected.
-   * @param correct_answer A stringified version of the correct answer.
+   * @param all_tasks All tasks.
+   * @param strategy The ValidationStrategy.
    * @param backend A reference to the backend AutomanAdapter.
-   * @return The amount of money spent.
+   * @return The tasks passed in, with new states.
    */
-  def accept_reject_and_cancel[A](to_accept: List[Task],
-                                  to_reject: List[Task],
-                                  to_cancel: List[Task],
-                                  correct_answer: String,
+  def accept_reject_and_cancel[A](all_tasks: List[Task],
+                                  strategy: ValidationStrategy,
                                   backend: AutomanAdapter) : List[Task] = {
-    val canceled = to_cancel.map(backend.cancel)
-    assert(all_set_invariant(to_cancel, canceled, SchedulerState.CANCELLED))
+    val to_cancel = strategy.tasks_to_cancel(all_tasks)
+    val to_accept = strategy.tasks_to_accept(all_tasks)
+    val to_reject = strategy.tasks_to_reject(all_tasks)
+
+    val correct_answer = strategy.rejection_response(to_accept)
+
+    val action_items = to_cancel ::: to_accept ::: to_reject
+
+    val remaining_tasks = all_tasks.filterNot(action_items.contains(_))
+
+    val cancelled = to_cancel.map(backend.cancel)
+    assert(all_set_invariant(to_cancel, cancelled, SchedulerState.CANCELLED))
     val accepted = to_accept.map(backend.accept)
     assert(all_set_invariant(to_accept, accepted, SchedulerState.ACCEPTED))
     val rejected = to_reject.map(backend.reject(_, correct_answer))
     assert(all_set_invariant(to_reject, rejected, SchedulerState.REJECTED))
-    accepted ::: rejected
+    remaining_tasks ::: cancelled ::: accepted ::: rejected
   }
 
   /**

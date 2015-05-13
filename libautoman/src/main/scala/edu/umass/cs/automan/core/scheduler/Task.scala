@@ -45,10 +45,6 @@ case class Task(task_id: UUID,
     DebugLog("Task " + task_id.toString +  " changed to TIMEOUT state; expired at: " + expires_at.toString, LogLevel.INFO, LogType.SCHEDULER, question.id)
     new Task(task_id, question, timeout_in_s, worker_timeout, cost, created_at, SchedulerState.TIMEOUT, from_memo, worker_id, answer, new Date())
   }
-  def copy_as_processed() = {
-    DebugLog("Task " + task_id.toString +  " changed to PROCESSED state.", LogLevel.INFO, LogType.SCHEDULER, question.id)
-    new Task(task_id, question, timeout_in_s, worker_timeout, cost, created_at, SchedulerState.PROCESSED, from_memo, worker_id, answer, new Date())
-  }
   def copy_as_cancelled() = {
     DebugLog("Task " + task_id.toString +  " changed to CANCELLED state.", LogLevel.INFO, LogType.SCHEDULER, question.id)
     new Task(task_id, question, timeout_in_s, worker_timeout, cost, created_at, SchedulerState.CANCELLED, from_memo, worker_id, answer, new Date())

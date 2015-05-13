@@ -75,11 +75,21 @@ abstract class ScalarValidationStrategy(question: ScalarQuestion)
     }
   }
   def tasks_to_accept(tasks: List[Task]): List[Task] = {
-    biggest_group(tasks) match { case (_, ts) => ts }
+    (biggest_group(tasks) match { case (_, ts) => ts })
+      .filter(not_final)
   }
 
   def tasks_to_reject(tasks: List[Task]): List[Task] = {
     val accepts = tasks_to_accept(tasks).toSet
-    tasks.filter { t => !accepts.contains(t) }
+    tasks.filter { t =>
+      !accepts.contains(t) &&
+      not_final(t)
+    }
+  }
+
+  def not_final(task: Task) : Boolean = {
+    task.state != SchedulerState.ACCEPTED &&
+    task.state != SchedulerState.REJECTED &&
+    task.state != SchedulerState.CANCELLED
   }
 }

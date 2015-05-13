@@ -32,9 +32,19 @@ abstract class DistributionValidationStrategy(question: DistributionQuestion)
   }
   override def tasks_to_accept(tasks: List[Task]): List[Task] = {
     completed_workerunique_tasks(tasks)
+      .filter(not_final)
   }
   override def tasks_to_reject(tasks: List[Task]): List[Task] = {
     val accepts = tasks_to_accept(tasks).toSet
-    tasks.filter { t => !accepts.contains(t) }
+    tasks.filter { t =>
+      !accepts.contains(t) &&
+      not_final(t)
+    }
+  }
+
+  def not_final(task: Task) : Boolean = {
+    task.state != SchedulerState.ACCEPTED &&
+      task.state != SchedulerState.REJECTED &&
+      task.state != SchedulerState.CANCELLED
   }
 }
