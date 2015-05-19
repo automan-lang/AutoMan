@@ -2,14 +2,11 @@ package edu.umass.cs.automan.core.scheduler
 
 import java.util.Date
 import edu.umass.cs.automan.core.AutomanAdapter
-import edu.umass.cs.automan.core.answer.{ScalarOutcome, Outcome, AbstractAnswer}
 import edu.umass.cs.automan.core.exception.OverBudgetException
 import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.strategy.ValidationStrategy
 import edu.umass.cs.automan.core.util.Stopwatch
-
-import scala.concurrent._
 
 class Scheduler(val question: Question,
                    val backend: AutomanAdapter,
@@ -58,10 +55,8 @@ class Scheduler(val question: Question,
         // post more tasks as needed
         val new_tasks = post_as_needed(dedup_tasks, _round, backend, question, suffered_timeout, blacklist)
 
-        // The scheduler waits here to give the crowd time to answer.
-        // Sleeping also informs the scheduler that this thread may yield
-        // its CPU time.  While we wait, we also update memo state.
-        memo_and_sleep(poll_interval_in_s * 1000, dedup_tasks ::: new_tasks, memo)
+        // Update memo state and yield to let other threads get some work done
+        memo_and_yield(dedup_tasks ::: new_tasks, memo)
 
         // ask the backend to retrieve answers for all RUNNING tasks
         val (running_tasks, dead_tasks) = (dedup_tasks ::: new_tasks).partition(_.state == SchedulerState.RUNNING)
@@ -106,21 +101,9 @@ class Scheduler(val question: Question,
     answer
   }
 
-  def memo_and_sleep(wait_time_ms: Int, ts: List[Task], memo: Memo) : Unit = {
-    val t = Stopwatch {
-      DebugLog("Saving state of " + ts.size + " tasks to database.", LogLevel.INFO, LogType.SCHEDULER, question.id)
-      memo.save(question, ts)
-    }
-    val rem_ms = wait_time_ms - t.duration_ms
-    if (rem_ms > 0) {
-      // wait the remaining amount of time
-      DebugLog("Sleeping " + (rem_ms / 1000) + " seconds.", LogLevel.INFO, LogType.SCHEDULER, question.id)
-      Thread.sleep(rem_ms)
-    } else {
-      // even if we don't need to wait, we should give the JVM
-      // the opportunity to schedule another thread
-      Thread.`yield`()
-    }
+  def memo_and_yield(ts: List[Task], memo: Memo) : Unit = {
+    memo.save(question, ts)
+    Thread.`yield`()
   }
 
   /**
