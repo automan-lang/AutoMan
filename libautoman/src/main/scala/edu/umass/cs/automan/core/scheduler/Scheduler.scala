@@ -199,13 +199,18 @@ class Scheduler(val question: Question,
   }
 
   /**
-   * Calculates the total cost of all ACCEPTED tasks.
+   * Calculates the total cost of all tasks that might
+   * potentially be accepted.
    * @param tasks The complete list of tasks.
    * @return The amount spent.
    */
   def total_cost[A](tasks: List[Task]) : BigDecimal = {
     tasks.filter { t =>
-      t.state == SchedulerState.ACCEPTED && !t.from_memo
+      t.state != SchedulerState.CANCELLED &&
+      t.state != SchedulerState.DUPLICATE &&
+      t.state != SchedulerState.TIMEOUT &&
+      t.state != SchedulerState.REJECTED &&
+      !t.from_memo
     }.foldLeft(BigDecimal(0)) { case (acc,t) => acc + t.cost }
   }
 

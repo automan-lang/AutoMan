@@ -7,9 +7,9 @@ import edu.umass.cs.automan.automan
 import edu.umass.cs.automan.core.answer._
 import org.scalatest._
 
-class RadioMemoTest extends FlatSpec with Matchers {
+class CheckMemoTest extends FlatSpec with Matchers {
 
-  "A radio button program" should "correctly recall answers at no cost" in {
+  "A checkbox program" should "correctly recall answers at no cost" in {
     val confidence = 0.95
 
     val a = MTurkAdapter { mt =>
@@ -26,7 +26,7 @@ class RadioMemoTest extends FlatSpec with Matchers {
     var reward = BigDecimal(0)
 
     automan(a) {
-      def which_one(text: String) = a.RadioButtonQuestion { q =>
+      def which_one(text: String) = a.CheckboxQuestion { q =>
         q.confidence = confidence
         q.budget = 8.00
         q.text = text
@@ -37,11 +37,11 @@ class RadioMemoTest extends FlatSpec with Matchers {
           a.Option('cookie, "Cookie Monster"),
           a.Option('count, "The Count")
         )
-        q.mock_answers = List('spongebob,'spongebob,'spongebob,'spongebob,'spongebob,'spongebob)
+        q.mock_answers = List(Set('spongebob,'count),Set('spongebob),Set('count,'spongebob),Set('count,'spongebob))
         reward = q.reward
       }
 
-      def which_one2(text: String) = a.RadioButtonQuestion { q =>
+      def which_one2(text: String) = a.CheckboxQuestion { q =>
         q.confidence = confidence
         q.budget = 8.00
         q.text = text
@@ -55,22 +55,22 @@ class RadioMemoTest extends FlatSpec with Matchers {
         q.mock_answers = List()
       }
 
-      which_one("Which one of these does not belong?").answer match {
+      which_one("Which characters are not Oscar, Kermit, or Cookie Monster?").answer match {
         case Answer(value, cost, conf) =>
-          println("Answer: '" + value + "', cost: '" + cost + "', confidence: " + conf)
-          (value == 'spongebob) should be(true)
-          (conf >= confidence) should be(true)
+          println("Answer: '" + value + "', confidence: " + conf)
+          (value == Set('spongebob,'count)) should be (true)
+          (conf >= confidence) should be (true)
           (cost == BigDecimal(3) * reward) should be(true)
         case _ =>
           fail()
       }
 
-      which_one2("Which one of these does not belong?").answer match {
+      which_one2("Which characters are not Oscar, Kermit, or Cookie Monster?").answer match {
         case Answer(value, cost, conf) =>
-          println("Answer: '" + value + "', cost: '" + cost + "', confidence: " + conf)
-          (value == 'spongebob) should be (true)
+          println("Answer: '" + value + "', confidence: " + conf)
+          (value == Set('spongebob,'count)) should be (true)
           (conf >= confidence) should be (true)
-          (cost == BigDecimal(0.00)) should be (true)
+          (cost == BigDecimal(0)) should be(true)
         case _ =>
           fail()
       }
