@@ -9,7 +9,7 @@ import org.scalatest._
 
 class RadioMemoTest extends FlatSpec with Matchers {
 
-  "A radio button program" should "work" in {
+  "A radio button program" should "correctly recall answers at no cost" in {
     val confidence = 0.95
 
     val a = MTurkAdapter { mt =>

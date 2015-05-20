@@ -150,7 +150,12 @@ class MTurkAdapter extends AutomanAdapter {
         new MockRequesterService(mss, this.toClientConfig)
       case None => new RequesterService(this.toClientConfig)
     }
-    val pool = new Pool(rs, SLEEP_MS)
+    val pool = _use_mock match {
+      case Some(mock_setup) =>
+        new Pool(rs, 0)
+      case None =>
+        new Pool(rs, SLEEP_MS)
+    }
     _service = Some(rs)
     _memoizer.restore_mt_state(pool, rs)
     _pool = Some(pool)
