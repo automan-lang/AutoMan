@@ -34,7 +34,8 @@ class OverBudgetTest extends FlatSpec with Matchers {
       }
 
       which_one().answer match {
-        case Answer(_, _, _) =>
+        case Answer(value, cost, conf) =>
+          println("Answer: '" + value + "', cost: '" + cost + "', confidence: " + conf)
           fail()
         case LowConfidenceAnswer(_, _, _) =>
           fail()
