@@ -173,6 +173,23 @@ class Memo(log_config: LogConfig.Value) {
                 )
             }
           }
+          case CheckboxQuestion => {
+            (fQS_TS_THS leftJoin dbCheckboxAnswer on (_._2._2.history_id === _.history_id)).map {
+              case ((dbquestion, (dbtask, dbtaskhistory)), dbcheckboxanswer) =>
+                ( dbtask.task_id,
+                  dbtask.timeout_in_s,
+                  dbtask.worker_timeout_in_s,
+                  dbtask.cost,
+                  dbtask.creation_time,
+                  dbtaskhistory.scheduler_state,
+                  true,
+                  dbcheckboxanswer.worker_id.?,
+                  dbcheckboxanswer.answer,
+                  dbtaskhistory.state_change_time
+                )
+
+            }
+          }
           case _ => throw new NotImplementedError()
         }
 
