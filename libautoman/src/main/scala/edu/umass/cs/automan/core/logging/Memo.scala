@@ -95,7 +95,7 @@ class Memo(log_config: LogConfig.Value) {
    * @param ddls Slick Table definitions.
    */
   protected def init_database_if_required(ddls: List[SQLiteDriver.SchemaDescription]) : Unit = {
-    val base_ddls: SQLiteDriver.DDL = dbTask.ddl ++ dbTaskHistory.ddl ++ dbQuestion.ddl ++ dbRadioButtonAnswer.ddl
+    val base_ddls: SQLiteDriver.DDL = dbTask.ddl ++ dbTaskHistory.ddl ++ dbQuestion.ddl ++ dbRadioButtonAnswer.ddl ++ dbCheckboxAnswer.ddl
     val all_ddls: SQLiteDriver.DDL = if (ddls.nonEmpty) {
       base_ddls ++ ddls.tail.foldLeft(ddls.head){ case (acc,ddl) => acc ++ ddl }
     } else {
@@ -272,9 +272,9 @@ class Memo(log_config: LogConfig.Value) {
     ts.head.question.getQuestionType match {
       case RadioButtonQuestion =>
         dbRadioButtonAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBRadioButtonAnswer]]
-      case RadioButtonDistributionQuestion =>
+      case RadioButtonDistributionQuestion => ???
+      case CheckboxQuestion =>
         dbCheckboxAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBCheckboxAnswer]]
-      case CheckboxQuestion => ???
       case CheckboxDistributionQuestion => ???
       case FreeTextQuestion => ???
       case FreeTextDistributionQuestion => ???
