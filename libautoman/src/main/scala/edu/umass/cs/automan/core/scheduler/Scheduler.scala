@@ -6,7 +6,6 @@ import edu.umass.cs.automan.core.exception.OverBudgetException
 import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.strategy.ValidationStrategy
-import edu.umass.cs.automan.core.util.Stopwatch
 
 class Scheduler(val question: Question,
                    val backend: AutomanAdapter,

@@ -2,7 +2,7 @@ package edu.umass.cs.automan.core.logging
 
 import java.util.{Date, UUID}
 import edu.umass.cs.automan.core.info.QuestionType._
-import edu.umass.cs.automan.core.logging.tables.{DBRadioButtonAnswer, DBTaskHistory}
+import edu.umass.cs.automan.core.logging.tables.{DBCheckboxAnswer, DBRadioButtonAnswer, DBTaskHistory}
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.SchedulerState._
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
@@ -39,6 +39,7 @@ class Memo(log_config: LogConfig.Value) {
   // implicit conversions
   implicit val javaUtilDateMapper = DBTaskHistory.javaUtilDateMapper
   implicit val symbolStringMapper = DBRadioButtonAnswer.symbolStringMapper
+  implicit val symbolSetStringMapper = DBCheckboxAnswer.symbolSetStringMapper
 
   // typedefs
   type DBTask = (UUID, UUID, BigDecimal, Date, Int, Int)
@@ -147,6 +148,7 @@ class Memo(log_config: LogConfig.Value) {
    * @return A list of tasks.
    */
   def restore(q: Question) : List[Task] = {
+
     db_opt match {
       case Some(db) => {
         val QS_TS_THS = allTasksQuery()
@@ -184,7 +186,7 @@ class Memo(log_config: LogConfig.Value) {
                   dbtaskhistory.scheduler_state,
                   true,
                   dbcheckboxanswer.worker_id.?,
-                  dbcheckboxanswer.answer,
+                  dbcheckboxanswer.answer.?,
                   dbtaskhistory.state_change_time
                 )
 
@@ -205,8 +207,8 @@ class Memo(log_config: LogConfig.Value) {
                 created_at,
                 state,
                 from_memo,
-                worker_id_opt,
-                answer_opt,
+                worker_id,
+                answer,
                 state_changed_at) =>
             Task(
               task_id,
@@ -217,8 +219,8 @@ class Memo(log_config: LogConfig.Value) {
               created_at,
               state,
               from_memo = true,
-              worker_id_opt,
-              answer_opt.asInstanceOf[Option[Question#A]],
+              worker_id,
+              answer.asInstanceOf[Option[Question#A]],
               state_changed_at
             )
         }
