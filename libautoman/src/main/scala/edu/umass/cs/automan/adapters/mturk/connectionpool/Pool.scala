@@ -17,9 +17,6 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   type BatchKey = (String,BigDecimal,Int)   // (group_id, cost, timeout); uniquely identifies a batch
   type HITKey = (BatchKey, String)          // (BatchKey, memo_hash); uniquely identifies a HIT
 
-  // worker
-  private var _worker_thread: Thread = startWorker()
-
   // work queue
   private val _requests: PriorityBlockingQueue[Message] = new PriorityBlockingQueue[Message]()
 
@@ -28,6 +25,9 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
 
   // MTurk-related state
   private var _state = new MTState()
+
+  // worker
+  private var _worker_thread: Thread = startWorker()
 
   def restoreState(state: MTState) : Unit = {
     _state = state
