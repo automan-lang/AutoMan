@@ -22,7 +22,7 @@ class MTurkCheckTest extends FlatSpec with Matchers {
     }
 
     automan(a) {
-      def which_one() = a.CheckboxQuestion { q =>
+      def which_ones() = a.CheckboxQuestion { q =>
         q.confidence = confidence
         q.budget = 8.00
         q.text = "Which characters are not Oscar, Kermit, or Cookie Monster?"
@@ -36,7 +36,7 @@ class MTurkCheckTest extends FlatSpec with Matchers {
         q.mock_answers = List(Set('spongebob,'count),Set('spongebob),Set('count,'spongebob),Set('count,'spongebob))
       }
 
-      which_one().answer match {
+      which_ones().answer match {
         case Answer(value, _, conf) =>
           println("Answer: '" + value + "', confidence: " + conf)
           (value == Set('spongebob,'count)) should be (true)
