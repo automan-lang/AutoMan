@@ -9,7 +9,7 @@ import org.scalatest._
 
 class FreeTextMemoTest extends FlatSpec with Matchers {
 
-  "A checkbox program" should "correctly recall answers at no cost" in {
+  "A freetext program" should "correctly recall answers at no cost" in {
     val confidence = 0.95
 
     val a = MTurkAdapter { mt =>

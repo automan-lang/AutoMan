@@ -183,6 +183,22 @@ class Memo(log_config: LogConfig.Value) {
                 )
             }
           }
+          case RadioButtonDistributionQuestion => {
+            (fQS_TS_THS leftJoin dbRadioButtonAnswer on (_._2._2.history_id === _.history_id)).map {
+              case ((dbquestion, (dbtask, dbtaskhistory)), dbrbda) =>
+                ( dbtask.task_id,
+                  dbtask.timeout_in_s,
+                  dbtask.worker_timeout_in_s,
+                  dbtask.cost,
+                  dbtask.creation_time,
+                  dbtaskhistory.scheduler_state,
+                  true,
+                  dbrbda.worker_id.?,
+                  dbrbda.answer.?,
+                  dbtaskhistory.state_change_time
+                )
+            }
+          }
           case CheckboxQuestion => {
             (fQS_TS_THS leftJoin dbCheckboxAnswer on (_._2._2.history_id === _.history_id)).map {
               case ((dbquestion, (dbtask, dbtaskhistory)), dbcheckboxanswer) =>
@@ -299,7 +315,8 @@ class Memo(log_config: LogConfig.Value) {
     ts.head.question.getQuestionType match {
       case RadioButtonQuestion =>
         dbRadioButtonAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBRadioButtonAnswer]]
-      case RadioButtonDistributionQuestion => ???
+      case RadioButtonDistributionQuestion =>
+        dbRadioButtonAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBRadioButtonAnswer]]
       case CheckboxQuestion =>
         dbCheckboxAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBCheckboxAnswer]]
       case CheckboxDistributionQuestion => ???
@@ -373,6 +390,8 @@ class Memo(log_config: LogConfig.Value) {
             dbTask.delete
             dbTaskHistory.delete
             dbRadioButtonAnswer.delete
+            dbCheckboxAnswer.delete
+            dbFreeTextAnswer.delete
           }
         }
       case None => ()

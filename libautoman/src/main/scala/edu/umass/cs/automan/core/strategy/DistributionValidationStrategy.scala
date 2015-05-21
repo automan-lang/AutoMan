@@ -17,7 +17,7 @@ abstract class DistributionValidationStrategy(question: DistributionQuestion)
   def select_answer(tasks: List[Task]) : Question#AA = {
     val valid_tasks: List[Task] = completed_workerunique_tasks(tasks)
     val distribution: Set[(String,Question#A)] = valid_tasks.map { t => (t.worker_id.get, t.answer.get) }.toSet
-    val cost: BigDecimal = valid_tasks.map { t => t.cost }.foldLeft(BigDecimal(0)){ (acc, c ) => acc + c }
+    val cost: BigDecimal = valid_tasks.filterNot(_.from_memo).foldLeft(BigDecimal(0)){ case (acc,t) => acc + t.cost }
     Answers(distribution, cost).asInstanceOf[Question#AA]
   }
   def select_over_budget_answer(tasks: List[Task], need: BigDecimal, have: BigDecimal) : Question#AA = {
