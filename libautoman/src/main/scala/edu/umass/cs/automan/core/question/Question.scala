@@ -84,4 +84,6 @@ abstract class Question {
                                     memo: Memo,
                                     poll_interval_in_s: Int) : O
   protected[automan] def getQuestionType: QuestionType
+  protected[automan] def questionStartupHook() {}
+  protected[automan] def questionShutdownHook() {}
 }

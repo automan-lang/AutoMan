@@ -216,6 +216,23 @@ class Memo(log_config: LogConfig.Value) {
 
             }
           }
+          case CheckboxDistributionQuestion => {
+            (fQS_TS_THS leftJoin dbCheckboxAnswer on (_._2._2.history_id === _.history_id)).map {
+              case ((dbquestion, (dbtask, dbtaskhistory)), dbcbda) =>
+                ( dbtask.task_id,
+                  dbtask.timeout_in_s,
+                  dbtask.worker_timeout_in_s,
+                  dbtask.cost,
+                  dbtask.creation_time,
+                  dbtaskhistory.scheduler_state,
+                  true,
+                  dbcbda.worker_id.?,
+                  dbcbda.answer.?,
+                  dbtaskhistory.state_change_time
+                )
+
+            }
+          }
           case FreeTextQuestion => {
             (fQS_TS_THS leftJoin dbFreeTextAnswer on (_._2._2.history_id === _.history_id)).map {
               case ((dbquestion, (dbtask, dbtaskhistory)), dbfreetextanswer) =>
@@ -230,7 +247,22 @@ class Memo(log_config: LogConfig.Value) {
                   dbfreetextanswer.answer.?,
                   dbtaskhistory.state_change_time
                   )
-
+            }
+          }
+          case FreeTextDistributionQuestion => {
+            (fQS_TS_THS leftJoin dbFreeTextAnswer on (_._2._2.history_id === _.history_id)).map {
+              case ((dbquestion, (dbtask, dbtaskhistory)), dbftda) =>
+                ( dbtask.task_id,
+                  dbtask.timeout_in_s,
+                  dbtask.worker_timeout_in_s,
+                  dbtask.cost,
+                  dbtask.creation_time,
+                  dbtaskhistory.scheduler_state,
+                  true,
+                  dbftda.worker_id.?,
+                  dbftda.answer.?,
+                  dbtaskhistory.state_change_time
+                )
             }
           }
           case _ => throw new NotImplementedError()
@@ -319,10 +351,12 @@ class Memo(log_config: LogConfig.Value) {
         dbRadioButtonAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBRadioButtonAnswer]]
       case CheckboxQuestion =>
         dbCheckboxAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBCheckboxAnswer]]
-      case CheckboxDistributionQuestion => ???
+      case CheckboxDistributionQuestion =>
+        dbCheckboxAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBCheckboxAnswer]]
       case FreeTextQuestion =>
         dbFreeTextAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBFreeTextAnswer]]
-      case FreeTextDistributionQuestion => ???
+      case FreeTextDistributionQuestion =>
+        dbFreeTextAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBFreeTextAnswer]]
     }
   }
 

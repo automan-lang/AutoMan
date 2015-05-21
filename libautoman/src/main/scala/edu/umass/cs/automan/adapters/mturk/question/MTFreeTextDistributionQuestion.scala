@@ -2,15 +2,14 @@ package edu.umass.cs.automan.adapters.mturk.question
 
 import java.util.UUID
 import edu.umass.cs.automan.adapters.mturk.mock.FreeTextMockResponse
-import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
-import edu.umass.cs.automan.core.question.FreeTextQuestion
+import edu.umass.cs.automan.core.logging._
 import java.security.MessageDigest
+import edu.umass.cs.automan.core.question.FreeTextDistributionQuestion
 import org.apache.commons.codec.binary.Hex
 
-class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
+class MTFreeTextDistributionQuestion extends FreeTextDistributionQuestion with MTurkQuestion {
+  type QuestionOptionType = MTQuestionOption
   override type A = String
-
-  protected var _before_filter: Symbol => Symbol = (s) => s
 
   // public API
   def memo_hash: String = {

@@ -17,9 +17,9 @@ class MTRadioButtonDistributionQuestion extends RadioButtonDistributionQuestion 
     val md = MessageDigest.getInstance("md5")
     new String(Hex.encodeHex(md.digest(toXML(randomize = false).toString().getBytes)))
   }
-  override def randomized_options: List[QuestionOptionType] = Utilities.randomPermute(options)
   override def description: String = _description match { case Some(d) => d; case None => this.title }
   override def group_id: String = _group_id match { case Some(g) => g; case None => this.id.toString() }
+  override def randomized_options: List[QuestionOptionType] = Utilities.randomPermute(options)
 
   // private API
   override protected[mturk] def toMockResponse(question_id: UUID, a: A) : RadioButtonMockResponse = {

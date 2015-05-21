@@ -1,7 +1,5 @@
 package edu.umass.cs.automan.core.question
 
-import java.util.UUID
-
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer._
 import edu.umass.cs.automan.core.info.QuestionType

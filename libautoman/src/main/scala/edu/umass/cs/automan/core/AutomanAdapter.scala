@@ -1,7 +1,6 @@
 package edu.umass.cs.automan.core
 
 import java.util.Locale
-import edu.umass.cs.automan.core.answer.Outcome
 import edu.umass.cs.automan.core.logging.LogConfig.LogConfig
 import edu.umass.cs.automan.core.question._
 import edu.umass.cs.automan.core.logging.{LogConfig, Memo}
@@ -10,12 +9,12 @@ import edu.umass.cs.automan.core.scheduler.{Scheduler, Task}
 abstract class AutomanAdapter {
   // question types are determined by adapter implementations
   // answer types are invariant
-  type CBQ <: CheckboxQuestion                    // answer scalar
-//  type CBDQ <: CheckboxDistributionQuestion       // answer vector
-  type FTQ <: FreeTextQuestion                    // answer scalar
-//  type FTDQ <: FreeTextDistributionQuestion       // answer vector
-  type RBQ  <: RadioButtonQuestion                // answer scalar
-  type RBDQ <: RadioButtonDistributionQuestion    // answer vector
+  type CBQ    <: CheckboxQuestion                 // answer scalar
+  type CBDQ   <: CheckboxDistributionQuestion     // answer vector
+  type FTQ    <: FreeTextQuestion                 // answer scalar
+  type FTDQ   <: FreeTextDistributionQuestion     // answer vector
+  type RBQ    <: RadioButtonQuestion              // answer scalar
+  type RBDQ   <: RadioButtonDistributionQuestion  // answer vector
   type MemoDB <: Memo
 
   protected var _default_confidence: Double = 0.95
@@ -78,23 +77,26 @@ abstract class AutomanAdapter {
    * backend-specific startup implementation.
    * @param q Question
    */
-  protected[automan] def question_startup_hook(q: Question): Unit = {}
+  protected[automan] def question_startup_hook(q: Question): Unit = {
+    q.questionStartupHook()
+  }
   /**
    * This method is called by the scheduler after an answer has been
    * accepted by the scheduler policy. Override it to provide a
    * backend-specific shutdown implementation.
    * @param q Question
    */
-  protected[automan] def question_shutdown_hook(q: Question): Unit = {}
+  protected[automan] def question_shutdown_hook(q: Question): Unit = {
+    q.questionShutdownHook()
+  }
 
   // User API
- def CheckboxQuestion(init: CBQ => Unit) = schedule(CBQFactory(), init)
-//  def CheckboxDistributionQuestion(init: CBDQ => Unit) : Future[Set[CheckboxOldAnswer]] = scheduleVector(CBDQFactory(), init)
+  def CheckboxQuestion(init: CBQ => Unit) = schedule(CBQFactory(), init)
+  def CheckboxDistributionQuestion(init: CBDQ => Unit) = schedule(CBDQFactory(), init)
   def FreeTextQuestion(init: FTQ => Unit) = schedule(FTQFactory(), init)
-//  def FreeTextDistributionQuestion(init: FTDQ => Unit) : Future[Set[FreeTextOldAnswer]] = scheduleVector(FTDQFactory(), init)
+  def FreeTextDistributionQuestion(init: FTDQ => Unit) = schedule(FTDQFactory(), init)
   def RadioButtonQuestion(init: RBQ => Unit) = schedule(RBQFactory(), init)
   def RadioButtonDistributionQuestion(init: RBDQ => Unit) = schedule(RBDQFactory(), init)
-//  def RadioButtonDistributionQuestion(init: RBDQ => Unit) : Future[Set[RadioButtonOldAnswer]] = scheduleVector(RBDQFactory(), init)
   def Option(id: Symbol, text: String) : QuestionOption
   def clearMemoDB(): Unit = {
     if (_memoizer != null) {
@@ -140,9 +142,9 @@ abstract class AutomanAdapter {
   // the JVM erases our type parameters (RBQ) at runtime
   // and thus 'new RBQ' does not suffice in the DSL call above
   protected def CBQFactory() : CBQ
-//  protected def CBDQFactory() : CBDQ
+  protected def CBDQFactory() : CBDQ
   protected def FTQFactory() : FTQ
-//  protected def FTDQFactory() : FTDQ
+  protected def FTDQFactory() : FTDQ
   protected def RBQFactory() : RBQ
   protected def RBDQFactory() : RBDQ
   protected def MemoDBFactory() : MemoDB
