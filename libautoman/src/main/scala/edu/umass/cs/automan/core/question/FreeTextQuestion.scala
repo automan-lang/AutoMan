@@ -32,7 +32,7 @@ abstract class FreeTextQuestion extends ScalarQuestion {
   }
   def pattern_error_text: String = _pattern_error_text
   def pattern_error_text_=(p: String) { _pattern_error_text = p }
-  override protected[automan] def getQuestionType = QuestionType.CheckboxQuestion
+  override protected[automan] def getQuestionType = QuestionType.FreeTextQuestion
   override protected[automan] def getOutcome(adapter: AutomanAdapter, memo: Memo, poll_interval_in_s: Int) : O = {
     val scheduler = new Scheduler(this, adapter, memo, poll_interval_in_s)
     val f = Future{

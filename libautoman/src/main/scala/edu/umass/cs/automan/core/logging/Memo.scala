@@ -47,6 +47,7 @@ class Memo(log_config: LogConfig.Value) {
   type DBQuestion = (UUID, String, QuestionType)
   type DBRadioButtonAnswer = (Int, Symbol, String)
   type DBCheckboxAnswer = (Int, Set[Symbol], String)
+  type DBFreeTextAnswer = (Int, String, String)
   type DBSession = SQLiteDriver.backend.Session
 
   // connection string
@@ -58,6 +59,7 @@ class Memo(log_config: LogConfig.Value) {
   protected[automan] val dbQuestion = TableQuery[edu.umass.cs.automan.core.logging.tables.DBQuestion]
   protected[automan] val dbRadioButtonAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBRadioButtonAnswer]
   protected[automan] val dbCheckboxAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBCheckboxAnswer]
+  protected[automan] val dbFreeTextAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBFreeTextAnswer]
 
   // Task cache
   protected var all_task_ids = Map[UUID,SchedulerState.Value]()
@@ -96,7 +98,13 @@ class Memo(log_config: LogConfig.Value) {
    * @param ddls Slick Table definitions.
    */
   protected def init_database_if_required(ddls: List[SQLiteDriver.SchemaDescription]) : Unit = {
-    val base_ddls: SQLiteDriver.DDL = dbTask.ddl ++ dbTaskHistory.ddl ++ dbQuestion.ddl ++ dbRadioButtonAnswer.ddl ++ dbCheckboxAnswer.ddl
+    val base_ddls: SQLiteDriver.DDL =
+      dbTask.ddl ++
+      dbTaskHistory.ddl ++
+      dbQuestion.ddl ++
+      dbRadioButtonAnswer.ddl ++
+      dbCheckboxAnswer.ddl ++
+      dbFreeTextAnswer.ddl
     val all_ddls: SQLiteDriver.DDL = if (ddls.nonEmpty) {
       base_ddls ++ ddls.tail.foldLeft(ddls.head){ case (acc,ddl) => acc ++ ddl }
     } else {
@@ -192,6 +200,23 @@ class Memo(log_config: LogConfig.Value) {
 
             }
           }
+          case FreeTextQuestion => {
+            (fQS_TS_THS leftJoin dbFreeTextAnswer on (_._2._2.history_id === _.history_id)).map {
+              case ((dbquestion, (dbtask, dbtaskhistory)), dbfreetextanswer) =>
+                ( dbtask.task_id,
+                  dbtask.timeout_in_s,
+                  dbtask.worker_timeout_in_s,
+                  dbtask.cost,
+                  dbtask.creation_time,
+                  dbtaskhistory.scheduler_state,
+                  true,
+                  dbfreetextanswer.worker_id.?,
+                  dbfreetextanswer.answer.?,
+                  dbtaskhistory.state_change_time
+                  )
+
+            }
+          }
           case _ => throw new NotImplementedError()
         }
 
@@ -278,7 +303,8 @@ class Memo(log_config: LogConfig.Value) {
       case CheckboxQuestion =>
         dbCheckboxAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBCheckboxAnswer]]
       case CheckboxDistributionQuestion => ???
-      case FreeTextQuestion => ???
+      case FreeTextQuestion =>
+        dbFreeTextAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBFreeTextAnswer]]
       case FreeTextDistributionQuestion => ???
     }
   }
