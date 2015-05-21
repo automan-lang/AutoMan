@@ -8,8 +8,10 @@ import edu.umass.cs.automan.core.scheduler.Scheduler
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 
-abstract class FreeTextQuestion extends ScalarQuestion {
+abstract class FreeTextDistributionQuestion extends DistributionQuestion {
   type A = String
+  type AA = Answers[A]
+  type O = DistributionOutcome[A]
   type QuestionOptionType <: QuestionOption
 
   protected var _allow_empty: Boolean = false
@@ -26,7 +28,7 @@ abstract class FreeTextQuestion extends ScalarQuestion {
   def pattern_error_text: String = _pattern_error_text
   def pattern_error_text_=(p: String) { _pattern_error_text = p }
 
-  override protected[automan] def getQuestionType = QuestionType.FreeTextQuestion
+  override protected[automan] def getQuestionType = QuestionType.FreeTextDistributionQuestion
   override protected[automan] def getOutcome(adapter: AutomanAdapter, memo: Memo, poll_interval_in_s: Int) : O = {
     val scheduler = new Scheduler(this, adapter, memo, poll_interval_in_s)
     val f = Future{
@@ -34,7 +36,7 @@ abstract class FreeTextQuestion extends ScalarQuestion {
         scheduler.run().asInstanceOf[AA]
       }
     }
-    ScalarOutcome(f)
+    DistributionOutcome(f)
   }
   override protected [automan] def questionStartupHook(): Unit = {
     super.questionStartupHook()

@@ -1,16 +1,16 @@
 package edu.umass.cs.automan.adapters.mturk.question
 
 import java.util.UUID
-import edu.umass.cs.automan.adapters.mturk.mock.FreeTextMockResponse
-import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
-import edu.umass.cs.automan.core.question.FreeTextQuestion
+import edu.umass.cs.automan.adapters.mturk.mock.CheckboxMockResponse
+import edu.umass.cs.automan.core.logging._
 import java.security.MessageDigest
+import edu.umass.cs.automan.core.question.CheckboxDistributionQuestion
+import edu.umass.cs.automan.core.util.Utilities
 import org.apache.commons.codec.binary.Hex
 
-class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
-  override type A = String
-
-  protected var _before_filter: Symbol => Symbol = (s) => s
+class MTCheckboxDistributionQuestion extends CheckboxDistributionQuestion with MTurkQuestion {
+  type QuestionOptionType = MTQuestionOption
+  override type A = Set[Symbol]
 
   // public API
   def memo_hash: String = {
@@ -19,22 +19,25 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
   }
   override def description: String = _description match { case Some(d) => d; case None => this.title }
   override def group_id: String = _group_id match { case Some(g) => g; case None => this.id.toString() }
+  override def randomized_options: List[QuestionOptionType] = Utilities.randomPermute(options)
 
   // private API
-  override protected[mturk] def toMockResponse(question_id: UUID, a: A) : FreeTextMockResponse = {
-    FreeTextMockResponse(question_id, a)
+  override protected[mturk] def toMockResponse(question_id: UUID, a: A) : CheckboxMockResponse = {
+    CheckboxMockResponse(question_id, a)
   }
-  def fromXML(x: scala.xml.Node) : A = {
-    // There is a SINGLE answer here, like this:
+  override protected[mturk] def fromXML(x: scala.xml.Node) : A = {
+    // There may be MULTIPLE answers here, like this:
     //    <Answer>
+    //      <QuestionIdentifier>721be9fc-c867-42ce-8acd-829e64ae62dd</QuestionIdentifier>
+    //      <SelectionIdentifier>count</SelectionIdentifier>
     //      <QuestionIdentifier>721be34c-c867-42ce-8acd-829e64ae62dd</QuestionIdentifier>
-    //      <FreeText>spongebob</FreeText>
+    //      <SelectionIdentifier>spongebob</SelectionIdentifier>
     //    </Answer>
-    DebugLog("MTFreeTextQuestion: fromXML:\n" + x.toString,LogLevel.INFO,LogType.ADAPTER,id)
+    DebugLog("MTCheckboxQuestion: fromXML:\n" + x.toString,LogLevel.INFO,LogType.ADAPTER,id)
 
-    (x \\ "Answer" \ "FreeText").text
+    (x \\ "Answer" \\ "SelectionIdentifier").map{si => Symbol(si.text)}.toSet
   }
-  def toXML(randomize: Boolean) = {
+  override protected[mturk]def toXML(randomize: Boolean) : scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
       <Question>
         <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
@@ -57,26 +60,16 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
           {
           // if formatted content is specified, use that instead of text field
           _formatted_content match {
-            case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString()) }</FormattedContent>
+            case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString) }</FormattedContent>
             case None => <Text>{ text }</Text>
           }
           }
         </QuestionContent>
         <AnswerSpecification>
-          {
-          _pattern match {
-            case Some(p) => {
-              <FreeTextAnswer>
-                <Constraints>
-                  <AnswerFormatRegex regex={ p } errorText={ pattern_error_text } />
-                </Constraints>
-              </FreeTextAnswer>
-            }
-            case None => {
-                <FreeTextAnswer />
-            }
-          }
-          }
+          <SelectionAnswer>
+            <StyleSuggestion>checkbox</StyleSuggestion>
+            <Selections>{ if(randomize) randomized_options.map { _.toXML } else options.map { _.toXML } }</Selections>
+          </SelectionAnswer>
         </AnswerSpecification>
       </Question>
     </QuestionForm>
