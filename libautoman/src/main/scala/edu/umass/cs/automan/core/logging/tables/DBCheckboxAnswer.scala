@@ -1,8 +1,6 @@
 package edu.umass.cs.automan.core.logging.tables
 
-import scala.slick.ast.{Node, OptionApply}
 import scala.slick.driver.SQLiteDriver.simple._
-import scala.slick.lifted.{ColumnExtensionMethods, Column}
 
 object DBCheckboxAnswer {
   val symbolSetStringMapper = MappedColumnType.base[Set[Symbol], String](
