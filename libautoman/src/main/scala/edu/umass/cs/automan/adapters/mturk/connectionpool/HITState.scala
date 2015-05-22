@@ -1,4 +1,4 @@
-package edu.umass.cs.automan.adapters.mturk.connectionpool
+package edu.umass.cs.automan.adapters.MTurk.connectionpool
 
 import java.util.UUID
 

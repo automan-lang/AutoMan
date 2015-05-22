@@ -1,4 +1,4 @@
-package edu.umass.cs.automan.adapters.mturk.logging.tables
+package edu.umass.cs.automan.adapters.MTurk.logging.tables
 
 import java.util.{Calendar, UUID}
 import com.amazonaws.mturk.requester.AssignmentStatus

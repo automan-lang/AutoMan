@@ -1,12 +1,12 @@
-package edu.umass.cs.automan.adapters.mturk.connectionpool
+package edu.umass.cs.automan.adapters.MTurk.connectionpool
 
 import java.text.SimpleDateFormat
 import java.util.concurrent.PriorityBlockingQueue
 import java.util.{Date, UUID}
 import com.amazonaws.mturk.requester._
 import com.amazonaws.mturk.service.axis.RequesterService
-import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
-import edu.umass.cs.automan.adapters.mturk.util.Key
+import edu.umass.cs.automan.adapters.MTurk.question.MTurkQuestion
+import edu.umass.cs.automan.adapters.MTurk.util.Key
 import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
@@ -478,7 +478,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       case _ => throw new Exception("MTurkAdapter can only operate on Tasks for MTurkQuestions.")
     }
   }
-  private[mturk] def question_for_tasks(ts: List[Task]) : Question = {
+  private[MTurk] def question_for_tasks(ts: List[Task]) : Question = {
     // determine which question we've been asked about
     val tg = ts.groupBy(_.question)
     if(tg.size != 1) {
