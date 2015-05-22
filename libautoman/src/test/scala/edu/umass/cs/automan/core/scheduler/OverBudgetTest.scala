@@ -1,13 +1,9 @@
 package edu.umass.cs.automan.core.scheduler
 
+import org.scalatest._
 import java.util.UUID
-
-import edu.umass.cs.automan.adapters.mturk.MTurkAdapter
+import edu.umass.cs.automan.adapters.mturk._
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
-import edu.umass.cs.automan.automan
-import edu.umass.cs.automan.core.answer.{OverBudgetAnswer, LowConfidenceAnswer, Answer}
-import edu.umass.cs.automan.core.logging.LogConfig
-import org.scalatest.{Matchers, FlatSpec}
 
 class OverBudgetTest extends FlatSpec with Matchers {
   "A radio button program" should "work" in {
