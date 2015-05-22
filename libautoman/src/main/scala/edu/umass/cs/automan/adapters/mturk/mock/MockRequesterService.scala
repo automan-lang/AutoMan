@@ -1,11 +1,11 @@
-package edu.umass.cs.automan.adapters.mturk.mock
+package edu.umass.cs.automan.adapters.MTurk.mock
 
 import java.lang
 import java.lang.{Boolean, Double}
 import com.amazonaws.mturk.requester._
 import com.amazonaws.mturk.service.axis.RequesterService
 import com.amazonaws.mturk.util.ClientConfig
-import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
+import edu.umass.cs.automan.adapters.MTurk.question.MTurkQuestion
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.util._
 import java.util.UUID
@@ -19,7 +19,7 @@ import java.util.UUID
  * @param initial_state a MockServiceState object representing the initial state.
  * @param config an MTurk SDK ClientConfig object; not actually used.
  */
-private[mturk] class MockRequesterService(initial_state: MockServiceState, config: ClientConfig) extends RequesterService(config) {
+private[MTurk] class MockRequesterService(initial_state: MockServiceState, config: ClientConfig) extends RequesterService(config) {
   var _state = initial_state
 
   override def forceExpireHIT(hitId: String): Unit = synchronized {

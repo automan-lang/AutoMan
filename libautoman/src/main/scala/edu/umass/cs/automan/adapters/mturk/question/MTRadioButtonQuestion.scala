@@ -1,7 +1,7 @@
-package edu.umass.cs.automan.adapters.mturk.question
+package edu.umass.cs.automan.adapters.MTurk.question
 
 import java.util.UUID
-import edu.umass.cs.automan.adapters.mturk.mock.RadioButtonMockResponse
+import edu.umass.cs.automan.adapters.MTurk.mock.RadioButtonMockResponse
 import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
 import edu.umass.cs.automan.core.question.RadioButtonQuestion
 import edu.umass.cs.automan.core.scheduler.BackendResult
@@ -25,10 +25,10 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
   override def group_id: String = _group_id match { case Some(g) => g; case None => this.id.toString() }
 
   // private API
-  override protected[mturk] def toMockResponse(question_id: UUID, a: A) : RadioButtonMockResponse = {
+  override protected[MTurk] def toMockResponse(question_id: UUID, a: A) : RadioButtonMockResponse = {
     RadioButtonMockResponse(question_id, a)
   }
-  override protected[mturk] def fromXML(x: scala.xml.Node) : A = {
+  override protected[MTurk] def fromXML(x: scala.xml.Node) : A = {
     // There should only be a SINGLE answer here, like this:
     //    <Answer>
     //      <QuestionIdentifier>721be9fc-c867-42ce-8acd-829e64ae62dd</QuestionIdentifier>
@@ -39,7 +39,7 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
     Symbol((x \\ "Answer" \\ "SelectionIdentifier").text)
   }
   // TODO: random checkbox fill
-  override protected[mturk]def toXML(randomize: Boolean) : scala.xml.Node = {
+  override protected[MTurk]def toXML(randomize: Boolean) : scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
       <Question>
         <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>

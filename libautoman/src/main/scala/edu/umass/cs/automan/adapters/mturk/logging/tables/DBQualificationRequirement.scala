@@ -1,4 +1,4 @@
-package edu.umass.cs.automan.adapters.mturk.logging.tables
+package edu.umass.cs.automan.adapters.MTurk.logging.tables
 
 import com.amazonaws.mturk.requester.Comparator
 import scala.slick.driver.SQLiteDriver.simple._

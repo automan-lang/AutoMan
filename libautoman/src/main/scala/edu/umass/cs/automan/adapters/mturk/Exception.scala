@@ -1,4 +1,4 @@
-package edu.umass.cs.automan.adapters.mturk
+package edu.umass.cs.automan.adapters.MTurk
 
 case class InvalidKeyIDException(err: String) extends Exception
 case class InvalidSecretKeyException(err: String) extends Exception

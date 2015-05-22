@@ -1,6 +1,6 @@
 package edu.umass.cs.automan.adapters
 
-package object mturk {
+package object MTurk {
   // this object simplifies imports
   val automan = edu.umass.cs.automan.automan
   val Answer = edu.umass.cs.automan.core.answer.Answer
@@ -12,4 +12,5 @@ package object mturk {
   val LowConfidenceAnswer = edu.umass.cs.automan.core.answer.LowConfidenceAnswer
   val LowConfidenceAnswers = edu.umass.cs.automan.core.answer.LowConfidenceAnswers
   val ScalarOutcome = edu.umass.cs.automan.core.answer.ScalarOutcome
+  val Utilities = edu.umass.cs.automan.core.util.Utilities
 }

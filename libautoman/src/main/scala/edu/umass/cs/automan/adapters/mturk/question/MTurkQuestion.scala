@@ -1,7 +1,7 @@
-package edu.umass.cs.automan.adapters.mturk.question
+package edu.umass.cs.automan.adapters.MTurk.question
 
 import java.util.UUID
-import edu.umass.cs.automan.adapters.mturk.mock.MockResponse
+import edu.umass.cs.automan.adapters.MTurk.mock.MockResponse
 import edu.umass.cs.automan.core.scheduler.BackendResult
 import com.amazonaws.mturk.requester.{Assignment, QualificationRequirement}
 import xml.XML
@@ -36,7 +36,7 @@ trait MTurkQuestion {
   def qualifications: List[QualificationRequirement] = _qualifications
 
   // private API
-  protected[mturk] def answer(a: Assignment): BackendResult[A] = {
+  protected[MTurk] def answer(a: Assignment): BackendResult[A] = {
     new BackendResult[A](
       fromXML(XML.loadString(a.getAnswer)),
       a.getWorkerId,
@@ -44,7 +44,7 @@ trait MTurkQuestion {
       a.getSubmitTime.getTime
     )
   }
-  protected[mturk] def toMockResponse(question_id: UUID, a: A) : MockResponse
-  protected[mturk] def fromXML(x: scala.xml.Node) : A
-  protected[mturk] def toXML(randomize: Boolean) : scala.xml.Node
+  protected[MTurk] def toMockResponse(question_id: UUID, a: A) : MockResponse
+  protected[MTurk] def fromXML(x: scala.xml.Node) : A
+  protected[MTurk] def toXML(randomize: Boolean) : scala.xml.Node
 }

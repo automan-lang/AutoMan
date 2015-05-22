@@ -1,8 +1,8 @@
-package edu.umass.cs.automan.adapters.mturk.connectionpool
+package edu.umass.cs.automan.adapters.MTurk.connectionpool
 
 import com.amazonaws.mturk.requester.Assignment
-import edu.umass.cs.automan.adapters.mturk.util.Key
-import edu.umass.cs.automan.adapters.mturk.util.Key._
+import edu.umass.cs.automan.adapters.MTurk.util.Key
+import edu.umass.cs.automan.adapters.MTurk.util.Key._
 import edu.umass.cs.automan.core.scheduler.Task
 
 case class MTState(hit_types: Map[BatchKey,HITType],

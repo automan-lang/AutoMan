@@ -1,7 +1,7 @@
-package edu.umass.cs.automan.adapters.mturk.question
+package edu.umass.cs.automan.adapters.MTurk.question
 
 import java.util.UUID
-import edu.umass.cs.automan.adapters.mturk.mock.FreeTextMockResponse
+import edu.umass.cs.automan.adapters.MTurk.mock.FreeTextMockResponse
 import edu.umass.cs.automan.core.logging._
 import java.security.MessageDigest
 import edu.umass.cs.automan.core.question.FreeTextDistributionQuestion
@@ -20,7 +20,7 @@ class MTFreeTextDistributionQuestion extends FreeTextDistributionQuestion with M
   override def group_id: String = _group_id match { case Some(g) => g; case None => this.id.toString() }
 
   // private API
-  override protected[mturk] def toMockResponse(question_id: UUID, a: A) : FreeTextMockResponse = {
+  override protected[MTurk] def toMockResponse(question_id: UUID, a: A) : FreeTextMockResponse = {
     FreeTextMockResponse(question_id, a)
   }
   def fromXML(x: scala.xml.Node) : A = {
