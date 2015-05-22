@@ -9,11 +9,12 @@ import scala.reflect.ClassTag
 import scala.util.Random
 
 object TestUtil {
-  def newTask(question: Question, timeout: Int, worker_timeout: Int, cost: BigDecimal, time_delta: Int) = {
+  def newTask(question: Question, round: Int, timeout: Int, worker_timeout: Int, cost: BigDecimal, time_delta: Int) = {
     val now = new Date()
     Task(
       UUID.randomUUID(),
       question,
+      round,
       timeout,
       worker_timeout,
       cost,

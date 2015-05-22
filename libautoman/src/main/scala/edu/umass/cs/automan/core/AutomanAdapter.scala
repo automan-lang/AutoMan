@@ -132,8 +132,6 @@ abstract class AutomanAdapter {
   private def schedule[Q <: Question](q: Q, init: Q => Unit): Q#O = {
     // initialize question with end-user lambda
     init(q)
-    // initialize QA strategy
-    q.init_strategy()
     // start job
     q.getOutcome(this, _memoizer, _poll_interval_in_s)
   }
@@ -148,5 +146,4 @@ abstract class AutomanAdapter {
   protected def RBQFactory() : RBQ
   protected def RBDQFactory() : RBDQ
   protected def MemoDBFactory() : MemoDB
-
 }

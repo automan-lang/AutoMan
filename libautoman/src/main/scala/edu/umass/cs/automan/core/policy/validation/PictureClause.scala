@@ -1,4 +1,4 @@
-package edu.umass.cs.automan.core.strategy
+package edu.umass.cs.automan.core.policy.validation
 
 import scala.math._
 
