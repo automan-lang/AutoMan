@@ -1,11 +1,10 @@
 package edu.umass.cs.automan.core.logging
 
-import java.util.UUID
-import edu.umass.cs.automan.adapters.mturk.MTurkAdapter
-import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
-import edu.umass.cs.automan.{TestUtil, automan}
-import edu.umass.cs.automan.core.answer._
 import org.scalatest._
+import edu.umass.cs.automan.TestUtil
+import java.util.UUID
+import edu.umass.cs.automan.adapters.mturk._
+import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 
 class CheckboxDistribMemoTest extends FlatSpec with Matchers {
 
