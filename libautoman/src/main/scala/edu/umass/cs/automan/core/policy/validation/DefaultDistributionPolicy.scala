@@ -28,7 +28,7 @@ class DefaultDistributionPolicy(question: DistributionQuestion)
     val task_timeout_in_s = question._timeout_policy_instance.calculateTaskTimeout(worker_timeout_in_s)
 
     // determine reward
-    val reward = question._price_policy_instance.calculateReward(tasks, round)
+    val reward = question._price_policy_instance.calculateReward(tasks, round, had_timeout)
 
     DebugLog("You should spawn " + num_to_spawn +
       " more Tasks at $" + reward + "/task, " +
@@ -42,7 +42,7 @@ class DefaultDistributionPolicy(question: DistributionQuestion)
       val t = new Task(
         UUID.randomUUID(),
         question,
-        round + 1,
+        round,
         task_timeout_in_s,
         worker_timeout_in_s,
         reward,

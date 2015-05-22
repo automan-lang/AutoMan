@@ -15,9 +15,9 @@ abstract class Question {
   type A <: Any
   type AA <: AbstractAnswer[A]
   type O <: Outcome[A]
-  type VS <: ValidationPolicy
-  type PS <: PricePolicy
-  type TS <: TimeoutPolicy
+  type VP <: ValidationPolicy
+  type PP <: PricePolicy
+  type TP <: TimeoutPolicy
 
   class QuestionStillExecutingException extends Exception
 
@@ -38,12 +38,12 @@ abstract class Question {
   protected var _dont_reject: Boolean = false
   protected var _dont_randomize_options: Boolean = false
 
-  protected[automan] var _price_policy: Option[Class[PS]] = None
-  protected[automan] var _price_policy_instance: PS = _
-  protected[automan] var _timeout_policy: Option[Class[TS]] = None
-  protected[automan] var _timeout_policy_instance: TS = _
-  protected[automan] var _validation_policy: Option[Class[VS]] = None
-  protected[automan] var _validation_policy_instance: VS = _
+  protected[automan] var _price_policy: Option[Class[PP]] = None
+  protected[automan] var _price_policy_instance: PP = _
+  protected[automan] var _timeout_policy: Option[Class[TP]] = None
+  protected[automan] var _timeout_policy_instance: TP = _
+  protected[automan] var _validation_policy: Option[Class[VP]] = None
+  protected[automan] var _validation_policy_instance: VP = _
 
   def blacklist_worker(worker_id: String) { _blacklisted_workers = worker_id :: _blacklisted_workers }
   def blacklisted_workers = _blacklisted_workers
@@ -69,7 +69,7 @@ abstract class Question {
   def question_timeout_multiplier_=(t: Double) { _question_timeout_multiplier = t }
   def question_timeout_multiplier: Double = _question_timeout_multiplier
   def strategy = _validation_policy match { case Some(vs) => vs; case None => null }
-  def strategy_=(s: Class[VS]) { _validation_policy = Some(s) }
+  def strategy_=(s: Class[VP]) { _validation_policy = Some(s) }
   def text: String = _text match { case Some(t) => t; case None => "Question not specified." }
   def text_=(s: String) { _text = Some(s) }
   def time_value_per_hour: BigDecimal = _time_value_per_hour match { case Some(v) => v; case None => _wage }
@@ -82,25 +82,12 @@ abstract class Question {
   def initial_worker_timeout_in_s: Int = _initial_worker_timeout_in_s
 
   // private methods
-  private[automan] def init_validation_policy(): Unit = {
-    _validation_policy_instance = _validation_policy match {
-      case None => new VS(this)
-      case Some(strat) => strat.newInstance()
-    }
-  }
-  private[automan] def init_price_policy(): Unit = {
-    _price_policy_instance = _price_policy match {
-      case None => new PS(this)
-      case Some(strat) => strat.newInstance()
-    }
-  }
-  private[automan] def init_timeout_policy(): Unit = {
-    _timeout_policy_instance = _timeout_policy match {
-      case None => new TS(this)
-      case Some(strat) => strat.newInstance()
-    }
-  }
-  private[automan] def strategy_instance = _validation_policy_instance
+  private[automan] def init_validation_policy(): Unit
+  private[automan] def init_price_policy(): Unit
+  private[automan] def init_timeout_policy(): Unit
+  private[automan] def validation_policy_instance = _validation_policy_instance
+  private[automan] def price_policy_instance = _price_policy_instance
+  private[automan] def timeout_policy_instance = _timeout_policy_instance
   protected[automan] def getOutcome(adapter: AutomanAdapter,
                                     memo: Memo,
                                     poll_interval_in_s: Int) : O

@@ -44,19 +44,19 @@ class DefaultScalarPolicy(question: ScalarQuestion)
     valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
   }
   def spawn(tasks: List[Task], round: Int, had_timeout: Boolean): List[Task] = {
-    // num to spawn (don't spawn more if any are running)
-    val num_to_spawn = if (tasks.count(_.state == SchedulerState.RUNNING) == 0) {
-      num_to_run(tasks, round)
-    } else {
-      return List[Task]() // Be patient!
-    }
-
     // determine duration
     val worker_timeout_in_s = question._timeout_policy_instance.calculateWorkerTimeout(tasks, round)
     val task_timeout_in_s = question._timeout_policy_instance.calculateTaskTimeout(worker_timeout_in_s)
 
     // determine reward
-    val reward = question._price_policy_instance.calculateReward(tasks, round)
+    val reward = question._price_policy_instance.calculateReward(tasks, round, had_timeout)
+
+    // num to spawn (don't spawn more if any are running)
+    val num_to_spawn = if (tasks.count(_.state == SchedulerState.RUNNING) == 0) {
+      num_to_run(tasks, round, reward)
+    } else {
+      return List[Task]() // Be patient!
+    }
 
     DebugLog("You should spawn " + num_to_spawn +
                         " more Tasks at $" + reward + "/task, " +
@@ -70,7 +70,7 @@ class DefaultScalarPolicy(question: ScalarQuestion)
       val t = new Task(
         UUID.randomUUID(),
         question,
-        round + 1,
+        round,
         task_timeout_in_s,
         worker_timeout_in_s,
         reward,
@@ -88,7 +88,7 @@ class DefaultScalarPolicy(question: ScalarQuestion)
     new_tasks
   }
 
-  def num_to_run(tasks: List[Task], round: Int) : Int = {
+  def num_to_run(tasks: List[Task], round: Int, reward: BigDecimal) : Int = {
     // eliminate duplicates from the list of Tasks
     val tasks_no_dupes = tasks.filter(_.state != SchedulerState.DUPLICATE)
 
@@ -99,8 +99,7 @@ class DefaultScalarPolicy(question: ScalarQuestion)
     val expected = MonteCarlo.HowManyMoreTrials(tasks_no_dupes.size, max_agree(tasks_no_dupes), options, adjusted_conf)
     val biggest_bang =
       math.min(
-        // TODO HERE
-        math.floor(question.budget.toDouble/question.reward.toDouble),
+        math.floor(question.budget.toDouble/reward.toDouble),
         math.floor(question.time_value_per_hour.toDouble/question.wage.toDouble)
       )
 

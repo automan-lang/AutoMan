@@ -23,8 +23,6 @@ class RadioMemoTest extends FlatSpec with Matchers {
     // clear, just to be safe
     a.clearMemoDB()
 
-    var reward = BigDecimal(0)
-
     automan(a) {
       def which_one(text: String) = a.RadioButtonQuestion { q =>
         q.confidence = confidence
@@ -38,7 +36,6 @@ class RadioMemoTest extends FlatSpec with Matchers {
           a.Option('count, "The Count")
         )
         q.mock_answers = List('spongebob,'spongebob,'spongebob,'spongebob,'spongebob,'spongebob)
-        reward = q.reward
       }
 
       def which_one2(text: String) = a.RadioButtonQuestion { q =>
@@ -60,7 +57,7 @@ class RadioMemoTest extends FlatSpec with Matchers {
           println("Answer: '" + value + "', cost: '" + cost + "', confidence: " + conf)
           (value == 'spongebob) should be(true)
           (conf >= confidence) should be(true)
-          (cost == BigDecimal(3) * reward) should be(true)
+          (cost == BigDecimal(3) * BigDecimal(0.06)) should be(true)
         case _ =>
           fail()
       }

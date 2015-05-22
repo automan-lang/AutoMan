@@ -25,6 +25,8 @@ class Scheduler(val question: Question,
   def run() : Question#AA = {
     // init policies
     question.init_validation_policy()
+    question.init_price_policy()
+    question.init_timeout_policy()
 
     // run startup hook
     backend.question_startup_hook(question)
@@ -40,20 +42,20 @@ class Scheduler(val question: Question,
   }
 
   private def run_loop(tasks: List[Task], suffered_timeout: Boolean) : Question#AA = {
-    val s = question.strategy_instance
+    val vp = question.validation_policy_instance
 
     var _timeout_occurred = false
     var _all_tasks = tasks
     var _round = 1
-    var _done = s.is_done(_all_tasks, _round) // check for restored memo tasks
+    var _done = vp.is_done(_all_tasks, _round) // check for restored memo tasks
 
     val answer = try {
       while(!_done) {
         val __tasks = _all_tasks
         // get list of workers who may not re-participate
-        val blacklist = s.blacklisted_workers(__tasks)
+        val blacklist = vp.blacklisted_workers(__tasks)
         // filter duplicate work
-        val dedup_tasks = s.mark_duplicates(__tasks)
+        val dedup_tasks = vp.mark_duplicates(__tasks)
         // post more tasks as needed
         val new_tasks = post_as_needed(dedup_tasks, _round, backend, question, suffered_timeout, blacklist)
 
@@ -74,7 +76,7 @@ class Scheduler(val question: Question,
         memo.save(question, all_tasks)
 
         // continue?
-        _done = s.is_done(all_tasks, _round)
+        _done = vp.is_done(all_tasks, _round)
 
         synchronized {
           _all_tasks = all_tasks
@@ -84,13 +86,13 @@ class Scheduler(val question: Question,
       }
 
       // pay for answers
-      _all_tasks = accept_reject_and_cancel(_all_tasks, s, backend)
+      _all_tasks = accept_reject_and_cancel(_all_tasks, vp, backend)
 
       // return answer
-      s.select_answer(_all_tasks)
+      vp.select_answer(_all_tasks)
     } catch {
       case o: OverBudgetException =>
-        s.select_over_budget_answer(_all_tasks, o.need, o.have)
+        vp.select_over_budget_answer(_all_tasks, o.need, o.have)
     }
 
     // save one more time
@@ -131,7 +133,7 @@ class Scheduler(val question: Question,
                      question: Question,
                      suffered_timeout: Boolean,
                      blacklist: List[String]) : List[Task] = {
-    val s = question.strategy_instance
+    val s = question.validation_policy_instance
 
     // are any tasks still running?
     if (tasks.count(_.state == SchedulerState.RUNNING) == 0) {

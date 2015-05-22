@@ -4,7 +4,7 @@ import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.Task
 
 class FixedPricePolicy(question: Question) extends PricePolicy(question) {
-  override def calculateReward(tasks: List[Task], round: Int): BigDecimal = {
+  override def calculateReward(tasks: List[Task], round: Int, timeout_occurred: Boolean): BigDecimal = {
     calculateInitialReward()
   }
 }
