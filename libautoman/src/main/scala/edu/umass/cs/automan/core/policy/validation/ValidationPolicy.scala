@@ -1,9 +1,9 @@
-package edu.umass.cs.automan.core.strategy
+package edu.umass.cs.automan.core.policy.validation
 
-import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 import edu.umass.cs.automan.core.question.Question
+import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 
-abstract class ValidationStrategy(question: Question) {
+abstract class ValidationPolicy(question: Question) {
   class PrematureValidationCompletionException(methodname: String, classname: String)
     extends Exception(methodname + " called prematurely in " + classname)
 

@@ -23,14 +23,15 @@ object Memo {
     // to make debugging easier
     val c1 = t1.task_id == t2.task_id
     val c2 = t1.question == t2.question
-    val c3 = t1.timeout_in_s == t2.timeout_in_s
-    val c4 = t1.worker_timeout == t2.worker_timeout
-    val c5 = t1.cost == t2.cost
-    val c6 = t1.created_at == t1.created_at
-    val c7 = t1.state == t2.state
-    val c8 = t1.worker_id == t2.worker_id
-    val c9 = t1.answer == t2.answer
-    val is_same = c1 && c2 && c3 && c4 && c5 && c6 && c7 && c8 && c9
+    val c3 = t1.round == t2.round
+    val c4 = t1.timeout_in_s == t2.timeout_in_s
+    val c5 = t1.worker_timeout == t2.worker_timeout
+    val c6 = t1.cost == t2.cost
+    val c7 = t1.created_at == t1.created_at
+    val c8 = t1.state == t2.state
+    val c9 = t1.worker_id == t2.worker_id
+    val c10 = t1.answer == t2.answer
+    val is_same = c1 && c2 && c3 && c4 && c5 && c6 && c7 && c8 && c9 && c10
     is_same
   }
 }
@@ -171,6 +172,7 @@ class Memo(log_config: LogConfig.Value) {
             (fQS_TS_THS leftJoin dbRadioButtonAnswer on (_._2._2.history_id === _.history_id)).map {
               case ((dbquestion, (dbtask, dbtaskhistory)), dbradiobuttonanswer) =>
                 ( dbtask.task_id,
+                  dbtask.round,
                   dbtask.timeout_in_s,
                   dbtask.worker_timeout_in_s,
                   dbtask.cost,
@@ -187,6 +189,7 @@ class Memo(log_config: LogConfig.Value) {
             (fQS_TS_THS leftJoin dbRadioButtonAnswer on (_._2._2.history_id === _.history_id)).map {
               case ((dbquestion, (dbtask, dbtaskhistory)), dbrbda) =>
                 ( dbtask.task_id,
+                  dbtask.round,
                   dbtask.timeout_in_s,
                   dbtask.worker_timeout_in_s,
                   dbtask.cost,
@@ -203,6 +206,7 @@ class Memo(log_config: LogConfig.Value) {
             (fQS_TS_THS leftJoin dbCheckboxAnswer on (_._2._2.history_id === _.history_id)).map {
               case ((dbquestion, (dbtask, dbtaskhistory)), dbcheckboxanswer) =>
                 ( dbtask.task_id,
+                  dbtask.round,
                   dbtask.timeout_in_s,
                   dbtask.worker_timeout_in_s,
                   dbtask.cost,
@@ -220,6 +224,7 @@ class Memo(log_config: LogConfig.Value) {
             (fQS_TS_THS leftJoin dbCheckboxAnswer on (_._2._2.history_id === _.history_id)).map {
               case ((dbquestion, (dbtask, dbtaskhistory)), dbcbda) =>
                 ( dbtask.task_id,
+                  dbtask.round,
                   dbtask.timeout_in_s,
                   dbtask.worker_timeout_in_s,
                   dbtask.cost,
@@ -237,6 +242,7 @@ class Memo(log_config: LogConfig.Value) {
             (fQS_TS_THS leftJoin dbFreeTextAnswer on (_._2._2.history_id === _.history_id)).map {
               case ((dbquestion, (dbtask, dbtaskhistory)), dbfreetextanswer) =>
                 ( dbtask.task_id,
+                  dbtask.round,
                   dbtask.timeout_in_s,
                   dbtask.worker_timeout_in_s,
                   dbtask.cost,
@@ -253,6 +259,7 @@ class Memo(log_config: LogConfig.Value) {
             (fQS_TS_THS leftJoin dbFreeTextAnswer on (_._2._2.history_id === _.history_id)).map {
               case ((dbquestion, (dbtask, dbtaskhistory)), dbftda) =>
                 ( dbtask.task_id,
+                  dbtask.round,
                   dbtask.timeout_in_s,
                   dbtask.worker_timeout_in_s,
                   dbtask.cost,
@@ -274,6 +281,7 @@ class Memo(log_config: LogConfig.Value) {
           // make and return tasks
         results.map {
           case (task_id,
+                round,
                 timeout_in_s,
                 worker_timeout_in_s,
                 cost,
@@ -286,6 +294,7 @@ class Memo(log_config: LogConfig.Value) {
             Task(
               task_id,
               q,
+              round,
               timeout_in_s,
               worker_timeout_in_s,
               cost,
@@ -321,8 +330,8 @@ class Memo(log_config: LogConfig.Value) {
     }
   }
 
-  protected[automan] def task2TaskTuple(ts: List[Task]) : List[(UUID, UUID, BigDecimal, Date, Int, Int)] = {
-    ts.map(t => (t.task_id, t.question.id, t.cost, t.created_at, t.timeout_in_s, t.worker_timeout))
+  protected[automan] def task2TaskTuple(ts: List[Task]) : List[(UUID, UUID, Int, BigDecimal, Date, Int, Int)] = {
+    ts.map(t => (t.task_id, t.question.id, t.round, t.cost, t.created_at, t.timeout_in_s, t.worker_timeout))
   }
 
   protected[automan] def task2TaskHistoryTuple(ts: List[Task]) : List[(Int, UUID, Date, SchedulerState)] = {

@@ -1,12 +1,12 @@
-package edu.umass.cs.automan.core.strategy
+package edu.umass.cs.automan.core.policy.validation
 
-import edu.umass.cs.automan.core.answer.{OverBudgetAnswer, LowConfidenceAnswer, Answer}
+import edu.umass.cs.automan.core.answer.{Answer, LowConfidenceAnswer, OverBudgetAnswer}
 import edu.umass.cs.automan.core.logging._
-import edu.umass.cs.automan.core.scheduler._
 import edu.umass.cs.automan.core.question._
+import edu.umass.cs.automan.core.scheduler._
 
-abstract class ScalarValidationStrategy(question: ScalarQuestion)
-  extends ValidationStrategy(question) {
+abstract class ScalarValidationPolicy(question: ScalarQuestion)
+  extends ValidationPolicy(question) {
 
   def current_confidence(tasks: List[Task]) : Double
   def is_confident(tasks: List[Task], round: Int) : Boolean

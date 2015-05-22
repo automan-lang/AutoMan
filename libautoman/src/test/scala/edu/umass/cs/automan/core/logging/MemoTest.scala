@@ -21,11 +21,11 @@ class MemoTest extends FlatSpec with Matchers {
     m.init()
 
     val ts = List(
-      TestUtil.newTask(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
-      TestUtil.newTask(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
-      TestUtil.newTask(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
-      TestUtil.newTask(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
-      TestUtil.newTask(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0)
+      TestUtil.newTask(q, 0, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
+      TestUtil.newTask(q, 0, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
+      TestUtil.newTask(q, 0, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
+      TestUtil.newTask(q, 0, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
+      TestUtil.newTask(q, 0, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0)
     )
 
     m.save(q, ts)
@@ -40,11 +40,11 @@ class MemoTest extends FlatSpec with Matchers {
     m.wipeDatabase()
 
     val ts = List(
-      TestUtil.newTask(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
-      TestUtil.newTask(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
-      TestUtil.newTask(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
-      TestUtil.newTask(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
-      TestUtil.newTask(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0)
+      TestUtil.newTask(q, 0, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
+      TestUtil.newTask(q, 0, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
+      TestUtil.newTask(q, 0, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
+      TestUtil.newTask(q, 0, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
+      TestUtil.newTask(q, 0, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0)
     )
 
     m.save(q, ts)
@@ -61,8 +61,8 @@ class MemoTest extends FlatSpec with Matchers {
       ts2(2).copy_with_answer('no.asInstanceOf[t.question.A], "DCBA4321"),
       ts2(3).copy_as_timeout(),
       ts2(4).copy_as_cancelled(),
-      TestUtil.newTask(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
-      TestUtil.newTask(q, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0)
+      TestUtil.newTask(q, 0, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
+      TestUtil.newTask(q, 0, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0)
     )
 
     m.save(q, ts3)

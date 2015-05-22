@@ -7,13 +7,17 @@ import edu.umass.cs.automan.core.answer.{AbstractAnswer, Outcome}
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 import edu.umass.cs.automan.core.logging.Memo
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task, Scheduler}
-import edu.umass.cs.automan.core.strategy.ValidationStrategy
+import edu.umass.cs.automan.core.policy.price.{FixedPricePolicy, PricePolicy}
+import edu.umass.cs.automan.core.policy.timeout.{FixedTimeoutPolicy, TimeoutPolicy}
+import edu.umass.cs.automan.core.policy.validation.{DefaultDistributionPolicy, ValidationPolicy}
 
 abstract class Question {
   type A <: Any
   type AA <: AbstractAnswer[A]
-  type VS <: ValidationStrategy
   type O <: Outcome[A]
+  type VS <: ValidationPolicy
+  type PS <: PricePolicy
+  type TS <: TimeoutPolicy
 
   class QuestionStillExecutingException extends Exception
 
@@ -22,10 +26,8 @@ abstract class Question {
   protected var _image: Option[File] = None
   protected var _image_alt_text: Option[String] = None
   protected var _image_url: Option[String] = None
-  protected var _worker_timeout_in_s: Int = 30
+  protected var _initial_worker_timeout_in_s: Int = 30
   protected var _question_timeout_multiplier: Double = 100
-  protected var _strategy: Option[Class[VS]] = None
-  protected var _strategy_instance: VS = _
   protected var _text: Option[String] = None
   protected var _title: Option[String] = None
   protected var _time_value_per_hour: Option[BigDecimal] = None
@@ -35,6 +37,13 @@ abstract class Question {
   protected var _dry_run: Boolean = false
   protected var _dont_reject: Boolean = false
   protected var _dont_randomize_options: Boolean = false
+
+  protected[automan] var _price_policy: Option[Class[PS]] = None
+  protected[automan] var _price_policy_instance: PS = _
+  protected[automan] var _timeout_policy: Option[Class[TS]] = None
+  protected[automan] var _timeout_policy_instance: TS = _
+  protected[automan] var _validation_policy: Option[Class[VS]] = None
+  protected[automan] var _validation_policy_instance: VS = _
 
   def blacklist_worker(worker_id: String) { _blacklisted_workers = worker_id :: _blacklisted_workers }
   def blacklisted_workers = _blacklisted_workers
@@ -57,15 +66,10 @@ abstract class Question {
   def max_replicas_=(m: Int) { _max_replicas = Some(m) }
   def memo_hash: String
   def num_possibilities: BigInt
-  def question_timeout_in_s: Int = (_worker_timeout_in_s * _question_timeout_multiplier).toInt
   def question_timeout_multiplier_=(t: Double) { _question_timeout_multiplier = t }
   def question_timeout_multiplier: Double = _question_timeout_multiplier
-  def reward : BigDecimal = { // this is what workers actually get paid per-task
-    (_wage * _worker_timeout_in_s * (1.0/3600)).setScale(2, math.BigDecimal.RoundingMode.FLOOR)
-  }
-  def strategy = _strategy match { case Some(vs) => vs; case None => null }
-  def strategy_=(s: Class[VS]) { _strategy = Some(s) }
-  def strategy_option = _strategy
+  def strategy = _validation_policy match { case Some(vs) => vs; case None => null }
+  def strategy_=(s: Class[VS]) { _validation_policy = Some(s) }
   def text: String = _text match { case Some(t) => t; case None => "Question not specified." }
   def text_=(s: String) { _text = Some(s) }
   def time_value_per_hour: BigDecimal = _time_value_per_hour match { case Some(v) => v; case None => _wage }
@@ -74,12 +78,29 @@ abstract class Question {
   def title_=(t: String) { _title = Some(t)}
   def wage: BigDecimal = _wage
   def wage_=(w: BigDecimal) { _wage = w }
-  def worker_timeout_in_s_=(t: Int) { _worker_timeout_in_s = t }
-  def worker_timeout_in_s: Int = _worker_timeout_in_s
+  def initial_worker_timeout_in_s_=(t: Int) { _initial_worker_timeout_in_s = t }
+  def initial_worker_timeout_in_s: Int = _initial_worker_timeout_in_s
 
   // private methods
-  private[automan] def init_strategy(): Unit
-  private[automan] def strategy_instance = _strategy_instance
+  private[automan] def init_validation_policy(): Unit = {
+    _validation_policy_instance = _validation_policy match {
+      case None => new VS(this)
+      case Some(strat) => strat.newInstance()
+    }
+  }
+  private[automan] def init_price_policy(): Unit = {
+    _price_policy_instance = _price_policy match {
+      case None => new PS(this)
+      case Some(strat) => strat.newInstance()
+    }
+  }
+  private[automan] def init_timeout_policy(): Unit = {
+    _timeout_policy_instance = _timeout_policy match {
+      case None => new TS(this)
+      case Some(strat) => strat.newInstance()
+    }
+  }
+  private[automan] def strategy_instance = _validation_policy_instance
   protected[automan] def getOutcome(adapter: AutomanAdapter,
                                     memo: Memo,
                                     poll_interval_in_s: Int) : O

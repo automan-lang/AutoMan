@@ -1,22 +1,19 @@
 package edu.umass.cs.automan.core.question
 
 import edu.umass.cs.automan.core.answer._
-import edu.umass.cs.automan.core.strategy.DefaultDistributionStrategy
+import edu.umass.cs.automan.core.policy.price.FixedPricePolicy
+import edu.umass.cs.automan.core.policy.timeout.FixedTimeoutPolicy
+import edu.umass.cs.automan.core.policy.validation.DefaultDistributionPolicy
 
 abstract class DistributionQuestion extends Question {
   type AA <: AbstractVectorAnswer[A]
-  type VS = DefaultDistributionStrategy
   type O <: DistributionOutcome[A]
+  type VS = DefaultDistributionPolicy
+  type PS = FixedPricePolicy
+  type TS = FixedTimeoutPolicy
 
   private var _sample_size: Int = 30
 
   def sample_size_=(n: Int) { _sample_size = n }
   def sample_size : Int = _sample_size
-
-  override private[automan] def init_strategy(): Unit = {
-    _strategy_instance = _strategy match {
-      case None => new DefaultDistributionStrategy(this)
-      case Some(strat) => strat.newInstance()
-    }
-  }
 }

@@ -1,12 +1,13 @@
-package edu.umass.cs.automan.core.strategy
+package edu.umass.cs.automan.core.policy.validation
 
 import java.util.UUID
+
 import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.question.ScalarQuestion
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 
-class DefaultScalarStrategy(question: ScalarQuestion)
-  extends ScalarValidationStrategy(question) {
+class DefaultScalarPolicy(question: ScalarQuestion)
+  extends ScalarValidationPolicy(question) {
   DebugLog("DEFAULTSCALAR strategy loaded.",LogLevel.INFO,LogType.STRATEGY, question.id)
 
   def bonferroni_confidence(confidence: Double, rounds: Int) : Double = {
@@ -51,15 +52,16 @@ class DefaultScalarStrategy(question: ScalarQuestion)
     }
 
     // determine duration
-    if (had_timeout) {
-      DebugLog("Had a timeout; doubling worker timeout.", LogLevel.INFO, LogType.STRATEGY, question.id)
-      question.worker_timeout_in_s *= 2
-    }
+    val worker_timeout_in_s = question._timeout_policy_instance.calculateWorkerTimeout(tasks, round)
+    val task_timeout_in_s = question._timeout_policy_instance.calculateTaskTimeout(worker_timeout_in_s)
+
+    // determine reward
+    val reward = question._price_policy_instance.calculateReward(tasks, round)
 
     DebugLog("You should spawn " + num_to_spawn +
-                        " more Tasks at $" + question.reward + "/task, " +
-                          question.question_timeout_in_s + "s until question timeout, " +
-                          question.worker_timeout_in_s + "s until worker task timeout.", LogLevel.INFO, LogType.STRATEGY,
+                        " more Tasks at $" + reward + "/task, " +
+                          task_timeout_in_s + "s until question timeout, " +
+                          worker_timeout_in_s + "s until worker task timeout.", LogLevel.INFO, LogType.STRATEGY,
                           question.id)
 
     // allocate Task objects
@@ -68,9 +70,10 @@ class DefaultScalarStrategy(question: ScalarQuestion)
       val t = new Task(
         UUID.randomUUID(),
         question,
-        question.question_timeout_in_s,
-        question.worker_timeout_in_s,
-        question.reward,
+        round + 1,
+        task_timeout_in_s,
+        worker_timeout_in_s,
+        reward,
         now,
         SchedulerState.READY,
         from_memo = false,
@@ -96,6 +99,7 @@ class DefaultScalarStrategy(question: ScalarQuestion)
     val expected = MonteCarlo.HowManyMoreTrials(tasks_no_dupes.size, max_agree(tasks_no_dupes), options, adjusted_conf)
     val biggest_bang =
       math.min(
+        // TODO HERE
         math.floor(question.budget.toDouble/question.reward.toDouble),
         math.floor(question.time_value_per_hour.toDouble/question.wage.toDouble)
       )

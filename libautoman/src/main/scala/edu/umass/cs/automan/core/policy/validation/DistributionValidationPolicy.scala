@@ -1,11 +1,11 @@
-package edu.umass.cs.automan.core.strategy
+package edu.umass.cs.automan.core.policy.validation
 
 import edu.umass.cs.automan.core.answer._
 import edu.umass.cs.automan.core.question._
 import edu.umass.cs.automan.core.scheduler._
 
-abstract class DistributionValidationStrategy(question: DistributionQuestion)
-  extends ValidationStrategy(question) {
+abstract class DistributionValidationPolicy(question: DistributionQuestion)
+  extends ValidationPolicy(question) {
 
   def is_done(tasks: List[Task], round: Int) = {
     val done = completed_workerunique_tasks(tasks).size

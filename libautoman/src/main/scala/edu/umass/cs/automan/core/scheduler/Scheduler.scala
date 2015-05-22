@@ -5,7 +5,7 @@ import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.exception.OverBudgetException
 import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.question.Question
-import edu.umass.cs.automan.core.strategy.ValidationStrategy
+import edu.umass.cs.automan.core.policy.validation.ValidationPolicy
 
 class Scheduler(val question: Question,
                    val backend: AutomanAdapter,
@@ -23,6 +23,9 @@ class Scheduler(val question: Question,
     * where appropriate.
     */
   def run() : Question#AA = {
+    // init policies
+    question.init_validation_policy()
+
     // run startup hook
     backend.question_startup_hook(question)
 
@@ -159,7 +162,7 @@ class Scheduler(val question: Question,
    * @return The tasks passed in, with new states.
    */
   def accept_reject_and_cancel[A](all_tasks: List[Task],
-                                  strategy: ValidationStrategy,
+                                  strategy: ValidationPolicy,
                                   backend: AutomanAdapter) : List[Task] = {
     val to_cancel = strategy.tasks_to_cancel(all_tasks)
     val to_accept = strategy.tasks_to_accept(all_tasks)
