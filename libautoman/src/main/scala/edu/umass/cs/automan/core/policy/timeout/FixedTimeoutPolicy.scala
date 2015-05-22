@@ -10,7 +10,7 @@ class FixedTimeoutPolicy(question: Question) extends TimeoutPolicy(question) {
    * @param worker_timeout_in_s The worker timeout.
    * @return The new task timeout, in seconds
    */
-  override def calculateTaskTimeout(worker_timeout_in_s: Int): Int = ???
+  override def calculateTaskTimeout(worker_timeout_in_s: Int): Int = worker_timeout_in_s
 
   /**
    * Calculate the worker timeout given a question, the
@@ -20,8 +20,6 @@ class FixedTimeoutPolicy(question: Question) extends TimeoutPolicy(question) {
    * @return The new worker timeout, in seconds.
    */
   override def calculateWorkerTimeout(tasks: List[Task], round: Int): Int = {
-    if (round == 1) {
-
-    }
+    question.initial_worker_timeout_in_s
   }
 }

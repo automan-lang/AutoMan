@@ -23,8 +23,6 @@ class CheckMemoTest extends FlatSpec with Matchers {
     // clear, just to be safe
     a.clearMemoDB()
 
-    var reward = BigDecimal(0)
-
     automan(a) {
       def which_one(text: String) = a.CheckboxQuestion { q =>
         q.confidence = confidence
@@ -38,7 +36,6 @@ class CheckMemoTest extends FlatSpec with Matchers {
           a.Option('count, "The Count")
         )
         q.mock_answers = List(Set('spongebob,'count),Set('spongebob),Set('count,'spongebob),Set('count,'spongebob))
-        reward = q.reward
       }
 
       def which_one2(text: String) = a.CheckboxQuestion { q =>
@@ -60,7 +57,7 @@ class CheckMemoTest extends FlatSpec with Matchers {
           println("Answer: '" + value + "', confidence: " + conf)
           (value == Set('spongebob,'count)) should be (true)
           (conf >= confidence) should be (true)
-          (cost == BigDecimal(3) * reward) should be(true)
+          (cost == BigDecimal(3) * BigDecimal(0.06)) should be(true)
         case _ =>
           fail()
       }

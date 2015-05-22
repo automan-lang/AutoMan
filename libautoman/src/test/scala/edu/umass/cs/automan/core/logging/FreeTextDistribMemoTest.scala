@@ -25,7 +25,6 @@ class FreeTextDistribMemoTest extends FlatSpec with Matchers {
 
     // test params
     val sample_size = 30
-    var reward = BigDecimal(0)
     val mock_answers = TestUtil.genAnswers(
       Array("oscar", "kermit", "spongebob", "cookie", "count"),
       Array("0.02", "0.14", "0.78", "0.05", "0.01"),
@@ -38,7 +37,6 @@ class FreeTextDistribMemoTest extends FlatSpec with Matchers {
         q.budget = 8.00
         q.text = text
         q.mock_answers = mock_answers.toList
-        reward = q.reward
       }
 
       def which_one2(text: String) = a.FreeTextDistributionQuestion { q =>
@@ -52,7 +50,7 @@ class FreeTextDistribMemoTest extends FlatSpec with Matchers {
         case Answers(values, cost) =>
           println("Answer: '" + value + "', cost: '" + cost + "'")
           TestUtil.compareDistributions(mock_answers, values) should be (true)
-          cost should be (reward * sample_size)
+          cost should be (BigDecimal(0.06) * sample_size)
         case _ =>
           fail()
       }

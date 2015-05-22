@@ -8,7 +8,6 @@ class DoublingTimeoutPolicy(question: Question) extends TimeoutPolicy(question) 
   /**
    * Calculate the task timeout given a question and the
    * worker timeout.
-   * @param question A Question object.
    * @param worker_timeout_in_s The worker timeout.
    * @return The new task timeout, in seconds
    */
@@ -19,7 +18,6 @@ class DoublingTimeoutPolicy(question: Question) extends TimeoutPolicy(question) 
   /**
    * Calculate the worker timeout given a question, the
    * tasks so far, and the round.
-   * @param question A Question object.
    * @param tasks The Tasks so far.
    * @param round The current round.
    * @return The new worker timeout, in seconds.

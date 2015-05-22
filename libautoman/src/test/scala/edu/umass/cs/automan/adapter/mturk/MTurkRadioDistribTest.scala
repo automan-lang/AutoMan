@@ -27,8 +27,6 @@ class MTurkRadioDistribTest extends FlatSpec with Matchers {
       sample_size
     ).toList
 
-    var reward = BigDecimal(0)
-
     automan(a) {
       def which_one() = a.RadioButtonDistributionQuestion { q =>
         q.sample_size = sample_size
@@ -42,13 +40,12 @@ class MTurkRadioDistribTest extends FlatSpec with Matchers {
           a.Option('count, "The Count")
         )
         q.mock_answers = mock_answers.toList
-        reward = q.reward
       }
 
       which_one().answer match {
         case Answers(values, cost) =>
           TestUtil.compareDistributions(mock_answers, values) should be (true)
-          cost should be (reward * sample_size)
+          cost should be (BigDecimal(0.06) * sample_size)
         case _ =>
           fail()
       }
