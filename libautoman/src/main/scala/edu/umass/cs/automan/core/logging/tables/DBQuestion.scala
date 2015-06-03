@@ -5,8 +5,8 @@ import edu.umass.cs.automan.core.info.QuestionType._
 
 import scala.slick.driver.SQLiteDriver.simple._
 
-class DBQuestion(tag: Tag) extends Table[(UUID, String, QuestionType)](tag, "DBQUESTION") {
-  implicit val questionTypeMapper =
+object DBQuestion {
+  val questionTypeMapper =
     MappedColumnType.base[QuestionType, Int](
     {
       case CheckboxQuestion => 0
@@ -25,10 +25,16 @@ class DBQuestion(tag: Tag) extends Table[(UUID, String, QuestionType)](tag, "DBQ
       case 5 => RadioButtonDistributionQuestion
     }
     )
+}
+
+class DBQuestion(tag: Tag) extends Table[(UUID, String, QuestionType, String, String)](tag, "DBQUESTION") {
+  implicit val questionTypeMapper = DBQuestion.questionTypeMapper
 
   def id = column[UUID]("QUESTION_ID", O.PrimaryKey)
   def memo_hash = column[String]("MEMO_HASH")
   def question_type = column[QuestionType]("QUESTION_TYPE")
+  def text = column[String]("TEXT")
+  def title = column[String]("TITLE")
 
-  override def * = (id, memo_hash, question_type)
+  override def * = (id, memo_hash, question_type, text, title)
 }

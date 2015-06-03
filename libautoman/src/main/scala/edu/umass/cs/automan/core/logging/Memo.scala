@@ -1,8 +1,9 @@
 package edu.umass.cs.automan.core.logging
 
 import java.util.{Date, UUID}
+import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.info.QuestionType._
-import edu.umass.cs.automan.core.logging.tables.{DBCheckboxAnswer, DBRadioButtonAnswer, DBTaskHistory}
+import edu.umass.cs.automan.core.logging.tables.{DBQuestion, DBCheckboxAnswer, DBRadioButtonAnswer, DBTaskHistory}
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.SchedulerState._
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
@@ -41,11 +42,12 @@ class Memo(log_config: LogConfig.Value) {
   implicit val javaUtilDateMapper = DBTaskHistory.javaUtilDateMapper
   implicit val symbolStringMapper = DBRadioButtonAnswer.symbolStringMapper
   implicit val symbolSetStringMapper = DBCheckboxAnswer.symbolSetStringMapper
+  implicit val questionTypeMapper = DBQuestion.questionTypeMapper
 
   // typedefs
   type DBTask = (UUID, UUID, BigDecimal, Date, Int, Int)
   type DBTaskHistory =(UUID, Date, SchedulerState)
-  type DBQuestion = (UUID, String, QuestionType)
+  type DBQuestion = (UUID, String, QuestionType, String, String)
   type DBRadioButtonAnswer = (Int, Symbol, String)
   type DBCheckboxAnswer = (Int, Set[Symbol], String)
   type DBFreeTextAnswer = (Int, String, String)
@@ -124,6 +126,148 @@ class Memo(log_config: LogConfig.Value) {
         }
       }
       case None => Map.empty
+    }
+  }
+
+  private def restore_all_thunks_of_type(qt: QuestionType.Value)(implicit s: DBSession) : List[TaskSnapshot[_]] = {
+    qt match {
+      case QuestionType.CheckboxQuestion =>
+        val ts = allTasksQuery()
+          .filter { case (q,(t,h)) => q.question_type === qt }
+          .leftJoin(dbCheckboxAnswer).on(_._2._2.history_id === _.history_id)
+          .map { case ((q,(t,th)),h) =>
+          ( t.task_id,
+            q.id,
+            q.title,
+            q.text,
+            t.round,
+            t.timeout_in_s,
+            t.worker_timeout_in_s,
+            t.cost,
+            t.creation_time,
+            th.scheduler_state,
+            h.worker_id.?,
+            h.answer.?,
+            th.state_change_time )
+          }.list.distinct
+        ts.map { t => new TaskSnapshot(t) }
+      case QuestionType.CheckboxDistributionQuestion =>
+        val ts = allTasksQuery()
+          .filter { case (q,(t,h)) => q.question_type === qt }
+          .leftJoin(dbCheckboxAnswer).on(_._2._2.history_id === _.history_id)
+          .map { case ((q,(t,th)),h) =>
+          ( t.task_id,
+            q.id,
+            q.title,
+            q.text,
+            t.round,
+            t.timeout_in_s,
+            t.worker_timeout_in_s,
+            t.cost,
+            t.creation_time,
+            th.scheduler_state,
+            h.worker_id.?,
+            h.answer.?,
+            th.state_change_time )
+        }.list.distinct
+        ts.map { t => new TaskSnapshot(t) }
+      case QuestionType.FreeTextQuestion =>
+        val ts = allTasksQuery()
+          .filter { case (q,(t,h)) => q.question_type === qt }
+          .leftJoin(dbFreeTextAnswer).on(_._2._2.history_id === _.history_id)
+          .map { case ((q,(t,th)),h) =>
+          ( t.task_id,
+            q.id,
+            q.title,
+            q.text,
+            t.round,
+            t.timeout_in_s,
+            t.worker_timeout_in_s,
+            t.cost,
+            t.creation_time,
+            th.scheduler_state,
+            h.worker_id.?,
+            h.answer.?,
+            th.state_change_time )
+        }.list.distinct
+        ts.map { t => new TaskSnapshot(t) }
+      case QuestionType.FreeTextDistributionQuestion =>
+        val ts = allTasksQuery()
+          .filter { case (q,(t,h)) => q.question_type === qt }
+          .leftJoin(dbFreeTextAnswer).on(_._2._2.history_id === _.history_id)
+          .map { case ((q,(t,th)),h) =>
+          ( t.task_id,
+            q.id,
+            q.title,
+            q.text,
+            t.round,
+            t.timeout_in_s,
+            t.worker_timeout_in_s,
+            t.cost,
+            t.creation_time,
+            th.scheduler_state,
+            h.worker_id.?,
+            h.answer.?,
+            th.state_change_time )
+        }.list.distinct
+        ts.map { t => new TaskSnapshot(t) }
+      case QuestionType.RadioButtonQuestion =>
+        val ts = allTasksQuery()
+          .filter { case (q,(t,h)) => q.question_type === qt }
+          .leftJoin(dbRadioButtonAnswer).on(_._2._2.history_id === _.history_id)
+          .map { case ((q,(t,th)),h) =>
+          ( t.task_id,
+            q.id,
+            q.title,
+            q.text,
+            t.round,
+            t.timeout_in_s,
+            t.worker_timeout_in_s,
+            t.cost,
+            t.creation_time,
+            th.scheduler_state,
+            h.worker_id.?,
+            h.answer.?,
+            th.state_change_time )
+        }.list.distinct
+        ts.map { t => new TaskSnapshot(t) }
+      case QuestionType.RadioButtonDistributionQuestion =>
+        val ts = allTasksQuery()
+          .filter { case (q,(t,h)) => q.question_type === qt }
+          .leftJoin(dbRadioButtonAnswer).on(_._2._2.history_id === _.history_id)
+          .map { case ((q,(t,th)),h) =>
+          ( t.task_id,
+            q.id,
+            q.title,
+            q.text,
+            t.round,
+            t.timeout_in_s,
+            t.worker_timeout_in_s,
+            t.cost,
+            t.creation_time,
+            th.scheduler_state,
+            h.worker_id.?,
+            h.answer.?,
+            th.state_change_time )
+        }.list.distinct
+        ts.map { t => new TaskSnapshot(t) }
+    }
+  }
+
+  def snapshot() : List[TaskSnapshot[_]] = {
+    db_opt match {
+      case Some(db) => {
+        db.withTransaction { s =>
+          restore_all_thunks_of_type(QuestionType.CheckboxQuestion)(s) :::
+          restore_all_thunks_of_type(QuestionType.CheckboxDistributionQuestion)(s) :::
+          restore_all_thunks_of_type(QuestionType.FreeTextQuestion)(s) :::
+          restore_all_thunks_of_type(QuestionType.FreeTextDistributionQuestion)(s) :::
+          restore_all_thunks_of_type(QuestionType.RadioButtonQuestion)(s) :::
+          restore_all_thunks_of_type(QuestionType.RadioButtonDistributionQuestion)(s)
+        }
+
+      }
+      case None => List.empty
     }
   }
 
@@ -383,7 +527,7 @@ class Memo(log_config: LogConfig.Value) {
             // is the question even in the database?
             if (!questionInDB(q.memo_hash)) {
                 // create dbQuestion record for this memo_hash
-                dbQuestion += (q.id, q.memo_hash, q.getQuestionType)
+                dbQuestion += (q.id, q.memo_hash, q.getQuestionType, q.text, q.title)
             }
 
             // determine which records need to be inserted/updated/ignored

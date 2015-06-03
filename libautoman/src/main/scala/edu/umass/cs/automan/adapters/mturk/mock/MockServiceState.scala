@@ -1,6 +1,5 @@
 package edu.umass.cs.automan.adapters.MTurk.mock
 
-import java.io.Serializable
 import java.util.UUID
 import com.amazonaws.mturk.requester.HIT
 import edu.umass.cs.automan.core.question.Question
