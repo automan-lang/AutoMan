@@ -3,7 +3,7 @@ package edu.umass.cs.automan.core
 import java.util.Locale
 import edu.umass.cs.automan.core.logging.LogConfig.LogConfig
 import edu.umass.cs.automan.core.question._
-import edu.umass.cs.automan.core.logging.{LogConfig, Memo}
+import edu.umass.cs.automan.core.logging.{TaskSnapshot, LogConfig, Memo}
 import edu.umass.cs.automan.core.scheduler.{Scheduler, Task}
 
 abstract class AutomanAdapter {
@@ -105,12 +105,12 @@ abstract class AutomanAdapter {
   }
 
   // state management
+  protected[automan] def close() = {
+    plugins_shutdown()
+  }
   protected[automan] def init() {
     plugins_init()
     memo_init()
-  }
-  protected[automan] def close() = {
-    plugins_shutdown()
   }
   private def plugins_init() {
     // load user-supplied plugins using reflection
@@ -126,6 +126,9 @@ abstract class AutomanAdapter {
   protected[automan] def memo_init() {
     _memoizer = MemoDBFactory()
     _memoizer.init()
+  }
+  def state_snapshot(): List[TaskSnapshot[_]] = {
+    _memoizer.snapshot()
   }
 
   // thread management
