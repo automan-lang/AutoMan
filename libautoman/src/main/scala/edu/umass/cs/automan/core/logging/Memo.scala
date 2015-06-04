@@ -129,7 +129,7 @@ class Memo(log_config: LogConfig.Value) {
     }
   }
 
-  private def restore_all_thunks_of_type(qt: QuestionType.Value)(implicit s: DBSession) : List[TaskSnapshot[_]] = {
+  private def restore_all_tasks_of_type(qt: QuestionType.Value)(implicit s: DBSession) : List[TaskSnapshot[_]] = {
     qt match {
       case QuestionType.CheckboxQuestion =>
         val ts = allTasksQuery()
@@ -148,7 +148,8 @@ class Memo(log_config: LogConfig.Value) {
             th.scheduler_state,
             h.worker_id.?,
             h.answer.?,
-            th.state_change_time )
+            th.state_change_time,
+            QuestionType.CheckboxQuestion)
           }.list.distinct
         ts.map { t => new TaskSnapshot(t) }
       case QuestionType.CheckboxDistributionQuestion =>
@@ -168,7 +169,8 @@ class Memo(log_config: LogConfig.Value) {
             th.scheduler_state,
             h.worker_id.?,
             h.answer.?,
-            th.state_change_time )
+            th.state_change_time,
+            QuestionType.CheckboxDistributionQuestion)
         }.list.distinct
         ts.map { t => new TaskSnapshot(t) }
       case QuestionType.FreeTextQuestion =>
@@ -188,7 +190,8 @@ class Memo(log_config: LogConfig.Value) {
             th.scheduler_state,
             h.worker_id.?,
             h.answer.?,
-            th.state_change_time )
+            th.state_change_time,
+            QuestionType.FreeTextQuestion)
         }.list.distinct
         ts.map { t => new TaskSnapshot(t) }
       case QuestionType.FreeTextDistributionQuestion =>
@@ -208,7 +211,8 @@ class Memo(log_config: LogConfig.Value) {
             th.scheduler_state,
             h.worker_id.?,
             h.answer.?,
-            th.state_change_time )
+            th.state_change_time,
+            QuestionType.FreeTextDistributionQuestion)
         }.list.distinct
         ts.map { t => new TaskSnapshot(t) }
       case QuestionType.RadioButtonQuestion =>
@@ -228,7 +232,8 @@ class Memo(log_config: LogConfig.Value) {
             th.scheduler_state,
             h.worker_id.?,
             h.answer.?,
-            th.state_change_time )
+            th.state_change_time,
+            QuestionType.RadioButtonQuestion)
         }.list.distinct
         ts.map { t => new TaskSnapshot(t) }
       case QuestionType.RadioButtonDistributionQuestion =>
@@ -248,7 +253,8 @@ class Memo(log_config: LogConfig.Value) {
             th.scheduler_state,
             h.worker_id.?,
             h.answer.?,
-            th.state_change_time )
+            th.state_change_time,
+            QuestionType.RadioButtonDistributionQuestion)
         }.list.distinct
         ts.map { t => new TaskSnapshot(t) }
     }
@@ -258,12 +264,12 @@ class Memo(log_config: LogConfig.Value) {
     db_opt match {
       case Some(db) => {
         db.withTransaction { s =>
-          restore_all_thunks_of_type(QuestionType.CheckboxQuestion)(s) :::
-          restore_all_thunks_of_type(QuestionType.CheckboxDistributionQuestion)(s) :::
-          restore_all_thunks_of_type(QuestionType.FreeTextQuestion)(s) :::
-          restore_all_thunks_of_type(QuestionType.FreeTextDistributionQuestion)(s) :::
-          restore_all_thunks_of_type(QuestionType.RadioButtonQuestion)(s) :::
-          restore_all_thunks_of_type(QuestionType.RadioButtonDistributionQuestion)(s)
+          restore_all_tasks_of_type(QuestionType.CheckboxQuestion)(s) :::
+          restore_all_tasks_of_type(QuestionType.CheckboxDistributionQuestion)(s) :::
+          restore_all_tasks_of_type(QuestionType.FreeTextQuestion)(s) :::
+          restore_all_tasks_of_type(QuestionType.FreeTextDistributionQuestion)(s) :::
+          restore_all_tasks_of_type(QuestionType.RadioButtonQuestion)(s) :::
+          restore_all_tasks_of_type(QuestionType.RadioButtonDistributionQuestion)(s)
         }
 
       }
