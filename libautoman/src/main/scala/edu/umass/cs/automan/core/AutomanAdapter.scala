@@ -109,8 +109,8 @@ abstract class AutomanAdapter {
     plugins_shutdown()
   }
   protected[automan] def init() {
-    plugins_init()
     memo_init()
+    plugins_init()
   }
   private def plugins_init() {
     // load user-supplied plugins using reflection
