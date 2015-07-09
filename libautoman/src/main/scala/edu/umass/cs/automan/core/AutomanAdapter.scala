@@ -111,8 +111,9 @@ abstract class AutomanAdapter {
   protected[automan] def init() {
     memo_init()
     plugins_init()
+    plugins_memo_register()
   }
-  private def plugins_init() {
+  protected[automan] def plugins_init() {
     // load user-supplied plugins using reflection
     _plugins_initialized = _plugins.map { clazz =>
       val instance = clazz.newInstance()
@@ -120,7 +121,10 @@ abstract class AutomanAdapter {
       instance
     }
   }
-  private def plugins_shutdown(): Unit = {
+  protected[automan] def plugins_memo_register(): Unit = {
+    _memoizer.register_plugins(_plugins_initialized)
+  }
+  protected[automan] def plugins_shutdown(): Unit = {
     _plugins_initialized.foreach { plugin => plugin.shutdown() }
   }
   protected[automan] def memo_init() {

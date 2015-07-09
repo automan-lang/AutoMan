@@ -1,12 +1,15 @@
 package edu.umass.cs.automan.core.logging
 
 import java.util.{Date, UUID}
+import edu.umass.cs.automan.core.Plugin
 import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.info.QuestionType._
 import edu.umass.cs.automan.core.logging.tables.{DBQuestion, DBCheckboxAnswer, DBRadioButtonAnswer, DBTaskHistory}
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.SchedulerState._
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
+import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.slick.driver.SQLiteDriver
 import scala.slick.driver.SQLiteDriver.simple._
 import scala.slick.jdbc.meta.MTable
@@ -54,7 +57,7 @@ class Memo(log_config: LogConfig.Value) {
   type DBSession = SQLiteDriver.backend.Session
 
   // connection string
-  protected[automan] val jdbc_conn_string = "jdbc:sqlite:AutoManMemoDB"
+  protected[automan] val _jdbc_conn_string = "jdbc:sqlite:AutoManMemoDB"
 
   // TableQuery aliases
   protected[automan] val dbTask = TableQuery[edu.umass.cs.automan.core.logging.tables.DBTask]
@@ -65,18 +68,32 @@ class Memo(log_config: LogConfig.Value) {
   protected[automan] val dbFreeTextAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBFreeTextAnswer]
 
   // Task cache
-  protected var all_task_ids = Map[UUID,SchedulerState.Value]()
+  protected var _all_task_ids = Map[UUID,SchedulerState.Value]()
+  
+  // registered plugins
+  protected var _plugins = List[Plugin]()
 
   // get DB handle
   val db_opt = log_config match {
     case LogConfig.NO_LOGGING => None
     case _ => {
-      Some(Database.forURL(jdbc_conn_string, driver = "org.sqlite.JDBC"))
+      Some(Database.forURL(_jdbc_conn_string, driver = "org.sqlite.JDBC"))
     }
   }
 
+  /**
+   * Initialization routines.
+   */
   protected[automan] def init() : Unit = {
     init_database_if_required(List())
+  }
+
+  /**
+   * Register plugins so that they can be notified on DB state changes.
+   * @param plugins A list of initialized plugins.
+   */
+  protected[automan] def register_plugins(plugins: List[Plugin]): Unit = {
+    _plugins = plugins
   }
 
   protected def database_exists() : Boolean = {
@@ -114,7 +131,7 @@ class Memo(log_config: LogConfig.Value) {
       base_ddls
     }
 
-    all_task_ids = db_opt match {
+    _all_task_ids = db_opt match {
       case Some(db) => {
         if(!database_exists()) {
           // create the database
@@ -258,6 +275,10 @@ class Memo(log_config: LogConfig.Value) {
         }.list.distinct
         ts.map { t => new TaskSnapshot(t) }
     }
+  }
+
+  def snapshotUpdates() : List[TaskSnapshot[_]] = {
+    snapshot()
   }
 
   def snapshot() : List[TaskSnapshot[_]] = {
@@ -470,9 +491,9 @@ class Memo(log_config: LogConfig.Value) {
 
   protected[automan] def needsUpdate[A](ts: List[Task]) : List[InsertUpdateOrSkip[Task]] = {
     ts.map { t =>
-      if (!all_task_ids.contains(t.task_id)) {
+      if (!_all_task_ids.contains(t.task_id)) {
         Insert(t)
-      } else if (all_task_ids(t.task_id) != t.state) {
+      } else if (_all_task_ids(t.task_id) != t.state) {
         Update(t)
       } else {
         Skip(t)
@@ -561,9 +582,18 @@ class Memo(log_config: LogConfig.Value) {
             insertAnswerTable(ts, histories)
 
             // update the cache
-            all_task_ids = ts.map { t =>
+            _all_task_ids = ts.map { t =>
               t.task_id -> t.state
             }.toMap
+
+            // asynchronously send update notifications
+            // this should only send changes; for now, send everything
+            Future{
+              blocking {
+                val updates = snapshotUpdates()
+                _plugins.foreach(_.state_updates(updates))
+              }
+            }
           }
         }
       case None => ()
