@@ -1,7 +1,7 @@
-package edu.umass.cs.automan.adapters.MTurk.question
+package edu.umass.cs.automan.adapters.mturk.question
 
 import java.util.UUID
-import edu.umass.cs.automan.adapters.MTurk.mock.CheckboxMockResponse
+import edu.umass.cs.automan.adapters.mturk.mock.CheckboxMockResponse
 import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
 import edu.umass.cs.automan.core.question.CheckboxQuestion
 import edu.umass.cs.automan.core.scheduler.BackendResult
@@ -25,10 +25,10 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
   override def group_id: String = _group_id match { case Some(g) => g; case None => this.id.toString() }
 
   // private API
-  override protected[MTurk] def toMockResponse(question_id: UUID, a: A) : CheckboxMockResponse = {
+  override def toMockResponse(question_id: UUID, a: A) : CheckboxMockResponse = {
     CheckboxMockResponse(question_id, a)
   }
-  override protected[MTurk] def fromXML(x: scala.xml.Node) : A = {
+  override protected[mturk] def fromXML(x: scala.xml.Node) : A = {
     // There may be MULTIPLE answers here, like this:
     //    <Answer>
     //      <QuestionIdentifier>721be9fc-c867-42ce-8acd-829e64ae62dd</QuestionIdentifier>
@@ -41,7 +41,7 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
     (x \\ "Answer" \\ "SelectionIdentifier").map{si => Symbol(si.text)}.toSet
   }
   // TODO: random checkbox fill
-  override protected[MTurk]def toXML(randomize: Boolean) : scala.xml.Node = {
+  override protected[mturk] def toXML(randomize: Boolean) : scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
       <Question>
         <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>

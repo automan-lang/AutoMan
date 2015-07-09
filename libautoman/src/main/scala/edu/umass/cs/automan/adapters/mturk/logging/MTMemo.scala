@@ -1,13 +1,13 @@
-package edu.umass.cs.automan.adapters.MTurk.logging
+package edu.umass.cs.automan.adapters.mturk.logging
 
 import java.util.{UUID, Calendar}
 
 import com.amazonaws.mturk.requester._
 import com.amazonaws.mturk.service.axis.RequesterService
-import edu.umass.cs.automan.adapters.MTurk.connectionpool.{MTState, HITState, HITType, Pool}
-import edu.umass.cs.automan.adapters.MTurk.logging.tables.{DBAssignment, DBQualificationRequirement}
-import edu.umass.cs.automan.adapters.MTurk.util.Key
-import edu.umass.cs.automan.adapters.MTurk.util.Key._
+import edu.umass.cs.automan.adapters.mturk.connectionpool.{MTState, HITState, HITType, Pool}
+import edu.umass.cs.automan.adapters.mturk.logging.tables.{DBAssignment, DBQualificationRequirement}
+import edu.umass.cs.automan.adapters.mturk.util.Key
+import edu.umass.cs.automan.adapters.mturk.util.Key._
 import edu.umass.cs.automan.core.logging._
 import scala.slick.lifted.TableQuery
 import scala.slick.driver.SQLiteDriver.simple._
@@ -17,12 +17,12 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
   type DBQualificationRequirement = (String, String)
 
   // TableQuery aliases
-  private val dbAssignment = TableQuery[edu.umass.cs.automan.adapters.MTurk.logging.tables.DBAssignment]
-  private val dbHIT = TableQuery[edu.umass.cs.automan.adapters.MTurk.logging.tables.DBHIT]
-  private val dbHITType = TableQuery[edu.umass.cs.automan.adapters.MTurk.logging.tables.DBHITType]
-  private val dbQualReq = TableQuery[edu.umass.cs.automan.adapters.MTurk.logging.tables.DBQualificationRequirement]
-  private val dbTaskHIT = TableQuery[edu.umass.cs.automan.adapters.MTurk.logging.tables.DBTaskHIT]
-  private val dbWorker = TableQuery[edu.umass.cs.automan.adapters.MTurk.logging.tables.DBWorker]
+  private val dbAssignment = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBAssignment]
+  private val dbHIT = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBHIT]
+  private val dbHITType = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBHITType]
+  private val dbQualReq = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBQualificationRequirement]
+  private val dbTaskHIT = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBTaskHIT]
+  private val dbWorker = TableQuery[edu.umass.cs.automan.adapters.mturk.logging.tables.DBWorker]
 
   override protected[automan] def init() : Unit = {
     val ddls = List(dbAssignment.ddl, dbHIT.ddl, dbHITType.ddl, dbQualReq.ddl, dbTaskHIT.ddl, dbWorker.ddl)

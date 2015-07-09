@@ -1,3 +1,3 @@
-package edu.umass.cs.automan.adapters.MTurk.mock
+package edu.umass.cs.automan.adapters.mturk.mock
 
 case class MockSetup(budget: BigDecimal)

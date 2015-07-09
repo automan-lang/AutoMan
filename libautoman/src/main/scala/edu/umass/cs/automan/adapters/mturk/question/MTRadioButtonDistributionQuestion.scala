@@ -1,7 +1,7 @@
-package edu.umass.cs.automan.adapters.MTurk.question
+package edu.umass.cs.automan.adapters.mturk.question
 
 import java.util.UUID
-import edu.umass.cs.automan.adapters.MTurk.mock.RadioButtonMockResponse
+import edu.umass.cs.automan.adapters.mturk.mock.RadioButtonMockResponse
 import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.question.RadioButtonDistributionQuestion
 import edu.umass.cs.automan.core.util.Utilities
@@ -22,10 +22,10 @@ class MTRadioButtonDistributionQuestion extends RadioButtonDistributionQuestion 
   override def randomized_options: List[QuestionOptionType] = Utilities.randomPermute(options)
 
   // private API
-  override protected[MTurk] def toMockResponse(question_id: UUID, a: A) : RadioButtonMockResponse = {
+  override def toMockResponse(question_id: UUID, a: A) : RadioButtonMockResponse = {
     RadioButtonMockResponse(question_id, a)
   }
-  override protected[MTurk] def fromXML(x: scala.xml.Node) : A = {
+  override protected[mturk] def fromXML(x: scala.xml.Node) : A = {
     // There should only be a SINGLE answer here, like this:
     //    <Answer>
     //      <QuestionIdentifier>721be9fc-c867-42ce-8acd-829e64ae62dd</QuestionIdentifier>

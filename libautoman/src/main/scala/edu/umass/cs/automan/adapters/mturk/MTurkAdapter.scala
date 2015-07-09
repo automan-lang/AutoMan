@@ -1,12 +1,12 @@
-package edu.umass.cs.automan.adapters.MTurk
+package edu.umass.cs.automan.adapters.mturk
 
 import java.util.Locale
 import com.amazonaws.mturk.util.ClientConfig
 import com.amazonaws.mturk.service.axis.RequesterService
-import edu.umass.cs.automan.adapters.MTurk.connectionpool.Pool
-import edu.umass.cs.automan.adapters.MTurk.logging.MTMemo
-import edu.umass.cs.automan.adapters.MTurk.mock.{MockSetup, MockServiceState, MockRequesterService}
-import edu.umass.cs.automan.adapters.MTurk.question._
+import edu.umass.cs.automan.adapters.mturk.connectionpool.Pool
+import edu.umass.cs.automan.adapters.mturk.logging.MTMemo
+import edu.umass.cs.automan.adapters.mturk.mock.{MockSetup, MockServiceState, MockRequesterService}
+import edu.umass.cs.automan.adapters.mturk.question._
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 import edu.umass.cs.automan.core.AutomanAdapter

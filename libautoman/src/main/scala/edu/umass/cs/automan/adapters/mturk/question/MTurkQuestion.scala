@@ -1,7 +1,5 @@
-package edu.umass.cs.automan.adapters.MTurk.question
+package edu.umass.cs.automan.adapters.mturk.question
 
-import java.util.UUID
-import edu.umass.cs.automan.adapters.MTurk.mock.MockResponse
 import edu.umass.cs.automan.core.scheduler.BackendResult
 import com.amazonaws.mturk.requester.{Assignment, QualificationRequirement}
 import xml.XML
@@ -14,7 +12,6 @@ trait MTurkQuestion {
   protected var _qualified_workers = Map[String,Set[String]]() // (QualificationTypeId -> Set[worker_id])
   protected var _formatted_content: Option[scala.xml.NodeSeq] = None
   protected var _keywords = List[String]()
-  protected var _mock_answers = List[A]()
   protected var _qualifications = List[QualificationRequirement]()
   protected var _group_id: Option[String] = None
 
@@ -30,13 +27,11 @@ trait MTurkQuestion {
   def group_id: String
   def keywords_=(ks: List[String]) { _keywords = ks }
   def keywords: List[String] = _keywords
-  def mock_answers_=(answers: List[A]) { _mock_answers = answers }
-  def mock_answers: List[A] = _mock_answers
   def qualifications_=(qs: List[QualificationRequirement]) { _qualifications = qs }
   def qualifications: List[QualificationRequirement] = _qualifications
 
   // private API
-  protected[MTurk] def answer(a: Assignment): BackendResult[A] = {
+  protected[mturk] def answer(a: Assignment): BackendResult[A] = {
     new BackendResult[A](
       fromXML(XML.loadString(a.getAnswer)),
       a.getWorkerId,
@@ -44,7 +39,6 @@ trait MTurkQuestion {
       a.getSubmitTime.getTime
     )
   }
-  protected[MTurk] def toMockResponse(question_id: UUID, a: A) : MockResponse
-  protected[MTurk] def fromXML(x: scala.xml.Node) : A
-  protected[MTurk] def toXML(randomize: Boolean) : scala.xml.Node
+  protected[mturk] def fromXML(x: scala.xml.Node) : A
+  protected[mturk] def toXML(randomize: Boolean) : scala.xml.Node
 }

@@ -1,4 +1,4 @@
-package edu.umass.cs.automan.adapters.MTurk.util
+package edu.umass.cs.automan.adapters.mturk.util
 
 import java.text.SimpleDateFormat
 import java.util.Date

@@ -1,4 +1,4 @@
-import edu.umass.cs.automan.adapters.MTurk._
+import edu.umass.cs.automan.adapters.mturk._
 
 object simple_program extends App {
   val opts = Utilities.unsafe_optparse(args, "simple_program.jar")
