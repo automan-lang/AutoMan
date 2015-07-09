@@ -1,4 +1,4 @@
-package edu.umass.cs.automan.adapters.MTurk.question
+package edu.umass.cs.automan.adapters.mturk.question
 
 import edu.umass.cs.automan.core.question.QuestionOption
 import xml.Unparsed

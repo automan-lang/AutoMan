@@ -1,4 +1,4 @@
-package edu.umass.cs.automan.adapters.MTurk.logging.tables
+package edu.umass.cs.automan.adapters.mturk.logging.tables
 
 import scala.slick.driver.SQLiteDriver.simple._
 

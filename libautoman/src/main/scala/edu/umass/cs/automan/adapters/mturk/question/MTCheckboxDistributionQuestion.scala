@@ -1,7 +1,7 @@
-package edu.umass.cs.automan.adapters.MTurk.question
+package edu.umass.cs.automan.adapters.mturk.question
 
 import java.util.UUID
-import edu.umass.cs.automan.adapters.MTurk.mock.CheckboxMockResponse
+import edu.umass.cs.automan.adapters.mturk.mock.CheckboxMockResponse
 import edu.umass.cs.automan.core.logging._
 import java.security.MessageDigest
 import edu.umass.cs.automan.core.question.CheckboxDistributionQuestion
@@ -22,10 +22,10 @@ class MTCheckboxDistributionQuestion extends CheckboxDistributionQuestion with M
   override def randomized_options: List[QuestionOptionType] = Utilities.randomPermute(options)
 
   // private API
-  override protected[MTurk] def toMockResponse(question_id: UUID, a: A) : CheckboxMockResponse = {
+  override def toMockResponse(question_id: UUID, a: A) : CheckboxMockResponse = {
     CheckboxMockResponse(question_id, a)
   }
-  override protected[MTurk] def fromXML(x: scala.xml.Node) : A = {
+  override protected[mturk] def fromXML(x: scala.xml.Node) : A = {
     // There may be MULTIPLE answers here, like this:
     //    <Answer>
     //      <QuestionIdentifier>721be9fc-c867-42ce-8acd-829e64ae62dd</QuestionIdentifier>
@@ -37,7 +37,7 @@ class MTCheckboxDistributionQuestion extends CheckboxDistributionQuestion with M
 
     (x \\ "Answer" \\ "SelectionIdentifier").map{si => Symbol(si.text)}.toSet
   }
-  override protected[MTurk]def toXML(randomize: Boolean) : scala.xml.Node = {
+  override protected[mturk] def toXML(randomize: Boolean) : scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
       <Question>
         <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>

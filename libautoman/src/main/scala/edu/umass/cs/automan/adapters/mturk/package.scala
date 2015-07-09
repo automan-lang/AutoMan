@@ -1,6 +1,6 @@
 package edu.umass.cs.automan.adapters
 
-package object MTurk {
+package object mturk {
   // this object simplifies imports
   val automan = edu.umass.cs.automan.automan
   val Answer = edu.umass.cs.automan.core.answer.Answer

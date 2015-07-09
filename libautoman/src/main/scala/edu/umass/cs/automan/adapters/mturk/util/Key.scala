@@ -1,6 +1,6 @@
-package edu.umass.cs.automan.adapters.MTurk.util
+package edu.umass.cs.automan.adapters.mturk.util
 
-import edu.umass.cs.automan.adapters.MTurk.question.MTurkQuestion
+import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
 import edu.umass.cs.automan.core.scheduler.Task
 
 object Key {
@@ -12,14 +12,14 @@ object Key {
   type WorkerID = String
   type GroupID = String
 
-  protected[MTurk] def BatchKey(t: Task) : BatchKey =
+  protected[mturk] def BatchKey(t: Task) : BatchKey =
     BatchKey(t.question.asInstanceOf[MTurkQuestion].group_id, t.cost, t.worker_timeout)
-  protected[MTurk] def BatchKey(group_id: String, cost: BigDecimal, timeout_in_s: Int) =
+  protected[mturk] def BatchKey(group_id: String, cost: BigDecimal, timeout_in_s: Int) =
     (group_id, cost, timeout_in_s)
-  protected[MTurk] def HITKeyForBatch(batch_key: BatchKey, t: Task) : HITKey =
+  protected[mturk] def HITKeyForBatch(batch_key: BatchKey, t: Task) : HITKey =
     (batch_key, t.question.memo_hash)
-  protected[MTurk] def HITKey(t: Task) : HITKey =
+  protected[mturk] def HITKey(t: Task) : HITKey =
     HITKeyForBatch(BatchKey(t), t)
-  protected[MTurk] def HITIDsForBatch(batch_key: BatchKey, hit_ids: Map[HITKey,HITID]) : List[HITID] =
+  protected[mturk] def HITIDsForBatch(batch_key: BatchKey, hit_ids: Map[HITKey,HITID]) : List[HITID] =
     hit_ids.flatMap { case ((bkey, _), hit_id) => if (bkey == batch_key) Some(hit_id) else None }.toList
 }

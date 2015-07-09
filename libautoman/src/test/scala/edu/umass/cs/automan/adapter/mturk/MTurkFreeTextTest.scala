@@ -2,8 +2,8 @@ package edu.umass.cs.automan.adapter.mturk
 
 import org.scalatest._
 import java.util.UUID
-import edu.umass.cs.automan.adapters.MTurk._
-import edu.umass.cs.automan.adapters.MTurk.mock.MockSetup
+import edu.umass.cs.automan.adapters.mturk._
+import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 
 class MTurkFreeTextTest extends FlatSpec with Matchers {
 

@@ -1,7 +1,8 @@
-package edu.umass.cs.automan.adapters.MTurk.mock
+package edu.umass.cs.automan.adapters.mturk.mock
 
 import java.util.UUID
 import com.amazonaws.mturk.requester.HIT
+import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.util.Utilities
 

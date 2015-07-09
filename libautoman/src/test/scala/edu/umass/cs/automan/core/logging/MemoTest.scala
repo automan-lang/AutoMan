@@ -1,7 +1,7 @@
 package edu.umass.cs.automan.core.logging
 
 import edu.umass.cs.automan.TestUtil
-import edu.umass.cs.automan.adapters.MTurk.question.MTRadioButtonQuestion
+import edu.umass.cs.automan.adapters.mturk.question.MTRadioButtonQuestion
 import org.scalatest._
 
 class MemoTest extends FlatSpec with Matchers {
