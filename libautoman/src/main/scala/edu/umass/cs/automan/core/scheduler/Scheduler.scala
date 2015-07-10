@@ -7,6 +7,26 @@ import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.policy.validation.ValidationPolicy
 
+/**
+ * Controls scheduling of tasks for a given question.
+ *
+ * Note on virtual ticks:
+ * 1. The user supplies mock answers, each with a delay_in_s parameter.
+ * 2. When the scheduler starts up, if a question comes with mock answers,
+ *    the scheduler knows that it should use virtual ticks.
+ * 3. For each "tick group" (the set of answers with the same delay_in_s),
+ *    the scheduler advances exactly one loop iteration.
+ * 4. When the scheduler calls backend operations, it forwards the current
+ *    time, virtual or otherwise.  The backend should only return
+ *    answered thunks when the current time is after the time of the
+ *    response.
+ *
+ * @param question
+ * @param backend
+ * @param memo
+ * @param poll_interval_in_s
+ * @param time_opt
+ */
 class Scheduler(val question: Question,
                    val backend: AutomanAdapter,
                    val memo: Memo,
@@ -38,10 +58,10 @@ class Scheduler(val question: Question,
     DebugLog("Found " + tasks.size + " saved Answers in database.", LogLevel.INFO, LogType.SCHEDULER, question.id)
 
     // set initial conditions and call scheduler loop
-    run_loop(tasks, suffered_timeout = false)
+    run_loop(tasks)
   }
 
-  private def run_loop(tasks: List[Task], suffered_timeout: Boolean) : Question#AA = {
+  private def run_loop(tasks: List[Task]) : Question#AA = {
     val vp = question.validation_policy_instance
 
     var _timeout_occurred = false
@@ -51,36 +71,36 @@ class Scheduler(val question: Question,
 
     val answer = try {
       while(!_done) {
-        val __tasks = _all_tasks
+        // process timeouts
+        val (__tasks,__suffered_timeout) = process_timeouts(_all_tasks)
         // get list of workers who may not re-participate
-        val blacklist = vp.blacklisted_workers(__tasks)
+        val __blacklist = vp.blacklisted_workers(__tasks)
         // filter duplicate work
-        val dedup_tasks = vp.mark_duplicates(__tasks)
+        val __dedup_tasks = vp.mark_duplicates(__tasks)
         // post more tasks as needed
-        val new_tasks = post_as_needed(dedup_tasks, _round, backend, question, suffered_timeout, blacklist)
+        val __new_tasks = post_as_needed(__dedup_tasks, _round, backend, question, __suffered_timeout, __blacklist)
 
         // Update memo state and yield to let other threads get some work done
-        memo_and_yield(dedup_tasks ::: new_tasks, memo)
+        memo_and_yield(__dedup_tasks ::: __new_tasks, memo)
 
         // ask the backend to retrieve answers for all RUNNING tasks
-        val (running_tasks, dead_tasks) = (dedup_tasks ::: new_tasks).partition(_.state == SchedulerState.RUNNING)
-        assert(running_tasks.size > 0)
-        DebugLog("Retrieving answers for " + running_tasks.size + " running tasks from backend.", LogLevel.INFO, LogType.SCHEDULER, question.id)
-        val answered_tasks = backend.retrieve(running_tasks)
-        assert(retrieve_invariant(running_tasks, answered_tasks))
+        val (__running_tasks, __unrunning_tasks) = (__dedup_tasks ::: __new_tasks).partition(_.state == SchedulerState.RUNNING)
+        assert(__running_tasks.size > 0)
+        DebugLog("Retrieving answers for " + __running_tasks.size + " running tasks from backend.", LogLevel.INFO, LogType.SCHEDULER, question.id)
+        val __answered_tasks = backend.retrieve(__running_tasks)
+        assert(retrieve_invariant(__running_tasks, __answered_tasks))
 
         // complete list of tasks
-        val all_tasks = answered_tasks ::: dead_tasks
+        val __all_tasks = __answered_tasks ::: __unrunning_tasks
 
         // memoize tasks again
-        memo.save(question, all_tasks)
+        memo.save(question, __all_tasks)
 
         // continue?
-        _done = vp.is_done(all_tasks, _round)
+        _done = vp.is_done(__all_tasks, _round)
 
         synchronized {
-          _all_tasks = all_tasks
-          _timeout_occurred = timeout_occurred(answered_tasks)
+          _all_tasks = __all_tasks
           _round += 1
         }
       }
@@ -105,18 +125,16 @@ class Scheduler(val question: Question,
     answer
   }
 
+  def process_timeouts(ts: List[Task]) : (List[Task],Boolean) = {
+    val (timeouts,otherwise) = ts.partition { t => t.is_timedout }
+    val timed_out = backend.timeout(timeouts)
+    val timeout_occurred = timeouts.nonEmpty
+    (timed_out ::: otherwise, timeout_occurred)
+  }
+
   def memo_and_yield(ts: List[Task], memo: Memo) : Unit = {
     memo.save(question, ts)
     Thread.`yield`()
-  }
-
-  /**
-   * Check to see whether a timeout occurred given a list of tasks.
-   * @param tasks A list of tasks.
-   * @return True if at least one timeout occurred.
-   */
-  def timeout_occurred(tasks: List[Task]) : Boolean = {
-    tasks.count(_.state == SchedulerState.TIMEOUT) > 0
   }
 
   /**
