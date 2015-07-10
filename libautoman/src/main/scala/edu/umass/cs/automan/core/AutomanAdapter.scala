@@ -72,6 +72,13 @@ abstract class AutomanAdapter {
   protected[automan] def retrieve(ts: List[Task]) : List[Task]
 
   /**
+   * Inform the backend that all of the tasks specified should be timed out.
+   * @param ts A list of RUNNING tasks.
+   * @return A list of TIMEOUT tasks.
+   */
+  protected[automan] def timeout(ts: List[Task]) : List[Task]
+
+  /**
    * This method is called by the scheduler after question initialization
    * but before any tasks are scheduled. Override it to provide a
    * backend-specific startup implementation.

@@ -34,43 +34,46 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   }
 
   // API
-  def accept[A](t: Task) : Task = {
-    blocking_enqueue[AcceptReq[A], Task](AcceptReq(t))
+  def accept(t: Task) : Task = {
+    blocking_enqueue[AcceptReq, Task](AcceptReq(t))
   }
   def backend_budget: BigDecimal = {
     blocking_enqueue[BudgetReq, BigDecimal](BudgetReq())
   }
-  def cancel[A](t: Task) : Task = {
+  def cancel(t: Task) : Task = {
     // don't bother to schedule cancellation if the task
     // is not actually running
     if (t.state == SchedulerState.RUNNING) {
-      blocking_enqueue[CancelReq[A], Task](CancelReq(t))
+      blocking_enqueue[CancelReq, Task](CancelReq(t))
     } else {
       t.copy_as_cancelled()
     }
   }
-  def cleanup_qualifications[A](mtq: MTurkQuestion) : Unit = {
+  def cleanup_qualifications(mtq: MTurkQuestion) : Unit = {
     nonblocking_enqueue[DisposeQualsReq, Unit](DisposeQualsReq(mtq))
   }
-  def post[A](ts: List[Task], exclude_worker_ids: List[String]) : Unit = {
-    nonblocking_enqueue[CreateHITReq[A], Unit](CreateHITReq(ts, exclude_worker_ids))
+  def post(ts: List[Task], exclude_worker_ids: List[String]) : Unit = {
+    nonblocking_enqueue[CreateHITReq, Unit](CreateHITReq(ts, exclude_worker_ids))
   }
-  def reject[A](t: Task, correct_answer: String) : Task = {
-    blocking_enqueue[RejectReq[A], Task](RejectReq(t, correct_answer))
+  def reject(t: Task, correct_answer: String) : Task = {
+    blocking_enqueue[RejectReq, Task](RejectReq(t, correct_answer))
   }
-  def retrieve[A](ts: List[Task]) : List[Task] = {
-    blocking_enqueue[RetrieveReq[A], List[Task]](RetrieveReq(ts))
+  def retrieve(ts: List[Task]) : List[Task] = {
+    blocking_enqueue[RetrieveReq, List[Task]](RetrieveReq(ts))
   }
   def shutdown(): Unit = synchronized {
     nonblocking_enqueue[ShutdownReq, Unit](ShutdownReq())
   }
+  def timeout(ts: List[Task]) : Unit = {
+    nonblocking_enqueue[TimeoutReq, Unit](TimeoutReq(ts))
+  }
 
   // IMPLEMENTATIONS
-  def nonblocking_enqueue[M <: Message, T](req: M) = {
+  private def nonblocking_enqueue[M <: Message, T](req: M) = {
     // put job in queue
     _requests.add(req)
   }
-  def blocking_enqueue[M <: Message, T](req: M) : T = {
+  private def blocking_enqueue[M <: Message, T](req: M) : T = {
     // wait for response
     // while loop is because the JVM is
     // permitted to send spurious wakeups
@@ -110,13 +113,14 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
                 DebugLog("Connection pool shutdown requested.", LogLevel.INFO, LogType.ADAPTER, null)
                 return
               }
-              case req: AcceptReq[_] => do_sync_action(req, () => scheduled_accept(req.t))
+              case req: AcceptReq => do_sync_action(req, () => scheduled_accept(req.t))
               case req: BudgetReq => do_sync_action(req, () => scheduled_get_budget())
-              case req: CancelReq[_] => do_sync_action(req, () => scheduled_cancel(req.t))
+              case req: CancelReq => do_sync_action(req, () => scheduled_cancel(req.t))
               case req: DisposeQualsReq => do_sync_action(req, () => scheduled_cleanup_qualifications(req.q))
-              case req: CreateHITReq[_] => do_sync_action(req, () => scheduled_post(req.ts, req.exclude_worker_ids))
-              case req: RejectReq[_] => do_sync_action(req, () => scheduled_reject(req.t, req.correct_answer))
-              case req: RetrieveReq[_] => do_sync_action(req, () => scheduled_retrieve(req.ts))
+              case req: CreateHITReq => do_sync_action(req, () => scheduled_post(req.ts, req.exclude_worker_ids))
+              case req: RejectReq => do_sync_action(req, () => scheduled_reject(req.t, req.correct_answer))
+              case req: RetrieveReq => do_sync_action(req, () => scheduled_retrieve(req.ts))
+              case req: TimeoutReq => do_sync_action(req, () => scheduled_timeout(req.ts))
             }
           }
 
@@ -148,7 +152,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       message.notifyAll()
     }
   }
-  private def scheduled_accept[A](t: Task) : Task = {
+  private def scheduled_accept(t: Task) : Task = {
     DebugLog(
       String.format("Accepting task for question_id = %s",
       t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
@@ -161,7 +165,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
         throw new Exception("Cannot accept non-existent assignment.")
     }
   }
-  private def scheduled_cancel[A](t: Task) : Task = {
+  private def scheduled_cancel(t: Task) : Task = {
     DebugLog(String.format("Cancelling task for question_id = %s",
       t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
@@ -340,7 +344,18 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     }
   }
 
-  private def scheduled_reject[A](t: Task, rejection_response: String) : Task = {
+  private def scheduled_timeout(ts: List[Task]) : List[Task] = {
+    // unanswered Tasks past their expiration dates are timed-out here
+    ts.map { t =>
+      if (t.is_timedout) {
+        t.copy_as_timeout()
+      } else {
+        t
+      }
+    }
+  }
+
+  private def scheduled_reject(t: Task, rejection_response: String) : Task = {
     DebugLog(String.format("Rejecting task for question_id = %s",
       t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
 
@@ -353,12 +368,11 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     }
   }
 
-  private def scheduled_retrieve[A](ts: List[Task]): List[Task] = {
+  private def scheduled_retrieve(ts: List[Task]): List[Task] = {
     // 1. eagerly get all HIT assignments
     // 2. pair HIT Assignments with tasks
     // 3. update tasks with answers
-    // 4. timeout tasks, where appropriate
-    val ts2 = ts.groupBy(Key.BatchKey).map { case (batch_key, bts) =>
+    ts.groupBy(Key.BatchKey).map { case (batch_key, bts) =>
       // get HITType for BatchKey
       val hittype = _state.getHITType(batch_key)
 
@@ -380,9 +394,6 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       // return answered tasks
       answer_tasks(bts, batch_key)
     }.flatten.toList
-
-    // unanswered Tasks past their expiration dates are timed-out here
-    timeout_tasks_as_needed(ts2)
   }
 
   private def answer_tasks(ts: List[Task], batch_key: BatchKey) : List[Task] = {
@@ -448,16 +459,6 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
         }
       }
     }.flatten.toList
-  }
-
-  private def timeout_tasks_as_needed[A](ts: List[Task]) : List[Task] = {
-    ts.map { t =>
-      if (t.is_timedout) {
-        t.copy_as_timeout()
-      } else {
-        t
-      }
-    }
   }
 
   private def scheduled_get_budget(): BigDecimal = {

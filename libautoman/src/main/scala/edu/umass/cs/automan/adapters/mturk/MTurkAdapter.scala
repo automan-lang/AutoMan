@@ -107,6 +107,15 @@ class MTurkAdapter extends AutomanAdapter {
     assert(ts.forall(_.state == SchedulerState.RUNNING))
     run_if_initialized((p: Pool) => p.retrieve(ts))
   }
+  protected[automan] def timeout(ts: List[Task]) : List[Task] = {
+    assert(ts.forall(_.state == SchedulerState.RUNNING))
+    run_if_initialized((p: Pool) => {
+      // mark tasks as TIMEOUT and move on without waiting
+      val ts2 = ts.map { _.copy_as_timeout() }
+      p.timeout(ts)
+      ts2
+    })
+  }
   override protected[automan] def question_startup_hook(q: Question): Unit = {
     super.question_startup_hook(q)
     // register question with MockRequesterService if we're
