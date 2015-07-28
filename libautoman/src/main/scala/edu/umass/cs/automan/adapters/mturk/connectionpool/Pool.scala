@@ -64,9 +64,6 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   def shutdown(): Unit = synchronized {
     nonblocking_enqueue[ShutdownReq, Unit](ShutdownReq())
   }
-  def timeout(ts: List[Task]) : Unit = {
-    nonblocking_enqueue[TimeoutReq, Unit](TimeoutReq(ts))
-  }
 
   // IMPLEMENTATIONS
   private def nonblocking_enqueue[M <: Message, T](req: M) = {
@@ -120,7 +117,6 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
               case req: CreateHITReq => do_sync_action(req, () => scheduled_post(req.ts, req.exclude_worker_ids))
               case req: RejectReq => do_sync_action(req, () => scheduled_reject(req.t, req.correct_answer))
               case req: RetrieveReq => do_sync_action(req, () => scheduled_retrieve(req.ts))
-              case req: TimeoutReq => do_sync_action(req, () => scheduled_timeout(req.ts))
             }
           }
 
@@ -340,17 +336,6 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
           // if not, post a new HIT on MTurk
           mturk_createHIT(tz, batch_key, q)
         }
-      }
-    }
-  }
-
-  private def scheduled_timeout(ts: List[Task]) : List[Task] = {
-    // unanswered Tasks past their expiration dates are timed-out here
-    ts.map { t =>
-      if (t.is_timedout) {
-        t.copy_as_timeout()
-      } else {
-        t
       }
     }
   }

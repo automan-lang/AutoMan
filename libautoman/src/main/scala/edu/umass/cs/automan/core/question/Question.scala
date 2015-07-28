@@ -1,12 +1,12 @@
 package edu.umass.cs.automan.core.question
 
 import java.io.File
-import java.util.UUID
+import java.util.{Date, UUID}
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.{AbstractAnswer, Outcome}
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 import edu.umass.cs.automan.core.logging.Memo
-import edu.umass.cs.automan.core.mock.MockResponse
+import edu.umass.cs.automan.core.mock.{MockAnswer, MockResponse}
 import edu.umass.cs.automan.core.policy.price.PricePolicy
 import edu.umass.cs.automan.core.policy.timeout.TimeoutPolicy
 import edu.umass.cs.automan.core.policy.validation.ValidationPolicy
@@ -32,7 +32,7 @@ abstract class Question {
   protected var _title: Option[String] = None
   protected var _time_value_per_hour: Option[BigDecimal] = None
   protected var _max_replicas: Option[Int] = None
-  protected var _mock_answers = List[A]()
+  protected var _mock_answers = List[MockAnswer[A]]()
   protected var _wage: BigDecimal = 7.25  // per hour
   protected var _blacklisted_workers = List[String]()
   protected var _dry_run: Boolean = false
@@ -66,8 +66,8 @@ abstract class Question {
   def max_replicas: Option[Int] = _max_replicas
   def max_replicas_=(m: Int) { _max_replicas = Some(m) }
   def memo_hash: String
-  def mock_answers_=(answers: List[A]) { _mock_answers = answers }
-  def mock_answers: List[A] = _mock_answers
+  def mock_answers_=(answers: List[MockAnswer[A]]) { _mock_answers = answers }
+  def mock_answers: List[MockAnswer[A]] = _mock_answers
   def num_possibilities: BigInt
   def question_timeout_multiplier_=(t: Double) { _question_timeout_multiplier = t }
   def question_timeout_multiplier: Double = _question_timeout_multiplier
@@ -88,7 +88,7 @@ abstract class Question {
   private[automan] def init_validation_policy(): Unit
   private[automan] def init_price_policy(): Unit
   private[automan] def init_timeout_policy(): Unit
-  protected[automan] def toMockResponse(question_id: UUID, a: A) : MockResponse
+  protected[automan] def toMockResponse(question_id: UUID, response_time: Date, a: A) : MockResponse
   private[automan] def validation_policy_instance = _validation_policy_instance
   private[automan] def price_policy_instance = _price_policy_instance
   private[automan] def timeout_policy_instance = _timeout_policy_instance

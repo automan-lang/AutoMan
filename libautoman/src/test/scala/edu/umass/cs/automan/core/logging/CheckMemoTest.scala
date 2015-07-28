@@ -2,6 +2,7 @@ package edu.umass.cs.automan.core.logging
 
 import org.scalatest._
 import java.util.UUID
+import edu.umass.cs.automan.test._
 import edu.umass.cs.automan.adapters.mturk._
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 
@@ -33,7 +34,7 @@ class CheckMemoTest extends FlatSpec with Matchers {
           a.Option('cookie, "Cookie Monster"),
           a.Option('count, "The Count")
         )
-        q.mock_answers = List(Set('spongebob,'count),Set('spongebob),Set('count,'spongebob),Set('count,'spongebob))
+        q.mock_answers = makeMocksNow(List(Set('spongebob,'count),Set('spongebob),Set('count,'spongebob),Set('count,'spongebob)))
       }
 
       def which_one2(text: String) = a.CheckboxQuestion { q =>

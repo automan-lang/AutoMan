@@ -24,7 +24,7 @@ abstract class RadioButtonDistributionQuestion extends DistributionQuestion {
   override protected[automan] def getQuestionType = QuestionType.RadioButtonDistributionQuestion
 
   override protected[automan] def getOutcome(adapter: AutomanAdapter, memo: Memo, poll_interval_in_s: Int) : O = {
-    val scheduler = new Scheduler(this, adapter, memo, poll_interval_in_s)
+    val scheduler = new Scheduler(this, adapter, memo)
     val f = Future{
       blocking {
         scheduler.run().asInstanceOf[AA]

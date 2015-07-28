@@ -61,13 +61,18 @@ object Utilities {
     c
   }
   def thirty_minutes_from_now = {
-    import java.util.{Calendar, Date}
-
-    var d = new Date()
-    var c = Calendar.getInstance()
+    val d = new Date()
+    val c = Calendar.getInstance()
     c.setTime(d)
     c.add(Calendar.MINUTE, 30)
-    c.getTime()
+    c.getTime
+  }
+
+  def xSecondsFromDate(x: Int, d: Date) : Date = {
+    val c = Calendar.getInstance()
+    c.setTime(d)
+    c.add(Calendar.SECOND, x)
+    c.getTime
   }
 
   def unsafe_optparse(args: Array[String], invoked_as_name: String) : OptionMap = {

@@ -27,8 +27,8 @@ case class Task(task_id: UUID,
     DebugLog("New Task " + task_id.toString + "; with cost: $" + cost.toString() + "; will expire at: " + expires_at.toString, LogLevel.INFO, LogType.SCHEDULER, question.id)
   }
 
-  def is_timedout: Boolean = {
-    expires_at.before(new Date())
+  def is_timedout(current_time: Date): Boolean = {
+    expires_at.before(current_time)
   }
   def copy_as_running() = {
     DebugLog("Task " + task_id.toString +  " changed to RUNNING state; will expire at: " + expires_at.toString, LogLevel.INFO, LogType.SCHEDULER, question.id)

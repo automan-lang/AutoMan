@@ -2,6 +2,7 @@ package edu.umass.cs.automan.core.scheduler
 
 import org.scalatest._
 import java.util.UUID
+import edu.umass.cs.automan.test._
 import edu.umass.cs.automan.adapters.mturk._
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 
@@ -26,7 +27,7 @@ class OverBudgetTest extends FlatSpec with Matchers {
           a.Option('cookie, "Cookie Monster"),
           a.Option('count, "The Count")
         )
-        q.mock_answers = List('spongebob,'spongebob,'spongebob,'spongebob)
+        q.mock_answers = makeMocksNow(List('spongebob,'spongebob,'spongebob,'spongebob))
       }
 
       which_one().answer match {

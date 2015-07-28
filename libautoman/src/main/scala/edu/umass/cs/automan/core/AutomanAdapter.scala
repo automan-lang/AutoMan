@@ -1,6 +1,6 @@
 package edu.umass.cs.automan.core
 
-import java.util.Locale
+import java.util.{Date, Locale}
 import edu.umass.cs.automan.core.logging.LogConfig.LogConfig
 import edu.umass.cs.automan.core.question._
 import edu.umass.cs.automan.core.logging.{TaskSnapshot, LogConfig, Memo}
@@ -72,19 +72,13 @@ abstract class AutomanAdapter {
   protected[automan] def retrieve(ts: List[Task]) : List[Task]
 
   /**
-   * Inform the backend that all of the tasks specified should be timed out.
-   * @param ts A list of RUNNING tasks.
-   * @return A list of TIMEOUT tasks.
-   */
-  protected[automan] def timeout(ts: List[Task]) : List[Task]
-
-  /**
    * This method is called by the scheduler after question initialization
    * but before any tasks are scheduled. Override it to provide a
    * backend-specific startup implementation.
    * @param q Question
+   * @param t Scheduler startup time
    */
-  protected[automan] def question_startup_hook(q: Question): Unit = {
+  protected[automan] def question_startup_hook(q: Question, t: Date): Unit = {
     q.questionStartupHook()
   }
   /**

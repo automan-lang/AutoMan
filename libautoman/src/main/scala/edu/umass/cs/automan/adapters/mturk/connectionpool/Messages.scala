@@ -31,6 +31,4 @@ protected[mturk] case class RejectReq(t: Task, correct_answer: String) extends M
 protected[mturk] case class RetrieveReq(ts: List[Task]) extends Message {
   override protected def order = 4
 }
-protected[mturk] case class TimeoutReq(ts: List[Task]) extends Message {
-  override protected def order = 1
-}
+

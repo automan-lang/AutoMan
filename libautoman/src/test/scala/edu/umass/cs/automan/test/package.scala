@@ -1,14 +1,13 @@
 package edu.umass.cs.automan
 
-import java.util.{Date, UUID}
-
+import java.util.{UUID, Date}
+import edu.umass.cs.automan.core.mock.MockAnswer
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
-
 import scala.reflect.ClassTag
 import scala.util.Random
 
-object TestUtil {
+package object test {
   def newTask(question: Question, round: Int, timeout: Int, worker_timeout: Int, cost: BigDecimal, time_delta: Int) = {
     val now = new Date()
     Task(
@@ -25,6 +24,14 @@ object TestUtil {
       None,
       now
     )
+  }
+
+  def makeMocksNow[T](answers: List[T]) : List[MockAnswer[T]] = {
+    answers.map(MockAnswer(_, 0))
+  }
+
+  def makeMocks[T](answer_time_pairs: List[(T,Int)]) : List[MockAnswer[T]] = {
+    answer_time_pairs.map { case (a,t) => MockAnswer(a,t) }
   }
 
   def genAnswers[T : ClassTag](from_vector: Array[T], with_probabilities: Array[String], of_size: Int) : Array[T] = {
