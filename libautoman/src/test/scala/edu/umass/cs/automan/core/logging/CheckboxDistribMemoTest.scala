@@ -1,8 +1,8 @@
 package edu.umass.cs.automan.core.logging
 
 import org.scalatest._
-import edu.umass.cs.automan.TestUtil
 import java.util.UUID
+import edu.umass.cs.automan.test._
 import edu.umass.cs.automan.adapters.mturk._
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 
@@ -24,7 +24,7 @@ class CheckboxDistribMemoTest extends FlatSpec with Matchers {
 
     // test params
     val sample_size = 30
-    val mock_answers = TestUtil.genAnswers(
+    val mock_answers = genAnswers(
       Array(Set('spongebob,'count), Set('spongebob), Set('count,'spongebob)),
       Array("0.25", "0.25", "0.50"),
       sample_size
@@ -42,7 +42,7 @@ class CheckboxDistribMemoTest extends FlatSpec with Matchers {
           a.Option('cookie, "Cookie Monster"),
           a.Option('count, "The Count")
         )
-        q.mock_answers = mock_answers.toList
+        q.mock_answers = makeMocksNow(mock_answers.toList)
       }
 
       def which_one2(text: String) = a.CheckboxDistributionQuestion { q =>
@@ -62,7 +62,7 @@ class CheckboxDistribMemoTest extends FlatSpec with Matchers {
       which_one("Which one of these does not belong?").answer match {
         case Answers(values, cost) =>
           println("Answer: '" + value + "', cost: '" + cost + "'")
-          TestUtil.compareDistributions(mock_answers, values) should be (true)
+          compareDistributions(mock_answers, values) should be (true)
           cost should be (BigDecimal(0.06) * sample_size)
         case _ =>
           fail()
@@ -71,7 +71,7 @@ class CheckboxDistribMemoTest extends FlatSpec with Matchers {
       which_one2("Which one of these does not belong?").answer match {
         case Answers(values, cost) =>
           println("Answer: '" + value + "', cost: '" + cost + "'")
-          TestUtil.compareDistributions(mock_answers, values) should be (true)
+          compareDistributions(mock_answers, values) should be (true)
           (cost == BigDecimal(0.00)) should be (true)
         case _ =>
           fail()

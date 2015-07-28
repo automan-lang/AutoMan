@@ -1,10 +1,10 @@
 package edu.umass.cs.automan.adapters.mturk.mock
 
-import java.util.UUID
+import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.core.mock.MockResponse
 
-case class RadioButtonMockResponse(question_id: UUID, answer: Symbol) extends MockResponse {
+case class RadioButtonMockResponse(question_id: UUID, response_time: Date, answer: Symbol) extends MockResponse(question_id, response_time) {
   def toXML : String = {
     val xml_decl = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>"
     val assn =

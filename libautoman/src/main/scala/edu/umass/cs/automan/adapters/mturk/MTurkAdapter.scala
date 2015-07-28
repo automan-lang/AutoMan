@@ -1,6 +1,6 @@
 package edu.umass.cs.automan.adapters.mturk
 
-import java.util.Locale
+import java.util.{Date, Locale}
 import com.amazonaws.mturk.util.ClientConfig
 import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.adapters.mturk.connectionpool.Pool
@@ -107,22 +107,13 @@ class MTurkAdapter extends AutomanAdapter {
     assert(ts.forall(_.state == SchedulerState.RUNNING))
     run_if_initialized((p: Pool) => p.retrieve(ts))
   }
-  protected[automan] def timeout(ts: List[Task]) : List[Task] = {
-    assert(ts.forall(_.state == SchedulerState.RUNNING))
-    run_if_initialized((p: Pool) => {
-      // mark tasks as TIMEOUT and move on without waiting
-      val ts2 = ts.map { _.copy_as_timeout() }
-      p.timeout(ts)
-      ts2
-    })
-  }
-  override protected[automan] def question_startup_hook(q: Question): Unit = {
-    super.question_startup_hook(q)
+  override protected[automan] def question_startup_hook(q: Question, t: Date): Unit = {
+    super.question_startup_hook(q, t)
     // register question with MockRequesterService if we're
     // running in simulation mode
     _use_mock match {
       case Some(mock_setup) =>
-        _service.get.asInstanceOf[MockRequesterService].registerQuestion(q)
+        _service.get.asInstanceOf[MockRequesterService].registerQuestion(q, t)
       case _ => ()
     }
   }

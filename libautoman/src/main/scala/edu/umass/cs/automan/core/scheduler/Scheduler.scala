@@ -1,11 +1,15 @@
 package edu.umass.cs.automan.core.scheduler
 
 import java.util.Date
+
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.exception.OverBudgetException
 import edu.umass.cs.automan.core.logging._
+import edu.umass.cs.automan.core.mock.MockAnswer
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.policy.validation.ValidationPolicy
+import edu.umass.cs.automan.core.util.Utilities
+import scala.collection.mutable
 
 /**
  * Controls scheduling of tasks for a given question.
@@ -24,18 +28,17 @@ import edu.umass.cs.automan.core.policy.validation.ValidationPolicy
  * @param question
  * @param backend
  * @param memo
- * @param poll_interval_in_s
- * @param time_opt
  */
 class Scheduler(val question: Question,
                    val backend: AutomanAdapter,
-                   val memo: Memo,
-                   val poll_interval_in_s: Int,
-                   val time_opt: Option[Date]) {
-  def this(question: Question,
-           adapter: AutomanAdapter,
-           memo: Memo,
-           poll_interval_in_s: Int) = this(question, adapter, memo, poll_interval_in_s, None)
+                   val memo: Memo) {
+  // save startup time
+  val init_time = new Date()
+
+  // init policies
+  question.init_validation_policy()
+  question.init_price_policy()
+  question.init_timeout_policy()
 
   /** Crowdsources a task on the desired backend, scheduling and
     * rescheduling enough jobs until the chosen quality-control
@@ -43,13 +46,8 @@ class Scheduler(val question: Question,
     * where appropriate.
     */
   def run() : Question#AA = {
-    // init policies
-    question.init_validation_policy()
-    question.init_price_policy()
-    question.init_timeout_policy()
-
     // run startup hook
-    backend.question_startup_hook(question)
+    backend.question_startup_hook(question, init_time)
 
     // Was this computation interrupted? If there's a memoizer instance
     // restore tasks from scheduler trace.
@@ -61,24 +59,38 @@ class Scheduler(val question: Question,
     run_loop(tasks)
   }
 
+  private def initTickQueue[A](ans: List[MockAnswer[A]]) : mutable.PriorityQueue[Int] = {
+    val q = new mutable.PriorityQueue[Int]()
+    if(ans.nonEmpty) {
+      val times = ans.map(_.time_delta_in_s).distinct
+      q ++= times
+      Some(q)
+    }
+    q
+  }
+
   private def run_loop(tasks: List[Task]) : Question#AA = {
-    val vp = question.validation_policy_instance
+    val _virtual_ticks = initTickQueue(question.mock_answers)
+    var _current_tick = 0
+    val _vp = question.validation_policy_instance
 
     var _timeout_occurred = false
     var _all_tasks = tasks
     var _round = 1
-    var _done = vp.is_done(_all_tasks, _round) // check for restored memo tasks
+    var _done = _vp.is_done(_all_tasks, _round) // check for restored memo tasks
 
     val answer = try {
       while(!_done) {
         // process timeouts
-        val (__tasks,__suffered_timeout) = process_timeouts(_all_tasks)
+        val (__tasks,__suffered_timeout) = process_timeouts(_all_tasks, _current_tick)
         // get list of workers who may not re-participate
-        val __blacklist = vp.blacklisted_workers(__tasks)
+        val __blacklist = _vp.blacklisted_workers(__tasks)
         // filter duplicate work
-        val __dedup_tasks = vp.mark_duplicates(__tasks)
+        val __dedup_tasks = _vp.mark_duplicates(__tasks)
         // post more tasks as needed
         val __new_tasks = post_as_needed(__dedup_tasks, _round, backend, question, __suffered_timeout, __blacklist)
+        // update virtual_ticks with new timeouts
+        _virtual_ticks ++ __new_tasks.map(_.timeout_in_s).distinct
 
         // Update memo state and yield to let other threads get some work done
         memo_and_yield(__dedup_tasks ::: __new_tasks, memo)
@@ -97,22 +109,24 @@ class Scheduler(val question: Question,
         memo.save(question, __all_tasks)
 
         // continue?
-        _done = vp.is_done(__all_tasks, _round)
+        _done = _vp.is_done(__all_tasks, _round)
 
-        synchronized {
-          _all_tasks = __all_tasks
-          _round += 1
-        }
+        // update state
+        _all_tasks = __all_tasks
+        _round += 1
+         if (_virtual_ticks.nonEmpty) {
+           _current_tick = _virtual_ticks.dequeue()
+         }
       }
 
       // pay for answers
-      _all_tasks = accept_reject_and_cancel(_all_tasks, vp, backend)
+      _all_tasks = accept_reject_and_cancel(_all_tasks, _vp, backend)
 
       // return answer
-      vp.select_answer(_all_tasks)
+      _vp.select_answer(_all_tasks)
     } catch {
       case o: OverBudgetException =>
-        vp.select_over_budget_answer(_all_tasks, o.need, o.have)
+        _vp.select_over_budget_answer(_all_tasks, o.need, o.have)
     }
 
     // save one more time
@@ -125,11 +139,13 @@ class Scheduler(val question: Question,
     answer
   }
 
-  def process_timeouts(ts: List[Task]) : (List[Task],Boolean) = {
-    val (timeouts,otherwise) = ts.partition { t => t.is_timedout }
-    val timed_out = backend.timeout(timeouts)
-    val timeout_occurred = timeouts.nonEmpty
-    (timed_out ::: otherwise, timeout_occurred)
+  def process_timeouts(ts: List[Task], current_tick: Int) : (List[Task],Boolean) = {
+    // find all timeouts
+    val (timeouts,otherwise) = ts.partition { t => t.is_timedout(Utilities.xSecondsFromDate(current_tick, init_time)) }
+    // cancel and make state TIMEOUT
+    val timed_out = timeouts.map(backend.cancel).map(_.copy_as_timeout())
+    // return all updated Task objects and signal whether timeout occurred
+    (timed_out ::: otherwise, timeouts.nonEmpty)
   }
 
   def memo_and_yield(ts: List[Task], memo: Memo) : Unit = {

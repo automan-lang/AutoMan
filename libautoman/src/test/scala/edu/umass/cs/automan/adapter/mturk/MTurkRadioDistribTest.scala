@@ -1,8 +1,8 @@
 package edu.umass.cs.automan.adapter.mturk
 
 import org.scalatest._
-import edu.umass.cs.automan.TestUtil
 import java.util.UUID
+import edu.umass.cs.automan.test._
 import edu.umass.cs.automan.adapters.mturk._
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 
@@ -19,7 +19,7 @@ class MTurkRadioDistribTest extends FlatSpec with Matchers {
 
     val sample_size = 30
 
-    val mock_answers = TestUtil.genAnswers(
+    val mock_answers = genAnswers(
       Array('oscar, 'kermit, 'spongebob, 'cookie, 'count),
       Array("0.02", "0.14", "0.78", "0.05", "0.01"),
       sample_size
@@ -37,12 +37,12 @@ class MTurkRadioDistribTest extends FlatSpec with Matchers {
           a.Option('cookie, "Cookie Monster"),
           a.Option('count, "The Count")
         )
-        q.mock_answers = mock_answers.toList
+        q.mock_answers = makeMocksNow(mock_answers.toList)
       }
 
       which_one().answer match {
         case Answers(values, cost) =>
-          TestUtil.compareDistributions(mock_answers, values) should be (true)
+          compareDistributions(mock_answers, values) should be (true)
           cost should be (BigDecimal(0.06) * sample_size)
         case _ =>
           fail()

@@ -8,7 +8,7 @@ import com.amazonaws.mturk.util.ClientConfig
 import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.util._
-import java.util.UUID
+import java.util.{Date, UUID}
 
 /**
  * An object used to simulate a Mechanical Turk backend. Can be used by
@@ -167,10 +167,23 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
     // NOP
   }
 
-  def registerQuestion(question: Question): Unit = synchronized {
-    val assignments = question.mock_answers.map { a => UUID.randomUUID() -> question.toMockResponse(question.id, a)}.toMap
-    _state = _state.addQuestion(question)
-    _state = _state.addAssignments(question.id, assignments)
+  /**
+   * Register a question with the mock backend, and map assignment IDs
+   * to the supplied mock answers.
+   * @param q Question.
+   * @param t Scheduler startup time.
+   */
+  def registerQuestion(q: Question, t: Date): Unit = synchronized {
+    val assignments = q.mock_answers.map { a =>
+      // get time x seconds from t
+      val d = Utilities.xSecondsFromDate(a.time_delta_in_s, t)
+      // pair with random assignment IDs
+      UUID.randomUUID() -> q.toMockResponse(q.id, d, a.answer)
+    }.toMap
+    // add question to mock state
+    _state = _state.addQuestion(q)
+    // add assignment map to question in mock state
+    _state = _state.addAssignments(q.id, assignments)
   }
 
   override def registerHITType(autoApprovalDelayInSeconds: lang.Long,

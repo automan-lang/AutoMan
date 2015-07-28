@@ -1,6 +1,6 @@
 package edu.umass.cs.automan.adapters.mturk.question
 
-import java.util.UUID
+import java.util.{Date, UUID}
 import edu.umass.cs.automan.adapters.mturk.mock.FreeTextMockResponse
 import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
 import edu.umass.cs.automan.core.question.FreeTextQuestion
@@ -21,8 +21,8 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
   override def group_id: String = _group_id match { case Some(g) => g; case None => this.id.toString() }
 
   // private API
-  override def toMockResponse(question_id: UUID, a: A) : FreeTextMockResponse = {
-    FreeTextMockResponse(question_id, a)
+  override def toMockResponse(question_id: UUID, response_time: Date, a: A) : FreeTextMockResponse = {
+    FreeTextMockResponse(question_id, response_time, a)
   }
   def fromXML(x: scala.xml.Node) : A = {
     // There is a SINGLE answer here, like this:
