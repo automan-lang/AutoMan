@@ -11,6 +11,7 @@ class DefaultScalarPolicy(question: ScalarQuestion)
   DebugLog("DEFAULTSCALAR strategy loaded.",LogLevel.INFO,LogType.STRATEGY, question.id)
 
   def bonferroni_confidence(confidence: Double, rounds: Int) : Double = {
+    assert(rounds > 0)
     1 - (1 - confidence) / rounds.toDouble
   }
   def current_confidence(tasks: List[Task]): Double = {
@@ -32,8 +33,12 @@ class DefaultScalarPolicy(question: ScalarQuestion)
         true
       } else {
         val valid_ts = completed_workerunique_tasks(tasks)
-        val biggest_answer = valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
-        DebugLog("Need more tasks for alpha = " + (1 - thresh) + "; have " + biggest_answer, LogLevel.INFO, LogType.STRATEGY, question.id)
+        if (valid_ts.size > 0) {
+          val biggest_answer = valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
+          DebugLog("Need more tasks for alpha = " + (1 - thresh) + "; have " + biggest_answer, LogLevel.INFO, LogType.STRATEGY, question.id)
+        } else {
+          DebugLog("Need more tasks for alpha = " + (1 - thresh) + "; currently have none.", LogLevel.INFO, LogType.STRATEGY, question.id)
+        }
         false
       }
     }

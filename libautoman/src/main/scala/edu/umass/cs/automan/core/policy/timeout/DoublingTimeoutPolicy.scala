@@ -26,7 +26,11 @@ class DoublingTimeoutPolicy(question: Question) extends TimeoutPolicy(question) 
     if (round == 1) {
       question.initial_worker_timeout_in_s
     } else {
-      val last_round = tasks.filter(_.round == round - 1)
+      // find the last round where we spawned tasks
+      val last_spawn_round = tasks.filter(_.round != round).map(_.round).max
+      // get the thunks from that round
+      val last_round = tasks.filter(_.round == last_spawn_round)
+      // count the number of timeouts from that round
       val had_timeout = last_round.count(_.state == SchedulerState.TIMEOUT) > 0
       if (had_timeout) {
         DebugLog("Had a timeout; doubling worker timeout.", LogLevel.INFO, LogType.STRATEGY, question.id)
