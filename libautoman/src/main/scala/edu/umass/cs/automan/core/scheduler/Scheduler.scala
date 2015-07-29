@@ -60,7 +60,12 @@ class Scheduler(val question: Question,
   }
 
   private def initTickQueue[A](ans: List[MockAnswer[A]]) : mutable.PriorityQueue[Int] = {
-    val q = new mutable.PriorityQueue[Int]()
+    val timeOrd = new Ordering[Int] {
+      def compare(o1: Int, o2: Int) : Int = {
+        -o1.compare(o2)
+      }
+    }
+    val q = new mutable.PriorityQueue[Int]()(timeOrd)
     if(ans.nonEmpty) {
       val times = ans.map(_.time_delta_in_s).distinct
       q ++= times
@@ -99,7 +104,7 @@ class Scheduler(val question: Question,
         val (__running_tasks, __unrunning_tasks) = (__dedup_tasks ::: __new_tasks).partition(_.state == SchedulerState.RUNNING)
         assert(__running_tasks.size > 0)
         DebugLog("Retrieving answers for " + __running_tasks.size + " running tasks from backend.", LogLevel.INFO, LogType.SCHEDULER, question.id)
-        val __answered_tasks = backend.retrieve(__running_tasks)
+        val __answered_tasks = backend.retrieve(__running_tasks, Utilities.xSecondsFromDate(_current_tick, init_time))
         assert(retrieve_invariant(__running_tasks, __answered_tasks))
 
         // complete list of tasks

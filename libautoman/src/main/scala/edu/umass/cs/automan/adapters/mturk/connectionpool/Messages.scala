@@ -1,5 +1,7 @@
 package edu.umass.cs.automan.adapters.mturk.connectionpool
 
+import java.util.Date
+
 import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
 import edu.umass.cs.automan.core.scheduler.Task
 
@@ -28,7 +30,7 @@ protected[mturk] case class CreateHITReq(ts: List[Task], exclude_worker_ids: Lis
 protected[mturk] case class RejectReq(t: Task, correct_answer: String) extends Message {
   override protected def order = 4
 }
-protected[mturk] case class RetrieveReq(ts: List[Task]) extends Message {
+protected[mturk] case class RetrieveReq(ts: List[Task], current_time: Date) extends Message {
   override protected def order = 4
 }
 

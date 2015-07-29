@@ -65,11 +65,12 @@ abstract class AutomanAdapter {
   /**
    * Ask the backend to retrieve answers given a list of RUNNING tasks. Invariant:
    * the size of the list of input tasks == the size of the list of the output
-   * tasks.
+   * tasks. The virtual_time parameter is ignored when not running in simulator mode.
    * @param ts A list of RUNNING tasks.
+   * @param current_time The current virtual time.
    * @return A list of RUNNING, RETRIEVED, or TIMEOUT tasks.
    */
-  protected[automan] def retrieve(ts: List[Task]) : List[Task]
+  protected[automan] def retrieve(ts: List[Task], current_time: Date) : List[Task]
 
   /**
    * This method is called by the scheduler after question initialization
