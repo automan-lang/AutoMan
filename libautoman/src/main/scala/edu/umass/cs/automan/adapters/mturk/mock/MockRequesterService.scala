@@ -213,8 +213,8 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
    */
   def registerQuestion(q: Question, t: Date): Unit = synchronized {
     val assignments = q.mock_answers.map { a =>
-      // get time x seconds from t
-      val d = Utilities.xSecondsFromDate(a.time_delta_in_s, t)
+      // get time x milliseconds from t
+      val d = Utilities.xMillisecondsFromDate(a.time_delta_in_ms, t)
       // pair with random assignment IDs
       UUID.randomUUID() -> q.toMockResponse(q.id, d, a.answer)
     }.toMap
