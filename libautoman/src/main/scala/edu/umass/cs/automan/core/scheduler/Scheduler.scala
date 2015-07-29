@@ -79,8 +79,8 @@ class Scheduler(val question: Question,
   }
 
   private def run_loop(tasks: List[Task]) : Question#AA = {
-    val _virtual_ticks = initTickQueue(question.mock_answers)
-    var _current_tick = 0L
+    val _virtual_times = initTickQueue(question.mock_answers)  // ms quanta
+    var _current_time = 0L  // ms since start
     val _vp = question.validation_policy_instance
 
     var _timeout_occurred = false
@@ -91,7 +91,7 @@ class Scheduler(val question: Question,
     val answer = try {
       while(!_done) {
         // process timeouts
-        val (__tasks, __suffered_timeout) = process_timeouts(_all_tasks, _current_tick)
+        val (__tasks, __suffered_timeout) = process_timeouts(_all_tasks, _current_time)
         // get list of workers who may not re-participate
         val __blacklist = _vp.blacklisted_workers(__tasks)
         // filter duplicate work
@@ -99,7 +99,7 @@ class Scheduler(val question: Question,
         // post more tasks as needed
         val (__new_tasks,__this_round) = post_as_needed(__dedup_tasks, _round, backend, question, __suffered_timeout, __blacklist)
         // update virtual_ticks with new timeouts
-        _virtual_ticks ++= __new_tasks.map(_.timeout_in_s).distinct
+        _virtual_times ++= __new_tasks.map(_.timeout_in_s).distinct
 
         // Update memo state and yield to let other threads get some work done
         memo_and_yield(__dedup_tasks ::: __new_tasks, memo)
@@ -108,7 +108,7 @@ class Scheduler(val question: Question,
         val (__running_tasks, __unrunning_tasks) = (__dedup_tasks ::: __new_tasks).partition(_.state == SchedulerState.RUNNING)
         assert(__running_tasks.size > 0)
         DebugLog("Retrieving answers for " + __running_tasks.size + " running tasks from backend.", LogLevel.INFO, LogType.SCHEDULER, question.id)
-        val __answered_tasks = backend.retrieve(__running_tasks, Utilities.xMillisecondsFromDate(_current_tick, init_time))
+        val __answered_tasks = backend.retrieve(__running_tasks, Utilities.xMillisecondsFromDate(_current_time, init_time))
         assert(retrieve_invariant(__running_tasks, __answered_tasks))
 
         // complete list of tasks
@@ -123,12 +123,13 @@ class Scheduler(val question: Question,
         // update state
         _all_tasks = __all_tasks
         _round = __this_round
-        _current_tick = if (_virtual_ticks.nonEmpty) {
+        _current_time = if (_virtual_times.nonEmpty) {
           // pull from the queue for simulations
-          _virtual_ticks.dequeue()
+          _virtual_times.dequeue()
         } else {
-          // otherwise use real elapsed time
-          _current_tick + realTick
+          // otherwise advance by 1 second or actual elapsed time,
+          // whichever is bigger
+          math.max(_current_time + 1000L, realTick)
         }
       }
 
