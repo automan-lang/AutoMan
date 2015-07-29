@@ -31,7 +31,8 @@ package object test {
   }
 
   def makeMocks[T](answer_time_pairs: List[(T,Int)]) : List[MockAnswer[T]] = {
-    answer_time_pairs.map { case (a,t) => MockAnswer(a,t) }
+    // make MockAnswers, converting times in seconds to times in milliseconds
+    answer_time_pairs.map { case (a,t) => MockAnswer(a,t * 1000) }
   }
 
   def genAnswers[T : ClassTag](from_vector: Array[T], with_probabilities: Array[String], of_size: Int) : Array[T] = {

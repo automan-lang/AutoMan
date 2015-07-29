@@ -59,15 +59,13 @@ class Scheduler(val question: Question,
     run_loop(tasks)
   }
 
-  private def initTickQueue[A](ans: List[MockAnswer[A]]) : mutable.PriorityQueue[Int] = {
-    val timeOrd = new Ordering[Int] {
-      def compare(o1: Int, o2: Int) : Int = {
-        -o1.compare(o2)
-      }
+  private def initTickQueue[A](ans: List[MockAnswer[A]]) : mutable.PriorityQueue[Long] = {
+    val timeOrd = new Ordering[Long] {
+      def compare(o1: Long, o2: Long) = -o1.compare(o2)
     }
-    val q = new mutable.PriorityQueue[Int]()(timeOrd)
+    val q = new mutable.PriorityQueue[Long]()(timeOrd)
     if(ans.nonEmpty) {
-      val times = ans.map(_.time_delta_in_s).distinct
+      val times = ans.map(_.time_delta_in_ms).distinct
       q ++= times
       Some(q)
     }
@@ -98,8 +96,8 @@ class Scheduler(val question: Question,
         val __dedup_tasks = _vp.mark_duplicates(__tasks)
         // post more tasks as needed
         val (__new_tasks,__this_round) = post_as_needed(__dedup_tasks, _round, backend, question, __suffered_timeout, __blacklist)
-        // update virtual_ticks with new timeouts
-        _virtual_times ++= __new_tasks.map(_.timeout_in_s).distinct
+        // update virtual_ticks with new timeouts (in milliseconds)
+        _virtual_times ++= __new_tasks.map(_.timeout_in_s).distinct.map(_.toLong * 1000)
 
         // Update memo state and yield to let other threads get some work done
         memo_and_yield(__dedup_tasks ::: __new_tasks, memo)
