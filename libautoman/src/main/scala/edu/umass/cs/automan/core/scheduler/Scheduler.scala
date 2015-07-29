@@ -123,11 +123,15 @@ class Scheduler(val question: Question,
         _round = __this_round
         _current_time = if (_virtual_times.nonEmpty) {
           // pull from the queue for simulations
-          _virtual_times.dequeue()
+          val t = _virtual_times.dequeue()
+          DebugLog("Advancing scheduler clock to " + t + " ms using virtual time.", LogLevel.INFO, LogType.SCHEDULER, question.id)
+          t
         } else {
           // otherwise advance by 1 second or actual elapsed time,
           // whichever is bigger
-          math.max(_current_time + 1000L, realTick)
+          val t = math.max(_current_time + 1000L, realTick)
+          DebugLog("Advancing scheduler clock to " + t + " ms.", LogLevel.INFO, LogType.SCHEDULER, question.id)
+          t
         }
       }
 
@@ -156,6 +160,10 @@ class Scheduler(val question: Question,
     val (timeouts,otherwise) = ts.partition { t =>
       t.is_timedout(Utilities.xMillisecondsFromDate(current_tick, init_time))
     }
+    if (timeouts.size > 0) {
+      DebugLog("Cancelling " + timeouts.size + " timed-out tasks.", LogLevel.INFO, LogType.SCHEDULER, question.id)
+    }
+
     // cancel and make state TIMEOUT
     val timed_out = timeouts.map(backend.cancel).map(_.copy_as_timeout())
     // return all updated Task objects and signal whether timeout occurred

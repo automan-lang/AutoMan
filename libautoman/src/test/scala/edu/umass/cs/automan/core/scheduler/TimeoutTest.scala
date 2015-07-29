@@ -20,7 +20,9 @@ class TimeoutTest extends FlatSpec with Matchers {
       def which_one() = a.RadioButtonQuestion { q =>
         q.budget = 0.30
         q.text = "Which one of these does not belong?"
+        // make sure that this task times out after exactly 30s
         q.initial_worker_timeout_in_s = 30
+        q.question_timeout_multiplier = 1
         q.options = List(
           a.Option('oscar, "Oscar the Grouch"),
           a.Option('kermit, "Kermit the Frog"),
