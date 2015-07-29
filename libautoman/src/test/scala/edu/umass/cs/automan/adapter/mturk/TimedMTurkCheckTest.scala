@@ -8,7 +8,7 @@ import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 
 class TimedMTurkCheckTest extends FlatSpec with Matchers {
 
-  "A checkbox program" should "work" in {
+  "A timed checkbox program" should "work" in {
     val confidence = 0.95
 
     val a = MTurkAdapter { mt =>

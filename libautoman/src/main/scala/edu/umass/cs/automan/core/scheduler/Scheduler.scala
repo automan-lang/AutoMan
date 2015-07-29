@@ -8,7 +8,7 @@ import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.mock.MockAnswer
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.policy.validation.ValidationPolicy
-import edu.umass.cs.automan.core.util.Utilities
+import edu.umass.cs.automan.core.util.{Stopwatch, Utilities}
 import scala.collection.mutable
 
 /**
@@ -74,28 +74,32 @@ class Scheduler(val question: Question,
     q
   }
 
+  private def realTick : Long = {
+    Utilities.elapsedMilliseconds(init_time, new Date())
+  }
+
   private def run_loop(tasks: List[Task]) : Question#AA = {
     val _virtual_ticks = initTickQueue(question.mock_answers)
-    var _current_tick = 0
+    var _current_tick = 0L
     val _vp = question.validation_policy_instance
 
     var _timeout_occurred = false
     var _all_tasks = tasks
-    var _round = 1
-    var _done = _vp.is_done(_all_tasks, _round) // check for restored memo tasks
+    var _round = 0
+    var _done = _vp.is_done(_all_tasks, 1) // check for restored memo tasks
 
     val answer = try {
       while(!_done) {
         // process timeouts
-        val (__tasks,__suffered_timeout) = process_timeouts(_all_tasks, _current_tick)
+        val (__tasks, __suffered_timeout) = process_timeouts(_all_tasks, _current_tick)
         // get list of workers who may not re-participate
         val __blacklist = _vp.blacklisted_workers(__tasks)
         // filter duplicate work
         val __dedup_tasks = _vp.mark_duplicates(__tasks)
         // post more tasks as needed
-        val __new_tasks = post_as_needed(__dedup_tasks, _round, backend, question, __suffered_timeout, __blacklist)
+        val (__new_tasks,__this_round) = post_as_needed(__dedup_tasks, _round, backend, question, __suffered_timeout, __blacklist)
         // update virtual_ticks with new timeouts
-        _virtual_ticks ++ __new_tasks.map(_.timeout_in_s).distinct
+        _virtual_ticks ++= __new_tasks.map(_.timeout_in_s).distinct
 
         // Update memo state and yield to let other threads get some work done
         memo_and_yield(__dedup_tasks ::: __new_tasks, memo)
@@ -104,7 +108,7 @@ class Scheduler(val question: Question,
         val (__running_tasks, __unrunning_tasks) = (__dedup_tasks ::: __new_tasks).partition(_.state == SchedulerState.RUNNING)
         assert(__running_tasks.size > 0)
         DebugLog("Retrieving answers for " + __running_tasks.size + " running tasks from backend.", LogLevel.INFO, LogType.SCHEDULER, question.id)
-        val __answered_tasks = backend.retrieve(__running_tasks, Utilities.xSecondsFromDate(_current_tick, init_time))
+        val __answered_tasks = backend.retrieve(__running_tasks, Utilities.xMillisecondsFromDate(_current_tick, init_time))
         assert(retrieve_invariant(__running_tasks, __answered_tasks))
 
         // complete list of tasks
@@ -114,14 +118,18 @@ class Scheduler(val question: Question,
         memo.save(question, __all_tasks)
 
         // continue?
-        _done = _vp.is_done(__all_tasks, _round)
+        _done = _vp.is_done(__all_tasks, __this_round)
 
         // update state
         _all_tasks = __all_tasks
-        _round += 1
-         if (_virtual_ticks.nonEmpty) {
-           _current_tick = _virtual_ticks.dequeue()
-         }
+        _round = __this_round
+        _current_tick = if (_virtual_ticks.nonEmpty) {
+          // pull from the queue for simulations
+          _virtual_ticks.dequeue()
+        } else {
+          // otherwise use real elapsed time
+          _current_tick + realTick
+        }
       }
 
       // pay for answers
@@ -144,9 +152,11 @@ class Scheduler(val question: Question,
     answer
   }
 
-  def process_timeouts(ts: List[Task], current_tick: Int) : (List[Task],Boolean) = {
+  def process_timeouts(ts: List[Task], current_tick: Long) : (List[Task],Boolean) = {
     // find all timeouts
-    val (timeouts,otherwise) = ts.partition { t => t.is_timedout(Utilities.xSecondsFromDate(current_tick, init_time)) }
+    val (timeouts,otherwise) = ts.partition { t =>
+      t.is_timedout(Utilities.xMillisecondsFromDate(current_tick, init_time))
+    }
     // cancel and make state TIMEOUT
     val timed_out = timeouts.map(backend.cancel).map(_.copy_as_timeout())
     // return all updated Task objects and signal whether timeout occurred
@@ -171,13 +181,13 @@ class Scheduler(val question: Question,
                      backend: AutomanAdapter,
                      question: Question,
                      suffered_timeout: Boolean,
-                     blacklist: List[String]) : List[Task] = {
+                     blacklist: List[String]) : (List[Task], Int) = {
     val s = question.validation_policy_instance
 
     // are any tasks still running?
     if (tasks.count(_.state == SchedulerState.RUNNING) == 0) {
       // no, so post more
-      val new_tasks = s.spawn(tasks, round, suffered_timeout)
+      val new_tasks = s.spawn(tasks, round + 1, suffered_timeout)
       assert(spawn_invariant(new_tasks))
       // can we afford these?
       val cost = total_cost(tasks ::: new_tasks)
@@ -188,10 +198,10 @@ class Scheduler(val question: Question,
         // yes, so post and return all posted tasks
         val posted = backend.post(new_tasks, blacklist)
         DebugLog("Posting " + posted.size + " tasks to backend.", LogLevel.INFO, LogType.SCHEDULER, question.id)
-        posted
+        (posted, round + 1)
       }
     } else {
-      List.empty
+      (List.empty, round)
     }
   }
 

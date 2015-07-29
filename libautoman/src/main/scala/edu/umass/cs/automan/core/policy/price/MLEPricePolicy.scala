@@ -8,7 +8,10 @@ class MLEPricePolicy(question: Question) extends PricePolicy(question) {
     if (round == 1) {
       calculateInitialReward()
     } else {
-      val last_round = tasks.filter(_.round == round - 1)
+      // find the last round where we spawned tasks
+      val last_spawn_round = tasks.filter(_.round != round).map(_.round).max
+      // get the thunks from that round
+      val last_round = tasks.filter(_.round == last_spawn_round)
       val current_reward = last_round.head.cost
 
       if (timeout_occurred) {

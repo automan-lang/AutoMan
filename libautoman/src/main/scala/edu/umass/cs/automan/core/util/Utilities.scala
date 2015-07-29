@@ -75,6 +75,17 @@ object Utilities {
     c.getTime
   }
 
+  def xMillisecondsFromDate(x: Long, d: Date) : Date = {
+    // to postpone overflow when converting to Int
+    val sec = (x / 1000).toInt
+    val ms_rem = (x % 1000).toInt
+    val c = Calendar.getInstance()
+    c.setTime(d)
+    c.add(Calendar.SECOND, sec)
+    c.add(Calendar.MILLISECOND, ms_rem)
+    c.getTime
+  }
+
   def unsafe_optparse(args: Array[String], invoked_as_name: String) : OptionMap = {
     val usage = "Usage: " + invoked_as_name + " -k [key] -s [secret] [--sandbox [true|false]]" +
                 "\n  If --sandbox is not specified, the default setting is 'true'." +
@@ -141,5 +152,9 @@ object Utilities {
 
   def nowCal() : Calendar = {
     calAt(new Date())
+  }
+
+  def elapsedMilliseconds(d1: Date, d2: Date) : Long = {
+    math.abs(d1.getTime - d2.getTime)
   }
 }
