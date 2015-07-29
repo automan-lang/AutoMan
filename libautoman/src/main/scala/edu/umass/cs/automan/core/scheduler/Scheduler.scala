@@ -158,6 +158,7 @@ class Scheduler(val question: Question,
   def process_timeouts(ts: List[Task], current_tick: Long) : (List[Task],Boolean) = {
     // find all timeouts
     val (timeouts,otherwise) = ts.partition { t =>
+      t.state == SchedulerState.RUNNING &&
       t.is_timedout(Utilities.xMillisecondsFromDate(current_tick, init_time))
     }
     if (timeouts.size > 0) {
