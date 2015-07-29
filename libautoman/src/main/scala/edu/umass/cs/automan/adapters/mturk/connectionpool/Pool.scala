@@ -10,7 +10,7 @@ import edu.umass.cs.automan.adapters.mturk.util.Key
 import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
-import edu.umass.cs.automan.core.util.Stopwatch
+import edu.umass.cs.automan.core.util.{Utilities, Stopwatch}
 
 class Pool(backend: RequesterService, sleep_ms: Int) {
   type HITID = String
@@ -58,8 +58,8 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
   def reject(t: Task, correct_answer: String) : Task = {
     blocking_enqueue[RejectReq, Task](RejectReq(t, correct_answer))
   }
-  def retrieve(ts: List[Task]) : List[Task] = {
-    blocking_enqueue[RetrieveReq, List[Task]](RetrieveReq(ts))
+  def retrieve(ts: List[Task], current_time: Date) : List[Task] = {
+    blocking_enqueue[RetrieveReq, List[Task]](RetrieveReq(ts, current_time))
   }
   def shutdown(): Unit = synchronized {
     nonblocking_enqueue[ShutdownReq, Unit](ShutdownReq())
@@ -116,7 +116,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
               case req: DisposeQualsReq => do_sync_action(req, () => scheduled_cleanup_qualifications(req.q))
               case req: CreateHITReq => do_sync_action(req, () => scheduled_post(req.ts, req.exclude_worker_ids))
               case req: RejectReq => do_sync_action(req, () => scheduled_reject(req.t, req.correct_answer))
-              case req: RetrieveReq => do_sync_action(req, () => scheduled_retrieve(req.ts))
+              case req: RetrieveReq => do_sync_action(req, () => scheduled_retrieve(req.ts, req.current_time))
             }
           }
 
@@ -353,7 +353,7 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     }
   }
 
-  private def scheduled_retrieve(ts: List[Task]): List[Task] = {
+  private def scheduled_retrieve(ts: List[Task], current_time: Date): List[Task] = {
     // 1. eagerly get all HIT assignments
     // 2. pair HIT Assignments with tasks
     // 3. update tasks with answers
@@ -366,8 +366,15 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       val updated_hss = _state.getHITIDsForBatch(batch_key).map { hit_id =>
         val hit_state = _state.getHITState(hit_id)
 
-        // get all of the assignments for this HIT
-        val assns = backend.getAllAssignmentsForHIT(hit_state.HITId)
+        // get all of the assignments for this HIT that
+        // occurred before current_time (this filters out
+        // mock responses that occur in the future).
+        val assns = backend
+          .getAllAssignmentsForHIT(hit_state.HITId)
+          .filter { assn =>
+            val ct = Utilities.dateToCalendar(current_time)
+            assn.getSubmitTime.before(ct)
+          }
 
         // pair with the HIT's tasks and return new HITState
         hit_state.HITId -> hit_state.matchAssignments(assns)

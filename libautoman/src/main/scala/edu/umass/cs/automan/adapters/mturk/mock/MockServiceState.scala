@@ -7,7 +7,7 @@ import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.util.Utilities
 
 case class MockServiceState(budget: java.math.BigDecimal,
-                            questions_by_question_id: Map[UUID,Question],
+                            question_by_question_id: Map[UUID,Question],
                             hit_type_by_hit_type_id: Map[String,MockHITType],
                             hits_by_question_id: Map[UUID, List[HIT]],
                             answers_by_assignment_id: Map[UUID,MockResponse],
@@ -27,7 +27,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
     // return a new MockServiceState
     MockServiceState(
       state2.budget,
-      state2.questions_by_question_id,
+      state2.question_by_question_id,
       state2.hit_type_by_hit_type_id,
       state2.hits_by_question_id + (question_id -> hitlist),
       state2.answers_by_assignment_id,
@@ -55,7 +55,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
   def addHITType(hit_type: MockHITType) : MockServiceState = {
     MockServiceState(
       budget,
-      questions_by_question_id,
+      question_by_question_id,
       hit_type_by_hit_type_id + (hit_type.id.toString -> hit_type),
       hits_by_question_id,
       answers_by_assignment_id,
@@ -67,7 +67,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
     assert (delta.compareTo(budget) != 1)
     MockServiceState(
       budget.add(delta),
-      questions_by_question_id,
+      question_by_question_id,
       hit_type_by_hit_type_id,
       hits_by_question_id,
       answers_by_assignment_id,
@@ -123,7 +123,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
 
     MockServiceState(
       state2.budget,
-      state2.questions_by_question_id,
+      state2.question_by_question_id,
       state2.hit_type_by_hit_type_id,
       state2.hits_by_question_id + (question_id -> hitlist),
       state2.answers_by_assignment_id,
@@ -138,7 +138,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
   def addQuestion(question: Question) : MockServiceState = {
     MockServiceState(
       budget,
-      questions_by_question_id + (question.id -> question),
+      question_by_question_id + (question.id -> question),
       hit_type_by_hit_type_id,
       hits_by_question_id,
       answers_by_assignment_id,
@@ -153,7 +153,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
     val a_by_q = assignment_ids_by_question_id + (question_id -> assignments.map(_._1).toList)
     MockServiceState(
       budget,
-      questions_by_question_id,
+      question_by_question_id,
       hit_type_by_hit_type_id,
       hits_by_question_id,
       answers,
@@ -164,7 +164,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
   def updateAssignmentStatusMap(am: Map[UUID,(AssignmentStatus.Value,Option[String])]) : MockServiceState = {
     MockServiceState(
       budget,
-      questions_by_question_id,
+      question_by_question_id,
       hit_type_by_hit_type_id,
       hits_by_question_id,
       answers_by_assignment_id,
@@ -178,7 +178,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
   def updateAssignmentStatus(assignmentId: UUID, hit_id_opt: Option[String], new_status: AssignmentStatus.Value) : MockServiceState = {
     MockServiceState(
       budget,
-      questions_by_question_id,
+      question_by_question_id,
       hit_type_by_hit_type_id,
       hits_by_question_id,
       answers_by_assignment_id,

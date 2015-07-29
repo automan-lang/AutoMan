@@ -1,6 +1,6 @@
 package edu.umass.cs.automan.adapters.mturk.connectionpool
 
-import java.util.UUID
+import java.util.{Date, UUID}
 
 import com.amazonaws.mturk.requester.{Assignment, HIT}
 import edu.umass.cs.automan.core.scheduler.Task

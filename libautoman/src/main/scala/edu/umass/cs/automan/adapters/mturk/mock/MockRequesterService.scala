@@ -6,9 +6,10 @@ import com.amazonaws.mturk.requester._
 import com.amazonaws.mturk.service.axis.RequesterService
 import com.amazonaws.mturk.util.ClientConfig
 import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
+import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.util._
-import java.util.{Date, UUID}
+import java.util.{Calendar, Date, UUID}
 
 /**
  * An object used to simulate a Mechanical Turk backend. Can be used by
@@ -91,7 +92,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
   override def getAllAssignmentsForHIT(hitId: String): Array[Assignment] = synchronized {
     val question_id = UUID.fromString(_state.getHITforHITId(hitId).getRequesterAnnotation)
 
-    val question = _state.questions_by_question_id(question_id).asInstanceOf[MTurkQuestion]
+    val question = _state.question_by_question_id(question_id).asInstanceOf[MTurkQuestion]
 
     val assn_ids = _state.assignment_status_by_assignment_id.filter { case (assn_id, (assn_stat, hit_id_opt)) =>
         hit_id_opt match {
@@ -101,7 +102,9 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
     }.map(_._1)
 
     assn_ids.map { assn_id =>
-      new Assignment(
+      val mock_response = _state.answers_by_assignment_id(assn_id)
+
+      newAssignment(
         null,
         assn_id.toString,
         UUID.randomUUID().toString,
@@ -109,14 +112,49 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
         com.amazonaws.mturk.requester.AssignmentStatus.Submitted,
         Utilities.calInSeconds(Utilities.nowCal(), 16400),
         null,
-        Utilities.nowCal(),
+        mock_response.responseTime,
         null,
         null,
         null,
-        _state.answers_by_assignment_id(assn_id).toXML,
+        mock_response.toXML,
         null
       )
     }.toArray
+  }
+
+  /**
+   * This method exists only because the SDK has meaningless
+   * constructor parameter names and this one does not.
+   * @return Assignment object.
+   */
+  private def newAssignment(request: Request,
+                             assignmentId: String,
+                             workerId: String,
+                             HITId: String,
+                             assignmentStatus: AssignmentStatus,
+                             autoApprovalTime: Calendar,
+                             acceptTime: Calendar,
+                             submitTime: Calendar,
+                             approvalTime: Calendar,
+                             rejectionTime: Calendar,
+                             deadline: Calendar,
+                             answer: String,
+                             requesterFeedback: String) : Assignment = {
+    new Assignment(
+      request,
+      assignmentId,
+      workerId,
+      HITId,
+      assignmentStatus,
+      autoApprovalTime,
+      acceptTime,
+      submitTime,
+      approvalTime,
+      rejectionTime,
+      deadline,
+      answer,
+      requesterFeedback
+    )
   }
 
   override def rejectQualificationRequest(qualificationRequestId: String,

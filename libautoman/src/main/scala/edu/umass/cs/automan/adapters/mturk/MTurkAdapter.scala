@@ -103,9 +103,9 @@ class MTurkAdapter extends AutomanAdapter {
     assert(t.state == SchedulerState.ANSWERED)
     run_if_initialized((p: Pool) => p.reject(t, rejection_response))
   }
-  protected[automan] def retrieve(ts: List[Task]) = {
+  protected[automan] def retrieve(ts: List[Task], current_time: Date) = {
     assert(ts.forall(_.state == SchedulerState.RUNNING))
-    run_if_initialized((p: Pool) => p.retrieve(ts))
+    run_if_initialized((p: Pool) => p.retrieve(ts, current_time))
   }
   override protected[automan] def question_startup_hook(q: Question, t: Date): Unit = {
     super.question_startup_hook(q, t)
