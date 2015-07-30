@@ -34,6 +34,7 @@ class Scheduler(val question: Question,
                    val memo: Memo) {
   // save startup time
   val init_time = new Date()
+  val use_virt = question.mock_answers.nonEmpty
 
   // init policies
   question.init_validation_policy()
@@ -97,7 +98,9 @@ class Scheduler(val question: Question,
         // post more tasks as needed
         val (__new_tasks,__this_round) = post_as_needed(__dedup_tasks, _round, backend, question, __suffered_timeout, __blacklist)
         // update virtual_ticks with new timeouts (in milliseconds)
-        _virtual_times ++= __new_tasks.map(_.timeout_in_s).distinct.map(_.toLong * 1000)
+        if (use_virt) {
+          _virtual_times ++= __new_tasks.map(_.timeout_in_s).distinct.map(_.toLong * 1000)
+        }
 
         // Update memo state and yield to let other threads get some work done
         memo_and_yield(__dedup_tasks ::: __new_tasks, memo)
@@ -121,17 +124,17 @@ class Scheduler(val question: Question,
         // update state
         _all_tasks = __all_tasks
         _round = __this_round
-        _current_time = if (_virtual_times.nonEmpty) {
-          // pull from the queue for simulations
-          val t = _virtual_times.dequeue()
-          DebugLog("Advancing scheduler clock to " + t + " ms using virtual time.", LogLevel.INFO, LogType.SCHEDULER, question.id)
+        _current_time = if (use_virt) {
+          val t = if (_virtual_times.nonEmpty) {
+            // pull from the queue for simulations
+            _virtual_times.dequeue()
+          } else {
+            _current_time + 1000L
+          }
+          DebugLog("Advancing virtual clock to " + t + " ms.", LogLevel.INFO, LogType.SCHEDULER, question.id)
           t
         } else {
-          // otherwise advance by 1 second or actual elapsed time,
-          // whichever is bigger
-          val t = math.max(_current_time + 1000L, realTick)
-          DebugLog("Advancing scheduler clock to " + t + " ms.", LogLevel.INFO, LogType.SCHEDULER, question.id)
-          t
+          realTick
         }
       }
 
