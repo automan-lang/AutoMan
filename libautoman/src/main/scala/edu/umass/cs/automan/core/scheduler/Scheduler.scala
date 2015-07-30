@@ -84,8 +84,7 @@ class Scheduler(val question: Question,
 
     var _timeout_occurred = false
     var _all_tasks = tasks
-    var _round = 0
-    var _done = _vp.is_done(_all_tasks, 1) // check for restored memo tasks
+    var _done = _vp.is_done(_all_tasks) // check for restored memo tasks
 
     val answer = try {
       while(!_done) {
@@ -96,7 +95,7 @@ class Scheduler(val question: Question,
         // filter duplicate work
         val __dedup_tasks = _vp.mark_duplicates(__tasks)
         // post more tasks as needed
-        val (__new_tasks,__this_round) = post_as_needed(__dedup_tasks, _round, backend, question, __suffered_timeout, __blacklist)
+        val __new_tasks = post_as_needed(__dedup_tasks, backend, question, __suffered_timeout, __blacklist)
         // update virtual_ticks with new timeouts (in milliseconds)
         if (use_virt) {
           _virtual_times ++= __new_tasks.map(_.timeout_in_s).distinct.map(_.toLong * 1000)
@@ -119,11 +118,10 @@ class Scheduler(val question: Question,
         memo.save(question, __all_tasks)
 
         // continue?
-        _done = _vp.is_done(__all_tasks, __this_round)
+        _done = _vp.is_done(__all_tasks)
 
         // update state
         _all_tasks = __all_tasks
-        _round = __this_round
         _current_time = if (use_virt) {
           val t = if (_virtual_times.nonEmpty) {
             // pull from the queue for simulations
@@ -182,37 +180,38 @@ class Scheduler(val question: Question,
   /**
    * Post new tasks if needed. Returns only newly-created tasks.
    * @param tasks The complete list of tasks.
-   * @param round How many QC rounds performed so far
    * @param question Question data.
    * @param suffered_timeout True if any tasks suffered a timeout on the last iteration.
    * @return A list of newly-created tasks.
    */
   def post_as_needed(tasks: List[Task],
-                     round: Int,
                      backend: AutomanAdapter,
                      question: Question,
                      suffered_timeout: Boolean,
-                     blacklist: List[String]) : (List[Task], Int) = {
+                     blacklist: List[String]) : List[Task] = {
     val s = question.validation_policy_instance
 
     // are any tasks still running?
     if (tasks.count(_.state == SchedulerState.RUNNING) == 0) {
       // no, so post more
-      val new_tasks = s.spawn(tasks, round + 1, suffered_timeout)
+      // compute set of new tasks
+      val new_tasks = s.spawn(tasks, suffered_timeout)
       assert(spawn_invariant(new_tasks))
       // can we afford these?
       val cost = total_cost(tasks ::: new_tasks)
       if (question.budget < cost) {
+        // no
         DebugLog("Over budget. Need: " + cost.toString() + ", have: " + question.budget.toString(), LogLevel.WARN, LogType.SCHEDULER, question.id)
         throw new OverBudgetException(cost, question.budget)
       } else {
         // yes, so post and return all posted tasks
         val posted = backend.post(new_tasks, blacklist)
         DebugLog("Posting " + posted.size + " tasks to backend.", LogLevel.INFO, LogType.SCHEDULER, question.id)
-        (posted, round + 1)
+        posted
       }
     } else {
-      (List.empty, round)
+      // do nothing for now
+      List.empty
     }
   }
 

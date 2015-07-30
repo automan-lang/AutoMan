@@ -38,10 +38,9 @@ abstract class ValidationPolicy(question: Question) {
   /**
    * Returns true if the strategy has enough data to stop scheduling work.
    * @param tasks The complete list of scheduled tasks.
-   * @param round The number of times tasks were scheduled.
    * @return
    */
-  def is_done(tasks: List[Task], round: Int) : Boolean
+  def is_done(tasks: List[Task]) : Boolean
 
   /**
    * Returns a string explaining why the worker's answer was not accepted.
@@ -75,7 +74,7 @@ abstract class ValidationPolicy(question: Question) {
    * @param suffered_timeout True if any of the latest batch of tasks suffered a timeout.
    * @return A list of new tasks to schedule on the backend.
    */
-  def spawn(tasks: List[Task], round: Int, suffered_timeout: Boolean): List[Task]
+  def spawn(tasks: List[Task], suffered_timeout: Boolean): List[Task]
 
   def tasks_to_accept(tasks: List[Task]): List[Task]
 
