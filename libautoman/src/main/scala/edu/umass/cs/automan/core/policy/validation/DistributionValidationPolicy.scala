@@ -7,7 +7,7 @@ import edu.umass.cs.automan.core.scheduler._
 abstract class DistributionValidationPolicy(question: DistributionQuestion)
   extends ValidationPolicy(question) {
 
-  def is_done(tasks: List[Task], round: Int) = {
+  def is_done(tasks: List[Task]) = {
     val done = completed_workerunique_tasks(tasks).size
     done >= question.sample_size
   }

@@ -48,19 +48,32 @@ class DefaultScalarPolicy(question: ScalarQuestion)
     if (valid_ts.size == 0) return 0
     valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
   }
-  def spawn(tasks: List[Task], round: Int, had_timeout: Boolean): List[Task] = {
+  def spawn(tasks: List[Task], had_timeout: Boolean): List[Task] = {
+    // determine current round
+    val round = if (tasks.nonEmpty) {
+      tasks.map(_.round).max
+    } else { 0 }
+
+    // determine next round
+    val nextRound = if (had_timeout) { round } else { round + 1 }
+
     // determine duration
-    val worker_timeout_in_s = question._timeout_policy_instance.calculateWorkerTimeout(tasks, round)
+    val worker_timeout_in_s = question._timeout_policy_instance.calculateWorkerTimeout(tasks, nextRound)
     val task_timeout_in_s = question._timeout_policy_instance.calculateTaskTimeout(worker_timeout_in_s)
 
     // determine reward
-    val reward = question._price_policy_instance.calculateReward(tasks, round, had_timeout)
+    val reward = question._price_policy_instance.calculateReward(tasks, nextRound, had_timeout)
 
-    // num to spawn (don't spawn more if any are running)
-    val num_to_spawn = if (tasks.count(_.state == SchedulerState.RUNNING) == 0) {
-      num_to_run(tasks, round, reward)
+    // num to spawn
+    val num_to_spawn = if (had_timeout) {
+      tasks.count { t => t.round == round && t.state == SchedulerState.TIMEOUT }
     } else {
-      return List[Task]() // Be patient!
+      // (don't spawn more if any are running)
+      if (tasks.count(_.state == SchedulerState.RUNNING) == 0) {
+        num_to_run(tasks, nextRound, reward)
+      } else {
+        return List[Task]() // Be patient!
+      }
     }
 
     DebugLog("You should spawn " + num_to_spawn +
@@ -75,7 +88,7 @@ class DefaultScalarPolicy(question: ScalarQuestion)
       val t = new Task(
         UUID.randomUUID(),
         question,
-        round,
+        nextRound,
         task_timeout_in_s,
         worker_timeout_in_s,
         reward,

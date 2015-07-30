@@ -15,7 +15,10 @@ class DefaultDistributionPolicy(question: DistributionQuestion)
     Math.max(question.sample_size - outstanding_tasks(tasks).size, 0)
   }
 
-  def spawn(tasks: List[Task], round: Int, had_timeout: Boolean): List[Task] = {
+  def spawn(tasks: List[Task], had_timeout: Boolean): List[Task] = {
+    // determine current round
+    val round = if (tasks.nonEmpty) { tasks.map(_.round).max } else { 1 }
+
     // num to spawn (don't spawn more if any are running)
     val num_to_spawn = if (tasks.count(_.state == SchedulerState.RUNNING) == 0) {
       num_to_run(tasks)
