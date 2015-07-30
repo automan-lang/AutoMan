@@ -27,7 +27,7 @@ class MLEPricePolicy(question: Question) extends PricePolicy(question) {
         // use the MLE for the Bernoulli distribution (the mean) to
         // find the probability that a task will remain available (p_a)
         val p_a: BigDecimal = BigDecimal(unanswered.size) / BigDecimal(last_round.size)
-        1.0 / p_a * current_reward
+        (1.0 / p_a * current_reward).setScale(2, math.BigDecimal.RoundingMode.FLOOR)
       } else {
         current_reward
       }
