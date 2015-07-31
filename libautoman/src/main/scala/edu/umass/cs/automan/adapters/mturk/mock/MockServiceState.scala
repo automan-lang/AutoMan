@@ -52,6 +52,9 @@ case class MockServiceState(budget: java.math.BigDecimal,
         state.updateAssignmentStatus(a_id, Some(hit_id), AssignmentStatus.ANSWERED)
     }
   }
+  def unreserveAssignment(assn_id: UUID) : MockServiceState = {
+    updateAssignmentStatus(assn_id, AssignmentStatus.UNANSWERED)
+  }
   def addHITType(hit_type: MockHITType) : MockServiceState = {
     MockServiceState(
       budget,
@@ -195,6 +198,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
       case AssignmentStatus.APPROVED => assert(current_status == AssignmentStatus.ANSWERED)
       case AssignmentStatus.REJECTED => assert(current_status == AssignmentStatus.ANSWERED)
       case AssignmentStatus.ANSWERED => assert(current_status == AssignmentStatus.UNANSWERED)
+      case AssignmentStatus.UNANSWERED => assert(current_status == AssignmentStatus.ANSWERED) // for cancellation
       case _ => assert(false)
     }
 

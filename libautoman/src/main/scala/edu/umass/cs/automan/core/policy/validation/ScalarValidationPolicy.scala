@@ -93,6 +93,7 @@ abstract class ScalarValidationPolicy(question: ScalarQuestion)
   def not_final(task: Task) : Boolean = {
     task.state != SchedulerState.ACCEPTED &&
     task.state != SchedulerState.REJECTED &&
-    task.state != SchedulerState.CANCELLED
+    task.state != SchedulerState.CANCELLED &&
+    task.state != SchedulerState.TIMEOUT
   }
 }

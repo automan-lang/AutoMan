@@ -5,6 +5,7 @@ import java.util.concurrent.PriorityBlockingQueue
 import java.util.{Date, UUID}
 import com.amazonaws.mturk.requester._
 import com.amazonaws.mturk.service.axis.RequesterService
+import edu.umass.cs.automan.adapters.mturk.mock.MockRequesterService
 import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
 import edu.umass.cs.automan.adapters.mturk.util.Key
 import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
@@ -12,7 +13,7 @@ import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 import edu.umass.cs.automan.core.util.{Utilities, Stopwatch}
 
-class Pool(backend: RequesterService, sleep_ms: Int) {
+class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRequesterService]) {
   type HITID = String
   type BatchKey = (String,BigDecimal,Int)   // (group_id, cost, timeout); uniquely identifies a batch
   type HITKey = (BatchKey, String)          // (BatchKey, memo_hash); uniquely identifies a HIT
@@ -172,6 +173,18 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
     if (!hit_state.isCancelled) {
       backend.forceExpireHIT(hit_state.HITId)
       _state = _state.updateHITStates(hit_id, hit_state.cancel())
+    }
+
+    // ugly but necessary hack:
+    // if we're running in mock mode, we need to tell the
+    // backend to unreserve the assignment paired with this task
+    mock_service match {
+      case Some(ms) =>
+        _state.getAssignmentOption(t) match {
+          case Some(assn) => ms.freeAssignment(assn)
+          case None => ()
+        }
+      case None => ()
     }
 
     t.copy_as_cancelled()
@@ -366,15 +379,12 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       val updated_hss = _state.getHITIDsForBatch(batch_key).map { hit_id =>
         val hit_state = _state.getHITState(hit_id)
 
-        // get all of the assignments for this HIT that
-        // occurred before current_time (this filters out
-        // mock responses that occur in the future).
-        val assns = backend
-          .getAllAssignmentsForHIT(hit_state.HITId)
-          .filter { assn =>
-            val ct = Utilities.dateToCalendar(current_time)
-            assn.getSubmitTime.before(ct)
-          }
+        // get all of the assignments for this HIT
+        val assns = backend.getAllAssignmentsForHIT(hit_state.HITId)
+//          .filter { assn =>
+//            val ct = Utilities.dateToCalendar(current_time)
+//            assn.getSubmitTime.before(ct)
+//          }
 
         // pair with the HIT's tasks and return new HITState
         hit_state.HITId -> hit_state.matchAssignments(assns)
@@ -383,13 +393,15 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
       // update HITState map all at once
       _state = _state.updateHITStates(updated_hss)
 
-      // return answered tasks
-      answer_tasks(bts, batch_key)
+      // return answered tasks, updating tasks only
+      // with those events that do not happen in the future
+      answer_tasks(bts, batch_key, current_time)
     }.flatten.toList
   }
 
-  private def answer_tasks(ts: List[Task], batch_key: BatchKey) : List[Task] = {
+  private def answer_tasks(ts: List[Task], batch_key: BatchKey, current_time: Date) : List[Task] = {
     val group_id = batch_key._1
+    val ct = Utilities.dateToCalendar(current_time)
 
     // group by HIT
     ts.groupBy(Key.HITKeyForBatch(batch_key,_)).map { case (hit_key, hts) =>
@@ -404,7 +416,8 @@ class Pool(backend: RequesterService, sleep_ms: Int) {
           // when a task is paired with an answer
           case Some(assignment) =>
             // only update task object if the task isn't already answered
-            if (t.state != SchedulerState.ANSWERED) {
+            // and if the answer actually happens in the past (ugly hack for mocks)
+            if (t.state != SchedulerState.ANSWERED && !assignment.getSubmitTime.after(ct)) {
               // get worker_id
               val worker_id = assignment.getWorkerId
 
