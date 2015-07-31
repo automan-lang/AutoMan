@@ -43,7 +43,7 @@ class TimeoutTest extends FlatSpec with Matchers {
         case Answer(value, cost, conf) =>
           println("Answer: '" + value + "', cost: '" + cost + "', confidence: " + conf)
           (value == 'spongebob) should be (true)
-          cost should be (BigDecimal(0.30))
+          cost should be (BigDecimal(0.24))
           (conf > 0.95) should be (true)
         case _ =>
           fail()

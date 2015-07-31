@@ -248,4 +248,8 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
   override def approveAssignment(assignmentId: String, requesterFeedback: String): Unit = {
     _state = _state.updateAssignmentStatus(UUID.fromString(assignmentId), AssignmentStatus.APPROVED)
   }
+
+  def freeAssignment(assignment: Assignment) : Unit = {
+    _state = _state.unreserveAssignment(UUID.fromString(assignment.getAssignmentId))
+  }
 }
