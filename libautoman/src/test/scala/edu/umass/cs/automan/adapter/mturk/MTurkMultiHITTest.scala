@@ -6,9 +6,9 @@ import edu.umass.cs.automan.test._
 import edu.umass.cs.automan.adapters.mturk._
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 
-class TimedMTurkCheckTest extends FlatSpec with Matchers {
+class MTurkMultiHITTest extends FlatSpec with Matchers {
 
-  "A timed checkbox program" should "work" in {
+  "A radio button program" should "work" in {
     val confidence = 0.95
 
     val a = MTurkAdapter { mt =>
@@ -16,13 +16,16 @@ class TimedMTurkCheckTest extends FlatSpec with Matchers {
       mt.secret_access_key = UUID.randomUUID().toString
       mt.use_mock = MockSetup(budget = 8.00)
       mt.logging = LogConfig.NO_LOGGING
+      mt.poll_interval = 2
     }
 
     automan(a) {
-      def which_ones() = a.CheckboxQuestion { q =>
+      def which_one() = a.RadioButtonQuestion { q =>
         q.confidence = confidence
         q.budget = 8.00
-        q.text = "Which characters are not Oscar, Kermit, or Cookie Monster?"
+        q.initial_worker_timeout_in_s = 30
+        q.question_timeout_multiplier = 1
+        q.text = "Which one of these does not belong?"
         q.options = List(
           a.Option('oscar, "Oscar the Grouch"),
           a.Option('kermit, "Kermit the Frog"),
@@ -30,22 +33,19 @@ class TimedMTurkCheckTest extends FlatSpec with Matchers {
           a.Option('cookie, "Cookie Monster"),
           a.Option('count, "The Count")
         )
-        q.mock_answers = makeTimedMocks(
-          List(
-            (Set('spongebob,'count),30),
-            (Set('spongebob),31),
-            (Set('count,'spongebob),32),
-            (Set('count,'spongebob),33)
-          )
-        )
+        q.mock_answers =
+          makeMocksAt(List('spongebob, 'kermit), 0) :::
+          makeMocksAt(List('spongebob, 'spongebob, 'spongebob), 45)
       }
 
-      which_ones().answer match {
-        case Answer(value, _, conf) =>
-          println("Answer: '" + value + "', confidence: " + conf)
-          (value == Set('spongebob,'count)) should be (true)
+      which_one().answer match {
+        case Answer(value, cost, conf) =>
+          println("Answer: '" + value + "', confidence: " + conf + ", cost: $" + cost + ", # HITs: " + a.getAllHITs.length)
+          (value == 'spongebob) should be (true)
           (conf >= confidence) should be (true)
-        case _ =>
+          (cost == BigDecimal(0.24)) should be (true)
+          a.getAllHITs.length should be (2)
+        case LowConfidenceAnswer(value, cost, conf) =>
           fail()
       }
     }
