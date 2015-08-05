@@ -381,10 +381,6 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
 
         // get all of the assignments for this HIT
         val assns = backend.getAllAssignmentsForHIT(hit_state.HITId)
-//          .filter { assn =>
-//            val ct = Utilities.dateToCalendar(current_time)
-//            assn.getSubmitTime.before(ct)
-//          }
 
         // pair with the HIT's tasks and return new HITState
         hit_state.HITId -> hit_state.matchAssignments(assns)

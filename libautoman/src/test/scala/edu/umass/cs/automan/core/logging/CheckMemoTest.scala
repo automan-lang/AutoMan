@@ -34,7 +34,7 @@ class CheckMemoTest extends FlatSpec with Matchers {
           a.Option('cookie, "Cookie Monster"),
           a.Option('count, "The Count")
         )
-        q.mock_answers = makeMocksNow(List(Set('spongebob,'count),Set('spongebob),Set('count,'spongebob),Set('count,'spongebob)))
+        q.mock_answers = makeMocksAt(List(Set('spongebob,'count),Set('spongebob),Set('count,'spongebob),Set('count,'spongebob)), 0)
       }
 
       def which_one2(text: String) = a.CheckboxQuestion { q =>

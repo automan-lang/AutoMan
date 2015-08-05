@@ -6,7 +6,7 @@ import edu.umass.cs.automan.test._
 import edu.umass.cs.automan.adapters.mturk._
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 
-class MTurkRadioTest extends FlatSpec with Matchers {
+class MTurkExtendHITTest extends FlatSpec with Matchers {
 
   "A radio button program" should "work" in {
     val confidence = 0.95
@@ -16,6 +16,7 @@ class MTurkRadioTest extends FlatSpec with Matchers {
       mt.secret_access_key = UUID.randomUUID().toString
       mt.use_mock = MockSetup(budget = 8.00)
       mt.logging = LogConfig.NO_LOGGING
+      mt.poll_interval = 2
     }
 
     automan(a) {
@@ -30,14 +31,28 @@ class MTurkRadioTest extends FlatSpec with Matchers {
           a.Option('cookie, "Cookie Monster"),
           a.Option('count, "The Count")
         )
-        q.mock_answers = makeMocks('spongebob,'spongebob,'spongebob,'spongebob,'spongebob,'spongebob)
+        q.mock_answers = makeMocks(
+          'spongebob,
+          'kermit,
+          'spongebob,
+          'kermit,
+          'spongebob,
+          'kermit,
+          'spongebob,
+          'kermit,
+          'spongebob,
+          'spongebob,
+          'spongebob
+        )
       }
 
       which_one().answer match {
-        case Answer(value, _, conf) =>
-          println("Answer: '" + value + "', confidence: " + conf)
+        case Answer(value, cost, conf) =>
+          println("Answer: '" + value + "', confidence: " + conf + ", cost: $" + cost + ", # HITs: " + a.getAllHITs.length)
           (value == 'spongebob) should be (true)
           (conf >= confidence) should be (true)
+          (cost == BigDecimal(0.42)) should be (true)
+          a.getAllHITs.length should be (1)
         case LowConfidenceAnswer(value, cost, conf) =>
           fail()
       }

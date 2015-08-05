@@ -42,7 +42,7 @@ class RadioDistribMemoTest extends FlatSpec with Matchers {
           a.Option('cookie, "Cookie Monster"),
           a.Option('count, "The Count")
         )
-        q.mock_answers = makeMocksNow(mock_answers.toList)
+        q.mock_answers = makeMocksAt(mock_answers.toList, 0)
       }
 
       def which_one2(text: String) = a.RadioButtonDistributionQuestion { q =>

@@ -35,7 +35,7 @@ class FreeTextDistribMemoTest extends FlatSpec with Matchers {
         q.sample_size = sample_size
         q.budget = 8.00
         q.text = text
-        q.mock_answers = makeMocksNow(mock_answers.toList)
+        q.mock_answers = makeMocksAt(mock_answers.toList, 0)
       }
 
       def which_one2(text: String) = a.FreeTextDistributionQuestion { q =>

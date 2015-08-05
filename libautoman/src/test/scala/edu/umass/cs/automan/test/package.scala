@@ -26,11 +26,22 @@ package object test {
     )
   }
 
-  def makeMocksNow[T](answers: List[T]) : List[MockAnswer[T]] = {
-    answers.map(MockAnswer(_, 0))
+  def makeMocks[T](answers: T*) : List[MockAnswer[T]] = {
+    makeMocks(answers.toList)
   }
 
-  def makeMocks[T](answer_time_pairs: List[(T,Int)]) : List[MockAnswer[T]] = {
+  def makeMocks[T](answers: List[T]) : List[MockAnswer[T]] = {
+    val (_, mocks) = answers.foldLeft(0,List[MockAnswer[T]]()){
+      case ((t,xs),x) => (t+1, MockAnswer(x, t) :: xs)
+    }
+    mocks
+  }
+
+  def makeMocksAt[T](answers: List[T], time: Long) : List[MockAnswer[T]] = {
+    answers.map(MockAnswer(_,time))
+  }
+
+  def makeTimedMocks[T](answer_time_pairs: List[(T,Int)]) : List[MockAnswer[T]] = {
     // make MockAnswers, converting times in seconds to times in milliseconds
     answer_time_pairs.map { case (a,t) => MockAnswer(a,t * 1000) }
   }

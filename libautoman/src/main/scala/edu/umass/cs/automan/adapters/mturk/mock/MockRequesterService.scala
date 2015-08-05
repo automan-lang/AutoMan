@@ -21,7 +21,7 @@ import java.util.{Calendar, Date, UUID}
  * @param config an MTurk SDK ClientConfig object; not actually used.
  */
 private[mturk] class MockRequesterService(initial_state: MockServiceState, config: ClientConfig) extends RequesterService(config) {
-  var _state = initial_state
+  private var _state = initial_state
 
   override def forceExpireHIT(hitId: String): Unit = synchronized {
     // NOP
@@ -119,7 +119,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
         mock_response.toXML,
         null
       )
-    }.toArray
+    }.toArray.sortBy(_.getSubmitTime)
   }
 
   /**
@@ -252,4 +252,6 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
   def freeAssignment(assignment: Assignment) : Unit = {
     _state = _state.unreserveAssignment(UUID.fromString(assignment.getAssignmentId))
   }
+
+  override def searchAllHITs(): Array[HIT] = _state.hits_by_question_id.flatMap(_._2).toArray
 }

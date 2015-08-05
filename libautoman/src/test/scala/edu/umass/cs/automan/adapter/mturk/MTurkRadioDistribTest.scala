@@ -37,7 +37,7 @@ class MTurkRadioDistribTest extends FlatSpec with Matchers {
           a.Option('cookie, "Cookie Monster"),
           a.Option('count, "The Count")
         )
-        q.mock_answers = makeMocksNow(mock_answers.toList)
+        q.mock_answers = makeMocks(mock_answers.toList)
       }
 
       which_one().answer match {

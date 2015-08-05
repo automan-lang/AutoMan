@@ -25,7 +25,7 @@ class MTurkFreeTextTest extends FlatSpec with Matchers {
         q.budget = 8.00
         q.text = "Which 4-letter metasyntactic variable starts with 'q'?"
         q.pattern = "AAAA"
-        q.mock_answers = makeMocksNow(List("quux","foo","bar","norf","quux","quux"))
+        q.mock_answers = makeMocks(List("quux","foo","bar","norf","quux","quux"))
       }
 
       which_one().answer match {

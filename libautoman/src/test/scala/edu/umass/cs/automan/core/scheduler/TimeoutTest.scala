@@ -30,7 +30,7 @@ class TimeoutTest extends FlatSpec with Matchers {
           a.Option('cookie, "Cookie Monster"),
           a.Option('count, "The Count")
         )
-        q.mock_answers = makeMocks(
+        q.mock_answers = makeTimedMocks(
           List(
             ('spongebob, 0),
             ('spongebob, 45),

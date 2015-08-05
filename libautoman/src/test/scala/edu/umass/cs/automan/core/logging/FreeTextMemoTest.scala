@@ -16,7 +16,6 @@ class FreeTextMemoTest extends FlatSpec with Matchers {
       mt.secret_access_key = UUID.randomUUID().toString
       mt.use_mock = MockSetup(budget = 8.00)
       mt.logging = LogConfig.TRACE_MEMOIZE_VERBOSE
-      mt.poll_interval = 2
     }
 
     // clear, just to be safe
@@ -28,7 +27,7 @@ class FreeTextMemoTest extends FlatSpec with Matchers {
         q.budget = 8.00
         q.text = text
         q.pattern = "AAAA"
-        q.mock_answers = makeMocksNow(List("quux","foo","bar","norf","quux","quux"))
+        q.mock_answers = makeMocksAt(List("quux","foo","bar","norf","quux","quux"), 0)
       }
 
       def which_one2(text: String) = a.FreeTextQuestion { q =>

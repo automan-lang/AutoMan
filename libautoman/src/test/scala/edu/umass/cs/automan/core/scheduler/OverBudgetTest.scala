@@ -27,7 +27,7 @@ class OverBudgetTest extends FlatSpec with Matchers {
           a.Option('cookie, "Cookie Monster"),
           a.Option('count, "The Count")
         )
-        q.mock_answers = makeMocksNow(List('spongebob,'spongebob,'spongebob,'spongebob))
+        q.mock_answers = makeMocks(List('spongebob,'spongebob,'spongebob,'spongebob))
       }
 
       which_one().answer match {

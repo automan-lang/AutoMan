@@ -43,7 +43,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
       } else {
         None
       }
-    }.take(num)
+    }.sortBy(answers_by_assignment_id(_).responseTime).take(num)
 
     assert(reserved_ids.size == num)
 

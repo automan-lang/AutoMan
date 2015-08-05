@@ -31,7 +31,7 @@ class TimedMTurkCheckTest extends FlatSpec with Matchers {
           a.Option('cookie, "Cookie Monster"),
           a.Option('count, "The Count")
         )
-        q.mock_answers = makeMocks(
+        q.mock_answers = makeTimedMocks(
           List(
             (Set('spongebob,'count),30),
             (Set('spongebob),31),

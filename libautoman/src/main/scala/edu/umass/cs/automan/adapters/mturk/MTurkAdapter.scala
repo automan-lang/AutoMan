@@ -1,6 +1,7 @@
 package edu.umass.cs.automan.adapters.mturk
 
 import java.util.{Date, Locale}
+import com.amazonaws.mturk.requester.HIT
 import com.amazonaws.mturk.util.ClientConfig
 import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.adapters.mturk.connectionpool.Pool
@@ -187,5 +188,11 @@ class MTurkAdapter extends AutomanAdapter {
   }
   override protected def MemoDBFactory() : MemoDB = {
     new MTMemo(_log_config)
+  }
+  protected[automan] def getAllHITs : Array[HIT] = {
+    _service match {
+      case Some(rs) => rs.searchAllHITs()
+      case None => Array[HIT]()
+    }
   }
 }
