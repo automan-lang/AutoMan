@@ -429,6 +429,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
               val ans = assignment.getAnswer
               val xml = scala.xml.XML.loadString(ans)
               val answer = t.question.asInstanceOf[MTurkQuestion].fromXML(xml)
+//              val answer = t.question.before_filter(prelim_answer).asInstanceOf[t.question.A]
 
               // it is possible, although unlikely, that a worker could submit
               // work twice for the same HIT, if the following scenario occurs:

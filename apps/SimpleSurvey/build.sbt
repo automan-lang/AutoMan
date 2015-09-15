@@ -8,6 +8,10 @@ version := "0.1"
 
 organization := "edu.umass.cs"
 
-scalaVersion := Common.ScalaVersion
+scalaVersion := "2.11.4"
 
 exportJars := true
+
+libraryDependencies ++= Seq(
+  "edu.umass.cs" %% "automan" % "0.5-SNAPSHOT"
+)

@@ -21,6 +21,7 @@ abstract class Question {
 
   class QuestionStillExecutingException extends Exception
 
+  protected var _before_filter: A => A = (a: A) => a
   protected var _budget: Option[BigDecimal] = None
   protected var _id: UUID = UUID.randomUUID()
   protected var _image: Option[File] = None
@@ -46,6 +47,8 @@ abstract class Question {
   protected[automan] var _validation_policy: Option[Class[VP]] = None
   protected[automan] var _validation_policy_instance: VP = _
 
+  def before_filter_=(f: A => A) { _before_filter = f }
+  def before_filter: A => A = _before_filter
   def blacklist_worker(worker_id: String) { _blacklisted_workers = worker_id :: _blacklisted_workers }
   def blacklisted_workers = _blacklisted_workers
   def budget: BigDecimal = _budget match { case Some(b) => b; case None => 1.00 }

@@ -6,7 +6,7 @@ version := "0.5-SNAPSHOT"
 
 organization := "edu.umass.cs"
 
-scalaVersion := Common.ScalaVersion
+scalaVersion := "2.11.4"
 
 exportJars := true
 
@@ -37,8 +37,6 @@ libraryDependencies ++= {
     "org.specs2"                 %%  "specs2-core"          % "2.3.11" % "test",
     "com.typesafe.slick"         %% "slick"                 % "2.1.0",
     "org.slf4j"                  % "slf4j-nop"              % "1.6.4"
-//    "org.slf4j"                  % "slf4j-api"              % "1.7.5",
-//    "org.slf4j"                  % "slf4j-simple"           % "1.7.5"
   )
 }
 

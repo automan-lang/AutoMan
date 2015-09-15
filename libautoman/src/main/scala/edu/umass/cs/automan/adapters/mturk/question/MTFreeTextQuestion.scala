@@ -8,9 +8,7 @@ import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
 
 class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
-  override type A = String
-
-  protected var _before_filter: Symbol => Symbol = (s) => s
+  override type A = FreeTextQuestion#A
 
   // public API
   def memo_hash: String = {
