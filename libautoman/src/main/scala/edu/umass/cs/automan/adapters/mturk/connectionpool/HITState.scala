@@ -3,6 +3,7 @@ package edu.umass.cs.automan.adapters.mturk.connectionpool
 import java.util.{Date, UUID}
 
 import com.amazonaws.mturk.requester.{Assignment, HIT}
+import edu.umass.cs.automan.adapters.mturk.mock.MockRequesterService
 import edu.umass.cs.automan.core.scheduler.Task
 
 object HITState {
@@ -20,7 +21,7 @@ object HITState {
 case class HITState(hit: HIT, t_a_map: Map[UUID,Option[Assignment]], hittype: HITType, cancelled: Boolean) {
   val aid_t_map = t_a_map.flatMap { case (t, a_o) => a_o match { case Some(a) => Some(a.getAssignmentId -> t); case None => None }}
 
-  def matchAssignments(assns: Array[Assignment]) : HITState = {
+  def matchAssignments(assns: Array[Assignment], mock_service: Option[MockRequesterService]) : HITState = {
     // for every available assignment and unmatched task,
     // pair the two and update the map
     // we compare IDs since we may get duplicate Assignment

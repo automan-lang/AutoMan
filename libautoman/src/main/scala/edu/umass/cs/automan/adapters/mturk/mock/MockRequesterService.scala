@@ -90,17 +90,15 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
     _state = _state.updateAssignmentStatus(UUID.fromString(assignmentId), AssignmentStatus.REJECTED)
   }
 
+  // This version just returns all available assignments, regardless of HIT ID
   override def getAllAssignmentsForHIT(hitId: String): Array[Assignment] = synchronized {
     val question_id = UUID.fromString(_state.getHITforHITId(hitId).getRequesterAnnotation)
 
     val question = _state.question_by_question_id(question_id).asInstanceOf[MTurkQuestion]
 
-    val assn_ids = _state.assignment_status_by_assignment_id.filter { case (assn_id, (assn_stat, hit_id_opt)) =>
-        hit_id_opt match {
-          case Some(hit_id) => hit_id == hitId
-          case None => false
-        }
-    }.map(_._1)
+    val assn_ids = _state.assignment_ids_by_question_id(question_id).filter { assn_id =>
+      _state.assignment_status_by_assignment_id(assn_id)._1 == AssignmentStatus.UNANSWERED
+    }
 
     assn_ids.map { assn_id =>
       val mock_response = _state.answers_by_assignment_id(assn_id)
@@ -250,10 +248,9 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
     _state = _state.updateAssignmentStatus(UUID.fromString(assignmentId), AssignmentStatus.APPROVED)
   }
 
-  def freeAssignment(assignment: Assignment) : Unit = {
-    DebugLog("FREE assignment ID: " + assignment.getAssignmentId, LogLevel.DEBUG, LogType.ADAPTER, null)
-    _state = _state.unreserveAssignment(UUID.fromString(assignment.getAssignmentId))
-  }
-
   override def searchAllHITs(): Array[HIT] = _state.hits_by_question_id.flatMap(_._2).toArray
+
+  def takeAssignment(assignmentId: String): Unit = {
+    _state = _state.updateAssignmentStatus(UUID.fromString(assignmentId), AssignmentStatus.ANSWERED)
+  }
 }

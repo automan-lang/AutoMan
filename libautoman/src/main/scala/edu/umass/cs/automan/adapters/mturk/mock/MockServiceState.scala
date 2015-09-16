@@ -1,6 +1,5 @@
 package edu.umass.cs.automan.adapters.mturk.mock
 
-import java.text.{SimpleDateFormat, DateFormat}
 import java.util.UUID
 import com.amazonaws.mturk.requester.HIT
 import edu.umass.cs.automan.core.mock.MockResponse
@@ -16,46 +15,25 @@ case class MockServiceState(budget: java.math.BigDecimal,
                             assignment_ids_by_question_id: Map[UUID, List[UUID]]) {
   def addHIT(question_id: UUID, hit: HIT) : MockServiceState = {
     println("DEBUG: NEW HIT!")
-    val state2 = reserveAssignments(question_id, hit.getHITId, hit.getMaxAssignments)
 
     // update hit list
     val hitlist = hit :: (
-      if (state2.hits_by_question_id.contains(question_id)) {
-        state2.hits_by_question_id(question_id)
+      if (this.hits_by_question_id.contains(question_id)) {
+        this.hits_by_question_id(question_id)
       } else {
         List.empty
       })
 
     // return a new MockServiceState
     MockServiceState(
-      state2.budget,
-      state2.question_by_question_id,
-      state2.hit_type_by_hit_type_id,
-      state2.hits_by_question_id + (question_id -> hitlist),
-      state2.answers_by_assignment_id,
-      state2.assignment_status_by_assignment_id,
-      state2.assignment_ids_by_question_id
+      this.budget,
+      this.question_by_question_id,
+      this.hit_type_by_hit_type_id,
+      this.hits_by_question_id + (question_id -> hitlist),
+      this.answers_by_assignment_id,
+      this.assignment_status_by_assignment_id,
+      this.assignment_ids_by_question_id
     )
-  }
-  def reserveAssignments(question_id: UUID, hit_id: String, num: Int) : MockServiceState = {
-    // reserve the correct number of unreserved assignments for the hit
-    val reserved_ids = assignment_ids_by_question_id(question_id).flatMap { a_id =>
-      if (assignment_status_by_assignment_id(a_id)._1 == AssignmentStatus.UNANSWERED) {
-        Some(a_id)
-      } else {
-        None
-      }
-    }.sortBy(answers_by_assignment_id(_).responseTime).take(num)
-
-    assert(reserved_ids.size == num)
-
-    // update status map
-    reserved_ids.foldLeft(this) { case (state: MockServiceState, a_id: UUID) =>
-        state.updateAssignmentStatus(a_id, Some(hit_id), AssignmentStatus.ANSWERED)
-    }
-  }
-  def unreserveAssignment(assn_id: UUID) : MockServiceState = {
-    updateAssignmentStatus(assn_id, AssignmentStatus.UNANSWERED)
   }
   def addHITType(hit_type: MockHITType) : MockServiceState = {
     MockServiceState(
@@ -121,20 +99,17 @@ case class MockServiceState(budget: java.math.BigDecimal,
     cloned_hit.setExpiration(Utilities.calInSeconds(cloned_hit.getExpiration, deltaSec))
     cloned_hit.setMaxAssignments(cloned_hit.getMaxAssignments + deltaAssignments)
 
-    // reserve assignments
-    val state2 = reserveAssignments(question_id, hitId, deltaAssignments)
-
     // update hit list
-    val hitlist = cloned_hit :: state2.hits_by_question_id(question_id).filter(_.getHITId != hitId)
+    val hitlist = cloned_hit :: this.hits_by_question_id(question_id).filter(_.getHITId != hitId)
 
     MockServiceState(
-      state2.budget,
-      state2.question_by_question_id,
-      state2.hit_type_by_hit_type_id,
-      state2.hits_by_question_id + (question_id -> hitlist),
-      state2.answers_by_assignment_id,
-      state2.assignment_status_by_assignment_id,
-      state2.assignment_ids_by_question_id
+      this.budget,
+      this.question_by_question_id,
+      this.hit_type_by_hit_type_id,
+      this.hits_by_question_id + (question_id -> hitlist),
+      this.answers_by_assignment_id,
+      this.assignment_status_by_assignment_id,
+      this.assignment_ids_by_question_id
     )
   }
   def getHITforHITId(hitId: String) : HIT = {

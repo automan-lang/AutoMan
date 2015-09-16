@@ -175,18 +175,6 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
       _state = _state.updateHITStates(hit_id, hit_state.cancel())
     }
 
-    // ugly but necessary hack:
-    // if we're running in mock mode, we need to tell the
-    // backend to unreserve the assignment paired with this task
-    mock_service match {
-      case Some(ms) =>
-        _state.getAssignmentOption(t) match {
-          case Some(assn) => ms.freeAssignment(assn)
-          case None => ()
-        }
-      case None => ()
-    }
-
     t.copy_as_cancelled()
   }
 
@@ -383,7 +371,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
         val assns = backend.getAllAssignmentsForHIT(hit_state.HITId)
 
         // pair with the HIT's tasks and return new HITState
-        hit_state.HITId -> hit_state.matchAssignments(assns)
+        hit_state.HITId -> hit_state.matchAssignments(assns, mock_service)
       }
 
       // update HITState map all at once
@@ -452,14 +440,14 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
                     "your participation in our HITs."
                 )
               }
-              t.copy_with_answer(answer.asInstanceOf[t.question.A], worker_id)
-            // if the assignment happens after NOW, free the assignment
-            } else if (t.state != SchedulerState.ACCEPTED && assignment.getSubmitTime.after(ct)) {
+
+              // mark assignment as ANSWERED if we're running in mock mode
               mock_service match {
-                case Some(ms) => ms.freeAssignment(assignment)
-                case _ => ()
+                case Some(ms) => ms.takeAssignment(assignment.getAssignmentId)
+                case None => ()
               }
-              t
+
+              t.copy_with_answer(answer.asInstanceOf[t.question.A], worker_id)
             } else {
               t
             }
