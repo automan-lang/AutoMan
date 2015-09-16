@@ -27,7 +27,7 @@ class DefaultDistributionPolicy(question: DistributionQuestion)
     }
 
     // determine duration
-    val worker_timeout_in_s = question._timeout_policy_instance.calculateWorkerTimeout(tasks, round)
+    val worker_timeout_in_s = question._timeout_policy_instance.calculateWorkerTimeout(tasks, round, had_timeout)
     val task_timeout_in_s = question._timeout_policy_instance.calculateTaskTimeout(worker_timeout_in_s)
 
     // determine reward

@@ -73,13 +73,21 @@ class Scheduler(val question: Question,
     q
   }
 
-  private def realTick : Long = {
+  private def realTick() : Long = {
     Utilities.elapsedMilliseconds(init_time, new Date())
   }
 
   private def run_loop(tasks: List[Task]) : Question#AA = {
     val _virtual_times = initTickQueue(question.mock_answers)  // ms quanta
-    var _current_time = 0L  // ms since start
+    var _current_time = // ms since start
+      if (_virtual_times.nonEmpty) {
+        val ct = // pull from the queue for simulations
+          _virtual_times.dequeue()
+        DebugLog("Virtual clock starts at " + ct + " ms.", LogLevel.INFO, LogType.SCHEDULER, question.id)
+        ct
+      } else {
+        0L
+      }
     val _vp = question.validation_policy_instance
 
     var _timeout_occurred = false
@@ -132,7 +140,7 @@ class Scheduler(val question: Question,
           DebugLog("Advancing virtual clock to " + t + " ms.", LogLevel.INFO, LogType.SCHEDULER, question.id)
           t
         } else {
-          realTick
+          realTick()
         }
       }
 

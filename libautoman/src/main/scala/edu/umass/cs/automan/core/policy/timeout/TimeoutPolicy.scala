@@ -11,7 +11,7 @@ abstract class TimeoutPolicy(question: Question) {
    * @param round The current round.
    * @return The new worker timeout, in seconds.
    */
-  def calculateWorkerTimeout(tasks: List[Task], round: Int) : Int
+  def calculateWorkerTimeout(tasks: List[Task], round: Int, had_timeout: Boolean) : Int
 
   /**
    * Calculate the task timeout given a question and the

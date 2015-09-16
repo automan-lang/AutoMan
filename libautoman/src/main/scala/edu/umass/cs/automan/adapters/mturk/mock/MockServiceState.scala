@@ -1,5 +1,6 @@
 package edu.umass.cs.automan.adapters.mturk.mock
 
+import java.text.{SimpleDateFormat, DateFormat}
 import java.util.UUID
 import com.amazonaws.mturk.requester.HIT
 import edu.umass.cs.automan.core.mock.MockResponse
@@ -14,6 +15,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
                             assignment_status_by_assignment_id: Map[UUID,(AssignmentStatus.Value,Option[String])],
                             assignment_ids_by_question_id: Map[UUID, List[UUID]]) {
   def addHIT(question_id: UUID, hit: HIT) : MockServiceState = {
+    println("DEBUG: NEW HIT!")
     val state2 = reserveAssignments(question_id, hit.getHITId, hit.getMaxAssignments)
 
     // update hit list
@@ -105,6 +107,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
     cloned_hit
   }
   def extendHIT(hitId: String, deltaSec: Int, deltaAssignments: Int) = {
+    println("DEBUG: EXTENDING HIT!")
     assert(hits_by_question_id.size >= 1)
 
     // get HIT
@@ -198,7 +201,11 @@ case class MockServiceState(budget: java.math.BigDecimal,
       case AssignmentStatus.APPROVED => assert(current_status == AssignmentStatus.ANSWERED)
       case AssignmentStatus.REJECTED => assert(current_status == AssignmentStatus.ANSWERED)
       case AssignmentStatus.ANSWERED => assert(current_status == AssignmentStatus.UNANSWERED)
-      case AssignmentStatus.UNANSWERED => assert(current_status == AssignmentStatus.ANSWERED) // for cancellation
+      case AssignmentStatus.UNANSWERED => // for cancellation
+        assert(
+          current_status == AssignmentStatus.ANSWERED ||
+          current_status == AssignmentStatus.UNANSWERED
+        )
       case _ => assert(false)
     }
 

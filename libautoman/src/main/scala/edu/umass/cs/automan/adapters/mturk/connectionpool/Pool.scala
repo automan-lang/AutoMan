@@ -413,7 +413,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
           case Some(assignment) =>
             // only update task object if the task isn't already answered
             // and if the answer actually happens in the past (ugly hack for mocks)
-            if (t.state != SchedulerState.ANSWERED && !assignment.getSubmitTime.after(ct)) {
+            if (t.state == SchedulerState.RUNNING && !assignment.getSubmitTime.after(ct)) {
               // get worker_id
               val worker_id = assignment.getWorkerId
 
@@ -428,8 +428,8 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
               // process answer
               val ans = assignment.getAnswer
               val xml = scala.xml.XML.loadString(ans)
-              val answer = t.question.asInstanceOf[MTurkQuestion].fromXML(xml)
-//              val answer = t.question.before_filter(prelim_answer).asInstanceOf[t.question.A]
+              val prelim_answer = t.question.asInstanceOf[MTurkQuestion].fromXML(xml)
+              val answer = t.question.before_filter(prelim_answer.asInstanceOf[t.question.A])
 
               // it is possible, although unlikely, that a worker could submit
               // work twice for the same HIT, if the following scenario occurs:
@@ -447,12 +447,19 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
                 backend.revokeQualification(whitelisted_ht_id, worker_id,
                   "For quality control purposes, qualification " + whitelisted_ht_id +
                     " was revoked because you submitted related work for HIT " + hs.HITId +
-                    ".  This is for our own bookkeeping purposes and not a reflection on the quality of your work. " +
+                    ".  This is for our own bookkeeping purposes and is not a reflection on the quality of your work. " +
                     "We apologize for the inconvenience that this may cause and we encourage you to continue " +
                     "your participation in our HITs."
                 )
               }
               t.copy_with_answer(answer.asInstanceOf[t.question.A], worker_id)
+            // if the assignment happens after NOW, free the assignment
+            } else if (t.state != SchedulerState.ACCEPTED && assignment.getSubmitTime.after(ct)) {
+              mock_service match {
+                case Some(ms) => ms.freeAssignment(assignment)
+                case _ => ()
+              }
+              t
             } else {
               t
             }

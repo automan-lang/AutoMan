@@ -8,7 +8,7 @@ import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 
 class MTurkMultiHITTest extends FlatSpec with Matchers {
 
-  "A radio button program" should "work" in {
+  "A radio button program with disagreeing answers" should "spawn multiple HITs." in {
     val confidence = 0.95
 
     val a = MTurkAdapter { mt =>
@@ -34,8 +34,8 @@ class MTurkMultiHITTest extends FlatSpec with Matchers {
           a.Option('count, "The Count")
         )
         q.mock_answers =
-          makeMocksAt(List('spongebob, 'kermit), 0) :::
-          makeMocksAt(List('spongebob, 'spongebob, 'spongebob), 45)
+          makeMocksAt(List('spongebob, 'kermit, 'spongebob), 0) :::
+          makeMocksAt(List('spongebob, 'spongebob, 'spongebob), 45000)
       }
 
       which_one().answer match {
@@ -43,7 +43,7 @@ class MTurkMultiHITTest extends FlatSpec with Matchers {
           println("Answer: '" + value + "', confidence: " + conf + ", cost: $" + cost + ", # HITs: " + a.getAllHITs.length)
           (value == 'spongebob) should be (true)
           (conf >= confidence) should be (true)
-          (cost == BigDecimal(0.24)) should be (true)
+          (cost == BigDecimal(0.30)) should be (true)
           a.getAllHITs.length should be (2)
         case LowConfidenceAnswer(value, cost, conf) =>
           fail()

@@ -5,7 +5,7 @@ import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 
 class MLEPricePolicy(question: Question) extends PricePolicy(question) {
   def calculateReward(tasks: List[Task], round: Int, timeout_occurred: Boolean) : BigDecimal = {
-    if (round == 0) {
+    if (round == 0 && tasks.size == 0) {
       calculateInitialReward()
     } else {
       // find the last round where we spawned tasks

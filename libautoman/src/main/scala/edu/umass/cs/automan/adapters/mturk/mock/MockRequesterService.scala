@@ -6,6 +6,7 @@ import com.amazonaws.mturk.requester._
 import com.amazonaws.mturk.service.axis.RequesterService
 import com.amazonaws.mturk.util.ClientConfig
 import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
+import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
 import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.util._
@@ -250,6 +251,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
   }
 
   def freeAssignment(assignment: Assignment) : Unit = {
+    DebugLog("FREE assignment ID: " + assignment.getAssignmentId, LogLevel.DEBUG, LogType.ADAPTER, null)
     _state = _state.unreserveAssignment(UUID.fromString(assignment.getAssignmentId))
   }
 

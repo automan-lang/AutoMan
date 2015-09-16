@@ -16,6 +16,10 @@ object DebugLog {
           }
       }
 
-    System.err.println(new Date().toString + ": " + level.toString + ": " + source.toString + ": " + idstr +  msg)
+    if (level == LogLevel.DEBUG) {
+      System.out.println(new Date().toString + ": " + level.toString + ": " + source.toString + ": " + idstr + msg)
+    } else {
+      System.err.println(new Date().toString + ": " + level.toString + ": " + source.toString + ": " + idstr + msg)
+    }
   }
 }

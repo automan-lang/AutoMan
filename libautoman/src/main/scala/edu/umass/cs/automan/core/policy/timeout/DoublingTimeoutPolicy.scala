@@ -22,14 +22,13 @@ class DoublingTimeoutPolicy(question: Question) extends TimeoutPolicy(question) 
    * @param round The current round.
    * @return The new worker timeout, in seconds.
    */
-  override def calculateWorkerTimeout(tasks: List[Task], round: Int): Int = {
-    if (round == 0) {
+  override def calculateWorkerTimeout(tasks: List[Task], round: Int, had_timeout: Boolean): Int = {
+    if (round == 0 && tasks.size == 0) {
       question.initial_worker_timeout_in_s
     } else {
-      // get the thunks from the current round
+      // get the thunks from the last round
       val last_round = tasks.filter(_.round == round)
-      // count the number of timeouts
-      val had_timeout = last_round.count(_.state == SchedulerState.TIMEOUT) > 0
+
       if (had_timeout) {
         DebugLog("Had a timeout; doubling worker timeout.", LogLevel.INFO, LogType.STRATEGY, question.id)
         last_round.head.worker_timeout * 2

@@ -12,9 +12,9 @@ class DefaultScalarPolicy(question: ScalarQuestion)
 
   DebugLog("DEFAULTSCALAR strategy loaded.",LogLevel.INFO,LogType.STRATEGY, question.id)
 
-  def bonferroni_confidence(confidence: Double, rounds: Int) : Double = {
-    assert(rounds > 0)
-    1 - (1 - confidence) / rounds.toDouble
+  def bonferroni_confidence(confidence: Double, current_round: Int) : Double = {
+    // we count rounds from 0, so add 1 here
+    1 - (1 - confidence) / (current_round + 1).toDouble
   }
   def current_confidence(tasks: List[Task]): Double = {
     val valid_ts = completed_workerunique_tasks(tasks)
@@ -36,9 +36,9 @@ class DefaultScalarPolicy(question: ScalarQuestion)
         val valid_ts = completed_workerunique_tasks(tasks)
         if (valid_ts.size > 0) {
           val biggest_answer = valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
-          DebugLog("Need more tasks for alpha = " + (1 - thresh) + "; have " + biggest_answer, LogLevel.INFO, LogType.STRATEGY, question.id)
+          DebugLog("Need more tasks for alpha = " + (1 - thresh) + "; have " + biggest_answer + " agreeing tasks.", LogLevel.INFO, LogType.STRATEGY, question.id)
         } else {
-          DebugLog("Need more tasks for alpha = " + (1 - thresh) + "; currently have none.", LogLevel.INFO, LogType.STRATEGY, question.id)
+          DebugLog("Need more tasks for alpha = " + (1 - thresh) + "; currently have no agreement.", LogLevel.INFO, LogType.STRATEGY, question.id)
         }
         false
       }
@@ -55,11 +55,10 @@ class DefaultScalarPolicy(question: ScalarQuestion)
       tasks.map(_.round).max
     } else { 0 }
 
-    // determine next round
-    val nextRound = if (had_timeout) { round } else { round + 1 }
+    var nextRound = round
 
     // determine duration
-    val worker_timeout_in_s = question._timeout_policy_instance.calculateWorkerTimeout(tasks, round)
+    val worker_timeout_in_s = question._timeout_policy_instance.calculateWorkerTimeout(tasks, round, had_timeout)
     val task_timeout_in_s = question._timeout_policy_instance.calculateTaskTimeout(worker_timeout_in_s)
 
     // determine reward
@@ -71,7 +70,9 @@ class DefaultScalarPolicy(question: ScalarQuestion)
     } else {
       // (don't spawn more if any are running)
       if (tasks.count(_.state == SchedulerState.RUNNING) == 0) {
-        num_to_run(tasks, nextRound, reward)
+        // whenever we need to run MORE, we update the round counter
+        nextRound = round + 1
+        num_to_run(tasks, round, reward)
       } else {
         return List[Task]() // Be patient!
       }
