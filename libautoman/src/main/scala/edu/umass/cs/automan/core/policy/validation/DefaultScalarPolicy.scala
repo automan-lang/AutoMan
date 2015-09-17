@@ -9,7 +9,7 @@ object DefaultScalarPolicy {
   // this serializes computation of outcomes using MC, but it
   // ought to be outweighed by the fact that many tasks often
   // compute exactly the same thing
-  val cache = Map[(Int,Int,Double), Double]()
+  var cache = Map[(Int,Int,Double), Double]()
 }
 
 class DefaultScalarPolicy(question: ScalarQuestion)
@@ -147,7 +147,9 @@ class DefaultScalarPolicy(question: ScalarQuestion)
       if (DefaultScalarPolicy.cache.contains(key)) {
         DefaultScalarPolicy.cache(key)
       } else {
-        expected_for_agreement(key._1, key._2, key._3).toDouble
+        val efa = expected_for_agreement(key._1, key._2, key._3).toDouble
+        DefaultScalarPolicy.cache += key -> efa
+        efa
       }
     }
 
@@ -157,7 +159,7 @@ class DefaultScalarPolicy(question: ScalarQuestion)
         math.floor(question.time_value_per_hour.toDouble/question.wage.toDouble)
       )
 
-    math.max( expected, biggest_bang ).toInt
+    math.max(expected, biggest_bang).toInt
   }
 
   def pessimism() = {
