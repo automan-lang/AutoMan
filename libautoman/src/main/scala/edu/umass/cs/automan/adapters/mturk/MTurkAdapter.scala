@@ -91,14 +91,7 @@ class MTurkAdapter extends AutomanAdapter {
   protected[automan] def backend_budget() = run_if_initialized((p: Pool) => p.backend_budget)
   protected[automan] def post(ts: List[Task], exclude_worker_ids: List[String]) = {
     assert(ts.forall(_.state == SchedulerState.READY))
-
-    run_if_initialized((p: Pool) => {
-      // mark tasks as RUNNING so that the scheduler
-      // knows to attempt to retrieve their answers later
-      val ts2 = ts.map { _.copy_as_running() }
-      p.post(ts2, exclude_worker_ids)
-      ts2
-    })
+    run_if_initialized((p: Pool) => p.post(ts, exclude_worker_ids))
   }
   protected[automan] def reject(t: Task, rejection_response: String) = {
     assert(t.state == SchedulerState.ANSWERED)

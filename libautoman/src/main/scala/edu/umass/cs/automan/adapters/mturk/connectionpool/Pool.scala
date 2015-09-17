@@ -53,8 +53,8 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
   def cleanup_qualifications(mtq: MTurkQuestion) : Unit = {
     nonblocking_enqueue[DisposeQualsReq, Unit](DisposeQualsReq(mtq))
   }
-  def post(ts: List[Task], exclude_worker_ids: List[String]) : Unit = {
-    nonblocking_enqueue[CreateHITReq, Unit](CreateHITReq(ts, exclude_worker_ids))
+  def post(ts: List[Task], exclude_worker_ids: List[String]) : List[Task] = {
+    blocking_enqueue[CreateHITReq, List[Task]](CreateHITReq(ts, exclude_worker_ids))
   }
   def reject(t: Task, correct_answer: String) : Task = {
     blocking_enqueue[RejectReq, Task](RejectReq(t, correct_answer))
@@ -184,6 +184,8 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
    * @param batch_key Batch parameters
    */
   private def mturk_registerHITType(question: Question, batch_key: BatchKey) : Unit = {
+    DebugLog("Registering new HIT Type for batch key = " + batch_key, LogLevel.DEBUG, LogType.ADAPTER, question.id)
+
     val (group_id, cost, worker_timeout) = batch_key
 
     // get current batch number
@@ -294,14 +296,16 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
     // for a given HIT.
     val (group_id, _, _) = batch_key
 
-    val firstrun = first_run(group_id)
+    // synchronize so that threads do not race to create
+    // different hit types for the same batch key
+    _state.synchronized {
+      if (!_state.hit_types.contains(batch_key)) {
+        // update batch counter
+        _state = _state.initOrUpdateBatchNo(group_id)
 
-    if (!_state.hit_types.contains(batch_key)) {
-      // update batch counter
-      _state = _state.initOrUpdateBatchNo(group_id)
-
-      // request new HITTypeId from MTurk
-      mturk_registerHITType(question, batch_key)
+        // request new HITTypeId from MTurk
+        mturk_registerHITType(question, batch_key)
+      }
     }
     _state.hit_types(batch_key)
   }
@@ -312,7 +316,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
    * @param ts  A List of Tasks to post.
    * @param exclude_worker_ids  A list of worker_ids to exclude (via disqualifications)
    */
-  private def scheduled_post(ts: List[Task], exclude_worker_ids: List[String]) : Unit = {
+  private def scheduled_post(ts: List[Task], exclude_worker_ids: List[String]) : List[Task] = {
     // One consequence of dealing with groups of tasks is that
     // they may each be associated with a different question; although
     // automan never calls post with heterogeneous set of tasks, we
@@ -339,6 +343,9 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
         }
       }
     }
+
+    // mark as running
+    ts.map(_.copy_as_running())
   }
 
   private def scheduled_reject(t: Task, rejection_response: String) : Task = {

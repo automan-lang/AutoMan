@@ -46,7 +46,7 @@ abstract class AutomanAdapter {
   /**
    * Post tasks on the backend, one task for each task.  All tasks given should
    * be marked READY. The method returns the complete list of tasks passed
-   * but with new states. Nonblocking. Invariant: the size of the list of input
+   * but with new states. Blocking. Invariant: the size of the list of input
    * tasks == the size of the list of the output tasks.
    * @param ts A list of new tasks.
    * @param exclude_worker_ids Worker IDs to exclude, if any.
