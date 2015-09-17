@@ -360,7 +360,15 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
     // 3. update tasks with answers
     ts.groupBy(Key.BatchKey).map { case (batch_key, bts) =>
       // get HITType for BatchKey
-      val hittype = _state.getHITType(batch_key)
+//      val hittype = _state.getHITType(batch_key)
+
+      val hittype = try {
+        _state.getHITType(batch_key)
+      } catch {
+        case t:Throwable =>
+          println("Hi.")
+          throw t
+      }
 
       // iterate through all HITs for this HITType
       // pair all assignments with tasks, yielding a new collection of HITStates
