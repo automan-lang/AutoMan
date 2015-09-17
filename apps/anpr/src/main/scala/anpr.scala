@@ -4,7 +4,7 @@ import anprlib._
 object anpr extends App {
   val opts = my_optparse(args, "anpr.jar")
 
-  val a = MTurkAdapter { mt =>
+  implicit val a = MTurkAdapter { mt =>
     mt.access_key_id = opts('key)
     mt.secret_access_key = opts('secret)
     mt.sandbox_mode = opts('sandbox).toBoolean
@@ -14,7 +14,7 @@ object anpr extends App {
     // get plate texts from image URLs
     val urls = getURLsFromDisk
     val plate_texts = urls.map { url =>
-      (url, plateTxt(url)(a))
+      (url, plateTxt(url))
     }
 
     // print out results
