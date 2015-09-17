@@ -1,10 +1,16 @@
 package edu.umass.cs.automan.core.policy.validation
 
 import java.util.UUID
-
 import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.question.ScalarQuestion
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
+
+object DefaultScalarPolicy {
+  // this serializes computation of outcomes using MC, but it
+  // ought to be outweighed by the fact that many tasks often
+  // compute exactly the same thing
+  val cache = Map[(Int,Int,Double), Double]()
+}
 
 class DefaultScalarPolicy(question: ScalarQuestion)
   extends ScalarValidationPolicy(question) {
@@ -133,7 +139,18 @@ class DefaultScalarPolicy(question: ScalarQuestion)
     // the number of hypotheses is the current round number + 1, since we count from zero
     val adjusted_conf = bonferroni_confidence(question.confidence, round + 1)
 
-    val expected = expected_for_agreement(tasks_no_dupes.size, max_agree(tasks_no_dupes), adjusted_conf).toDouble
+    // cache key
+    val key = (tasks_no_dupes.size, max_agree(tasks_no_dupes), adjusted_conf)
+
+    // compute # expected for agreement
+    val expected = DefaultScalarPolicy.synchronized {
+      if (DefaultScalarPolicy.cache.contains(key)) {
+        DefaultScalarPolicy.cache(key)
+      } else {
+        expected_for_agreement(key._1, key._2, key._3).toDouble
+      }
+    }
+
     val biggest_bang =
       math.min(
         math.floor(question.budget.toDouble/reward.toDouble),

@@ -1,4 +1,5 @@
 import edu.umass.cs.automan.adapters.mturk._
+import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.util.Utilities
 import scala.io.Source
 
