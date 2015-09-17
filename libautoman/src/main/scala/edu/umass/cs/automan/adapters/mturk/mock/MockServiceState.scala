@@ -14,8 +14,6 @@ case class MockServiceState(budget: java.math.BigDecimal,
                             assignment_status_by_assignment_id: Map[UUID,(AssignmentStatus.Value,Option[String])],
                             assignment_ids_by_question_id: Map[UUID, List[UUID]]) {
   def addHIT(question_id: UUID, hit: HIT) : MockServiceState = {
-    println("DEBUG: NEW HIT!")
-
     // update hit list
     val hitlist = hit :: (
       if (this.hits_by_question_id.contains(question_id)) {
@@ -85,7 +83,6 @@ case class MockServiceState(budget: java.math.BigDecimal,
     cloned_hit
   }
   def extendHIT(hitId: String, deltaSec: Int, deltaAssignments: Int) = {
-    println("DEBUG: EXTENDING HIT!")
     assert(hits_by_question_id.size >= 1)
 
     // get HIT

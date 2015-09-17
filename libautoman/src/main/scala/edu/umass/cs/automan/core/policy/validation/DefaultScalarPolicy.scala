@@ -12,9 +12,9 @@ class DefaultScalarPolicy(question: ScalarQuestion)
 
   DebugLog("DEFAULTSCALAR strategy loaded.",LogLevel.INFO,LogType.STRATEGY, question.id)
 
-  def bonferroni_confidence(confidence: Double, current_round: Int) : Double = {
-    // we count rounds from 0, so add 1 here
-    1 - (1 - confidence) / (current_round + 1).toDouble
+  def bonferroni_confidence(confidence: Double, num_hypotheses: Int) : Double = {
+    assert(num_hypotheses > 0)
+    1 - (1 - confidence) / num_hypotheses.toDouble
   }
   def current_confidence(tasks: List[Task]): Double = {
     val valid_ts = completed_workerunique_tasks(tasks)
@@ -22,13 +22,13 @@ class DefaultScalarPolicy(question: ScalarQuestion)
     val biggest_answer = valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
     MonteCarlo.confidenceOfOutcome(question.num_possibilities.toInt, valid_ts.size, biggest_answer, NumberOfSimulations)
   }
-  def is_confident(tasks: List[Task], round: Int): Boolean = {
+  def is_confident(tasks: List[Task], num_hypotheses: Int): Boolean = {
     if (tasks.size == 0) {
       DebugLog("Have no tasks; confidence is undefined.", LogLevel.INFO, LogType.STRATEGY, question.id)
       false
     } else {
       val conf = current_confidence(tasks)
-      val thresh = bonferroni_confidence(question.confidence, round)
+      val thresh = bonferroni_confidence(question.confidence, num_hypotheses)
       if (conf >= thresh) {
         DebugLog("Reached or exceeded alpha = " + (1 - thresh).toString, LogLevel.INFO, LogType.STRATEGY, question.id)
         true
@@ -130,7 +130,8 @@ class DefaultScalarPolicy(question: ScalarQuestion)
 
     val options: Int = if(question.num_possibilities > BigInt(Int.MaxValue)) 1000 else question.num_possibilities.toInt
 
-    val adjusted_conf = bonferroni_confidence(question.confidence, round)
+    // the number of hypotheses is the current round number + 1, since we count from zero
+    val adjusted_conf = bonferroni_confidence(question.confidence, round + 1)
 
     val expected = expected_for_agreement(tasks_no_dupes.size, max_agree(tasks_no_dupes), adjusted_conf).toDouble
     val biggest_bang =

@@ -9,9 +9,10 @@ abstract class ScalarValidationPolicy(question: ScalarQuestion)
   extends ValidationPolicy(question) {
 
   def current_confidence(tasks: List[Task]) : Double
-  def is_confident(tasks: List[Task], round: Int) : Boolean
+  def is_confident(tasks: List[Task], num_hypotheses: Int) : Boolean
   def is_done(tasks: List[Task]) = {
     val round = if (tasks.nonEmpty) { tasks.map(_.round).max } else { 1 }
+    // the number of rounds completed == the number of hypotheses
     is_confident(tasks, round)
   }
   def answer_selector(tasks: List[Task]) : (Question#A,BigDecimal,Double) = {
