@@ -227,7 +227,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
                                title: String,
                                keywords: String,
                                description: String,
-                               qualRequirements: Array[QualificationRequirement]): String = {
+                               qualRequirements: Array[QualificationRequirement]): String = synchronized {
     val hit_type = MockHITType(
       UUID.randomUUID(),
       autoApprovalDelayInSeconds,
@@ -242,13 +242,13 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
     hit_type.id.toString
   }
 
-  override def approveAssignment(assignmentId: String, requesterFeedback: String): Unit = {
+  override def approveAssignment(assignmentId: String, requesterFeedback: String): Unit = synchronized {
     _state = _state.updateAssignmentStatus(UUID.fromString(assignmentId), AssignmentStatus.APPROVED)
   }
 
-  override def searchAllHITs(): Array[HIT] = _state.hits_by_question_id.flatMap(_._2).toArray
+  override def searchAllHITs(): Array[HIT] = synchronized { _state.hits_by_question_id.flatMap(_._2).toArray }
 
-  def takeAssignment(assignmentId: String): Unit = {
+  def takeAssignment(assignmentId: String): Unit = synchronized {
     _state = _state.updateAssignmentStatus(UUID.fromString(assignmentId), AssignmentStatus.ANSWERED)
   }
 }
