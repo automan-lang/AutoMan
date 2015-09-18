@@ -9,6 +9,8 @@ import edu.umass.cs.automan.adapters.mturk.logging.tables.{DBAssignment, DBQuali
 import edu.umass.cs.automan.adapters.mturk.util.Key
 import edu.umass.cs.automan.adapters.mturk.util.Key._
 import edu.umass.cs.automan.core.logging._
+import edu.umass.cs.automan.core.question.Question
+import edu.umass.cs.automan.core.scheduler.Task
 import scala.slick.lifted.TableQuery
 import scala.slick.driver.SQLiteDriver.simple._
 
@@ -29,6 +31,7 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
     init_database_if_required(ddls)
   }
 
+  // TODO fix: save_mt_state is never called!!!
   def save_mt_state(state: MTState) : Unit = {
     db_opt match {
       case Some(db) => db withSession { implicit s =>
@@ -323,7 +326,7 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
 
   def restore_mt_state(pool: Pool, backend: RequesterService) : Unit = {
     db_opt match {
-      case Some(db) => db withTransaction { implicit s =>
+      case Some(db) => db withSession { implicit s =>
         val hit_types: Map[Key.BatchKey, HITType] = getHITTypeMap
         val id_hittype: Map[String, HITType] = getHITTypesByHITTypeId(hit_types)
         val hit_states: Map[String, HITState] = getHITStateMap(id_hittype, backend)
@@ -354,7 +357,7 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
     db_opt match {
       case Some(db) =>
         if (database_exists()) {
-          db.withTransaction { implicit session =>
+          db.withSession { implicit session =>
             dbAssignment.delete
             dbHIT.delete
             dbHITType.delete

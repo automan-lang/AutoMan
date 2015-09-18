@@ -1,12 +1,14 @@
-package edu.umass.cs.automan.adapter.mturk
+package edu.umass.cs.automan.adapter.mturk.logging
 
 import java.util.UUID
-import edu.umass.cs.automan.test._
-import org.scalatest.{Matchers, FlatSpec}
-import scala.util.Random
+
 import edu.umass.cs.automan.adapters.mturk._
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 import edu.umass.cs.automan.core.answer.Answer
+import edu.umass.cs.automan.test._
+import org.scalatest.{FlatSpec, Matchers}
+
+import scala.util.Random
 
 class MTurkManyThreadsTest extends FlatSpec with Matchers {
 
@@ -17,7 +19,7 @@ class MTurkManyThreadsTest extends FlatSpec with Matchers {
       mt.access_key_id = UUID.randomUUID().toString
       mt.secret_access_key = UUID.randomUUID().toString
       mt.use_mock = MockSetup(budget = 8.00)
-      mt.logging = LogConfig.NO_LOGGING
+      mt.logging = LogConfig.TRACE_MEMOIZE_VERBOSE
       mt.poll_interval = 2
     }
 
@@ -28,6 +30,7 @@ class MTurkManyThreadsTest extends FlatSpec with Matchers {
       q.pattern = "XXXXXXXXX"
       q.dont_reject = true
       q.mock_answers = makeMocks(Utilities.randomPermute(List(url, url, url + "z", url)))
+      q.group_id = "foo"
     }
 
     automan(a, test_mode = true) {

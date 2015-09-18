@@ -13,6 +13,7 @@ package object anprlib {
     q.pattern_error_text = "Answers may only be letters or numeric digits, no more than 8 characters long, no spaces, or the special two-letter code: NA"
     q.dont_reject = true
     q.before_filter = normalize_chars
+    q.group_id = "anpr"
   }
 
   def my_optparse(args: Array[String], invoked_as_name: String) : Utilities.OptionMap = {

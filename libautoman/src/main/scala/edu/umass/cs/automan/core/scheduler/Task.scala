@@ -61,6 +61,6 @@ case class Task(task_id: UUID,
   override def toString = {
     val has_answer = answer match { case Some(_) => "yes"; case None => "no" }
     val wid = worker_id match { case Some(wid) => wid; case None => "n/a" }
-    "Task(state: " + state + ", has answer: " + has_answer + ", completed by worker_id: " + wid + ")"
+    "Task(id: " + task_id + ", state: " + state + ", has answer: " + has_answer + ", completed by worker_id: " + wid + ")"
   }
 }

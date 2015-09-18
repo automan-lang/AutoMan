@@ -4,11 +4,15 @@ import java.util.UUID
 import scala.slick.driver.SQLiteDriver.simple._
 import java.util.Date
 
-class DBTask(tag: Tag) extends Table[(UUID, UUID, Int, BigDecimal, Date, Int, Int)](tag, "DBTASK") {
-  implicit val javaUtilDateMapper =
+object DBTask {
+  val javaUtilDateMapper =
     MappedColumnType.base[java.util.Date, java.sql.Timestamp] (
       d => new java.sql.Timestamp(d.getTime),
       d => new java.util.Date(d.getTime))
+}
+
+class DBTask(tag: Tag) extends Table[(UUID, UUID, Int, BigDecimal, Date, Int, Int)](tag, "DBTASK") {
+  implicit val javaUtilDateMapper = DBTask.javaUtilDateMapper
 
   def task_id = column[UUID]("TASK_ID", O.PrimaryKey)
   def question_id = column[UUID]("QUESTION_ID")

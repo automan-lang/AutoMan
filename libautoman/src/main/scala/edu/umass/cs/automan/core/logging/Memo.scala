@@ -4,7 +4,7 @@ import java.util.{Date, UUID}
 import edu.umass.cs.automan.core.Plugin
 import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.info.QuestionType._
-import edu.umass.cs.automan.core.logging.tables.{DBQuestion, DBCheckboxAnswer, DBRadioButtonAnswer, DBTaskHistory}
+import edu.umass.cs.automan.core.logging.tables._
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.SchedulerState._
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
@@ -69,9 +69,6 @@ class Memo(log_config: LogConfig.Value) {
   protected[automan] val dbCheckboxAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBCheckboxAnswer]
   protected[automan] val dbFreeTextAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBFreeTextAnswer]
 
-  // Task cache
-  protected var _all_task_ids = Map[UUID,SchedulerState.Value]()
-  
   // registered plugins
   protected var _plugins = List[Plugin]()
 
@@ -133,18 +130,14 @@ class Memo(log_config: LogConfig.Value) {
       base_ddls
     }
 
-    _all_task_ids = db_opt match {
+    db_opt match {
       case Some(db) => {
         if(!database_exists()) {
           // create the database
           db.withSession { implicit s => all_ddls.create }
-          Map.empty
-        } else {
-          // prepopulate cache with all of the task_ids from the database
-          db withSession { implicit s => getAllTasksMap }
         }
       }
-      case None => Map.empty
+      case None => ()
     }
   }
 
@@ -286,7 +279,7 @@ class Memo(log_config: LogConfig.Value) {
   def snapshot() : List[TaskSnapshot[_]] = {
     db_opt match {
       case Some(db) => {
-        db.withTransaction { s =>
+        db.withSession { s =>
           restore_all_tasks_of_type(QuestionType.CheckboxQuestion)(s) :::
           restore_all_tasks_of_type(QuestionType.CheckboxDistributionQuestion)(s) :::
           restore_all_tasks_of_type(QuestionType.FreeTextQuestion)(s) :::
@@ -491,11 +484,11 @@ class Memo(log_config: LogConfig.Value) {
     }
   }
 
-  protected[automan] def needsUpdate[A](ts: List[Task]) : List[InsertUpdateOrSkip[Task]] = {
+  protected[automan] def needsUpdate[A](ts: List[Task], tsstates: Map[UUID,SchedulerState.Value]) : List[InsertUpdateOrSkip[Task]] = {
     ts.map { t =>
-      if (!_all_task_ids.contains(t.task_id)) {
+      if (!tsstates.contains(t.task_id)) {
         Insert(t)
-      } else if (_all_task_ids(t.task_id) != t.state) {
+      } else if (tsstates(t.task_id) != t.state) {
         Update(t)
       } else {
         Skip(t)
@@ -549,18 +542,19 @@ class Memo(log_config: LogConfig.Value) {
   def save(q: Question, ts: List[Task]) : Unit = {
     if(ts.size == 0) return
 
-    db_opt match {
-      case Some(db) =>
-        db.withTransaction { implicit session =>
-          synchronized {
+    synchronized {
+      db_opt match {
+        case Some(db) =>
+          db.withSession { implicit session =>
             // is the question even in the database?
             if (!questionInDB(q.memo_hash)) {
-                // create dbQuestion record for this memo_hash
-                dbQuestion += (q.id, q.memo_hash, q.getQuestionType, q.text, q.title)
+              // create dbQuestion record for this memo_hash
+              dbQuestion +=(q.id, q.memo_hash, q.getQuestionType, q.text, q.title)
             }
 
-            // determine which records need to be inserted/updated/ignored
-            val (inserts, updates) = needsUpdate (ts).foldLeft ((List.empty[Task], List.empty[Task] ) ) {
+            // read DB to determine which records need to be inserted/updated/ignored
+            val tsstates = getAllTasksMap
+            val (inserts, updates) = needsUpdate(ts, tsstates).foldLeft((List.empty[Task], List.empty[Task])) {
               case (acc, ius) => ius match {
                 case Insert(t) => (t :: acc._1, acc._2)
                 case Update(t) => (acc._1, t :: acc._2)
@@ -568,7 +562,7 @@ class Memo(log_config: LogConfig.Value) {
               }
             }
 
-            // do bulk insert for new tasks
+            // update tasks
             dbTask ++= task2TaskTuple(inserts)
 
             // do bulk insert for all task histories (inserts and updates)
@@ -583,22 +577,17 @@ class Memo(log_config: LogConfig.Value) {
             // do bulk insert for all answered tasks
             insertAnswerTable(ts, histories)
 
-            // update the cache
-            _all_task_ids = ts.map { t =>
-              t.task_id -> t.state
-            }.toMap
-
             // asynchronously send update notifications
             // this should only send changes; for now, send everything
-            Future{
+            Future {
               blocking {
                 val updates = snapshotUpdates()
                 _plugins.foreach(_.state_updates(updates))
               }
             }
           }
-        }
-      case None => ()
+        case None => ()
+      }
     }
   }
 
@@ -610,7 +599,7 @@ class Memo(log_config: LogConfig.Value) {
     db_opt match {
       case Some(db) =>
         if (database_exists()) {
-          db.withTransaction { implicit session =>
+          db.withSession { implicit session =>
             dbQuestion.delete
             dbTask.delete
             dbTaskHistory.delete
