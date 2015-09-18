@@ -1,0 +1,18 @@
+language: scala
+
+scala:
+  - 2.11.4
+
+# blacklist
+branches:
+  except:
+    - master
+    - webdebugger
+
+# whitelist
+branches:
+  only:
+    - pattern-matching
+
+before_script:
+  - cd libautoman
