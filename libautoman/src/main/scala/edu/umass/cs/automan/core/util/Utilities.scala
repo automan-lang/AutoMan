@@ -6,6 +6,7 @@ import java.util.{Calendar, Date, Locale, UUID}
 
 import edu.umass.cs.automan.core.logging.{LogType, LogLevel}
 
+import scala.annotation.elidable
 import scala.reflect.ClassTag
 
 object Utilities {

@@ -66,8 +66,8 @@ class MemoSnapshotTest extends FlatSpec with Matchers {
         case _ =>
           fail()
       }
-    }
 
-    a.state_snapshot().size should be (7)
+      a.state_snapshot().size should be (7)
+    }
   }
 }

@@ -101,7 +101,7 @@ class MTurkAdapter extends AutomanAdapter {
     run_if_initialized((p: Pool) => p.post(ts, exclude_worker_ids))
   }
   protected[automan] def reject(t: Task, rejection_response: String) = {
-    assert(t.state == SchedulerState.ANSWERED)
+    assert(t.state == SchedulerState.ANSWERED, "State during reject is: " + t.state)
     run_if_initialized((p: Pool) => p.reject(t, rejection_response))
   }
   protected[automan] def retrieve(ts: List[Task], current_time: Date) = {

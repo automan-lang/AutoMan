@@ -18,7 +18,9 @@ object Memo {
 
   def sameTasks[A](ts1: List[Task], ts2: List[Task]) : Boolean = {
     val t1_map = ts1.map { t => t.task_id -> t }.toMap
-    ts2.foldLeft (true) { case (acc, t) =>
+    ts1.size == ts2.size &&                   // same size
+      ts1.size != 0 &&                        // non-empty
+      ts2.foldLeft (true) { case (acc, t) =>  // all the elements are the same
       acc && t1_map.contains(t.task_id) && sameTask(t1_map(t.task_id), t)
     }
   }

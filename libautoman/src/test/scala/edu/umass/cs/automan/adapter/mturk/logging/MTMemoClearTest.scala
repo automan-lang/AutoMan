@@ -40,5 +40,7 @@ class MTMemoClearTest extends FlatSpec with Matchers {
     val ts3 = m.restore(q)
 
     Memo.sameTasks(ts, ts3) should be (false)
+
+    ts3.size should be (0)
   }
 }

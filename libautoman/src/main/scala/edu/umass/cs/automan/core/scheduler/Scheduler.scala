@@ -121,7 +121,6 @@ class Scheduler(val question: Question,
 
         // complete list of tasks
         val __all_tasks = __answered_tasks ::: __unrunning_tasks
-        assert(__all_tasks.size == __new_tasks.size)
 
         // memoize tasks again
         memo.save(question, __all_tasks)
@@ -237,6 +236,9 @@ class Scheduler(val question: Question,
     val to_cancel = strategy.tasks_to_cancel(all_tasks)
     val to_accept = strategy.tasks_to_accept(all_tasks)
     val to_reject = strategy.tasks_to_reject(all_tasks)
+
+    assert(to_accept.forall(_.state == SchedulerState.ANSWERED), all_tasks.map(_.state).mkString(", "))
+    assert(to_reject.forall(_.state == SchedulerState.ANSWERED), all_tasks.map(_.state).mkString(", "))
 
     val correct_answer = strategy.rejection_response(to_accept)
 

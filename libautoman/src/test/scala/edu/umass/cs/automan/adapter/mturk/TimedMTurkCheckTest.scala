@@ -18,28 +18,28 @@ class TimedMTurkCheckTest extends FlatSpec with Matchers {
       mt.logging = LogConfig.NO_LOGGING
     }
 
-    automan(a, test_mode = true) {
-      def which_ones() = a.CheckboxQuestion { q =>
-        q.confidence = confidence
-        q.budget = 8.00
-        q.text = "Which characters are not Oscar, Kermit, or Cookie Monster?"
-        q.options = List(
-          a.Option('oscar, "Oscar the Grouch"),
-          a.Option('kermit, "Kermit the Frog"),
-          a.Option('spongebob, "Spongebob Squarepants"),
-          a.Option('cookie, "Cookie Monster"),
-          a.Option('count, "The Count")
+    def which_ones() = a.CheckboxQuestion { q =>
+      q.confidence = confidence
+      q.budget = 8.00
+      q.text = "Which characters are not Oscar, Kermit, or Cookie Monster?"
+      q.options = List(
+        a.Option('oscar, "Oscar the Grouch"),
+        a.Option('kermit, "Kermit the Frog"),
+        a.Option('spongebob, "Spongebob Squarepants"),
+        a.Option('cookie, "Cookie Monster"),
+        a.Option('count, "The Count")
+      )
+      q.mock_answers = makeTimedMocks(
+        List(
+          (Set('spongebob,'count),30),
+          (Set('spongebob),31),
+          (Set('count,'spongebob),32),
+          (Set('count,'spongebob),33)
         )
-        q.mock_answers = makeTimedMocks(
-          List(
-            (Set('spongebob,'count),30),
-            (Set('spongebob),31),
-            (Set('count,'spongebob),32),
-            (Set('count,'spongebob),33)
-          )
-        )
-      }
+      )
+    }
 
+    automan(a, test_mode = true) {
       which_ones().answer match {
         case Answer(value, _, conf) =>
           println("Answer: '" + value + "', confidence: " + conf)

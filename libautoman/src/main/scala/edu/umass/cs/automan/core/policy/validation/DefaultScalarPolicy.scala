@@ -9,7 +9,7 @@ object DefaultScalarPolicy {
   // this serializes computation of outcomes using MC, but it
   // ought to be outweighed by the fact that many tasks often
   // compute exactly the same thing
-  var cache = Map[(Int,Int,Double), Double]()
+  var cache = Map[(Int,Int,Double,Int), Double]()
 }
 
 class DefaultScalarPolicy(question: ScalarQuestion)
@@ -119,7 +119,16 @@ class DefaultScalarPolicy(question: ScalarQuestion)
     var to_run = 0
     var done = false
     while(!done) {
-      val min_required = MonteCarlo.requiredForAgreement(question.num_possibilities.toInt, trials + to_run, confidence, 1000000)
+      val key = (question.num_possibilities.toInt, trials + to_run, confidence, 1000000)
+      val min_required = DefaultScalarPolicy.synchronized {
+        if (DefaultScalarPolicy.cache.contains(key)) {
+          DefaultScalarPolicy.cache(key)
+        } else {
+          val rfa = MonteCarlo.requiredForAgreement(question.num_possibilities.toInt, trials + to_run, confidence, 1000000)
+          DefaultScalarPolicy.cache += key -> rfa
+          rfa
+        }
+      }
       val expected = max_agr + to_run
       if (min_required < 0 || min_required > expected) {
         to_run += 1
@@ -139,19 +148,8 @@ class DefaultScalarPolicy(question: ScalarQuestion)
     // the number of hypotheses is the current round number + 1, since we count from zero
     val adjusted_conf = bonferroni_confidence(question.confidence, round + 1)
 
-    // cache key
-    val key = (tasks_no_dupes.size, max_agree(tasks_no_dupes), adjusted_conf)
-
     // compute # expected for agreement
-    val expected = DefaultScalarPolicy.synchronized {
-      if (DefaultScalarPolicy.cache.contains(key)) {
-        DefaultScalarPolicy.cache(key)
-      } else {
-        val efa = expected_for_agreement(key._1, key._2, key._3).toDouble
-        DefaultScalarPolicy.cache += key -> efa
-        efa
-      }
-    }
+    val expected = expected_for_agreement(tasks_no_dupes.size, max_agree(tasks_no_dupes), adjusted_conf)
 
     val biggest_bang =
       math.min(
