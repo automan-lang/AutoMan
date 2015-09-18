@@ -87,7 +87,14 @@ class MTurkAdapter extends AutomanAdapter {
     assert(t.state == SchedulerState.ANSWERED)
     run_if_initialized((p: Pool) => p.accept(t))
   }
-  protected[automan] def cancel(t: Task) = run_if_initialized((p: Pool) => p.cancel(t))
+  protected[automan] def cancel(t: Task) = {
+    assert(
+      t.state != SchedulerState.CANCELLED &&
+      t.state != SchedulerState.ACCEPTED &&
+      t.state != SchedulerState.REJECTED
+    )
+    run_if_initialized((p: Pool) => p.cancel(t))
+  }
   protected[automan] def backend_budget() = run_if_initialized((p: Pool) => p.backend_budget)
   protected[automan] def post(ts: List[Task], exclude_worker_ids: List[String]) = {
     assert(ts.forall(_.state == SchedulerState.READY))

@@ -121,6 +121,7 @@ class Scheduler(val question: Question,
 
         // complete list of tasks
         val __all_tasks = __answered_tasks ::: __unrunning_tasks
+        assert(__all_tasks.size == __new_tasks.size)
 
         // memoize tasks again
         memo.save(question, __all_tasks)
