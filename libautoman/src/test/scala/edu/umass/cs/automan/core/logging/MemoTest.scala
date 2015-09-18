@@ -70,5 +70,7 @@ class MemoTest extends FlatSpec with Matchers {
     val ts4 = m.restore(q)
 
     Memo.sameTasks(ts3, ts4) should be (true)
+
+    m.wipeDatabase()
   }
 }
