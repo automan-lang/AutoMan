@@ -19,7 +19,7 @@ class MTurkFreeTextTest extends FlatSpec with Matchers {
       mt.poll_interval = 2
     }
 
-    automan(a) {
+    automan(a, test_mode = true) {
       def which_one() = a.FreeTextQuestion { q =>
         q.confidence = 0.95
         q.budget = 8.00

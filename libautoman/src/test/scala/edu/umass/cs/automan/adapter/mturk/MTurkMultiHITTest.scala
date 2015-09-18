@@ -19,7 +19,7 @@ class MTurkMultiHITTest extends FlatSpec with Matchers {
       mt.poll_interval = 2
     }
 
-    automan(a) {
+    automan(a, test_mode = true) {
       def which_one() = a.RadioButtonQuestion { q =>
         q.confidence = confidence
         q.budget = 8.00

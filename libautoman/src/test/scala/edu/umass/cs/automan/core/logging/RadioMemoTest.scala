@@ -19,38 +19,35 @@ class RadioMemoTest extends FlatSpec with Matchers {
       mt.poll_interval = 2
     }
 
-    // clear, just to be safe
-    a.clearMemoDB()
+    def which_one(text: String) = a.RadioButtonQuestion { q =>
+      q.confidence = confidence
+      q.budget = 8.00
+      q.text = text
+      q.options = List(
+        a.Option('oscar, "Oscar the Grouch"),
+        a.Option('kermit, "Kermit the Frog"),
+        a.Option('spongebob, "Spongebob Squarepants"),
+        a.Option('cookie, "Cookie Monster"),
+        a.Option('count, "The Count")
+      )
+      q.mock_answers = makeMocksAt(List('spongebob,'spongebob,'spongebob,'spongebob,'spongebob,'spongebob), 0)
+    }
 
-    automan(a) {
-      def which_one(text: String) = a.RadioButtonQuestion { q =>
-        q.confidence = confidence
-        q.budget = 8.00
-        q.text = text
-        q.options = List(
-          a.Option('oscar, "Oscar the Grouch"),
-          a.Option('kermit, "Kermit the Frog"),
-          a.Option('spongebob, "Spongebob Squarepants"),
-          a.Option('cookie, "Cookie Monster"),
-          a.Option('count, "The Count")
-        )
-        q.mock_answers = makeMocksAt(List('spongebob,'spongebob,'spongebob,'spongebob,'spongebob,'spongebob), 0)
-      }
+    def which_one2(text: String) = a.RadioButtonQuestion { q =>
+      q.confidence = confidence
+      q.budget = 8.00
+      q.text = text
+      q.options = List(
+        a.Option('oscar, "Oscar the Grouch"),
+        a.Option('kermit, "Kermit the Frog"),
+        a.Option('spongebob, "Spongebob Squarepants"),
+        a.Option('cookie, "Cookie Monster"),
+        a.Option('count, "The Count")
+      )
+      q.mock_answers = List()
+    }
 
-      def which_one2(text: String) = a.RadioButtonQuestion { q =>
-        q.confidence = confidence
-        q.budget = 8.00
-        q.text = text
-        q.options = List(
-          a.Option('oscar, "Oscar the Grouch"),
-          a.Option('kermit, "Kermit the Frog"),
-          a.Option('spongebob, "Spongebob Squarepants"),
-          a.Option('cookie, "Cookie Monster"),
-          a.Option('count, "The Count")
-        )
-        q.mock_answers = List()
-      }
-
+    automan(a, test_mode = true) {
       which_one("Which one of these does not belong?").answer match {
         case Answer(value, cost, conf) =>
           println("Answer: '" + value + "', cost: '" + cost + "', confidence: " + conf)
@@ -71,8 +68,5 @@ class RadioMemoTest extends FlatSpec with Matchers {
           fail()
       }
     }
-
-    // clear, just to be a nice guy
-    a.clearMemoDB()
   }
 }

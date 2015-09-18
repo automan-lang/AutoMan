@@ -343,4 +343,27 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
       case None => ()
     }
   }
+
+  /**
+   * This call deletes all records stored in all of the Memo
+   * database's tables.
+   */
+  override def wipeDatabase(): Unit = {
+    super.wipeDatabase()
+
+    db_opt match {
+      case Some(db) =>
+        if (database_exists()) {
+          db.withTransaction { implicit session =>
+            dbAssignment.delete
+            dbHIT.delete
+            dbHITType.delete
+            dbQualReq.delete
+            dbTaskHIT.delete
+            dbWorker.delete
+          }
+        }
+      case None => ()
+    }
+  }
 }

@@ -18,10 +18,7 @@ class FreeTextMemoTest extends FlatSpec with Matchers {
       mt.logging = LogConfig.TRACE_MEMOIZE_VERBOSE
     }
 
-    // clear, just to be safe
-    a.clearMemoDB()
-
-    automan(a) {
+    automan(a, test_mode = true) {
       def which_one(text: String) = a.FreeTextQuestion { q =>
         q.confidence = 0.95
         q.budget = 8.00
@@ -58,8 +55,5 @@ class FreeTextMemoTest extends FlatSpec with Matchers {
           fail()
       }
     }
-
-    // clear, just to be a nice guy
-    a.clearMemoDB()
   }
 }

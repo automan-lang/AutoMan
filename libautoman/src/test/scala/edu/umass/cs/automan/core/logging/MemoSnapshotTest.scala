@@ -19,10 +19,7 @@ class MemoSnapshotTest extends FlatSpec with Matchers {
       mt.poll_interval = 2
     }
 
-    // clear, just to be safe
-    a.clearMemoDB()
-
-    automan(a) {
+    automan(a, test_mode = true) {
       def which_one() = a.RadioButtonQuestion { q =>
         q.confidence = confidence
         q.budget = 8.00
@@ -72,8 +69,5 @@ class MemoSnapshotTest extends FlatSpec with Matchers {
     }
 
     a.state_snapshot().size should be (7)
-
-    // clear, just to be a nice guy
-    a.clearMemoDB()
   }
 }

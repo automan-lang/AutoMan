@@ -18,7 +18,7 @@ class TimedMTurkCheckTest extends FlatSpec with Matchers {
       mt.logging = LogConfig.NO_LOGGING
     }
 
-    automan(a) {
+    automan(a, test_mode = true) {
       def which_ones() = a.CheckboxQuestion { q =>
         q.confidence = confidence
         q.budget = 8.00

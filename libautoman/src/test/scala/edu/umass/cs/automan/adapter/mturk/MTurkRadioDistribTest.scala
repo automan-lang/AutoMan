@@ -25,7 +25,7 @@ class MTurkRadioDistribTest extends FlatSpec with Matchers {
       sample_size
     ).toList
 
-    automan(a) {
+    automan(a, test_mode = true) {
       def which_one() = a.RadioButtonDistributionQuestion { q =>
         q.sample_size = sample_size
         q.budget = 8.00
