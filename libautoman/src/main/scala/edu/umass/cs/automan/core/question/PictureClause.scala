@@ -4,13 +4,11 @@ import scala.math._
 
 object PictureClause {
   def apply(input: String, allow_empty: Boolean): (String, BigInt) = {
-    val pattern = Compile(input) match {
-      case (regex, count) => ("^" + regex + "$", count)
-    }
+    val (pattern,num_possibilities) = Compile(input)
     if (allow_empty) {
-      ("(" + pattern._1 + ")|(^(N|n)(A|a)$)", pattern._2 + 1)
+      ("(^" + pattern + "$)|(^(N|n)(A|a)$)", num_possibilities + 1)
     } else {
-      pattern
+      ("^" + pattern + "$", num_possibilities)
     }
   }
 
@@ -45,7 +43,7 @@ object PictureClause {
       }
     } else {
       Compile(input.substring(1)) match {
-        case (regex, count) => ("[" + input.substring(0, 1) + "]"+regex, count)
+        case (regex, count) => ("[" + input.substring(0, 1) + "]" + regex, count)
       }
     }
   }
