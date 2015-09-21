@@ -29,4 +29,28 @@ class PictureClauseTest extends FlatSpec with Matchers {
     val (regex,count) = PictureClause(pc, allow_empty = true)
     regex.r.findFirstIn("PNP-4411").nonEmpty should be (false)
   }
+
+  "The picture clause XXXXXYYY with allow_empty" should "accept NA" in {
+    val pc = "XXXXXYYY"
+    val (regex,count) = PictureClause(pc, allow_empty = true)
+    regex.r.findFirstIn("NA").nonEmpty should be (true)
+  }
+
+  "The picture clause XXXXXYYY with allow_empty" should "not accept the empty string" in {
+    val pc = "XXXXXYYY"
+    val (regex,count) = PictureClause(pc, allow_empty = true)
+    regex.r.findFirstIn("").nonEmpty should be (false)
+  }
+
+  "The picture clause XXXXXYYY without allow_empty" should "not accept NA" in {
+    val pc = "XXXXXYYY"
+    val (regex,count) = PictureClause(pc, allow_empty = false)
+    regex.r.findFirstIn("NA").nonEmpty should be (false)
+  }
+
+  "The picture clause XXXXXYYY without allow_empty" should "not accept the empty string" in {
+    val pc = "XXXXXYYY"
+    val (regex,count) = PictureClause(pc, allow_empty = false)
+    regex.r.findFirstIn("").nonEmpty should be (false)
+  }
 }
