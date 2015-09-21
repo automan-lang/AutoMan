@@ -6,9 +6,9 @@ import edu.umass.cs.automan.test._
 import edu.umass.cs.automan.adapters.mturk._
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 
-class MemoSnapshotTest extends FlatSpec with Matchers {
+class MemoPathTest extends FlatSpec with Matchers {
 
-  "The memoizer snapshot call" should "return all tasks" in {
+  "A checkbox program" should "correctly recall answers when a database path is specified" in {
     val confidence = 0.95
 
     val a = MTurkAdapter { mt =>
@@ -17,23 +17,10 @@ class MemoSnapshotTest extends FlatSpec with Matchers {
       mt.use_mock = MockSetup(budget = 8.00)
       mt.logging = LogConfig.TRACE_MEMOIZE_VERBOSE
       mt.poll_interval = 2
+      mt.database_path = "MemoPathTestDB"
     }
 
-    def which_one() = a.RadioButtonQuestion { q =>
-      q.confidence = confidence
-      q.budget = 8.00
-      q.text = "Which one of these does not belong?"
-      q.options = List(
-        a.Option('oscar, "Oscar the Grouch"),
-        a.Option('kermit, "Kermit the Frog"),
-        a.Option('spongebob, "Spongebob Squarepants"),
-        a.Option('cookie, "Cookie Monster"),
-        a.Option('count, "The Count")
-      )
-      q.mock_answers = makeMocksAt(List('spongebob,'spongebob,'spongebob,'spongebob,'spongebob,'spongebob), 0)
-    }
-
-    def which_one2(text: String) = a.CheckboxQuestion { q =>
+    def which_one(text: String) = a.CheckboxQuestion { q =>
       q.confidence = confidence
       q.budget = 8.00
       q.text = text
@@ -47,17 +34,24 @@ class MemoSnapshotTest extends FlatSpec with Matchers {
       q.mock_answers = makeMocksAt(List(Set('spongebob,'count),Set('spongebob),Set('count,'spongebob),Set('count,'spongebob)), 0)
     }
 
-    automan(a, test_mode = true) {
-      which_one().answer match {
-        case Answer(value, _, conf) =>
-          println("Answer: '" + value + "', confidence: " + conf)
-          (value == 'spongebob) should be (true)
-          (conf >= confidence) should be (true)
-        case LowConfidenceAnswer(value, cost, conf) =>
-          fail()
-      }
+    def which_one2(text: String) = a.CheckboxQuestion { q =>
+      q.confidence = confidence
+      q.budget = 8.00
+      q.text = text
+      q.options = List(
+        a.Option('oscar, "Oscar the Grouch"),
+        a.Option('kermit, "Kermit the Frog"),
+        a.Option('spongebob, "Spongebob Squarepants"),
+        a.Option('cookie, "Cookie Monster"),
+        a.Option('count, "The Count")
+      )
+      q.mock_answers = List()
+    }
 
-      which_one2("Which characters are not Oscar, Kermit, or Cookie Monster?").answer match {
+    // test_mode MUST be false here in order to preserve
+    // the user-defined DB name above
+    automan(a, test_mode = false) {
+      which_one("Which characters are not Oscar, Kermit, or Cookie Monster?").answer match {
         case Answer(value, cost, conf) =>
           println("Answer: '" + value + "', confidence: " + conf)
           (value == Set('spongebob,'count)) should be (true)
@@ -67,7 +61,18 @@ class MemoSnapshotTest extends FlatSpec with Matchers {
           fail()
       }
 
-      a.state_snapshot().size should be (7)
+      which_one2("Which characters are not Oscar, Kermit, or Cookie Monster?").answer match {
+        case Answer(value, cost, conf) =>
+          println("Answer: '" + value + "', confidence: " + conf)
+          (value == Set('spongebob,'count)) should be (true)
+          (conf >= confidence) should be (true)
+          (cost == BigDecimal(0)) should be(true)
+        case _ =>
+          fail()
+      }
     }
+
+    // delete database
+    a.memo_delete()
   }
 }

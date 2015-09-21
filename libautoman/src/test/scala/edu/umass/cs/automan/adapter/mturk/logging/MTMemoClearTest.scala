@@ -1,5 +1,6 @@
 package edu.umass.cs.automan.adapter.mturk.logging
 
+import java.util.UUID
 import edu.umass.cs.automan.adapters.mturk.logging.MTMemo
 import edu.umass.cs.automan.adapters.mturk.question.MTRadioButtonQuestion
 import edu.umass.cs.automan.core.logging.{LogConfig, Memo}
@@ -11,14 +12,13 @@ class MTMemoClearTest extends FlatSpec with Matchers {
     val TIMEOUT_IN_S = 600
     val WORKER_TIMEOUT_IN_S = 30
     val BASE_COST = BigDecimal(0.06)
+    val DB = "MTMemoClearTest_" + UUID.randomUUID()
 
     // init
     val q = new MTRadioButtonQuestion()
-    val m = new MTMemo(LogConfig.TRACE_MEMOIZE_VERBOSE)
+    val m = new MTMemo(LogConfig.TRACE_MEMOIZE_VERBOSE, DB)
 
-    // clear state
-    m.wipeDatabase()
-    // recreate database
+    // create database
     m.init()
 
     val ts = List(
@@ -37,10 +37,7 @@ class MTMemoClearTest extends FlatSpec with Matchers {
 
     m.wipeDatabase()
 
-    val ts3 = m.restore(q)
-
-    Memo.sameTasks(ts, ts3) should be (false)
-
-    ts3.size should be (0)
+    // we expect an exception here
+    intercept[java.sql.SQLException] { m.restore(q) }
   }
 }

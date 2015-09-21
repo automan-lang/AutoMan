@@ -8,6 +8,7 @@ import edu.umass.cs.automan.adapters.mturk.connectionpool.Pool
 import edu.umass.cs.automan.adapters.mturk.logging.MTMemo
 import edu.umass.cs.automan.adapters.mturk.mock.{MockSetup, MockServiceState, MockRequesterService}
 import edu.umass.cs.automan.adapters.mturk.question._
+import edu.umass.cs.automan.core.logging.{LogType, LogLevelDebug, DebugLog}
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 import edu.umass.cs.automan.core.AutomanAdapter
@@ -34,9 +35,8 @@ class MTurkAdapter extends AutomanAdapter {
   override type RBDQ    = MTRadioButtonDistributionQuestion
   override type MemoDB  = MTMemo
 
-  private val SLEEP_MS = 500
-
   private var _access_key_id: Option[String] = None
+  protected var _poll_interval_in_s : Int = 30
   private var _pool : Option[Pool] = None
   private var _retriable_errors = Set("Server.ServiceUnavailable")
   private var _retry_attempts : Int = 10
@@ -154,7 +154,7 @@ class MTurkAdapter extends AutomanAdapter {
       case Some(mock_setup) =>
         new Pool(rs, 0, Some(rs.asInstanceOf[MockRequesterService]))
       case None =>
-        new Pool(rs, SLEEP_MS, None)
+        new Pool(rs, _poll_interval_in_s * 1000, None)
     }
     _service = Some(rs)
     _memoizer.restore_mt_state(pool, rs)
@@ -181,13 +181,9 @@ class MTurkAdapter extends AutomanAdapter {
       case None => ()
     }
   }
-
-  override protected[automan] def memo_init(): Unit = {
-    _memoizer = new MTMemo(_log_config)
-    _memoizer.init()
-  }
   override protected def MemoDBFactory() : MemoDB = {
-    new MTMemo(_log_config)
+    DebugLog("Initializing memo DB \"" + _database_path + "\" with MTurk extensions.", LogLevelDebug(), LogType.ADAPTER, null)
+    new MTMemo(_log_config, _database_path)
   }
   protected[automan] def getAllHITs : Array[HIT] = {
     _service match {

@@ -16,20 +16,20 @@ class OverBudgetTest extends FlatSpec with Matchers {
       mt.poll_interval = 2
     }
 
-    automan(a) {
-      def which_one() = a.RadioButtonQuestion { q =>
-        q.budget = 0.00
-        q.text = "Which one of these does not belong?"
-        q.options = List(
-          a.Option('oscar, "Oscar the Grouch"),
-          a.Option('kermit, "Kermit the Frog"),
-          a.Option('spongebob, "Spongebob Squarepants"),
-          a.Option('cookie, "Cookie Monster"),
-          a.Option('count, "The Count")
-        )
-        q.mock_answers = makeMocks(List('spongebob,'spongebob,'spongebob,'spongebob))
-      }
+    def which_one() = a.RadioButtonQuestion { q =>
+      q.budget = 0.00
+      q.text = "Which one of these does not belong?"
+      q.options = List(
+        a.Option('oscar, "Oscar the Grouch"),
+        a.Option('kermit, "Kermit the Frog"),
+        a.Option('spongebob, "Spongebob Squarepants"),
+        a.Option('cookie, "Cookie Monster"),
+        a.Option('count, "The Count")
+      )
+      q.mock_answers = makeMocks(List('spongebob,'spongebob,'spongebob,'spongebob))
+    }
 
+    automan(a) {
       which_one().answer match {
         case Answer(value, cost, conf) =>
           println("Answer: '" + value + "', cost: '" + cost + "', confidence: " + conf)

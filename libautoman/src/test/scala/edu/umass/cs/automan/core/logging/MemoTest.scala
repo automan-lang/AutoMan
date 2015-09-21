@@ -1,5 +1,7 @@
 package edu.umass.cs.automan.core.logging
 
+import java.util.UUID
+
 import edu.umass.cs.automan.adapters.mturk.question.MTRadioButtonQuestion
 import edu.umass.cs.automan.test._
 import org.scalatest._
@@ -8,16 +10,15 @@ class MemoTest extends FlatSpec with Matchers {
   val TIMEOUT_IN_S = 600
   val WORKER_TIMEOUT_IN_S = 30
   val BASE_COST = BigDecimal(0.06)
+  val DB = "MemoTest_" + UUID.randomUUID()
 
   // init
   // TODO: switch this to MockQuestion later
   val q = new MTRadioButtonQuestion()
-  val m = new Memo(LogConfig.TRACE_MEMOIZE_VERBOSE)
+  val m = new Memo(LogConfig.TRACE_MEMOIZE_VERBOSE, DB)
 
   "The Memo class" should "save and restore execution traces when logging is enabled" in {
-    // clear state
-    m.wipeDatabase()
-    // recreate database
+    // create database
     m.init()
 
     val ts = List(
@@ -33,11 +34,14 @@ class MemoTest extends FlatSpec with Matchers {
     val ts2 = m.restore(q)
 
     Memo.sameTasks(ts, ts2) should be (true)
+
+    // cleanup
+    m.wipeDatabase()
   }
 
   "The Memo class" should "save and restore complex execution traces when logging is enabled" in {
-    // clear state
-    m.wipeDatabase()
+    // create database
+    m.init()
 
     val ts = List(
       newTask(q, 0, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0),
@@ -71,6 +75,7 @@ class MemoTest extends FlatSpec with Matchers {
 
     Memo.sameTasks(ts3, ts4) should be (true)
 
+    // cleanup
     m.wipeDatabase()
   }
 }

@@ -19,25 +19,25 @@ class MTurkMultiHITTest extends FlatSpec with Matchers {
       mt.poll_interval = 2
     }
 
-    automan(a, test_mode = true) {
-      def which_one() = a.RadioButtonQuestion { q =>
-        q.confidence = confidence
-        q.budget = 8.00
-        q.initial_worker_timeout_in_s = 30
-        q.question_timeout_multiplier = 1
-        q.text = "Which one of these does not belong?"
-        q.options = List(
-          a.Option('oscar, "Oscar the Grouch"),
-          a.Option('kermit, "Kermit the Frog"),
-          a.Option('spongebob, "Spongebob Squarepants"),
-          a.Option('cookie, "Cookie Monster"),
-          a.Option('count, "The Count")
-        )
-        q.mock_answers =
-          makeMocksAt(List('spongebob, 'kermit, 'spongebob), 0) :::
+    def which_one() = a.RadioButtonQuestion { q =>
+      q.confidence = confidence
+      q.budget = 8.00
+      q.initial_worker_timeout_in_s = 30
+      q.question_timeout_multiplier = 1
+      q.text = "Which one of these does not belong?"
+      q.options = List(
+        a.Option('oscar, "Oscar the Grouch"),
+        a.Option('kermit, "Kermit the Frog"),
+        a.Option('spongebob, "Spongebob Squarepants"),
+        a.Option('cookie, "Cookie Monster"),
+        a.Option('count, "The Count")
+      )
+      q.mock_answers =
+        makeMocksAt(List('spongebob, 'kermit, 'spongebob), 0) :::
           makeMocksAt(List('spongebob, 'spongebob, 'spongebob), 45000)
-      }
+    }
 
+    automan(a, test_mode = true) {
       which_one().answer match {
         case Answer(value, cost, conf) =>
           println("Answer: '" + value + "', confidence: " + conf + ", cost: $" + cost + ", # HITs: " + a.getAllHITs.length)

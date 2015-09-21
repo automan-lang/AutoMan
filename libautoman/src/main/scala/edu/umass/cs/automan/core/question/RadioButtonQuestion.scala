@@ -21,8 +21,8 @@ abstract class RadioButtonQuestion extends ScalarQuestion {
 
   override protected[automan] def getQuestionType = QuestionType.RadioButtonQuestion
 
-  override protected[automan] def getOutcome(adapter: AutomanAdapter, memo: Memo, poll_interval_in_s: Int) : O = {
-    val scheduler = new Scheduler(this, adapter, memo)
+  override protected[automan] def getOutcome(adapter: AutomanAdapter) : O = {
+    val scheduler = new Scheduler(this, adapter)
     val f = Future{
       blocking {
         scheduler.run().asInstanceOf[AA]

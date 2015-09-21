@@ -19,35 +19,35 @@ class CheckMemoTest extends FlatSpec with Matchers {
       mt.poll_interval = 2
     }
 
+    def which_one(text: String) = a.CheckboxQuestion { q =>
+      q.confidence = confidence
+      q.budget = 8.00
+      q.text = text
+      q.options = List(
+        a.Option('oscar, "Oscar the Grouch"),
+        a.Option('kermit, "Kermit the Frog"),
+        a.Option('spongebob, "Spongebob Squarepants"),
+        a.Option('cookie, "Cookie Monster"),
+        a.Option('count, "The Count")
+      )
+      q.mock_answers = makeMocksAt(List(Set('spongebob,'count),Set('spongebob),Set('count,'spongebob),Set('count,'spongebob)), 0)
+    }
+
+    def which_one2(text: String) = a.CheckboxQuestion { q =>
+      q.confidence = confidence
+      q.budget = 8.00
+      q.text = text
+      q.options = List(
+        a.Option('oscar, "Oscar the Grouch"),
+        a.Option('kermit, "Kermit the Frog"),
+        a.Option('spongebob, "Spongebob Squarepants"),
+        a.Option('cookie, "Cookie Monster"),
+        a.Option('count, "The Count")
+      )
+      q.mock_answers = List()
+    }
+
     automan(a, test_mode = true) {
-      def which_one(text: String) = a.CheckboxQuestion { q =>
-        q.confidence = confidence
-        q.budget = 8.00
-        q.text = text
-        q.options = List(
-          a.Option('oscar, "Oscar the Grouch"),
-          a.Option('kermit, "Kermit the Frog"),
-          a.Option('spongebob, "Spongebob Squarepants"),
-          a.Option('cookie, "Cookie Monster"),
-          a.Option('count, "The Count")
-        )
-        q.mock_answers = makeMocksAt(List(Set('spongebob,'count),Set('spongebob),Set('count,'spongebob),Set('count,'spongebob)), 0)
-      }
-
-      def which_one2(text: String) = a.CheckboxQuestion { q =>
-        q.confidence = confidence
-        q.budget = 8.00
-        q.text = text
-        q.options = List(
-          a.Option('oscar, "Oscar the Grouch"),
-          a.Option('kermit, "Kermit the Frog"),
-          a.Option('spongebob, "Spongebob Squarepants"),
-          a.Option('cookie, "Cookie Monster"),
-          a.Option('count, "The Count")
-        )
-        q.mock_answers = List()
-      }
-
       which_one("Which characters are not Oscar, Kermit, or Cookie Monster?").answer match {
         case Answer(value, cost, conf) =>
           println("Answer: '" + value + "', confidence: " + conf)

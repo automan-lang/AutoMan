@@ -27,11 +27,9 @@ import scala.collection.mutable
  *
  * @param question
  * @param backend
- * @param memo
  */
 class Scheduler(val question: Question,
-                   val backend: AutomanAdapter,
-                   val memo: Memo) {
+                val backend: AutomanAdapter) {
   // save startup time
   val init_time = new Date()
   val use_virt = question.mock_answers.nonEmpty
@@ -52,7 +50,7 @@ class Scheduler(val question: Question,
 
     // Was this computation interrupted? If there's a memoizer instance
     // restore tasks from scheduler trace.
-    val tasks: List[Task] = memo.restore(question)
+    val tasks: List[Task] = backend.memo_restore(question)
 
     DebugLog("Found " + tasks.size + " saved Answers in database.", LogLevelInfo(), LogType.SCHEDULER, question.id)
 
@@ -110,7 +108,7 @@ class Scheduler(val question: Question,
         }
 
         // Update memo state and yield to let other threads get some work done
-        memo_and_yield(__dedup_tasks ::: __new_tasks, memo)
+        memo_and_yield(__dedup_tasks ::: __new_tasks)
 
         // ask the backend to retrieve answers for all RUNNING tasks
         val (__running_tasks, __unrunning_tasks) = (__dedup_tasks ::: __new_tasks).partition(_.state == SchedulerState.RUNNING)
@@ -123,7 +121,7 @@ class Scheduler(val question: Question,
         val __all_tasks = __answered_tasks ::: __unrunning_tasks
 
         // memoize tasks again
-        memo.save(question, __all_tasks)
+        backend.memo_save(question, __all_tasks)
 
         // continue?
         _done = _vp.is_done(__all_tasks)
@@ -156,7 +154,7 @@ class Scheduler(val question: Question,
 
     // save one more time
     DebugLog("Saving final state of " + _all_tasks.size + " tasks to database.", LogLevelInfo(), LogType.SCHEDULER, question.id)
-    memo.save(question, _all_tasks)
+    backend.memo_save(question, _all_tasks)
 
     // run shutdown hook
     backend.question_shutdown_hook(question)
@@ -180,8 +178,8 @@ class Scheduler(val question: Question,
     (timed_out ::: otherwise, timeouts.nonEmpty)
   }
 
-  def memo_and_yield(ts: List[Task], memo: Memo) : Unit = {
-    memo.save(question, ts)
+  def memo_and_yield(ts: List[Task]) : Unit = {
+    backend.memo_save(question, ts)
     Thread.`yield`()
   }
 

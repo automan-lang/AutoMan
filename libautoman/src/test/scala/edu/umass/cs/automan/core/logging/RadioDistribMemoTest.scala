@@ -27,35 +27,35 @@ class RadioDistribMemoTest extends FlatSpec with Matchers {
       sample_size
     ).toList
 
+    def which_one(text: String) = a.RadioButtonDistributionQuestion { q =>
+      q.sample_size = sample_size
+      q.budget = 8.00
+      q.text = text
+      q.options = List(
+        a.Option('oscar, "Oscar the Grouch"),
+        a.Option('kermit, "Kermit the Frog"),
+        a.Option('spongebob, "Spongebob Squarepants"),
+        a.Option('cookie, "Cookie Monster"),
+        a.Option('count, "The Count")
+      )
+      q.mock_answers = makeMocksAt(mock_answers.toList, 0)
+    }
+
+    def which_one2(text: String) = a.RadioButtonDistributionQuestion { q =>
+      q.sample_size = sample_size
+      q.budget = 8.00
+      q.text = text
+      q.options = List(
+        a.Option('oscar, "Oscar the Grouch"),
+        a.Option('kermit, "Kermit the Frog"),
+        a.Option('spongebob, "Spongebob Squarepants"),
+        a.Option('cookie, "Cookie Monster"),
+        a.Option('count, "The Count")
+      )
+      q.mock_answers = List()
+    }
+
     automan(a, test_mode = true) {
-      def which_one(text: String) = a.RadioButtonDistributionQuestion { q =>
-        q.sample_size = sample_size
-        q.budget = 8.00
-        q.text = text
-        q.options = List(
-          a.Option('oscar, "Oscar the Grouch"),
-          a.Option('kermit, "Kermit the Frog"),
-          a.Option('spongebob, "Spongebob Squarepants"),
-          a.Option('cookie, "Cookie Monster"),
-          a.Option('count, "The Count")
-        )
-        q.mock_answers = makeMocksAt(mock_answers.toList, 0)
-      }
-
-      def which_one2(text: String) = a.RadioButtonDistributionQuestion { q =>
-        q.sample_size = sample_size
-        q.budget = 8.00
-        q.text = text
-        q.options = List(
-          a.Option('oscar, "Oscar the Grouch"),
-          a.Option('kermit, "Kermit the Frog"),
-          a.Option('spongebob, "Spongebob Squarepants"),
-          a.Option('cookie, "Cookie Monster"),
-          a.Option('count, "The Count")
-        )
-        q.mock_answers = List()
-      }
-
       which_one("Which one of these does not belong?").answer match {
         case Answers(values, cost) =>
           println("Answer: '" + value + "', cost: '" + cost + "'")

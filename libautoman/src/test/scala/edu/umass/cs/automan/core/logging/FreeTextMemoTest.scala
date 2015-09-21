@@ -18,23 +18,23 @@ class FreeTextMemoTest extends FlatSpec with Matchers {
       mt.logging = LogConfig.TRACE_MEMOIZE_VERBOSE
     }
 
+    def which_one(text: String) = a.FreeTextQuestion { q =>
+      q.confidence = 0.95
+      q.budget = 8.00
+      q.text = text
+      q.pattern = "AAAA"
+      q.mock_answers = makeMocksAt(List("quux","foo","bar","norf","quux","quux"), 0)
+    }
+
+    def which_one2(text: String) = a.FreeTextQuestion { q =>
+      q.confidence = 0.95
+      q.budget = 8.00
+      q.text = text
+      q.pattern = "AAAA"
+      q.mock_answers = List()
+    }
+
     automan(a, test_mode = true) {
-      def which_one(text: String) = a.FreeTextQuestion { q =>
-        q.confidence = 0.95
-        q.budget = 8.00
-        q.text = text
-        q.pattern = "AAAA"
-        q.mock_answers = makeMocksAt(List("quux","foo","bar","norf","quux","quux"), 0)
-      }
-
-      def which_one2(text: String) = a.FreeTextQuestion { q =>
-        q.confidence = 0.95
-        q.budget = 8.00
-        q.text = text
-        q.pattern = "AAAA"
-        q.mock_answers = List()
-      }
-
       which_one("Which 4-letter metasyntactic variable starts with 'q'?").answer match {
         case Answer(value, cost, conf) =>
           println("Answer: '" + value + "', cost: '" + cost + "', confidence: " + conf)

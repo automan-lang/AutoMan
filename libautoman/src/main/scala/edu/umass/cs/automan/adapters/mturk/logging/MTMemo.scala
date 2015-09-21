@@ -14,7 +14,7 @@ import edu.umass.cs.automan.core.scheduler.Task
 import scala.slick.lifted.TableQuery
 import scala.slick.driver.SQLiteDriver.simple._
 
-class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
+class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(log_config, database_path) {
   type DBHITType = (String, String, Int)
   type DBQualificationRequirement = (String, String)
 
@@ -343,29 +343,6 @@ class MTMemo(log_config: LogConfig.Value) extends Memo(log_config) {
           )
         )
       }
-      case None => ()
-    }
-  }
-
-  /**
-   * This call deletes all records stored in all of the Memo
-   * database's tables.
-   */
-  override def wipeDatabase(): Unit = {
-    super.wipeDatabase()
-
-    db_opt match {
-      case Some(db) =>
-        if (database_exists()) {
-          db.withSession { implicit session =>
-            dbAssignment.delete
-            dbHIT.delete
-            dbHITType.delete
-            dbQualReq.delete
-            dbTaskHIT.delete
-            dbWorker.delete
-          }
-        }
       case None => ()
     }
   }

@@ -1,6 +1,6 @@
 package edu.umass.cs.automan.core
 
-import java.util.{Date, Locale}
+import java.util.{UUID, Date, Locale}
 import edu.umass.cs.automan.core.logging.LogConfig.LogConfig
 import edu.umass.cs.automan.core.question._
 import edu.umass.cs.automan.core.logging._
@@ -17,15 +17,17 @@ abstract class AutomanAdapter {
   type RBDQ   <: RadioButtonDistributionQuestion  // answer vector
   type MemoDB <: Memo
 
+  protected var _database_path: String = "AutoManMemoDB_" + UUID.randomUUID()
   protected var _default_confidence: Double = 0.95
   protected var _locale: Locale = Locale.getDefault
   protected var _log_config: LogConfig = LogConfig.TRACE_MEMOIZE_VERBOSE
   protected var _memoizer: MemoDB = _
   protected var _plugins: List[Class[_ <: Plugin]] = List.empty
   protected var _plugins_initialized: List[_ <: Plugin] = List.empty
-  protected var _poll_interval_in_s : Int = 30
 
   // user-visible getters and setters
+  def database_path: String = _database_path
+  def database_path_=(path: String) = { _database_path = path }
   def default_confidence: Double = _default_confidence
   def default_confidence_=(c: Double) { _default_confidence = c }
   def plugins: List[Class[_ <: Plugin]] = _plugins
@@ -102,11 +104,6 @@ abstract class AutomanAdapter {
   def RadioButtonQuestion(init: RBQ => Unit) = schedule(RBQFactory(), init)
   def RadioButtonDistributionQuestion(init: RBDQ => Unit) = schedule(RBDQFactory(), init)
   def Option(id: Symbol, text: String) : QuestionOption
-  def clearMemoDB(): Unit = {
-    if (_memoizer != null) {
-      _memoizer.wipeDatabase()
-    }
-  }
 
   // state management
   protected[automan] def close() = {
@@ -131,9 +128,20 @@ abstract class AutomanAdapter {
   protected[automan] def plugins_shutdown(): Unit = {
     _plugins_initialized.foreach { plugin => plugin.shutdown() }
   }
-  protected[automan] def memo_init() {
+  def memo_init() {
     _memoizer = MemoDBFactory()
     _memoizer.init()
+  }
+  def memo_delete(): Unit = {
+    if (_memoizer != null) {
+      _memoizer.wipeDatabase()
+    }
+  }
+  protected[automan] def memo_save(q: Question, ts: List[Task]) : Unit = {
+    _memoizer.save(q, ts)
+  }
+  protected[automan] def memo_restore(q: Question) : List[Task] = {
+    _memoizer.restore(q)
   }
   def state_snapshot(): List[TaskSnapshot[_]] = {
     _memoizer.snapshot()
@@ -144,7 +152,7 @@ abstract class AutomanAdapter {
     // initialize question with end-user lambda
     init(q)
     // start job
-    q.getOutcome(this, _memoizer, _poll_interval_in_s)
+    q.getOutcome(this)
   }
 
   // subclass instantiators; these are needed because

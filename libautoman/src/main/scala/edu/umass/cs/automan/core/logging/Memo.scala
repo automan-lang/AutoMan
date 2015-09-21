@@ -1,5 +1,6 @@
 package edu.umass.cs.automan.core.logging
 
+import java.io.File
 import java.util.{Date, UUID}
 import edu.umass.cs.automan.core.Plugin
 import edu.umass.cs.automan.core.info.QuestionType
@@ -42,7 +43,7 @@ object Memo {
   }
 }
 
-class Memo(log_config: LogConfig.Value) {
+class Memo(log_config: LogConfig.Value, database_name: String) {
   // implicit conversions
   implicit val javaUtilDateMapper = DBTaskHistory.javaUtilDateMapper
   implicit val symbolStringMapper = DBRadioButtonAnswer.symbolStringMapper
@@ -59,7 +60,7 @@ class Memo(log_config: LogConfig.Value) {
   type DBSession = SQLiteDriver.backend.Session
 
   // connection string
-  protected[automan] val _jdbc_conn_string = "jdbc:sqlite:AutoManMemoDB"
+  protected[automan] val _jdbc_conn_string = "jdbc:sqlite:" + database_name
 
   // TableQuery aliases
   protected[automan] val dbTask = TableQuery[edu.umass.cs.automan.core.logging.tables.DBTask]
@@ -73,7 +74,7 @@ class Memo(log_config: LogConfig.Value) {
   protected var _plugins = List[Plugin]()
 
   // get DB handle
-  val db_opt = log_config match {
+  var db_opt = log_config match {
     case LogConfig.NO_LOGGING => None
     case _ => {
       Some(Database.forURL(_jdbc_conn_string, driver = "org.sqlite.JDBC"))
@@ -598,16 +599,7 @@ class Memo(log_config: LogConfig.Value) {
   def wipeDatabase() : Unit = {
     db_opt match {
       case Some(db) =>
-        if (database_exists()) {
-          db.withSession { implicit session =>
-            dbQuestion.delete
-            dbTask.delete
-            dbTaskHistory.delete
-            dbRadioButtonAnswer.delete
-            dbCheckboxAnswer.delete
-            dbFreeTextAnswer.delete
-          }
-        }
+        new File(database_name).delete()
       case None => ()
     }
   }
