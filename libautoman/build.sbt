@@ -43,4 +43,6 @@ concurrentRestrictions in Global := Seq(
   Tags.limit(Tags.Test, 1)
 )
 
+parallelExecution in Test := false
+
 //net.virtualvoid.sbt.graph.Plugin.graphSettings
