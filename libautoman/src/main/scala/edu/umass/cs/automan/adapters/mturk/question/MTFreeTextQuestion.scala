@@ -2,7 +2,7 @@ package edu.umass.cs.automan.adapters.mturk.question
 
 import java.util.{Date, UUID}
 import edu.umass.cs.automan.adapters.mturk.mock.FreeTextMockResponse
-import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
+import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.question.FreeTextQuestion
 import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
@@ -28,12 +28,12 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
     //      <QuestionIdentifier>721be34c-c867-42ce-8acd-829e64ae62dd</QuestionIdentifier>
     //      <FreeText>spongebob</FreeText>
     //    </Answer>
-    DebugLog("MTFreeTextQuestion: fromXML:\n" + x.toString,LogLevel.INFO,LogType.ADAPTER,id)
+    DebugLog("MTFreeTextQuestion: fromXML:\n" + x.toString,LogLevelDebug(),LogType.ADAPTER,id)
 
     (x \\ "Answer" \ "FreeText").text
   }
   def toXML(randomize: Boolean) = {
-    <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
+    val n = <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
       <Question>
         <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
         <QuestionContent>
@@ -78,5 +78,7 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
         </AnswerSpecification>
       </Question>
     </QuestionForm>
+    DebugLog("MTFreeTextQuestion: toXML:\n" + n.toString,LogLevelDebug(),LogType.ADAPTER,id)
+    n
   }
 }

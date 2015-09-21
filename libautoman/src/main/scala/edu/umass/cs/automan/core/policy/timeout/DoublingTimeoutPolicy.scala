@@ -1,6 +1,6 @@
 package edu.umass.cs.automan.core.policy.timeout
 
-import edu.umass.cs.automan.core.logging.{DebugLog, LogLevel, LogType}
+import edu.umass.cs.automan.core.logging.{LogLevelInfo, DebugLog, LogLevel, LogType}
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 
@@ -30,7 +30,7 @@ class DoublingTimeoutPolicy(question: Question) extends TimeoutPolicy(question) 
       val last_round = tasks.filter(_.round == round)
 
       if (had_timeout) {
-        DebugLog("Had a timeout; doubling worker timeout.", LogLevel.INFO, LogType.STRATEGY, question.id)
+        DebugLog("Had a timeout; doubling worker timeout.", LogLevelInfo(), LogType.STRATEGY, question.id)
         last_round.head.worker_timeout * 2
       } else {
         last_round.head.worker_timeout

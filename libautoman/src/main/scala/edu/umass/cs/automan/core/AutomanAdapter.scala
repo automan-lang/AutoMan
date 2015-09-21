@@ -3,8 +3,8 @@ package edu.umass.cs.automan.core
 import java.util.{Date, Locale}
 import edu.umass.cs.automan.core.logging.LogConfig.LogConfig
 import edu.umass.cs.automan.core.question._
-import edu.umass.cs.automan.core.logging.{TaskSnapshot, LogConfig, Memo}
-import edu.umass.cs.automan.core.scheduler.{Scheduler, Task}
+import edu.umass.cs.automan.core.logging._
+import edu.umass.cs.automan.core.scheduler.Task
 
 abstract class AutomanAdapter {
   // question types are determined by adapter implementations
@@ -32,6 +32,8 @@ abstract class AutomanAdapter {
   def plugins_=(ps: List[Class[_ <: Plugin]]) { _plugins = ps }
   def logging = _log_config
   def logging_=(lc: LogConfig.Value) { _log_config = lc }
+  def log_verbosity = DebugLog.level
+  def log_verbosity_=(v: LogLevel) { DebugLog.level = v }
 
   // marshaling calls
   // invariant: every task that is passed in is passed back

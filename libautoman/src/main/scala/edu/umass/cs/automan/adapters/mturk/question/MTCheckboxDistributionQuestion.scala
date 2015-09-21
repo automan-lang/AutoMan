@@ -33,12 +33,12 @@ class MTCheckboxDistributionQuestion extends CheckboxDistributionQuestion with M
     //      <QuestionIdentifier>721be34c-c867-42ce-8acd-829e64ae62dd</QuestionIdentifier>
     //      <SelectionIdentifier>spongebob</SelectionIdentifier>
     //    </Answer>
-    DebugLog("MTCheckboxQuestion: fromXML:\n" + x.toString,LogLevel.INFO,LogType.ADAPTER,id)
+    DebugLog("MTCheckboxDistributionQuestion: fromXML:\n" + x.toString,LogLevelDebug(),LogType.ADAPTER,id)
 
     (x \\ "Answer" \\ "SelectionIdentifier").map{si => Symbol(si.text)}.toSet
   }
   override protected[mturk] def toXML(randomize: Boolean) : scala.xml.Node = {
-    <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
+    val n = <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
       <Question>
         <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
         <QuestionContent>
@@ -73,5 +73,8 @@ class MTCheckboxDistributionQuestion extends CheckboxDistributionQuestion with M
         </AnswerSpecification>
       </Question>
     </QuestionForm>
+
+    DebugLog("MTCheckboxDistributionQuestion: toXML:\n" + n.toString,LogLevelDebug(),LogType.ADAPTER,id)
+    n
   }
 }

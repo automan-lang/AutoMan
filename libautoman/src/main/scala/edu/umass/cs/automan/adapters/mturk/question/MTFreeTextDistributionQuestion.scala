@@ -29,12 +29,12 @@ class MTFreeTextDistributionQuestion extends FreeTextDistributionQuestion with M
     //      <QuestionIdentifier>721be34c-c867-42ce-8acd-829e64ae62dd</QuestionIdentifier>
     //      <FreeText>spongebob</FreeText>
     //    </Answer>
-    DebugLog("MTFreeTextQuestion: fromXML:\n" + x.toString,LogLevel.INFO,LogType.ADAPTER,id)
+    DebugLog("MTFreeTextDistributionQuestion: fromXML:\n" + x.toString,LogLevelDebug(),LogType.ADAPTER,id)
 
     (x \\ "Answer" \ "FreeText").text
   }
   def toXML(randomize: Boolean) = {
-    <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
+    val n = <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
       <Question>
         <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
         <QuestionContent>
@@ -79,5 +79,7 @@ class MTFreeTextDistributionQuestion extends FreeTextDistributionQuestion with M
         </AnswerSpecification>
       </Question>
     </QuestionForm>
+    DebugLog("MTFreeTextDistributionQuestion: toXML:\n" + n.toString,LogLevelDebug(),LogType.ADAPTER,id)
+    n
   }
 }

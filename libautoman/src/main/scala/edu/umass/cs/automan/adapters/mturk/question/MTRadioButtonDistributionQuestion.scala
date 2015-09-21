@@ -31,12 +31,12 @@ class MTRadioButtonDistributionQuestion extends RadioButtonDistributionQuestion 
     //      <QuestionIdentifier>721be9fc-c867-42ce-8acd-829e64ae62dd</QuestionIdentifier>
     //      <SelectionIdentifier>count</SelectionIdentifier>
     //    </Answer>
-    DebugLog("MTRadioButtonQuestion: fromXML:\n" + x.toString,LogLevel.INFO,LogType.ADAPTER,id)
+    DebugLog("MTRadioButtonDistributionQuestion: fromXML:\n" + x.toString,LogLevelDebug(),LogType.ADAPTER,id)
 
     Symbol((x \\ "Answer" \\ "SelectionIdentifier").text)
   }
   def toXML(randomize: Boolean) : scala.xml.Node = {
-    <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
+    val n = <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
       <Question>
         <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
         <IsRequired>true</IsRequired>
@@ -72,5 +72,7 @@ class MTRadioButtonDistributionQuestion extends RadioButtonDistributionQuestion 
         </AnswerSpecification>
       </Question>
     </QuestionForm>
+    DebugLog("MTRadioButtonDistributionQuestion: toXML:\n" + n.toString,LogLevelDebug(),LogType.ADAPTER,id)
+    n
   }
 }

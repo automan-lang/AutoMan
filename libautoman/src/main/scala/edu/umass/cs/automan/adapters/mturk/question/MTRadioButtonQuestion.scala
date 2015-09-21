@@ -2,7 +2,7 @@ package edu.umass.cs.automan.adapters.mturk.question
 
 import java.util.{Date, UUID}
 import edu.umass.cs.automan.adapters.mturk.mock.RadioButtonMockResponse
-import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
+import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.question.RadioButtonQuestion
 import edu.umass.cs.automan.core.util.Utilities
 import java.security.MessageDigest
@@ -31,13 +31,13 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
     //      <QuestionIdentifier>721be9fc-c867-42ce-8acd-829e64ae62dd</QuestionIdentifier>
     //      <SelectionIdentifier>count</SelectionIdentifier>
     //    </Answer>
-    DebugLog("MTRadioButtonQuestion: fromXML:\n" + x.toString,LogLevel.INFO,LogType.ADAPTER,id)
+    DebugLog("MTRadioButtonQuestion: fromXML:\n" + x.toString,LogLevelDebug(),LogType.ADAPTER,id)
 
     Symbol((x \\ "Answer" \\ "SelectionIdentifier").text)
   }
   // TODO: random checkbox fill
   override protected[mturk]def toXML(randomize: Boolean) : scala.xml.Node = {
-    <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
+    val n = <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
       <Question>
         <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
         <IsRequired>true</IsRequired>
@@ -73,5 +73,7 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
         </AnswerSpecification>
       </Question>
     </QuestionForm>
+    DebugLog("MTRadioButtonQuestion: toXML:\n" + n.toString,LogLevelDebug(),LogType.ADAPTER,id)
+    n
   }
 }

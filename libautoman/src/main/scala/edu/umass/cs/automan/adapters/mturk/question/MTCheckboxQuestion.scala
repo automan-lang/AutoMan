@@ -2,12 +2,9 @@ package edu.umass.cs.automan.adapters.mturk.question
 
 import java.util.{Date, UUID}
 import edu.umass.cs.automan.adapters.mturk.mock.CheckboxMockResponse
-import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
+import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.question.CheckboxQuestion
-import edu.umass.cs.automan.core.scheduler.BackendResult
-import com.amazonaws.mturk.requester.{AssignmentStatus, Assignment}
 import edu.umass.cs.automan.core.util.Utilities
-import xml.XML
 import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
 
@@ -36,13 +33,13 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
     //      <QuestionIdentifier>721be34c-c867-42ce-8acd-829e64ae62dd</QuestionIdentifier>
     //      <SelectionIdentifier>spongebob</SelectionIdentifier>
     //    </Answer>
-    DebugLog("MTCheckboxQuestion: fromXML:\n" + x.toString,LogLevel.INFO,LogType.ADAPTER,id)
+    DebugLog("MTCheckboxQuestion: fromXML:\n" + x.toString,LogLevelDebug(),LogType.ADAPTER,id)
 
     (x \\ "Answer" \\ "SelectionIdentifier").map{si => Symbol(si.text)}.toSet
   }
   // TODO: random checkbox fill
   override protected[mturk] def toXML(randomize: Boolean) : scala.xml.Node = {
-    <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
+    val n = <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
       <Question>
         <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
         <QuestionContent>
@@ -77,5 +74,7 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
         </AnswerSpecification>
       </Question>
     </QuestionForm>
+    DebugLog("MTCheckboxQuestion: toXML:\n" + n.toString,LogLevelDebug(),LogType.ADAPTER,id)
+    n
   }
 }

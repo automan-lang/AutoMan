@@ -16,7 +16,7 @@ class DefaultScalarPolicy(question: ScalarQuestion)
   extends ScalarValidationPolicy(question) {
   val NumberOfSimulations = 1000000
 
-  DebugLog("DEFAULTSCALAR strategy loaded.",LogLevel.INFO,LogType.STRATEGY, question.id)
+  DebugLog("DEFAULTSCALAR strategy loaded.",LogLevelInfo(),LogType.STRATEGY, question.id)
 
   def bonferroni_confidence(confidence: Double, num_hypotheses: Int) : Double = {
     assert(num_hypotheses > 0)
@@ -30,21 +30,21 @@ class DefaultScalarPolicy(question: ScalarQuestion)
   }
   def is_confident(tasks: List[Task], num_hypotheses: Int): Boolean = {
     if (tasks.size == 0) {
-      DebugLog("Have no tasks; confidence is undefined.", LogLevel.INFO, LogType.STRATEGY, question.id)
+      DebugLog("Have no tasks; confidence is undefined.", LogLevelInfo(), LogType.STRATEGY, question.id)
       false
     } else {
       val conf = current_confidence(tasks)
       val thresh = bonferroni_confidence(question.confidence, num_hypotheses)
       if (conf >= thresh) {
-        DebugLog("Reached or exceeded alpha = " + (1 - thresh).toString, LogLevel.INFO, LogType.STRATEGY, question.id)
+        DebugLog("Reached or exceeded alpha = " + (1 - thresh).toString, LogLevelInfo(), LogType.STRATEGY, question.id)
         true
       } else {
         val valid_ts = completed_workerunique_tasks(tasks)
         if (valid_ts.size > 0) {
           val biggest_answer = valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
-          DebugLog("Need more tasks for alpha = " + (1 - thresh) + "; have " + biggest_answer + " agreeing tasks.", LogLevel.INFO, LogType.STRATEGY, question.id)
+          DebugLog("Need more tasks for alpha = " + (1 - thresh) + "; have " + biggest_answer + " agreeing tasks.", LogLevelInfo(), LogType.STRATEGY, question.id)
         } else {
-          DebugLog("Need more tasks for alpha = " + (1 - thresh) + "; currently have no agreement.", LogLevel.INFO, LogType.STRATEGY, question.id)
+          DebugLog("Need more tasks for alpha = " + (1 - thresh) + "; currently have no agreement.", LogLevelInfo(), LogType.STRATEGY, question.id)
         }
         false
       }
@@ -87,7 +87,7 @@ class DefaultScalarPolicy(question: ScalarQuestion)
     DebugLog("You should spawn " + num_to_spawn +
                         " more Tasks at $" + reward + "/task, " +
                           task_timeout_in_s + "s until question timeout, " +
-                          worker_timeout_in_s + "s until worker task timeout.", LogLevel.INFO, LogType.STRATEGY,
+                          worker_timeout_in_s + "s until worker task timeout.", LogLevelInfo(), LogType.STRATEGY,
                           question.id)
 
     // allocate Task objects
@@ -107,7 +107,7 @@ class DefaultScalarPolicy(question: ScalarQuestion)
         None,
         now
       )
-      DebugLog("spawned question_id = " + question.id_string,LogLevel.INFO,LogType.STRATEGY, question.id)
+      DebugLog("spawned question_id = " + question.id_string,LogLevelInfo(),LogType.STRATEGY, question.id)
       t
     }.toList
 
@@ -163,9 +163,9 @@ class DefaultScalarPolicy(question: ScalarQuestion)
   def pessimism() = {
     val p: Double = math.max((question.time_value_per_hour/question.wage).toDouble, 1.0)
     if (p > 1) {
-      DebugLog("Using pessimistic (expensive) strategy.", LogLevel.INFO, LogType.STRATEGY, question.id)
+      DebugLog("Using pessimistic (expensive) strategy.", LogLevelInfo(), LogType.STRATEGY, question.id)
     } else {
-      DebugLog("Using Using optimistic (cheap) strategy.", LogLevel.INFO, LogType.STRATEGY, question.id)
+      DebugLog("Using Using optimistic (cheap) strategy.", LogLevelInfo(), LogType.STRATEGY, question.id)
     }
     p
   }

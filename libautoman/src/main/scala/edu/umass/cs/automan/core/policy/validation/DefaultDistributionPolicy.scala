@@ -2,7 +2,7 @@ package edu.umass.cs.automan.core.policy.validation
 
 import java.util.UUID
 
-import edu.umass.cs.automan.core.logging.{DebugLog, LogLevel, LogType}
+import edu.umass.cs.automan.core.logging.{LogLevelInfo, DebugLog, LogLevel, LogType}
 import edu.umass.cs.automan.core.question.DistributionQuestion
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 import edu.umass.cs.automan.core.policy.price.FixedPricePolicy
@@ -36,7 +36,7 @@ class DefaultDistributionPolicy(question: DistributionQuestion)
     DebugLog("You should spawn " + num_to_spawn +
       " more Tasks at $" + reward + "/task, " +
       task_timeout_in_s + "s until question timeout, " +
-      worker_timeout_in_s + "s until worker task timeout.", LogLevel.INFO, LogType.STRATEGY,
+      worker_timeout_in_s + "s until worker task timeout.", LogLevelInfo(), LogType.STRATEGY,
       question.id)
 
     // allocate Task objects
@@ -56,7 +56,7 @@ class DefaultDistributionPolicy(question: DistributionQuestion)
         None,
         now
       )
-      DebugLog("spawned question_id = " + question.id_string,LogLevel.INFO,LogType.STRATEGY, question.id)
+      DebugLog("spawned question_id = " + question.id_string,LogLevelInfo(),LogType.STRATEGY, question.id)
       t
     }.toList
 

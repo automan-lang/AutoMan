@@ -8,6 +8,5 @@
 jars
 out
 tmp
-target/
-AutomanMemoDB/
-derby.log
+**/target
+**/AutoManMemoDB

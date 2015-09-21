@@ -40,14 +40,12 @@ abstract class FreeTextQuestion extends ScalarQuestion {
     super.questionStartupHook()
 
     _pattern match {
-      case Some(pattern) =>
-        PictureClause(pattern, _allow_empty) match {
-          case (regex, count) => {
-            _regex = Some(regex)
-            // the following odd calculation exists to prevent overflow
-            // in MonteCarlo simulator; 1/1000 are sufficiently low odds
-            _num_possibilities = if (count > 1000) 1000 else count
-          }
+      case Some(pattern) => {
+        val (regex, count) = PictureClause(pattern, _allow_empty)
+          _regex = Some(regex)
+          // the following odd calculation exists to prevent overflow
+          // in MonteCarlo simulator; 1/1000 are sufficiently low odds
+          _num_possibilities = if (count > 1000) 1000 else count
         }
       case None => ()
     }

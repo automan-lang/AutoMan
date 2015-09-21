@@ -54,7 +54,7 @@ class Scheduler(val question: Question,
     // restore tasks from scheduler trace.
     val tasks: List[Task] = memo.restore(question)
 
-    DebugLog("Found " + tasks.size + " saved Answers in database.", LogLevel.INFO, LogType.SCHEDULER, question.id)
+    DebugLog("Found " + tasks.size + " saved Answers in database.", LogLevelInfo(), LogType.SCHEDULER, question.id)
 
     // set initial conditions and call scheduler loop
     run_loop(tasks)
@@ -83,7 +83,7 @@ class Scheduler(val question: Question,
       if (_virtual_times.nonEmpty) {
         val ct = // pull from the queue for simulations
           _virtual_times.dequeue()
-        DebugLog("Virtual clock starts at " + ct + " ms.", LogLevel.INFO, LogType.SCHEDULER, question.id)
+        DebugLog("Virtual clock starts at " + ct + " ms.", LogLevelInfo(), LogType.SCHEDULER, question.id)
         ct
       } else {
         0L
@@ -115,7 +115,7 @@ class Scheduler(val question: Question,
         // ask the backend to retrieve answers for all RUNNING tasks
         val (__running_tasks, __unrunning_tasks) = (__dedup_tasks ::: __new_tasks).partition(_.state == SchedulerState.RUNNING)
         assert(__running_tasks.size > 0)
-        DebugLog("Retrieving answers for " + __running_tasks.size + " running tasks from backend.", LogLevel.INFO, LogType.SCHEDULER, question.id)
+        DebugLog("Retrieving answers for " + __running_tasks.size + " running tasks from backend.", LogLevelInfo(), LogType.SCHEDULER, question.id)
         val __answered_tasks = backend.retrieve(__running_tasks, Utilities.xMillisecondsFromDate(_current_time, init_time))
         assert(retrieve_invariant(__running_tasks, __answered_tasks))
 
@@ -137,7 +137,7 @@ class Scheduler(val question: Question,
           } else {
             _current_time + 1000L
           }
-          DebugLog("Advancing virtual clock to " + t + " ms.", LogLevel.INFO, LogType.SCHEDULER, question.id)
+          DebugLog("Advancing virtual clock to " + t + " ms.", LogLevelInfo(), LogType.SCHEDULER, question.id)
           t
         } else {
           realTick()
@@ -155,7 +155,7 @@ class Scheduler(val question: Question,
     }
 
     // save one more time
-    DebugLog("Saving final state of " + _all_tasks.size + " tasks to database.", LogLevel.INFO, LogType.SCHEDULER, question.id)
+    DebugLog("Saving final state of " + _all_tasks.size + " tasks to database.", LogLevelInfo(), LogType.SCHEDULER, question.id)
     memo.save(question, _all_tasks)
 
     // run shutdown hook
@@ -171,7 +171,7 @@ class Scheduler(val question: Question,
       t.is_timedout(Utilities.xMillisecondsFromDate(current_tick, init_time))
     }
     if (timeouts.size > 0) {
-      DebugLog("Cancelling " + timeouts.size + " timed-out tasks.", LogLevel.INFO, LogType.SCHEDULER, question.id)
+      DebugLog("Cancelling " + timeouts.size + " timed-out tasks.", LogLevelInfo(), LogType.SCHEDULER, question.id)
     }
 
     // cancel and make state TIMEOUT
@@ -209,12 +209,12 @@ class Scheduler(val question: Question,
       val cost = total_cost(tasks ::: new_tasks)
       if (question.budget < cost) {
         // no
-        DebugLog("Over budget. Need: " + cost.toString() + ", have: " + question.budget.toString(), LogLevel.WARN, LogType.SCHEDULER, question.id)
+        DebugLog("Over budget. Need: " + cost.toString() + ", have: " + question.budget.toString(), LogLevelWarn(), LogType.SCHEDULER, question.id)
         throw new OverBudgetException(cost, question.budget)
       } else {
         // yes, so post and return all posted tasks
         val posted = backend.post(new_tasks, blacklist)
-        DebugLog("Posting " + posted.size + " tasks to backend.", LogLevel.INFO, LogType.SCHEDULER, question.id)
+        DebugLog("Posting " + posted.size + " tasks to backend.", LogLevelInfo(), LogType.SCHEDULER, question.id)
         posted
       }
     } else {

@@ -61,7 +61,7 @@ abstract class ScalarValidationPolicy(question: ScalarQuestion)
   }
   def select_answer(tasks: List[Task]) : Question#AA = {
     answer_selector(tasks) match { case (value,cost,conf) =>
-      DebugLog("Most popular answer is " + value.toString, LogLevel.INFO, LogType.STRATEGY, question.id)
+      DebugLog("Most popular answer is " + value.toString, LogLevelInfo(), LogType.STRATEGY, question.id)
       Answer(value, cost, conf).asInstanceOf[Question#AA]
     }
   }
@@ -73,7 +73,7 @@ abstract class ScalarValidationPolicy(question: ScalarQuestion)
     } else {
       answer_selector(tasks) match {
         case (value, cost, conf) =>
-          DebugLog("Over budget.  Best answer so far is " + value.toString, LogLevel.INFO, LogType.STRATEGY, question.id)
+          DebugLog("Over budget.  Best answer so far is " + value.toString, LogLevelInfo(), LogType.STRATEGY, question.id)
           LowConfidenceAnswer(value, cost, conf).asInstanceOf[Question#AA]
       }
     }

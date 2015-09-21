@@ -8,7 +8,7 @@ import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.adapters.mturk.mock.MockRequesterService
 import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
 import edu.umass.cs.automan.adapters.mturk.util.Key
-import edu.umass.cs.automan.core.logging.{LogType, LogLevel, DebugLog}
+import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 import edu.umass.cs.automan.core.util.{Utilities, Stopwatch}
@@ -98,7 +98,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
     t
   }
   private def initWorkerThread(): Thread = {
-    DebugLog("No worker thread; starting one up.", LogLevel.INFO, LogType.ADAPTER, null)
+    DebugLog("No worker thread; starting one up.", LogLevelInfo(), LogType.ADAPTER, null)
     val t = new Thread(new Runnable() {
       override def run() {
         while (true) {
@@ -108,7 +108,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
 
             work_item match {
               case req: ShutdownReq => {
-                DebugLog("Connection pool shutdown requested.", LogLevel.INFO, LogType.ADAPTER, null)
+                DebugLog("Connection pool shutdown requested.", LogLevelInfo(), LogType.ADAPTER, null)
                 return
               }
               case req: AcceptReq => do_sync_action(req, () => scheduled_accept(req.t))
@@ -124,10 +124,10 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
           // rate-limit
           val duration = Math.max(sleep_ms - time.duration_ms, 0)
           if (duration > 0) {
-            DebugLog("MTurk connection pool sleeping for " + duration.toString + " milliseconds.", LogLevel.INFO, LogType.ADAPTER, null)
+            DebugLog("MTurk connection pool sleeping for " + duration.toString + " milliseconds.", LogLevelInfo(), LogType.ADAPTER, null)
             Thread.sleep(duration)
           } else {
-            DebugLog("MTurk connection pool thread yield.", LogLevel.INFO, LogType.ADAPTER, null)
+            DebugLog("MTurk connection pool thread yield.", LogLevelInfo(), LogType.ADAPTER, null)
             Thread.`yield`()
           }
         } // exit loop
@@ -152,7 +152,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
   private def scheduled_accept(t: Task) : Task = {
     DebugLog(
       String.format("Accepting task for question_id = %s",
-      t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
+      t.question.id), LogLevelInfo(), LogType.ADAPTER, null)
 
     _state.getAssignmentOption(t) match {
       case Some(assignment) =>
@@ -164,7 +164,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
   }
   private def scheduled_cancel(t: Task) : Task = {
     DebugLog(String.format("Cancelling task for question_id = %s",
-      t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
+      t.question.id), LogLevelInfo(), LogType.ADAPTER, null)
 
     val hit_id = _state.getHITID(t)
     val hit_state = _state.getHITState(hit_id)
@@ -184,7 +184,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
    * @param batch_key Batch parameters
    */
   private def mturk_registerHITType(question: Question, batch_key: BatchKey) : Unit = {
-    DebugLog("Registering new HIT Type for batch key = " + batch_key, LogLevel.DEBUG, LogType.ADAPTER, question.id)
+    DebugLog("Registering new HIT Type for batch key = " + batch_key, LogLevelDebug(), LogType.ADAPTER, question.id)
 
     val (group_id, cost, worker_timeout) = batch_key
 
@@ -350,7 +350,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
 
   private def scheduled_reject(t: Task, rejection_response: String) : Task = {
     DebugLog(String.format("Rejecting task for question_id = %s",
-      t.question.id), LogLevel.INFO, LogType.ADAPTER, null)
+      t.question.id), LogLevelInfo(), LogType.ADAPTER, null)
 
     _state.getAssignmentOption(t) match {
       case Some(assignment) =>
@@ -474,7 +474,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
   }
 
   private def scheduled_get_budget(): BigDecimal = {
-    DebugLog("Getting budget.", LogLevel.INFO, LogType.ADAPTER, null)
+    DebugLog("Getting budget.", LogLevelInfo(), LogType.ADAPTER, null)
     backend.getAccountBalance
   }
 
@@ -544,7 +544,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
     val sdf = new SimpleDateFormat("yyyy-MM-dd:z")
     val datestr = sdf.format(new Date())
 
-    DebugLog("Creating disqualification.",LogLevel.INFO,LogType.ADAPTER,question_id)
+    DebugLog("Creating disqualification.",LogLevelInfo(),LogType.ADAPTER,question_id)
     val qualtxt = String.format("AutoMan automatically generated Disqualification (title: %s, date: %s)", title, datestr)
     val qual : QualificationType = backend.createQualificationType("AutoMan " + UUID.randomUUID(), "automan", qualtxt)
     new QualificationRequirement(qual.getQualificationTypeId, Comparator.EqualTo, batch_no, null, false)
