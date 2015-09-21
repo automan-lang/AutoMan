@@ -61,20 +61,11 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
           }
         </QuestionContent>
         <AnswerSpecification>
-          {
-          _pattern match {
-            case Some(p) => {
-              <FreeTextAnswer>
-                <Constraints>
-                  <AnswerFormatRegex regex={ p } errorText={ pattern_error_text } />
-                </Constraints>
-              </FreeTextAnswer>
-            }
-            case None => {
-                <FreeTextAnswer />
-            }
-          }
-          }
+          <FreeTextAnswer>
+            <Constraints>
+              <AnswerFormatRegex regex={ regex } errorText={ pattern_error_text } />
+            </Constraints>
+          </FreeTextAnswer>
         </AnswerSpecification>
       </Question>
     </QuestionForm>
