@@ -1,7 +1,7 @@
 package edu.umass.cs.automan.adapters.mturk.connectionpool
 
 import java.text.SimpleDateFormat
-import java.util.concurrent.{ConcurrentHashMap, PriorityBlockingQueue}
+import java.util.concurrent.PriorityBlockingQueue
 import java.util.{Date, UUID}
 import com.amazonaws.mturk.requester._
 import com.amazonaws.mturk.service.axis.RequesterService
@@ -22,7 +22,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
   private val _requests: PriorityBlockingQueue[Message] = new PriorityBlockingQueue[Message]()
 
   // response data
-  private val _responses = new ConcurrentHashMap[Message, Any]()
+  private val _responses = scala.collection.mutable.Map[Message, Any]()
 
   // MTurk-related state
   private var _state = new MTState()
@@ -67,16 +67,16 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
   }
 
   // IMPLEMENTATIONS
-  private def nonblocking_enqueue[M <: Message, T](req: M) = {
+  private def nonblocking_enqueue[M <: Message, T](req: M) = synchronized {
     // put job in queue
     _requests.add(req)
   }
   private def blocking_enqueue[M <: Message, T](req: M) : T = {
-    var enqueued = false
     // wait for response
     // while loop is because the JVM is
     // permitted to send spurious wakeups
-    while(!_responses.contains(req)) {
+    while(synchronized { !_responses.contains(req) }) {
+      var enqueued = false
       // Note that the purpose of this second lock
       // is to provide blocking semantics
       req.synchronized {
@@ -90,9 +90,11 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
     }
 
     // return output
-    val ret = _responses.get(req).asInstanceOf[T]
-    _responses.remove(req)
-    ret
+    synchronized {
+      val ret = _responses(req).asInstanceOf[T]
+      _responses.remove(req)
+      ret
+    }
   }
   private def startWorker() : Thread = {
     val t = initWorkerThread()
