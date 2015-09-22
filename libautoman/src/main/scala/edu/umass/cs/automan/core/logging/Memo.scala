@@ -60,7 +60,7 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
   type DBSession = H2Driver.backend.Session
 
   // canonical path
-  val path = new File(database_name).getCanonicalPath
+  val path = new File(database_name.replace(".mv.db","")).getCanonicalPath
 
   // connection string
   protected[automan] val _jdbc_conn_string = "jdbc:h2:" + path
