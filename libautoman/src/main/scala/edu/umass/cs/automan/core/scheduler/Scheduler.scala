@@ -27,6 +27,7 @@ import scala.collection.mutable
  *
  * @param question
  * @param backend
+ * @param update_frequency_ms
  */
 class Scheduler(val question: Question,
                 val backend: AutomanAdapter) {
@@ -92,12 +93,13 @@ class Scheduler(val question: Question,
   }
 
   private def run_loop(tasks: List[Task]) : Question#AA = {
+    val _update_frequency_ms = question.update_frequency_ms
     val _virtual_times = initTickQueue(question.mock_answers)  // ms quanta
     var _current_time = // ms since start
       if (_virtual_times.nonEmpty) {
         val ct = // pull from the queue for simulations
           _virtual_times.dequeue()
-        DebugLog("Virtual clock starts at " + ct + " ms.", LogLevelInfo(), LogType.SCHEDULER, question.id)
+        DebugLog("Virtual clock starts at " + ct + " ms.", LogLevelDebug(), LogType.SCHEDULER, question.id)
         ct
       } else {
         0L
@@ -111,51 +113,61 @@ class Scheduler(val question: Question,
 
     val answer = try {
       while(!_done) {
-        // process timeouts
-        val (__tasks, __suffered_timeout) = process_timeouts(_all_tasks, _current_time)
-        // get list of workers who may not re-participate
-        val __blacklist = _vp.blacklisted_workers(__tasks)
-        // filter duplicate work
-        val __dedup_tasks = _vp.mark_duplicates(__tasks)
-        // post more tasks as needed
-        val __new_tasks = post_as_needed(__dedup_tasks, backend, question, __suffered_timeout, __blacklist)
-        // update virtual_ticks with new timeouts (in milliseconds)
-        if (use_virt) {
-          _virtual_times ++= __new_tasks.map(_.timeout_in_s).distinct.map(_.toLong * 1000)
+        val __duration = Stopwatch {
+          // process timeouts
+          val (__tasks, __suffered_timeout) = process_timeouts(_all_tasks, _current_time)
+          // get list of workers who may not re-participate
+          val __blacklist = _vp.blacklisted_workers(__tasks)
+          // filter duplicate work
+          val __dedup_tasks = _vp.mark_duplicates(__tasks)
+          // post more tasks as needed
+          val __new_tasks = post_as_needed(__dedup_tasks, backend, question, __suffered_timeout, __blacklist)
+          // update virtual_ticks with new timeouts (in milliseconds)
+          if (use_virt) {
+            _virtual_times ++= __new_tasks.map(_.timeout_in_s).distinct.map(_.toLong * 1000)
+          }
+
+          // Update memo state and yield to let other threads get some work done
+          _status_changeset = memo_and_yield(__dedup_tasks ::: __new_tasks, _status_changeset)
+
+          // ask the backend to retrieve answers for all RUNNING tasks
+          val (__running_tasks, __unrunning_tasks) = (__dedup_tasks ::: __new_tasks).partition(_.state == SchedulerState.RUNNING)
+          assert(__running_tasks.size > 0)
+          DebugLog("Retrieving answers for " + __running_tasks.size + " running tasks from backend.", LogLevelInfo(), LogType.SCHEDULER, question.id)
+          val __answered_tasks = backend.retrieve(__running_tasks, Utilities.xMillisecondsFromDate(_current_time, init_time))
+          assert(retrieve_invariant(__running_tasks, __answered_tasks))
+
+          // complete list of tasks
+          val __all_tasks = __answered_tasks ::: __unrunning_tasks
+
+          // memoize tasks again
+          _status_changeset = memo_and_yield(__all_tasks, _status_changeset)
+
+          // continue?
+          _done = _vp.is_done(__all_tasks)
+
+          // update state
+          _all_tasks = __all_tasks
+          _current_time = if (use_virt) {
+            val t = if (_virtual_times.nonEmpty) {
+              // pull from the queue for simulations
+              _virtual_times.dequeue()
+            } else {
+              _current_time + 1000L
+            }
+            DebugLog("Advancing virtual clock to " + t + " ms.", LogLevelDebug(), LogType.SCHEDULER, question.id)
+            t
+          } else {
+            realTick()
+          }
         }
 
-        // Update memo state and yield to let other threads get some work done
-        _status_changeset = memo_and_yield(__dedup_tasks ::: __new_tasks, _status_changeset)
-
-        // ask the backend to retrieve answers for all RUNNING tasks
-        val (__running_tasks, __unrunning_tasks) = (__dedup_tasks ::: __new_tasks).partition(_.state == SchedulerState.RUNNING)
-        assert(__running_tasks.size > 0)
-        DebugLog("Retrieving answers for " + __running_tasks.size + " running tasks from backend.", LogLevelInfo(), LogType.SCHEDULER, question.id)
-        val __answered_tasks = backend.retrieve(__running_tasks, Utilities.xMillisecondsFromDate(_current_time, init_time))
-        assert(retrieve_invariant(__running_tasks, __answered_tasks))
-
-        // complete list of tasks
-        val __all_tasks = __answered_tasks ::: __unrunning_tasks
-
-        // memoize tasks again
-        _status_changeset = memo_and_yield(__all_tasks, _status_changeset)
-
-        // continue?
-        _done = _vp.is_done(__all_tasks)
-
-        // update state
-        _all_tasks = __all_tasks
-        _current_time = if (use_virt) {
-          val t = if (_virtual_times.nonEmpty) {
-            // pull from the queue for simulations
-            _virtual_times.dequeue()
-          } else {
-            _current_time + 1000L
-          }
-          DebugLog("Advancing virtual clock to " + t + " ms.", LogLevelInfo(), LogType.SCHEDULER, question.id)
-          t
-        } else {
-          realTick()
+        // sleep if this loop iteration < update_frequency_ms
+        // prevents flooding connection pool with requests
+        if (__duration.duration_ms < _update_frequency_ms) {
+          val t = _update_frequency_ms - __duration.duration_ms
+          DebugLog("Putting scheduler to sleep for " + t + " ms.", LogLevelDebug(), LogType.SCHEDULER, question.id)
+          Thread.sleep(t)
         }
       }
 

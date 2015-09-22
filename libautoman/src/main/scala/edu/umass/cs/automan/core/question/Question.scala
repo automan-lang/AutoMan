@@ -32,6 +32,7 @@ abstract class Question {
   protected var _text: Option[String] = None
   protected var _title: Option[String] = None
   protected var _time_value_per_hour: Option[BigDecimal] = None
+  protected var _update_frequency_ms: Int = 30000
   protected var _max_replicas: Option[Int] = None
   protected var _mock_answers = List[MockAnswer[A]]()
   protected var _wage: BigDecimal = 7.25  // per hour
@@ -82,6 +83,8 @@ abstract class Question {
   def time_value_per_hour_=(v: BigDecimal) { _time_value_per_hour = Some(v) }
   def title: String = _title match { case Some(t) => t; case None => text }
   def title_=(t: String) { _title = Some(t)}
+  def update_frequency_ms : Int = _update_frequency_ms
+  def update_frequency_ms_=(ms: Int) { _update_frequency_ms = ms }
   def wage: BigDecimal = _wage
   def wage_=(w: BigDecimal) { _wage = w }
   def initial_worker_timeout_in_s_=(t: Int) { _initial_worker_timeout_in_s = t }

@@ -296,16 +296,12 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
     // for a given HIT.
     val (group_id, _, _) = batch_key
 
-    // synchronize so that threads do not race to create
-    // different hit types for the same batch key
-    _state.synchronized {
-      if (!_state.hit_types.contains(batch_key)) {
-        // update batch counter
-        _state = _state.initOrUpdateBatchNo(group_id)
+    if (!_state.hit_types.contains(batch_key)) {
+      // update batch counter
+      _state = _state.initOrUpdateBatchNo(group_id)
 
-        // request new HITTypeId from MTurk
-        mturk_registerHITType(question, batch_key)
-      }
+      // request new HITTypeId from MTurk
+      mturk_registerHITType(question, batch_key)
     }
     _state.hit_types(batch_key)
   }
@@ -367,15 +363,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
     // 3. update tasks with answers
     ts.groupBy(Key.BatchKey).map { case (batch_key, bts) =>
       // get HITType for BatchKey
-//      val hittype = _state.getHITType(batch_key)
-
-      val hittype = try {
-        _state.getHITType(batch_key)
-      } catch {
-        case t:Throwable =>
-          println("Hi.")
-          throw t
-      }
+      val hittype = _state.getHITType(batch_key)
 
       // iterate through all HITs for this HITType
       // pair all assignments with tasks, yielding a new collection of HITStates

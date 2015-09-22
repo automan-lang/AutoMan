@@ -36,11 +36,11 @@ class MTurkAdapter extends AutomanAdapter {
   override type MemoDB  = MTMemo
 
   private var _access_key_id: Option[String] = None
-  protected var _poll_interval_in_s : Int = 30
+  private var _backend_update_frequency_ms : Int = 1500 // lower than 1 second is inadvisable
   private var _pool : Option[Pool] = None
   private var _retriable_errors = Set("Server.ServiceUnavailable")
   private var _retry_attempts : Int = 10
-  private var _retry_delay_millis : Int = 1000
+  private var _retry_delay_millis : Int = _backend_update_frequency_ms
   private var _secret_access_key: Option[String] = None
   private var _service_url : String = ClientConfig.SANDBOX_SERVICE_URL
   private var _service : Option[RequesterService] = None
@@ -49,14 +49,14 @@ class MTurkAdapter extends AutomanAdapter {
   // user-visible getters and setters
   def access_key_id: String = _access_key_id match { case Some(id) => id; case None => "" }
   def access_key_id_=(id: String) { _access_key_id = Some(id) }
+  def backend_update_frequency_ms = _backend_update_frequency_ms
+  def backend_update_frequency_ms_=(ms: Int) { _backend_update_frequency_ms = ms }
   def locale: Locale = _locale
   def locale_=(l: Locale) { _locale = l }
   def use_mock: MockSetup = _use_mock match { case Some(ms) => ms; case None => ??? }
   def use_mock_=(mock_setup: MockSetup) { _use_mock = Some(mock_setup) }
-  def poll_interval = _poll_interval_in_s
-  def poll_interval_=(s: Int) { _poll_interval_in_s = s }
   def retriable_errors_=(re: Set[String]) { _retriable_errors = re }
-  def retriable_errors = _retry_delay_millis
+  def retriable_errors = _retriable_errors
   def retry_attempts_=(ra: Int) { _retry_attempts = ra }
   def retry_attempts = _retry_attempts
   def retry_delay_millis_=(rdm: Int) { _retry_delay_millis = rdm }
@@ -110,11 +110,13 @@ class MTurkAdapter extends AutomanAdapter {
   }
   override protected[automan] def question_startup_hook(q: Question, t: Date): Unit = {
     super.question_startup_hook(q, t)
-    // register question with MockRequesterService if we're
-    // running in simulation mode
+    // do simulation-specific setup
     _use_mock match {
       case Some(mock_setup) =>
+        // register question with MockRequesterService
         _service.get.asInstanceOf[MockRequesterService].registerQuestion(q, t)
+        // shorten scheduler sleep interval
+        q.update_frequency_ms = 0
       case _ => ()
     }
   }
@@ -154,7 +156,7 @@ class MTurkAdapter extends AutomanAdapter {
       case Some(mock_setup) =>
         new Pool(rs, 0, Some(rs.asInstanceOf[MockRequesterService]))
       case None =>
-        new Pool(rs, _poll_interval_in_s * 1000, None)
+        new Pool(rs, _backend_update_frequency_ms, None)
     }
     _service = Some(rs)
     _memoizer.restore_mt_state(pool, rs)
