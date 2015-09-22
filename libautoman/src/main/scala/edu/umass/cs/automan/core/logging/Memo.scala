@@ -543,52 +543,50 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
   def save(q: Question, ts: List[Task]) : Unit = {
     if(ts.size == 0) return
 
-    synchronized {
-      db_opt match {
-        case Some(db) =>
-          db.withSession { implicit session =>
-            // is the question even in the database?
-            if (!questionInDB(q.memo_hash)) {
-              // create dbQuestion record for this memo_hash
-              dbQuestion +=(q.id, q.memo_hash, q.getQuestionType, q.text, q.title)
-            }
+    db_opt match {
+      case Some(db) =>
+        db.withSession { implicit session =>
+          // is the question even in the database?
+          if (!questionInDB(q.memo_hash)) {
+            // create dbQuestion record for this memo_hash
+            dbQuestion +=(q.id, q.memo_hash, q.getQuestionType, q.text, q.title)
+          }
 
-            // read DB to determine which records need to be inserted/updated/ignored
-            val tsstates = getAllTasksMap
-            val (inserts, updates) = needsUpdate(ts, tsstates).foldLeft((List.empty[Task], List.empty[Task])) {
-              case (acc, ius) => ius match {
-                case Insert(t) => (t :: acc._1, acc._2)
-                case Update(t) => (acc._1, t :: acc._2)
-                case Skip(t) => acc
-              }
-            }
-
-            // update tasks
-            dbTask ++= task2TaskTuple(inserts)
-
-            // do bulk insert for all task histories (inserts and updates)
-            dbTaskHistory ++= task2TaskHistoryTuple(inserts ::: updates)
-
-            // Derby can only return a single item, so we were not able to
-            // get a task_id -> history_map in the previous step;
-            // instead we query the table we just inserted into
-            val t_ids = ts.map(_.task_id).toSet
-            val histories = dbTaskHistory.filter(_.task_id inSet t_ids).map(th => (th.task_id, th.history_id)).list
-
-            // do bulk insert for all answered tasks
-            insertAnswerTable(ts, histories)
-
-            // asynchronously send update notifications
-            // this should only send changes; for now, send everything
-            Future {
-              blocking {
-                val updates = snapshotUpdates()
-                _plugins.foreach(_.state_updates(updates))
-              }
+          // read DB to determine which records need to be inserted/updated/ignored
+          val tsstates = getAllTasksMap
+          val (inserts, updates) = needsUpdate(ts, tsstates).foldLeft((List.empty[Task], List.empty[Task])) {
+            case (acc, ius) => ius match {
+              case Insert(t) => (t :: acc._1, acc._2)
+              case Update(t) => (acc._1, t :: acc._2)
+              case Skip(t) => acc
             }
           }
-        case None => ()
-      }
+
+          // update tasks
+          dbTask ++= task2TaskTuple(inserts)
+
+          // do bulk insert for all task histories (inserts and updates)
+          dbTaskHistory ++= task2TaskHistoryTuple(inserts ::: updates)
+
+          // Derby can only return a single item, so we were not able to
+          // get a task_id -> history_map in the previous step;
+          // instead we query the table we just inserted into
+          val t_ids = ts.map(_.task_id).toSet
+          val histories = dbTaskHistory.filter(_.task_id inSet t_ids).map(th => (th.task_id, th.history_id)).list
+
+          // do bulk insert for all answered tasks
+          insertAnswerTable(ts, histories)
+
+          // asynchronously send update notifications
+          // this should only send changes; for now, send everything
+          Future {
+            blocking {
+              val updates = snapshotUpdates()
+              _plugins.foreach(_.state_updates(updates))
+            }
+          }
+        }
+      case None => ()
     }
   }
 

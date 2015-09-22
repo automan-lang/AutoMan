@@ -11,7 +11,6 @@ import edu.umass.cs.automan.adapters.mturk.util.Key._
 import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.Task
-import scala.slick.lifted.TableQuery
 import scala.slick.driver.SQLiteDriver.simple._
 
 class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(log_config, database_path) {

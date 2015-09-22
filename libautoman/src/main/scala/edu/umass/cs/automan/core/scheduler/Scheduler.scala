@@ -1,6 +1,6 @@
 package edu.umass.cs.automan.core.scheduler
 
-import java.util.Date
+import java.util.{UUID, Date}
 
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.exception.OverBudgetException
@@ -71,6 +71,10 @@ class Scheduler(val question: Question,
     q
   }
 
+  private def taskStatus(ts: List[Task]) : Map[UUID,Date] = {
+    ts.map { t => t.task_id -> t.state_changed_at }.toMap
+  }
+
   private def realTick() : Long = {
     Utilities.elapsedMilliseconds(init_time, new Date())
   }
@@ -87,6 +91,7 @@ class Scheduler(val question: Question,
         0L
       }
     val _vp = question.validation_policy_instance
+    var _status_changeset = taskStatus(tasks)
 
     var _timeout_occurred = false
     var _all_tasks = tasks
@@ -108,7 +113,7 @@ class Scheduler(val question: Question,
         }
 
         // Update memo state and yield to let other threads get some work done
-        memo_and_yield(__dedup_tasks ::: __new_tasks)
+        _status_changeset = memo_and_yield(__dedup_tasks ::: __new_tasks, _status_changeset)
 
         // ask the backend to retrieve answers for all RUNNING tasks
         val (__running_tasks, __unrunning_tasks) = (__dedup_tasks ::: __new_tasks).partition(_.state == SchedulerState.RUNNING)
@@ -121,7 +126,7 @@ class Scheduler(val question: Question,
         val __all_tasks = __answered_tasks ::: __unrunning_tasks
 
         // memoize tasks again
-        backend.memo_save(question, __all_tasks)
+        _status_changeset = memo_and_yield(__all_tasks, _status_changeset)
 
         // continue?
         _done = _vp.is_done(__all_tasks)
@@ -178,9 +183,13 @@ class Scheduler(val question: Question,
     (timed_out ::: otherwise, timeouts.nonEmpty)
   }
 
-  def memo_and_yield(ts: List[Task]) : Unit = {
-    backend.memo_save(question, ts)
+  def memo_and_yield(ts: List[Task], old_status: Map[UUID,Date]) : Map[UUID,Date] = {
+    val new_status = taskStatus(ts)
+    if (new_status != old_status) {
+      backend.memo_save(question, ts)
+    }
     Thread.`yield`()
+    new_status
   }
 
   /**
