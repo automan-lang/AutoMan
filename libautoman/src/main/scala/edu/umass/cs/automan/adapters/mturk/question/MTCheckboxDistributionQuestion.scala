@@ -38,7 +38,7 @@ class MTCheckboxDistributionQuestion extends CheckboxDistributionQuestion with M
     (x \\ "Answer" \\ "SelectionIdentifier").map{si => Symbol(si.text)}.toSet
   }
   override protected[mturk] def toXML(randomize: Boolean) : scala.xml.Node = {
-    val n = <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
+    <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
       <Question>
         <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
         <QuestionContent>
@@ -73,8 +73,5 @@ class MTCheckboxDistributionQuestion extends CheckboxDistributionQuestion with M
         </AnswerSpecification>
       </Question>
     </QuestionForm>
-
-    DebugLog("MTCheckboxDistributionQuestion: toXML:\n" + n.toString,LogLevelDebug(),LogType.ADAPTER,id)
-    n
   }
 }

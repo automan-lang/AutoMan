@@ -33,7 +33,7 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
     (x \\ "Answer" \ "FreeText").text
   }
   def toXML(randomize: Boolean) = {
-    val n = <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
+    <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
       <Question>
         <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
         <QuestionContent>
@@ -69,7 +69,5 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
         </AnswerSpecification>
       </Question>
     </QuestionForm>
-    DebugLog("MTFreeTextQuestion: toXML:\n" + n.toString,LogLevelDebug(),LogType.ADAPTER,id)
-    n
   }
 }

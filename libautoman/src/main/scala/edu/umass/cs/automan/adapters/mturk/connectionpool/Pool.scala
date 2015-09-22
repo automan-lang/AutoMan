@@ -226,20 +226,24 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
     // get hit_type for batch
     val hit_type = get_or_create_hittype(batch_key, question)
 
+    // render XML
+    val xml = question.asInstanceOf[MTurkQuestion].toXML(randomize = true).toString()
+    DebugLog("Posting task XML:\n" + xml.toString, LogLevelDebug(), LogType.ADAPTER, question.id)
+
     val hit = backend.createHIT(
-      hit_type.id,                                                  // hitTypeId
-      null,                                                         // title; defined by HITType
-      null,                                                         // description
-      null,                                                         // keywords; defined by HITType
-      question.asInstanceOf[MTurkQuestion].toXML(randomize = true).toString(),  // question
-      null,                                                         // reward; defined by HITType
-      null,                                                         // assignmentDurationInSeconds; defined by HITType
-      null,                                                         // autoApprovalDelayInSeconds; defined by HITType
-      ts.head.timeout_in_s.toLong,                                  // lifetimeInSeconds
-      ts.size,                                                      // maxAssignments
-      question.id.toString,                                         // requesterAnnotation
-      Array[QualificationRequirement](),                            // qualificationRequirements; defined by HITType
-      Array[String]())                                              // responseGroup
+      hit_type.id,                        // hitTypeId
+      null,                               // title; defined by HITType
+      null,                               // description
+      null,                               // keywords; defined by HITType
+      xml,                                // question xml
+      null,                               // reward; defined by HITType
+      null,                               // assignmentDurationInSeconds; defined by HITType
+      null,                               // autoApprovalDelayInSeconds; defined by HITType
+      ts.head.timeout_in_s.toLong,        // lifetimeInSeconds
+      ts.size,                            // maxAssignments
+      question.id.toString,               // requesterAnnotation
+      Array[QualificationRequirement](),  // qualificationRequirements; defined by HITType
+      Array[String]())                    // responseGroup
     // we immediately query the backend for the HIT's complete details
     // because the HIT structure returned by createHIT has a number
     // of uninitialized fields; return new HITState
