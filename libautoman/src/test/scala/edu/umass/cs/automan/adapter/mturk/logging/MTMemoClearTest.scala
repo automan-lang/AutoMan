@@ -29,7 +29,7 @@ class MTMemoClearTest extends FlatSpec with Matchers {
       newTask(q, 0, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0)
     )
 
-    m.save(q, ts)
+    m.save(q, ts, List.empty)
 
     val ts2 = m.restore(q)
 

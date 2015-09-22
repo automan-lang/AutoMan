@@ -16,7 +16,6 @@ class MemoPathTest extends FlatSpec with Matchers {
       mt.secret_access_key = UUID.randomUUID().toString
       mt.use_mock = MockSetup(budget = 8.00)
       mt.logging = LogConfig.TRACE_MEMOIZE_VERBOSE
-      mt.poll_interval = 2
       mt.database_path = "MemoPathTestDB"
     }
 

@@ -29,7 +29,7 @@ class MemoTest extends FlatSpec with Matchers {
       newTask(q, 0, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0)
     )
 
-    m.save(q, ts)
+    m.save(q, ts, List.empty)
 
     val ts2 = m.restore(q)
 
@@ -51,11 +51,11 @@ class MemoTest extends FlatSpec with Matchers {
       newTask(q, 0, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0)
     )
 
-    m.save(q, ts)
+    m.save(q, ts, List.empty)
 
     val ts2 = ts.map(_.copy_as_running())
 
-    m.save(q, ts2)
+    m.save(q, List.empty, ts2)
 
     val t = ts2(1)
 
@@ -69,7 +69,7 @@ class MemoTest extends FlatSpec with Matchers {
       newTask(q, 0, TIMEOUT_IN_S, WORKER_TIMEOUT_IN_S, BASE_COST, 0)
     )
 
-    m.save(q, ts3)
+    m.save(q, ts3.slice(5,7), ts3.slice(1,5))
 
     val ts4 = m.restore(q)
 

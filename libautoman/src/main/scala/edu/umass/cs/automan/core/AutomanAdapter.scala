@@ -137,8 +137,8 @@ abstract class AutomanAdapter {
       _memoizer.wipeDatabase()
     }
   }
-  protected[automan] def memo_save(q: Question, ts: List[Task]) : Unit = {
-    _memoizer.save(q, ts)
+  protected[automan] def memo_save(q: Question, inserts: List[Task], updates: List[Task]) : Unit = {
+    _memoizer.save(q, inserts, updates)
   }
   protected[automan] def memo_restore(q: Question) : List[Task] = {
     _memoizer.restore(q)

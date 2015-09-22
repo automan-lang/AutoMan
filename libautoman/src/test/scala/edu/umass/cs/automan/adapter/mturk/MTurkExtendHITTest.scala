@@ -16,7 +16,6 @@ class MTurkExtendHITTest extends FlatSpec with Matchers {
       mt.secret_access_key = UUID.randomUUID().toString
       mt.use_mock = MockSetup(budget = 8.00)
       mt.logging = LogConfig.NO_LOGGING
-      mt.poll_interval = 2
     }
 
     def which_one() = a.RadioButtonQuestion { q =>

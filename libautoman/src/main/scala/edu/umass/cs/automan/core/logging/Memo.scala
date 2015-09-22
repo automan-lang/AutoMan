@@ -541,10 +541,11 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
 
   /**
    * Updates the database given a complete list of tasks.
-   * @param ts A list of tasks.
+   * @param inserts A list of tasks to insert.
+   * @param updates A list of tasks to update.
    */
-  def save(q: Question, ts: List[Task]) : Unit = {
-    if(ts.size == 0) return
+  def save(q: Question, inserts: List[Task], updates: List[Task]) : Unit = {
+    if(inserts.size == 0 && updates.size == 0) return
 
     db_opt match {
       case Some(db) =>
@@ -555,37 +556,30 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
             dbQuestion +=(q.id, q.memo_hash, q.getQuestionType, q.text, q.title)
           }
 
-          // read DB to determine which records need to be inserted/updated/ignored
-          val tsstates = getAllTasksMap
-          val (inserts, updates) = needsUpdate(ts, tsstates).foldLeft((List.empty[Task], List.empty[Task])) {
-            case (acc, ius) => ius match {
-              case Insert(t) => (t :: acc._1, acc._2)
-              case Update(t) => (acc._1, t :: acc._2)
-              case Skip(t) => acc
-            }
-          }
-
           // update tasks
           dbTask ++= task2TaskTuple(inserts)
 
           // do bulk insert for all task histories (inserts and updates)
           dbTaskHistory ++= task2TaskHistoryTuple(inserts ::: updates)
 
-          // Derby can only return a single item, so we were not able to
+          // H2 can only return a single autoinc row, so we were not able to
           // get a task_id -> history_map in the previous step;
           // instead we query the table we just inserted into
+          val ts = inserts ::: updates
           val t_ids = ts.map(_.task_id).toSet
-          val histories = dbTaskHistory.filter(_.task_id inSet t_ids).map(th => (th.task_id, th.history_id)).list
+          val histories: List[(UUID, Int)] = dbTaskHistory.filter(_.task_id inSet t_ids).map(th => (th.task_id, th.history_id)).list
 
           // do bulk insert for all answered tasks
           insertAnswerTable(ts, histories)
 
           // asynchronously send update notifications
           // this should only send changes; for now, send everything
-          Future {
-            blocking {
-              val updates = snapshotUpdates()
-              _plugins.foreach(_.state_updates(updates))
+          if (_plugins.size > 0) {
+            Future {
+              blocking {
+                val updates = snapshotUpdates()
+                _plugins.foreach(_.state_updates(updates))
+              }
             }
           }
         }

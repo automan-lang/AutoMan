@@ -75,6 +75,18 @@ class Scheduler(val question: Question,
     ts.map { t => t.task_id -> t.state_changed_at }.toMap
   }
 
+  private def taskInserts(newMap: Map[UUID,Date], oldMap: Map[UUID,Date]) : List[UUID] = {
+    newMap
+      .filter { case (uuid,_) => !oldMap.contains(uuid) }
+      .map { case (uuid,_) => uuid }.toList
+  }
+
+  private def taskUpdates(newMap: Map[UUID,Date], oldMap: Map[UUID,Date]) : List[UUID] = {
+    newMap
+      .filter { case (uuid,date) => oldMap.contains(uuid) && date.after(oldMap(uuid)) }
+      .map { case (uuid,_) => uuid}.toList
+  }
+
   private def realTick() : Long = {
     Utilities.elapsedMilliseconds(init_time, new Date())
   }
@@ -158,8 +170,7 @@ class Scheduler(val question: Question,
     }
 
     // save one more time
-    DebugLog("Saving final state of " + _all_tasks.size + " tasks to database.", LogLevelInfo(), LogType.SCHEDULER, question.id)
-    backend.memo_save(question, _all_tasks)
+    _status_changeset = memo_and_yield(_all_tasks, _status_changeset)
 
     // run shutdown hook
     backend.question_shutdown_hook(question)
@@ -186,7 +197,11 @@ class Scheduler(val question: Question,
   def memo_and_yield(ts: List[Task], old_status: Map[UUID,Date]) : Map[UUID,Date] = {
     val new_status = taskStatus(ts)
     if (new_status != old_status) {
-      backend.memo_save(question, ts)
+      DebugLog("Saving state of " + ts.size + " tasks to database.", LogLevelDebug(), LogType.SCHEDULER, question.id)
+      val tasklookup = ts.map { t => t.task_id -> t }.toMap
+      val inserts = taskInserts(new_status, old_status).map(tasklookup(_))
+      val updates = taskUpdates(new_status, old_status).map(tasklookup(_))
+      backend.memo_save(question, inserts, updates)
     }
     Thread.`yield`()
     new_status
