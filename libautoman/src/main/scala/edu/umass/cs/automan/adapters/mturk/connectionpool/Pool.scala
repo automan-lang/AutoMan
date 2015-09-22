@@ -1,7 +1,7 @@
 package edu.umass.cs.automan.adapters.mturk.connectionpool
 
 import java.text.SimpleDateFormat
-import java.util.concurrent.PriorityBlockingQueue
+import java.util.concurrent.{ConcurrentHashMap, PriorityBlockingQueue}
 import java.util.{Date, UUID}
 import com.amazonaws.mturk.requester._
 import com.amazonaws.mturk.service.axis.RequesterService
@@ -22,7 +22,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
   private val _requests: PriorityBlockingQueue[Message] = new PriorityBlockingQueue[Message]()
 
   // response data
-  private val _responses = scala.collection.mutable.Map[Message, Any]()
+  private val _responses = new ConcurrentHashMap[Message, Any]()
 
   // MTurk-related state
   private var _state = new MTState()
@@ -62,7 +62,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
   def retrieve(ts: List[Task], current_time: Date) : List[Task] = {
     blocking_enqueue[RetrieveReq, List[Task]](RetrieveReq(ts, current_time))
   }
-  def shutdown(): Unit = synchronized {
+  def shutdown(): Unit = {
     nonblocking_enqueue[ShutdownReq, Unit](ShutdownReq())
   }
 
@@ -72,25 +72,27 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
     _requests.add(req)
   }
   private def blocking_enqueue[M <: Message, T](req: M) : T = {
+    var enqueued = false
     // wait for response
     // while loop is because the JVM is
     // permitted to send spurious wakeups
-    while(synchronized { !_responses.contains(req) }) {
+    while(!_responses.contains(req)) {
       // Note that the purpose of this second lock
       // is to provide blocking semantics
       req.synchronized {
         // enqueue inside sync so that we don't miss notify
-        nonblocking_enqueue(req)
+        if (!enqueued) {
+          nonblocking_enqueue(req)
+          enqueued = true
+        }
         req.wait() // release lock and block until notify is sent
       }
     }
 
     // return output
-    synchronized {
-      val ret = _responses(req)
-      _responses.remove(req)
-      ret.asInstanceOf[T]
-    }
+    val ret = _responses.get(req).asInstanceOf[T]
+    _responses.remove(req)
+    ret
   }
   private def startWorker() : Thread = {
     val t = initWorkerThread()
@@ -138,13 +140,12 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
     t
   }
   private def do_sync_action[T](message: Message, action: () => T) : Unit = {
+    // do request
+    val response = action()
+
     message.synchronized {
-      // do request
-      val response = action()
       // store response
-      synchronized {
-        _responses += (message -> response)
-      }
+      _responses.put(message, response)
       // send end-wait notification
       message.notifyAll()
     }
