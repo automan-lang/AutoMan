@@ -1,6 +1,6 @@
 package edu.umass.cs.automan.core.logging.tables
 
-import scala.slick.driver.SQLiteDriver.simple._
+import scala.slick.driver.H2Driver.simple._
 
 object DBCheckboxAnswer {
   val symbolSetStringMapper = MappedColumnType.base[Set[Symbol], String](

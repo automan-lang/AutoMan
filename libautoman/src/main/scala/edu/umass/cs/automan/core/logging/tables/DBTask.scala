@@ -1,7 +1,7 @@
 package edu.umass.cs.automan.core.logging.tables
 
 import java.util.UUID
-import scala.slick.driver.SQLiteDriver.simple._
+import scala.slick.driver.H2Driver.simple._
 import java.util.Date
 
 object DBTask {

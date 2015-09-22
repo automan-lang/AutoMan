@@ -1,6 +1,6 @@
 package edu.umass.cs.automan.adapters.mturk.logging.tables
 
-import scala.slick.driver.SQLiteDriver.simple._
+import scala.slick.driver.H2Driver.simple._
 
 class DBHITType(tag: Tag) extends Table[(String, String, BigDecimal, Int, Int)](tag, "DBHITType") {
   def id = column[String]("HITTypeId", O.PrimaryKey)

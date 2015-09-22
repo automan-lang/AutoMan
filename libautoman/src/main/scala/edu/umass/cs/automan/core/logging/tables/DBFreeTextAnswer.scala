@@ -1,6 +1,6 @@
 package edu.umass.cs.automan.core.logging.tables
 
-import scala.slick.driver.SQLiteDriver.simple._
+import scala.slick.driver.H2Driver.simple._
 
 class DBFreeTextAnswer(tag: Tag) extends Table[(Int, String, String)](tag, "DBFREETEXTANSWER") {
   def history_id = column[Int]("HISTORY_ID")

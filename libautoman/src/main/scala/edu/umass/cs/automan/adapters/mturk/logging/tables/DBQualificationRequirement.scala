@@ -1,7 +1,7 @@
 package edu.umass.cs.automan.adapters.mturk.logging.tables
 
 import com.amazonaws.mturk.requester.Comparator
-import scala.slick.driver.SQLiteDriver.simple._
+import scala.slick.driver.H2Driver.simple._
 
 object DBQualificationRequirement {
   def comparatorMapper = MappedColumnType.base[Comparator, Int](

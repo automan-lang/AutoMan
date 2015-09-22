@@ -1,7 +1,6 @@
 package edu.umass.cs.automan.adapters.mturk.logging
 
 import java.util.{UUID, Calendar}
-
 import com.amazonaws.mturk.requester._
 import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.adapters.mturk.connectionpool.{MTState, HITState, HITType, Pool}
@@ -9,9 +8,7 @@ import edu.umass.cs.automan.adapters.mturk.logging.tables.{DBAssignment, DBQuali
 import edu.umass.cs.automan.adapters.mturk.util.Key
 import edu.umass.cs.automan.adapters.mturk.util.Key._
 import edu.umass.cs.automan.core.logging._
-import edu.umass.cs.automan.core.question.Question
-import edu.umass.cs.automan.core.scheduler.Task
-import scala.slick.driver.SQLiteDriver.simple._
+import scala.slick.driver.H2Driver.simple._
 
 class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(log_config, database_path) {
   type DBHITType = (String, String, Int)

@@ -11,8 +11,8 @@ import edu.umass.cs.automan.core.scheduler.SchedulerState._
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.slick.driver.SQLiteDriver
-import scala.slick.driver.SQLiteDriver.simple._
+import scala.slick.driver.H2Driver
+import scala.slick.driver.H2Driver.simple._
 import scala.slick.jdbc.meta.MTable
 
 object Memo {
@@ -57,10 +57,13 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
   type DBRadioButtonAnswer = (Int, Symbol, String)
   type DBCheckboxAnswer = (Int, Set[Symbol], String)
   type DBFreeTextAnswer = (Int, String, String)
-  type DBSession = SQLiteDriver.backend.Session
+  type DBSession = H2Driver.backend.Session
+
+  // canonical path
+  val path = new File(database_name).getCanonicalPath
 
   // connection string
-  protected[automan] val _jdbc_conn_string = "jdbc:sqlite:" + database_name
+  protected[automan] val _jdbc_conn_string = "jdbc:h2:" + path
 
   // TableQuery aliases
   protected[automan] val dbTask = TableQuery[edu.umass.cs.automan.core.logging.tables.DBTask]
@@ -77,7 +80,7 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
   var db_opt = log_config match {
     case LogConfig.NO_LOGGING => None
     case _ => {
-      Some(Database.forURL(_jdbc_conn_string, driver = "org.sqlite.JDBC"))
+      Some(Database.forURL(_jdbc_conn_string, driver = "org.h2.Driver"))
     }
   }
 
@@ -117,15 +120,15 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
    * should provide their DDLs as a list to this method instead of overriding it.
    * @param ddls Slick Table definitions.
    */
-  protected def init_database_if_required(ddls: List[SQLiteDriver.SchemaDescription]) : Unit = {
-    val base_ddls: SQLiteDriver.DDL =
+  protected def init_database_if_required(ddls: List[H2Driver.SchemaDescription]) : Unit = {
+    val base_ddls: H2Driver.DDL =
       dbTask.ddl ++
       dbTaskHistory.ddl ++
       dbQuestion.ddl ++
       dbRadioButtonAnswer.ddl ++
       dbCheckboxAnswer.ddl ++
       dbFreeTextAnswer.ddl
-    val all_ddls: SQLiteDriver.DDL = if (ddls.nonEmpty) {
+    val all_ddls: H2Driver.DDL = if (ddls.nonEmpty) {
       base_ddls ++ ddls.tail.foldLeft(ddls.head){ case (acc,ddl) => acc ++ ddl }
     } else {
       base_ddls
@@ -597,7 +600,8 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
   def wipeDatabase() : Unit = {
     db_opt match {
       case Some(db) =>
-        new File(database_name).delete()
+        val fullpath = path + ".mv.db"
+        new File(fullpath).delete()
       case None => ()
     }
   }
