@@ -164,7 +164,7 @@ class Scheduler(val question: Question,
 
         // sleep if this loop iteration < update_frequency_ms
         // prevents flooding connection pool with requests
-        if (__duration.duration_ms < _update_frequency_ms) {
+        if (!_done && __duration.duration_ms < _update_frequency_ms) {
           val t = _update_frequency_ms - __duration.duration_ms
           DebugLog("Putting scheduler to sleep for " + t + " ms.", LogLevelDebug(), LogType.SCHEDULER, question.id)
           Thread.sleep(t)
