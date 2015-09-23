@@ -67,6 +67,12 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
   }
 
   // IMPLEMENTATIONS
+  /**
+   * Get the current state.  State is not guaranteed to be up-to-date,
+   * but it is guaranteed to be consistent since state updates are atomic.
+   * @return an MTState object
+   */
+  protected[mturk] def stateSnapshot = _state
   private def nonblocking_enqueue[M <: Message, T](req: M) = synchronized {
     // put job in queue
     _requests.add(req)
@@ -541,7 +547,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
 
     DebugLog("Creating disqualification.",LogLevelInfo(),LogType.ADAPTER,question_id)
     val qualtxt = String.format("AutoMan automatically generated Disqualification (title: %s, date: %s)", title, datestr)
-    val qual : QualificationType = backend.createQualificationType("AutoMan " + UUID.randomUUID(), "automan", qualtxt)
+    val qual = backend.createQualificationType("AutoMan " + UUID.randomUUID(), "automan", qualtxt)
     new QualificationRequirement(qual.getQualificationTypeId, Comparator.EqualTo, batch_no, null, false)
   }
 }

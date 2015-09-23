@@ -193,4 +193,13 @@ class MTurkAdapter extends AutomanAdapter {
       case None => Array[HIT]()
     }
   }
+
+  override protected[automan] def memo_save(q: Question, inserts: List[Task], updates: List[Task]): Unit = {
+    _pool match {
+      case Some(p) =>
+        super.memo_save(q, inserts, updates)
+        _memoizer.save_mt_state(p.stateSnapshot)
+      case None => throw MTurkAdapterNotInitialized("Cannot call memoizer functions with uninitialized MTurkAdapter.")
+    }
+  }
 }

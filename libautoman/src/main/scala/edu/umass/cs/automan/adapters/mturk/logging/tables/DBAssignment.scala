@@ -32,7 +32,7 @@ object DBAssignment {
       d => new java.util.Date(d.getTime))
 }
 
-class DBAssignment(tag: Tag) extends Table[(String, String, String, AssignmentStatus, Calendar, Calendar, Calendar, Calendar, Calendar, Calendar, String, String, UUID)](tag, "DBAssignment") {
+class DBAssignment(tag: Tag) extends Table[(String, String, String, AssignmentStatus, Option[Calendar], Option[Calendar], Option[Calendar], Option[Calendar], Option[Calendar], Option[Calendar], String, Option[String], UUID)](tag, "DBAssignment") {
   implicit val statusMapper = DBAssignment.statusMapper
   implicit val calendarMapper = DBAssignment.calendarMapper
 
@@ -40,14 +40,14 @@ class DBAssignment(tag: Tag) extends Table[(String, String, String, AssignmentSt
   def workerId = column[String]("workerId")
   def HITId = column[String]("HITId")
   def assignmentStatus = column[AssignmentStatus]("assignmentStatus")
-  def autoApprovalTime = column[Calendar]("autoApprovalTime")
-  def acceptTime = column[Calendar]("acceptTime")
-  def submitTime = column[Calendar]("submitTime")
-  def approvalTime = column[Calendar]("approvalTime")
-  def rejectionTime = column[Calendar]("rejectionTime")
-  def deadline = column[Calendar]("deadline")
+  def autoApprovalTime = column[Option[Calendar]]("autoApprovalTime")
+  def acceptTime = column[Option[Calendar]]("acceptTime")
+  def submitTime = column[Option[Calendar]]("submitTime")
+  def approvalTime = column[Option[Calendar]]("approvalTime")
+  def rejectionTime = column[Option[Calendar]]("rejectionTime")
+  def deadline = column[Option[Calendar]]("deadline")
   def answer = column[String]("answer")
-  def requesterFeedback = column[String]("requesterFeedback")
+  def requesterFeedback = column[Option[String]]("requesterFeedback")
   def taskId = column[UUID]("taskId")
   override def * = (assignmentId, workerId, HITId, assignmentStatus, autoApprovalTime, acceptTime, submitTime, approvalTime, rejectionTime, deadline, answer, requesterFeedback, taskId)
 }

@@ -27,13 +27,39 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
     init_database_if_required(ddls)
   }
 
-  // TODO fix: save_mt_state is never called!!!
   def save_mt_state(state: MTState) : Unit = {
     db_opt match {
       case Some(db) => db withSession { implicit s =>
         updateHITTypes(state.hit_types, state.batch_no)
         updateHITs(state.hit_states, state.hit_ids)
         updateWhitelist(state.worker_whitelist)
+      }
+      case None => ()
+    }
+  }
+
+  def restore_mt_state(pool: Pool, backend: RequesterService) : Unit = {
+    db_opt match {
+      case Some(db) => db withSession { implicit s =>
+        // debug
+        val hittypes = dbHITType.list
+        val quals = dbQualReq.list
+
+        val hit_types: Map[Key.BatchKey, HITType] = getHITTypeMap
+        val id_hittype: Map[String, HITType] = getHITTypesByHITTypeId(hit_types)
+        val hit_states: Map[String, HITState] = getHITStateMap(id_hittype, backend)
+        val hit_ids: Map[Key.HITKey, Key.HITID] = getHITIDMap
+
+        pool.restoreState(
+          MTState(
+            hit_types,
+            hit_states,
+            hit_ids,
+            getWorkerWhitelist,
+            getQualifications,
+            getBatchNos
+          )
+        )
       }
       case None => ()
     }
@@ -53,7 +79,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
     dbWorker ++= inserts
   }
 
-  def assignmentFromDBAssnRow(row: (String, String, String, AssignmentStatus, Calendar, Calendar, Calendar, Calendar, Calendar, Calendar, String, String, UUID)) : Assignment = {
+  def assignmentFromDBAssnRow(row: (String, String, String, AssignmentStatus, Option[Calendar], Option[Calendar], Option[Calendar], Option[Calendar], Option[Calendar], Option[Calendar], String, Option[String], UUID)) : Assignment = {
     val (assignmentId, workerId, hit_id, assignmentStatus, autoApprovalTime, acceptTime, submitTime, approvalTime, rejectionTime, deadline, answer, requesterFeedback, taskId) = row
     new Assignment(
       null,
@@ -61,14 +87,14 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
       workerId,
       hit_id,
       assignmentStatus,
-      autoApprovalTime,
-      acceptTime,
-      submitTime,
-      approvalTime,
-      rejectionTime,
-      deadline,
+      autoApprovalTime.orNull,
+      acceptTime.orNull,
+      submitTime.orNull,
+      approvalTime.orNull,
+      rejectionTime.orNull,
+      deadline.orNull,
       answer,
-      requesterFeedback
+      requesterFeedback.orNull
     )
   }
 
@@ -124,7 +150,14 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
     }
 
     // HIT inserts
-    dbHIT ++= HITState2HITTuples(hit_inserts.map { hitid => hit_states(hitid)})
+    try {
+      dbHIT ++= HITState2HITTuples(hit_inserts.map { hitid => hit_states(hitid)})
+    } catch {
+      case t:Throwable =>
+        println("FIX THIS")
+        throw t
+    }
+
 
     // HIT updates
     hit_updates.foreach { hit_id => dbHIT.filter(_.HITId === hit_id).map(_.isCancelled).update(hit_states(hit_id).isCancelled)}
@@ -133,32 +166,34 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
     dbTaskHIT ++=HITState2TaskHITTuples(hit_inserts.map { hitid => hit_states(hitid)})
 
     // Assignment inserts
-    dbAssignment ++= Assignment2AssignmentTuple(assignment_inserts)
+    val a_inserts = Assignment2AssignmentTuple(assignment_inserts)
+    dbAssignment ++= a_inserts
 
     // Assignment updates
+    // a.getAssignmentStatus, a.getAutoApprovalTime, a.getAcceptTime, a.getSubmitTime, a.getApprovalTime, a.getRejectionTime, a.getDeadline, a.getRequesterFeedback
     assignment_updates.foreach { case (a, task_id) =>
       dbAssignment
         .filter(_.assignmentId === a.getAssignmentId)
         .map{ r => (r.assignmentStatus, r.autoApprovalTime, r.acceptTime, r.submitTime, r.approvalTime, r.rejectionTime, r.deadline, r.requesterFeedback) }
-        .update(a.getAssignmentStatus, a.getAutoApprovalTime, a.getAcceptTime, a.getSubmitTime, a.getApprovalTime, a.getRejectionTime, a.getDeadline, a.getRequesterFeedback)
+        .update(a.getAssignmentStatus, Option(a.getAutoApprovalTime), Option(a.getAcceptTime), Option(a.getSubmitTime), Option(a.getApprovalTime), Option(a.getRejectionTime), Option(a.getDeadline), Option(a.getRequesterFeedback))
     }
   }
 
-  private def Assignment2AssignmentTuple(pairs: List[(Assignment,UUID)]) : List[(String, String, String, AssignmentStatus, Calendar, Calendar, Calendar, Calendar, Calendar, Calendar, String, String, UUID)] = {
+  private def Assignment2AssignmentTuple(pairs: List[(Assignment,UUID)]) : List[(String, String, String, AssignmentStatus, Option[Calendar], Option[Calendar], Option[Calendar], Option[Calendar], Option[Calendar], Option[Calendar], String, Option[String], UUID)] = {
     pairs.map { case (assignment, task_id) =>
       (
         assignment.getAssignmentId,
         assignment.getWorkerId,
         assignment.getHITId,
         assignment.getAssignmentStatus,
-        assignment.getAutoApprovalTime,
-        assignment.getAcceptTime,
-        assignment.getSubmitTime,
-        assignment.getApprovalTime,
-        assignment.getRejectionTime,
-        assignment.getDeadline,
+        Option(assignment.getAutoApprovalTime),
+        Option(assignment.getAcceptTime),
+        Option(assignment.getSubmitTime),
+        Option(assignment.getApprovalTime),
+        Option(assignment.getRejectionTime),
+        Option(assignment.getDeadline),
         assignment.getAnswer,
-        assignment.getRequesterFeedback,
+        Option(assignment.getRequesterFeedback),
         task_id
       )
     }
@@ -175,7 +210,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
   // HITTypes and Qualifications never need updating; they are insert-only
   private def updateHITTypes(hts: Map[BatchKey,HITType], batch_no: Map[GroupID, Int])(implicit session: DBSession) : Unit = {
     val existing_batches: Map[HITTypeID, Int] = allHITTypes.map { r => (r._1, r._5) }.list.toMap
-    val batchkeys: Map[HITTypeID,BatchKey] = hts.map { case (key, hittype) => hittype.id -> key}.toMap
+    val batchkeys: Map[HITTypeID,BatchKey] = hts.map { case (key, hittype) => hittype.id -> key}
     val inserts: List[(HITType, Int)] = hts.values.flatMap { ht =>
       if (existing_batches.contains(ht.id)) {
         None
@@ -185,10 +220,18 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
     }.toList
 
     // do HITType inserts
-    dbHITType ++= HITType2HITTypeTuples(batchkeys, inserts)
+    val ht_inserts = HITType2HITTypeTuples(batchkeys, inserts)
+    try {
+      dbHITType ++= ht_inserts
+    } catch {
+      case t:Throwable =>
+        println("FIX THIS")
+        throw t
+    }
 
     // do qualification inserts
-    dbQualReq ++= HITType2QualificationTuples(inserts)
+    val q_inserts = HITType2QualificationTuples(inserts)
+    dbQualReq ++= q_inserts
   }
 
   private def HITType2QualificationTuples(inserts: List[(HITType,Int)]) : List[(String, Int, Comparator, Boolean, Boolean, String)] = {
@@ -239,9 +282,9 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
     dbAssignment
   }
 
-  private def tuple2Assignment(tup: (String, String, String, AssignmentStatus, Calendar, Calendar, Calendar, Calendar, Calendar, Calendar, String, String, UUID)) : Assignment = {
+  private def tuple2Assignment(tup: (String, String, String, AssignmentStatus, Option[Calendar], Option[Calendar], Option[Calendar], Option[Calendar], Option[Calendar], Option[Calendar], String, Option[String], UUID)) : Assignment = {
     val (assignmentId, workerId, hit_id, assignmentStatus, autoApprovalTime, acceptTime, submitTime, approvalTime, rejectionTime, deadline, answer, requesterFeedback, taskId) = tup
-    new Assignment(null, assignmentId, workerId, hit_id, assignmentStatus, autoApprovalTime, acceptTime, submitTime, approvalTime, rejectionTime, deadline, answer, requesterFeedback)
+    new Assignment(null, assignmentId, workerId, hit_id, assignmentStatus, autoApprovalTime.orNull, acceptTime.orNull, submitTime.orNull, approvalTime.orNull, rejectionTime.orNull, deadline.orNull, answer, requesterFeedback.orNull)
   }
 
   private def taskAssignmentMap(implicit session: DBSession) : Map[UUID,Option[Assignment]] = {
@@ -265,8 +308,13 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
   }
 
   private def getHITTypeMap(implicit session: DBSession) : Map[Key.BatchKey, HITType] = {
+//    val grps = allHITTypes.list.groupBy {
+//      case (ht_id, grp_id, cost, timeout, batch_no, qual_id, comp, intval, reqd, is_disq) =>
+//        (ht_id, grp_id, cost, timeout, batch_no)
+//    }
+
     val grps = allHITTypes.list.groupBy {
-      case (ht_id, grp_id, cost, timeout, batch_no, qual_id, comp, intval, reqd, is_disq) =>
+      case (ht_id, grp_id, cost, timeout, batch_no, _, _, _, _, _) =>
         (ht_id, grp_id, cost, timeout, batch_no)
     }
 
@@ -318,28 +366,5 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
 
   private def getBatchNos(implicit session: DBSession) : Map[GroupID, Int] = {
     dbHITType.map { r => (r.groupId, r.maxBatchNo)}.list.toMap
-  }
-
-  def restore_mt_state(pool: Pool, backend: RequesterService) : Unit = {
-    db_opt match {
-      case Some(db) => db withSession { implicit s =>
-        val hit_types: Map[Key.BatchKey, HITType] = getHITTypeMap
-        val id_hittype: Map[String, HITType] = getHITTypesByHITTypeId(hit_types)
-        val hit_states: Map[String, HITState] = getHITStateMap(id_hittype, backend)
-        val hit_ids: Map[Key.HITKey, Key.HITID] = getHITIDMap
-
-        pool.restoreState(
-          MTState(
-            hit_types,
-            hit_states,
-            hit_ids,
-            getWorkerWhitelist,
-            getQualifications,
-            getBatchNos
-          )
-        )
-      }
-      case None => ()
-    }
   }
 }

@@ -188,6 +188,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
                                        keywords: String,
                                        description: String): QualificationType = synchronized {
     val qt = new QualificationType()
+    qt.setQualificationTypeId(UUID.randomUUID().toString)
     qt.setName(name)
     qt.setKeywords(keywords)
     qt.setDescription(description)
