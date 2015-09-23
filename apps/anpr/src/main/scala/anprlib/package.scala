@@ -40,8 +40,7 @@ package object anprlib {
   }
 
   def normalize_chars(s: String) : String = {
-    val text = s.drop(1)
-    text.replaceAll("o","0").replaceAll("O","0").toUpperCase
+    s.replaceAll("o","0").replaceAll("O","0").toUpperCase
   }
 
   def getURLsFromDisk : Array[String] = {
