@@ -27,6 +27,8 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
     init_database_if_required(ddls)
   }
 
+  // to prevent data races, access to this method
+  // should be serialized by a lock
   def save_mt_state(state: MTState) : Unit = {
     db_opt match {
       case Some(db) => db withSession { implicit s =>
@@ -150,14 +152,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
     }
 
     // HIT inserts
-    try {
-      dbHIT ++= HITState2HITTuples(hit_inserts.map { hitid => hit_states(hitid)})
-    } catch {
-      case t:Throwable =>
-        println("FIX THIS")
-        throw t
-    }
-
+    dbHIT ++= HITState2HITTuples(hit_inserts.map { hitid => hit_states(hitid)} )
 
     // HIT updates
     hit_updates.foreach { hit_id => dbHIT.filter(_.HITId === hit_id).map(_.isCancelled).update(hit_states(hit_id).isCancelled)}
@@ -220,14 +215,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
     }.toList
 
     // do HITType inserts
-    val ht_inserts = HITType2HITTypeTuples(batchkeys, inserts)
-    try {
-      dbHITType ++= ht_inserts
-    } catch {
-      case t:Throwable =>
-        println("FIX THIS")
-        throw t
-    }
+    dbHITType ++= HITType2HITTypeTuples(batchkeys, inserts)
 
     // do qualification inserts
     val q_inserts = HITType2QualificationTuples(inserts)

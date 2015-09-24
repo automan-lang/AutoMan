@@ -4,7 +4,7 @@ import java.util.{Date, Locale}
 import com.amazonaws.mturk.requester.HIT
 import com.amazonaws.mturk.util.ClientConfig
 import com.amazonaws.mturk.service.axis.RequesterService
-import edu.umass.cs.automan.adapters.mturk.connectionpool.Pool
+import edu.umass.cs.automan.adapters.mturk.connectionpool.{MTState, Pool}
 import edu.umass.cs.automan.adapters.mturk.logging.MTMemo
 import edu.umass.cs.automan.adapters.mturk.mock.{MockSetup, MockServiceState, MockRequesterService}
 import edu.umass.cs.automan.adapters.mturk.question._
@@ -45,6 +45,7 @@ class MTurkAdapter extends AutomanAdapter {
   private var _service_url : String = ClientConfig.SANDBOX_SERVICE_URL
   private var _service : Option[RequesterService] = None
   private var _use_mock: Option[MockSetup] = None
+  private var _last_saved_state: Option[MTState] = None
 
   // user-visible getters and setters
   def access_key_id: String = _access_key_id match { case Some(id) => id; case None => "" }
@@ -194,11 +195,29 @@ class MTurkAdapter extends AutomanAdapter {
     }
   }
 
-  override protected[automan] def memo_save(q: Question, inserts: List[Task], updates: List[Task]): Unit = {
+  /**
+   * This method should only be called by the Scheduler when the
+   * scheduler actually has inserts/updates.  The method keeps the
+   * last saved MTState from the Pool and only does MTState updates
+   * when the MTState has changed, which is comparatively infrequent.
+   * @param q Question
+   * @param inserts Tasks to insert.
+   * @param updates Tasks to update.
+   */
+  override protected[automan] def memo_save(q: Question, inserts: List[Task], updates: List[Task]): Unit = synchronized {
     _pool match {
       case Some(p) =>
+        val state = p.stateSnapshot
+        val do_update = _last_saved_state match {
+          case Some(ls) => ls != state
+          case None => true
+        }
+
         super.memo_save(q, inserts, updates)
-        _memoizer.save_mt_state(p.stateSnapshot)
+        if (do_update) {
+          _memoizer.save_mt_state(state)
+          _last_saved_state = Some(state)
+        }
       case None => throw MTurkAdapterNotInitialized("Cannot call memoizer functions with uninitialized MTurkAdapter.")
     }
   }

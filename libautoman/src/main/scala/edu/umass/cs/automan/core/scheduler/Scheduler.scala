@@ -208,6 +208,7 @@ class Scheduler(val question: Question,
 
   def memo_and_yield(ts: List[Task], old_status: Map[UUID,Date]) : Map[UUID,Date] = {
     val new_status = taskStatus(ts)
+    assert(new_status.size >= old_status.size)
     if (new_status != old_status) {
       DebugLog("Saving state of " + ts.size + " tasks to database.", LogLevelDebug(), LogType.SCHEDULER, question.id)
       val tasklookup = ts.map { t => t.task_id -> t }.toMap
