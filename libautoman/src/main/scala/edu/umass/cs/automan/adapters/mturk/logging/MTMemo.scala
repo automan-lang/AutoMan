@@ -296,11 +296,6 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
   }
 
   private def getHITTypeMap(implicit session: DBSession) : Map[Key.BatchKey, HITType] = {
-//    val grps = allHITTypes.list.groupBy {
-//      case (ht_id, grp_id, cost, timeout, batch_no, qual_id, comp, intval, reqd, is_disq) =>
-//        (ht_id, grp_id, cost, timeout, batch_no)
-//    }
-
     val grps = allHITTypes.list.groupBy {
       case (ht_id, grp_id, cost, timeout, batch_no, _, _, _, _, _) =>
         (ht_id, grp_id, cost, timeout, batch_no)
