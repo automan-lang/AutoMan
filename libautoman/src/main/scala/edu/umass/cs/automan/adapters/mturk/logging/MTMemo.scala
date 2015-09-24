@@ -318,7 +318,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
       val disqual = quals.flatMap { case Right(q) => None; case Left(q) => Some(q) }.head
 
       Key.BatchKey(grp_id, cost, timeout) -> HITType(ht_id, normal_quals, disqual, grp_id)
-    }.toMap
+    }
   }
 
   private def getHITIDMap(implicit session: DBSession) : Map[Key.HITKey, Key.HITID] = {
