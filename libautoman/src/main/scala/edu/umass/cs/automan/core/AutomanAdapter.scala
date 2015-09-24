@@ -41,12 +41,12 @@ abstract class AutomanAdapter {
   // invariant: every task that is passed in is passed back
   /**
    * Tell the backend to accept the answer associated with this ANSWERED task.
-   * @param t An ANSWERED task.
-   * @return An ACCEPTED task.
+   * @param ts ANSWERED tasks.
+   * @return ACCEPTED tasks.
    */
-  protected[automan] def accept(t: Task) : Task
+  protected[automan] def accept(ts: List[Task]) : List[Task]
   protected[automan] def backend_budget(): BigDecimal
-  protected[automan] def cancel(t: Task) : Task
+  protected[automan] def cancel(ts: List[Task]) : List[Task]
   /**
    * Post tasks on the backend, one task for each task.  All tasks given should
    * be marked READY. The method returns the complete list of tasks passed
@@ -60,11 +60,10 @@ abstract class AutomanAdapter {
 
   /**
    * Tell the backend to reject the answer associated with this ANSWERED task.
-   * @param t An ANSWERED task.
-   * @param rejection_response Reason for rejection, e.g., the correct answer was different.
-   * @return A REJECTED task.
+   * @param ts_reasons A list of pairs of ANSWERED tasks and their rejection reasons.
+   * @return REJECTED tasks.
    */
-  protected[automan] def reject(t: Task, rejection_response: String) : Task
+  protected[automan] def reject(ts_reasons: List[(Task,String)]) : List[Task]
 
   /**
    * Ask the backend to retrieve answers given a list of RUNNING tasks. Invariant:
@@ -136,9 +135,6 @@ abstract class AutomanAdapter {
     if (_memoizer != null) {
       _memoizer.wipeDatabase()
     }
-  }
-  protected[automan] def memo_save(q: Question, inserts: List[Task], updates: List[Task]) : Unit = {
-    _memoizer.save(q, inserts, updates)
   }
   protected[automan] def memo_restore(q: Question) : List[Task] = {
     _memoizer.restore(q)

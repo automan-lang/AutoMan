@@ -27,7 +27,6 @@ import scala.collection.mutable
  *
  * @param question
  * @param backend
- * @param update_frequency_ms
  */
 class Scheduler(val question: Question,
                 val backend: AutomanAdapter) {
@@ -53,7 +52,10 @@ class Scheduler(val question: Question,
     // restore tasks from scheduler trace.
     val tasks: List[Task] = backend.memo_restore(question)
 
-    DebugLog("Found " + tasks.size + " saved Answers in database.", LogLevelInfo(), LogType.SCHEDULER, question.id)
+    DebugLog(
+      "Found " + tasks.size + " saved Tasks in database with " +
+      tasks.count(_.answer.isDefined) + " answers.", LogLevelInfo(), LogType.SCHEDULER, question.id
+    )
 
     // set initial conditions and call scheduler loop
     run_loop(tasks)
@@ -127,9 +129,6 @@ class Scheduler(val question: Question,
             _virtual_times ++= __new_tasks.map(_.timeout_in_s).distinct.map(_.toLong * 1000)
           }
 
-          // Update memo state and yield to let other threads get some work done
-          _status_changeset = memo_and_yield(__dedup_tasks ::: __new_tasks, _status_changeset)
-
           // ask the backend to retrieve answers for all RUNNING tasks
           val (__running_tasks, __unrunning_tasks) = (__dedup_tasks ::: __new_tasks).partition(_.state == SchedulerState.RUNNING)
           assert(__running_tasks.size > 0)
@@ -139,9 +138,6 @@ class Scheduler(val question: Question,
 
           // complete list of tasks
           val __all_tasks = __answered_tasks ::: __unrunning_tasks
-
-          // memoize tasks again
-          _status_changeset = memo_and_yield(__all_tasks, _status_changeset)
 
           // continue?
           _done = _vp.is_done(__all_tasks)
@@ -181,9 +177,6 @@ class Scheduler(val question: Question,
         _vp.select_over_budget_answer(_all_tasks, o.need, o.have)
     }
 
-    // save one more time
-    _status_changeset = memo_and_yield(_all_tasks, _status_changeset)
-
     // run shutdown hook
     backend.question_shutdown_hook(question)
 
@@ -201,24 +194,24 @@ class Scheduler(val question: Question,
     }
 
     // cancel and make state TIMEOUT
-    val timed_out = timeouts.map(backend.cancel).map(_.copy_as_timeout())
+    val timed_out = backend.cancel(timeouts).map(_.copy_as_timeout())
     // return all updated Task objects and signal whether timeout occurred
     (timed_out ::: otherwise, timeouts.nonEmpty)
   }
 
-  def memo_and_yield(ts: List[Task], old_status: Map[UUID,Date]) : Map[UUID,Date] = {
-    val new_status = taskStatus(ts)
-    assert(new_status.size >= old_status.size)
-    if (new_status != old_status) {
-      DebugLog("Saving state of " + ts.size + " tasks to database.", LogLevelDebug(), LogType.SCHEDULER, question.id)
-      val tasklookup = ts.map { t => t.task_id -> t }.toMap
-      val inserts = taskInserts(new_status, old_status).map(tasklookup(_))
-      val updates = taskUpdates(new_status, old_status).map(tasklookup(_))
-      backend.memo_save(question, inserts, updates)
-    }
-    Thread.`yield`()
-    new_status
-  }
+//  def memo_and_yield(ts: List[Task], old_status: Map[UUID,Date]) : Map[UUID,Date] = {
+//    val new_status = taskStatus(ts)
+//    assert(new_status.size >= old_status.size)
+//    if (new_status != old_status) {
+//      DebugLog("Saving state of " + ts.size + " tasks to database.", LogLevelDebug(), LogType.SCHEDULER, question.id)
+//      val tasklookup = ts.map { t => t.task_id -> t }.toMap
+//      val inserts = taskInserts(new_status, old_status).map(tasklookup(_))
+//      val updates = taskUpdates(new_status, old_status).map(tasklookup(_))
+//      backend.memo_save(question, inserts, updates)
+//    }
+//    Thread.`yield`()
+//    new_status
+//  }
 
   /**
    * Post new tasks if needed. Returns only newly-created tasks.
@@ -281,11 +274,11 @@ class Scheduler(val question: Question,
 
     val remaining_tasks = all_tasks.filterNot(action_items.contains(_))
 
-    val cancelled = to_cancel.map(backend.cancel)
+    val cancelled = backend.cancel(to_cancel)
     assert(all_set_invariant(to_cancel, cancelled, SchedulerState.CANCELLED))
-    val accepted = to_accept.map(backend.accept)
+    val accepted = backend.accept(to_accept)
     assert(all_set_invariant(to_accept, accepted, SchedulerState.ACCEPTED))
-    val rejected = to_reject.map(backend.reject(_, correct_answer))
+    val rejected = backend.reject(to_reject.map { t => (t,correct_answer) })
     assert(all_set_invariant(to_reject, rejected, SchedulerState.REJECTED))
     remaining_tasks ::: cancelled ::: accepted ::: rejected
   }

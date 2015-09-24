@@ -45,7 +45,6 @@ class MTurkAdapter extends AutomanAdapter {
   private var _service_url : String = ClientConfig.SANDBOX_SERVICE_URL
   private var _service : Option[RequesterService] = None
   private var _use_mock: Option[MockSetup] = None
-  private var _last_saved_state: Option[MTState] = None
 
   // user-visible getters and setters
   def access_key_id: String = _access_key_id match { case Some(id) => id; case None => "" }
@@ -84,26 +83,28 @@ class MTurkAdapter extends AutomanAdapter {
   def Option(id: Symbol, text: String) = new MTQuestionOption(id, text, "")
   def Option(id: Symbol, text: String, image_url: String) = new MTQuestionOption(id, text, image_url)
 
-  protected[automan] def accept(t: Task) = {
-    assert(t.state == SchedulerState.ANSWERED)
-    run_if_initialized((p: Pool) => p.accept(t))
+  protected[automan] def accept(ts: List[Task]) = {
+    assert(ts.forall { t => t.state == SchedulerState.ANSWERED } )
+    run_if_initialized((p: Pool) => p.accept(ts))
   }
-  protected[automan] def cancel(t: Task) = {
+  protected[automan] def cancel(ts: List[Task]) = {
     assert(
-      t.state != SchedulerState.CANCELLED &&
-      t.state != SchedulerState.ACCEPTED &&
-      t.state != SchedulerState.REJECTED
+      ts.forall { t =>
+        t.state != SchedulerState.CANCELLED &&
+          t.state != SchedulerState.ACCEPTED &&
+          t.state != SchedulerState.REJECTED
+      }
     )
-    run_if_initialized((p: Pool) => p.cancel(t))
+    run_if_initialized((p: Pool) => p.cancel(ts))
   }
   protected[automan] def backend_budget() = run_if_initialized((p: Pool) => p.backend_budget)
   protected[automan] def post(ts: List[Task], exclude_worker_ids: List[String]) = {
     assert(ts.forall(_.state == SchedulerState.READY))
     run_if_initialized((p: Pool) => p.post(ts, exclude_worker_ids))
   }
-  protected[automan] def reject(t: Task, rejection_response: String) = {
-    assert(t.state == SchedulerState.ANSWERED, "State during reject is: " + t.state)
-    run_if_initialized((p: Pool) => p.reject(t, rejection_response))
+  protected[automan] def reject(ts_reasons: List[(Task, String)]) = {
+    ts_reasons.foreach{ case (t,_) => assert(t.state == SchedulerState.ANSWERED, "State during reject is: " + t.state) }
+    run_if_initialized((p: Pool) => p.reject(ts_reasons))
   }
   protected[automan] def retrieve(ts: List[Task], current_time: Date) = {
     assert(ts.forall(_.state == SchedulerState.RUNNING))
@@ -155,12 +156,11 @@ class MTurkAdapter extends AutomanAdapter {
     }
     val pool = _use_mock match {
       case Some(mock_setup) =>
-        new Pool(rs, 0, Some(rs.asInstanceOf[MockRequesterService]))
+        new Pool(rs, 0, Some(rs.asInstanceOf[MockRequesterService]), _memoizer)
       case None =>
-        new Pool(rs, _backend_update_frequency_ms, None)
+        new Pool(rs, _backend_update_frequency_ms, None, _memoizer)
     }
     _service = Some(rs)
-    _memoizer.restore_mt_state(pool, rs)
     _pool = Some(pool)
   }
 
@@ -192,33 +192,6 @@ class MTurkAdapter extends AutomanAdapter {
     _service match {
       case Some(rs) => rs.searchAllHITs()
       case None => Array[HIT]()
-    }
-  }
-
-  /**
-   * This method should only be called by the Scheduler when the
-   * scheduler actually has inserts/updates.  The method keeps the
-   * last saved MTState from the Pool and only does MTState updates
-   * when the MTState has changed, which is comparatively infrequent.
-   * @param q Question
-   * @param inserts Tasks to insert.
-   * @param updates Tasks to update.
-   */
-  override protected[automan] def memo_save(q: Question, inserts: List[Task], updates: List[Task]): Unit = synchronized {
-    _pool match {
-      case Some(p) =>
-        val state = p.stateSnapshot
-        val do_update = _last_saved_state match {
-          case Some(ls) => ls != state
-          case None => true
-        }
-
-        super.memo_save(q, inserts, updates)
-        if (do_update) {
-          _memoizer.save_mt_state(state)
-          _last_saved_state = Some(state)
-        }
-      case None => throw MTurkAdapterNotInitialized("Cannot call memoizer functions with uninitialized MTurkAdapter.")
     }
   }
 }

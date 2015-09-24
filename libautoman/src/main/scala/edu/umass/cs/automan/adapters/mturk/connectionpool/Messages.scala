@@ -12,13 +12,13 @@ protected[mturk] sealed trait Message extends Comparable[Message] {
 protected[mturk] case class ShutdownReq() extends Message {
   override protected def order = 0
 }
-protected[mturk] case class AcceptReq(t: Task) extends Message {
+protected[mturk] case class AcceptReq(ts: List[Task]) extends Message {
   override protected def order = 5
 }
 protected[mturk] case class BudgetReq() extends Message {
   override protected def order = 1
 }
-protected[mturk] case class CancelReq(t: Task) extends Message {
+protected[mturk] case class CancelReq(ts: List[Task]) extends Message {
   override protected def order = 2
 }
 protected[mturk] case class DisposeQualsReq(q: MTurkQuestion) extends Message {
@@ -27,7 +27,7 @@ protected[mturk] case class DisposeQualsReq(q: MTurkQuestion) extends Message {
 protected[mturk] case class CreateHITReq(ts: List[Task], exclude_worker_ids: List[String]) extends Message {
   override protected def order = 3
 }
-protected[mturk] case class RejectReq(t: Task, correct_answer: String) extends Message {
+protected[mturk] case class RejectReq(ts_reasons: List[(Task,String)]) extends Message {
   override protected def order = 5
 }
 protected[mturk] case class RetrieveReq(ts: List[Task], current_time: Date) extends Message {

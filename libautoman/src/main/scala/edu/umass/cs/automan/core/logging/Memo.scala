@@ -145,7 +145,7 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
     }
   }
 
-  private def restore_all_tasks_of_type(qt: QuestionType.Value)(implicit s: DBSession) : List[TaskSnapshot[_]] = {
+  private def restore_task_snapshots_of_type(qt: QuestionType.Value)(implicit s: DBSession) : List[TaskSnapshot[_]] = {
     qt match {
       case QuestionType.CheckboxQuestion =>
         val ts = allTasksQuery()
@@ -284,12 +284,12 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
     db_opt match {
       case Some(db) => {
         db.withSession { s =>
-          restore_all_tasks_of_type(QuestionType.CheckboxQuestion)(s) :::
-          restore_all_tasks_of_type(QuestionType.CheckboxDistributionQuestion)(s) :::
-          restore_all_tasks_of_type(QuestionType.FreeTextQuestion)(s) :::
-          restore_all_tasks_of_type(QuestionType.FreeTextDistributionQuestion)(s) :::
-          restore_all_tasks_of_type(QuestionType.RadioButtonQuestion)(s) :::
-          restore_all_tasks_of_type(QuestionType.RadioButtonDistributionQuestion)(s)
+          restore_task_snapshots_of_type(QuestionType.CheckboxQuestion)(s) :::
+          restore_task_snapshots_of_type(QuestionType.CheckboxDistributionQuestion)(s) :::
+          restore_task_snapshots_of_type(QuestionType.FreeTextQuestion)(s) :::
+          restore_task_snapshots_of_type(QuestionType.FreeTextDistributionQuestion)(s) :::
+          restore_task_snapshots_of_type(QuestionType.RadioButtonQuestion)(s) :::
+          restore_task_snapshots_of_type(QuestionType.RadioButtonDistributionQuestion)(s)
         }
 
       }
@@ -327,7 +327,6 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
    * @return A list of tasks.
    */
   def restore(q: Question) : List[Task] = {
-
     db_opt match {
       case Some(db) => {
         val QS_TS_THS = allTasksQuery()

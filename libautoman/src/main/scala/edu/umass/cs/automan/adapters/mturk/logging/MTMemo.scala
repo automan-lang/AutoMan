@@ -40,7 +40,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
     }
   }
 
-  def restore_mt_state(pool: Pool, backend: RequesterService) : Unit = {
+  def restore_mt_state(backend: RequesterService) : Option[MTState] = {
     db_opt match {
       case Some(db) => db withSession { implicit s =>
         // debug
@@ -48,11 +48,11 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
         val quals = dbQualReq.list
 
         val hit_types: Map[Key.BatchKey, HITType] = getHITTypeMap
-        val id_hittype: Map[String, HITType] = getHITTypesByHITTypeId(hit_types)
-        val hit_states: Map[String, HITState] = getHITStateMap(id_hittype, backend)
+        val id_hittypes: Map[String, HITType] = getHITTypesByHITTypeId(hit_types)
+        val hit_states: Map[String, HITState] = getHITStateMap(id_hittypes, backend)
         val hit_ids: Map[Key.HITKey, Key.HITID] = getHITIDMap
 
-        pool.restoreState(
+        Some(
           MTState(
             hit_types,
             hit_states,
@@ -63,7 +63,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
           )
         )
       }
-      case None => ()
+      case None => None
     }
   }
 
@@ -275,19 +275,41 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
     new Assignment(null, assignmentId, workerId, hit_id, assignmentStatus, autoApprovalTime.orNull, acceptTime.orNull, submitTime.orNull, approvalTime.orNull, rejectionTime.orNull, deadline.orNull, answer, requesterFeedback.orNull)
   }
 
-  private def taskAssignmentMap(implicit session: DBSession) : Map[UUID,Option[Assignment]] = {
-    dbAssignment.list.map(row => row._13 -> Some(tuple2Assignment(row))).toMap
+  private def taskAssignmentMap(implicit session: DBSession) : Map[UUID,Assignment] = {
+    dbAssignment.list.map(row => row._13 -> tuple2Assignment(row)).toMap
   }
 
   private def getHITStateMap(htid_map: Map[String, HITType], backend: RequesterService)(implicit session: DBSession) : Map[String,HITState] = {
     val hit_ids = allHITs.list.map { case(hit_id, hit_type_id, is_cancelled) => hit_id -> (hit_type_id,is_cancelled) }.toMap
     val hits = hit_ids.keys.map { hit_id => backend.getHIT(hit_id) }
+
+    val all_ta_map = taskAssignmentMap
+
+    val task_ids_by_hitid: Map[String, List[UUID]] =
+      (dbTask leftJoin dbTaskHIT on(_.task_id === _.taskId))
+        .groupBy(_._2.HITId)
+        .map { case (hit_id, query) =>
+          hit_id -> query.map { case (dbtask,_) => dbtask.task_id }
+        }.list.toMap
+
+    // we want to construct a task-assignment map specifically for this HITState
     hits.map { hit =>
+      val task_ids = task_ids_by_hitid(hit.getHITId)
+
+      // when a task_id has no entry in the map, insert value None
+      val taskAssignmentMapFiltered : Map[UUID,Option[Assignment]] = task_ids.map { task_id =>
+        if (all_ta_map.contains(task_id)) {
+          task_id -> Some(all_ta_map(task_id))
+        } else {
+          task_id -> None
+        }
+      }.toMap
+
       val hit_id = hit.getHITId
       val hit_type_id = hit_ids(hit_id)._1
       val hit_type = htid_map(hit_type_id)
       val cancelled = hit_ids(hit_id)._2
-      hit_id -> HITState(hit, taskAssignmentMap, hit_type, cancelled)
+      hit_id -> HITState(hit, taskAssignmentMapFiltered, hit_type, cancelled)
     }.toMap
   }
 
