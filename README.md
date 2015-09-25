@@ -116,12 +116,13 @@ Supported Question Types
 ------------------------
 
 |Question Type|Purpose|Quality-Controlled|Number of Answers Returned|
+| --- | --- | --- | --- |
 | `RadioButtonQuestion` | The user is asked to choose one of n options.|yes|1|
 | `CheckboxQuestion` | The user is asked to choose one of m of n options, where m <= n. |yes|1|
 | `FreeTextQuestion` | The user is asked to enter a textual response, such that the response conforms to a simple pattern (a "picture clause"). |yes|1|
-| `RadioButtonDistributionQuestion` | The user is asked to choose one of n options. |no|user-defined|
-| `CheckboxDistributionQuestion` | The user is asked to choose one of m of n options, where m <= n. |no|user-defined|
-| `FreeTextDistributionQuestion` | The user is asked to enter a textual response, such that the response conforms to a simple pattern (a "picture clause"). |no|user-defined|
+| `RadioButtonDistributionQuestion` | Same as `RadioButtonQuestion`. |no|user-defined|
+| `CheckboxDistributionQuestion` | Same as `CheckboxQuestion`. |no|user-defined|
+| `FreeTextDistributionQuestion` | Same as `FreeTextQuestion`. |no|user-defined|
 
 Using AutoMan with a Different Crowdsourcing Backend
 ----------------------------------------------------
@@ -173,7 +174,7 @@ Contact information:
   Dan Barowy, dbarowy@cs.umass.edu
   Emery Berger, emery@cs.umass.edu
 
-CHANGELOG:
+Change Log:
 ----------
 
 |Version|Notes|
@@ -198,7 +199,7 @@ CHANGELOG:
 |0.2|Major rewrite to simplify syntax.|
 |0.1|First release.|
 
-ACKNOWLEDGMENTS:
+Acknowledgements:
 ----------------
 This material is based on work supported by National Science Foundation Grant Nos. CCF-1144520 and CCF-0953754 and DARPA Award N10AP2026.
 
