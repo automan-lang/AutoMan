@@ -285,12 +285,13 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
 
     val all_ta_map = taskAssignmentMap
 
-    val task_ids_by_hitid: Map[String, List[UUID]] =
+    val task_ids_by_hitid =
       (dbTask leftJoin dbTaskHIT on(_.task_id === _.taskId))
-        .groupBy(_._2.HITId)
-        .map { case (hit_id, query) =>
-          hit_id -> query.map { case (dbtask,_) => dbtask.task_id }
-        }.list.toMap
+        .list
+        .groupBy { case ((dbtask,(hit_id, _))) => hit_id }
+        .map { case (hit_id, group) =>
+          hit_id -> group.map { case ((task_id, _, _, _, _, _, _),_)=> task_id }
+        }
 
     // we want to construct a task-assignment map specifically for this HITState
     hits.map { hit =>
