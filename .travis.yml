@@ -6,13 +6,13 @@ scala:
 # blacklist
 branches:
   except:
-    - master
+    - pattern-matching
     - webdebugger
 
 # whitelist
 branches:
   only:
-    - pattern-matching
+    - master
 
 before_script:
   - cd libautoman
