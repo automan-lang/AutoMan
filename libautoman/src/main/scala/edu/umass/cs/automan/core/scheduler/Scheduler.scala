@@ -261,11 +261,11 @@ class Scheduler(val question: Question,
 
     val remaining_tasks = all_tasks.filterNot(action_items.contains(_))
 
-    val cancelled = backend.cancel(to_cancel)
+    val cancelled = if (to_cancel.nonEmpty) { backend.cancel(to_cancel) } else { List.empty }
     assert(all_set_invariant(to_cancel, cancelled, SchedulerState.CANCELLED))
-    val accepted = backend.accept(to_accept)
+    val accepted = if (to_accept.nonEmpty) { backend.accept(to_accept) } else { List.empty }
     assert(all_set_invariant(to_accept, accepted, SchedulerState.ACCEPTED))
-    val rejected = backend.reject(to_reject.map { t => (t,correct_answer) })
+    val rejected = if (to_reject.nonEmpty) { backend.reject(to_reject.map { t => (t,correct_answer) }) } else { List.empty }
     assert(all_set_invariant(to_reject, rejected, SchedulerState.REJECTED))
     remaining_tasks ::: cancelled ::: accepted ::: rejected
   }
