@@ -8,6 +8,7 @@ import edu.umass.cs.automan.adapters.mturk.logging.tables.{DBAssignment, DBQuali
 import edu.umass.cs.automan.adapters.mturk.util.Key
 import edu.umass.cs.automan.adapters.mturk.util.Key._
 import edu.umass.cs.automan.core.logging._
+import scala.collection.immutable.Iterable
 import scala.slick.driver.H2Driver.simple._
 
 class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(log_config, database_path) {
@@ -158,7 +159,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
     hit_updates.foreach { hit_id => dbHIT.filter(_.HITId === hit_id).map(_.isCancelled).update(hit_states(hit_id).isCancelled)}
 
     // TaskHIT inserts (no updates needed)
-    dbTaskHIT ++=HITState2TaskHITTuples(hit_inserts.map { hitid => hit_states(hitid)})
+    dbTaskHIT ++= HITState2TaskHITTuples(hit_inserts.map { hitid => hit_states(hitid)})
 
     // Assignment inserts
     val a_inserts = Assignment2AssignmentTuple(assignment_inserts)
@@ -195,7 +196,9 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
   }
 
   private def HITState2TaskHITTuples(hitstates: List[HITState]) : List[(String, UUID)] = {
-    hitstates.map { hitstate => hitstate.t_a_map.map { case (task_id,_) => (hitstate.HITId, task_id) } }.flatten
+    hitstates.flatMap { hitstate =>
+      hitstate.t_a_map.keys.map { task_id => (hitstate.hit.getHITId, task_id) }
+    }
   }
 
   private def HITState2HITTuples(hitstates: List[HITState]) : List[(String, String, Boolean)] = {
@@ -285,13 +288,14 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
 
     val all_ta_map = taskAssignmentMap
 
-    val task_ids_by_hitid =
-      (dbTask leftJoin dbTaskHIT on(_.task_id === _.taskId))
-        .list
-        .groupBy { case ((dbtask,(hit_id, _))) => hit_id }
-        .map { case (hit_id, group) =>
-          hit_id -> group.map { case ((task_id, _, _, _, _, _, _),_)=> task_id }
-        }
+    val th = dbTaskHIT.list
+
+    val task_ids_by_hitid = dbTaskHIT
+      .list
+      .groupBy { case (hit_id: String, _) => hit_id }
+      .map { case (hit_id: String, tasks: List[(String,UUID)]) =>
+        hit_id -> tasks.map { case (_, task_id: UUID) => task_id }
+      }
 
     // we want to construct a task-assignment map specifically for this HITState
     hits.map { hit =>
