@@ -189,29 +189,16 @@ class Scheduler(val question: Question,
       t.state == SchedulerState.RUNNING &&
       t.is_timedout(Utilities.xMillisecondsFromDate(current_tick, init_time))
     }
-    if (timeouts.size > 0) {
+    if (timeouts.nonEmpty) {
       DebugLog("Cancelling " + timeouts.size + " timed-out tasks.", LogLevelInfo(), LogType.SCHEDULER, question.id)
+      // cancel and make state TIMEOUT
+      val timed_out = backend.cancel(timeouts).map(_.copy_as_timeout())
+      // return all updated Task objects and signal whether timeout occurred
+      (timed_out ::: otherwise, timeouts.nonEmpty)
+    } else {
+      (ts, false)
     }
-
-    // cancel and make state TIMEOUT
-    val timed_out = backend.cancel(timeouts).map(_.copy_as_timeout())
-    // return all updated Task objects and signal whether timeout occurred
-    (timed_out ::: otherwise, timeouts.nonEmpty)
   }
-
-//  def memo_and_yield(ts: List[Task], old_status: Map[UUID,Date]) : Map[UUID,Date] = {
-//    val new_status = taskStatus(ts)
-//    assert(new_status.size >= old_status.size)
-//    if (new_status != old_status) {
-//      DebugLog("Saving state of " + ts.size + " tasks to database.", LogLevelDebug(), LogType.SCHEDULER, question.id)
-//      val tasklookup = ts.map { t => t.task_id -> t }.toMap
-//      val inserts = taskInserts(new_status, old_status).map(tasklookup(_))
-//      val updates = taskUpdates(new_status, old_status).map(tasklookup(_))
-//      backend.memo_save(question, inserts, updates)
-//    }
-//    Thread.`yield`()
-//    new_status
-//  }
 
   /**
    * Post new tasks if needed. Returns only newly-created tasks.
