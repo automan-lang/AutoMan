@@ -84,8 +84,6 @@ You may then call `which_one` just like an ordinary function (which it is).  Not
 
 To access return values, you must pattern-match on the `Outcome`, e.g.,
 
-In order to access data returned by the function, you must pattern-match on   E.g.,
-
     val outcome = which_one()
     
     // ... do some other stuff ...
