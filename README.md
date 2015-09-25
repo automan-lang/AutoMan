@@ -1,5 +1,6 @@
-AutoMan: Human-Computation Runtime v1.0
----------------------------------------
+[![Build Status](https://travis-ci.org/dbarowy/AutoMan.svg?branch=master)](https://travis-ci.org/dbarowy/AutoMan)
+
+# AutoMan: Human-Computation Runtime v1.0 
 
 This is a major release of AutoMan.  Code written using earlier versions (< 1.0) will need to be rewritten as AutoMan's syntax has changed.  See below for details.
 
@@ -16,14 +17,12 @@ Major changes include:
 
 Please report any bugs you may find to the project maintainer, Dan Barowy <dbarowy@cs.umass.edu>.
 
-License
--------
+## License
 
 AutoMan is licensed under the GPLv2, Copyright (C) 2011-2015 The
 University of Massachusetts, Amherst.
 
-Building a JAR
-----------------
+## Building a JAR
 
 This release incorporates an SBT build script that can build the AutoMan JAR
 for you, including downloading all of AutoMan's dependencies.  The build
@@ -43,16 +42,14 @@ Sample applications can be found in the `apps` directory.  Apps can also be buil
     cd apps/simple_program
     sbt pack
 
-Maven Artifact Coming Soon!
----------------------------
+## Maven Artifact Coming Soon!
 
 We have registered with SonaType as an organization and will be pushing
 AutoMan to the Central Repository soon.  This means that you will simply
 be able to list AutoMan as a dependency in your `build.sbt` and all
 of its dependencies will be handled by SBT.  Stay tuned!
 
-Using AutoMan in Your Project
------------------------------
+## Using AutoMan in Your Project
 
 In your source file, import the Mechanical Turk adapter (Scala syntax):
 
@@ -96,8 +93,7 @@ To access return values, you must pattern-match on the `Outcome`, e.g.,
 
 Other possible `AbstractAnswer` types are `LowConfidenceAnswer` if you run out of money during a computation (which gives you access to lower-confidence results), or `OverBudgetAnswer` in case even low-confidence answers are not possible because you didn't have enough money in your budget to begin with.
 
-Cleanup of AutoMan Resources
-----------------------------
+### Cleanup of AutoMan Resources
 
 Note that, due to AutoMan's design, you must inform it when to shut down, otherwise it will continue to execute indefinitely and your program will hang:
 
@@ -112,8 +108,7 @@ Alternately, you may wrap your program in an `automan` statement, and cleanup wi
 We will add more documentation to this site in the near future.  In the interim, please see the collection of sample programs in the `apps`
 directory.
 
-Supported Question Types
-------------------------
+### Supported Question Types
 
 |Question Type|Purpose|Quality-Controlled|Number of Answers Returned|
 | --- | --- | --- | --- |
@@ -124,20 +119,17 @@ Supported Question Types
 | `CheckboxDistributionQuestion` | Same as `CheckboxQuestion`. |no|user-defined|
 | `FreeTextDistributionQuestion` | Same as `FreeTextQuestion`. |no|user-defined|
 
-Using AutoMan with a Different Crowdsourcing Backend
-----------------------------------------------------
+### Using AutoMan with a Different Crowdsourcing Backend
 
 We currently only support Amazon's Mechanical Turk.  However, AutoMan
 was designed to accommodate arbitrary backends.  If you are interested
 in seeing your crowdsourcing platform supported, please contact us.
 
-Memoization
------------
+### Memoization
 
 AutoMan saves all intermediate human-computed results by default.  You may turn this feature off by setting `logging = LogConfig.NO_LOGGING` in your AutoMan config.  You may also set the location of the database with `database_path = "/path/to/your/database"`.  Note that the format of the database has changed from earlier versions of AutoMan from Apache Derby to H2.
 
-More Information
-----------------
+## More Information
 
 More detailed information is available in the following paper,
 published at OOPSLA 2012, included in the repo as AutoMan-OOPSLA2012.pdf.
@@ -174,8 +166,7 @@ Contact information:
   Dan Barowy, dbarowy@cs.umass.edu
   Emery Berger, emery@cs.umass.edu
 
-Change Log:
-----------
+## Change Log
 
 |Version|Notes|
 | --- | --- |
@@ -199,7 +190,7 @@ Change Log:
 |0.2|Major rewrite to simplify syntax.|
 |0.1|First release.|
 
-Acknowledgements:
-----------------
+## Acknowledgements
+
 This material is based on work supported by National Science Foundation Grant Nos. CCF-1144520 and CCF-0953754 and DARPA Award N10AP2026.
 
