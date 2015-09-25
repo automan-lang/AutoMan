@@ -2,7 +2,7 @@ packSettings
 
 name := "automan"
 
-version := "0.5-SNAPSHOT"
+version := "1.0"
 
 organization := "edu.umass.cs"
 

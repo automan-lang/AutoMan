@@ -1,13 +1,25 @@
-AutoMan: Human-Computation Runtime v0.4
+AutoMan: Human-Computation Runtime v1.0
 ---------------------------------------
 
-This is a maintenance release of AutoMan.  Please report any bugs you
-may find to the project maintainer, Dan Barowy <dbarowy@cs.umass.edu>.
+This is a major release of AutoMan.  Code written using earlier versions (< 1.0) will need to be rewritten as AutoMan's syntax has changed.  See below for details.
+
+Major changes include:
+
+* Support for non-quality-controlled question types in addition to the standard quality-controlled types.
+* Per-question budgets.
+* All Scala concurrency details are now hidden.  Instead of dealing with low-level Scala `Future` objects, instead you pattern-match on AutoMan `Outcome` objects.
+* A an important but subtle bias toward accepting low-confidence answers has been eliminated by modifying AutoMan's core algorithm.  The details are discussed in our upcoming CACM Research Highlights article (stay tuned!).
+* A much more capable record-and-replay engine. For example, if your program terminates abnormally, on restart AutoMan will continue as if nothing unusual happened.  Earlier versions of AutoMan only memoized answered MTurk HITs, which meant that restarts would schedule new work even if HITs had been completed during the interim. The new version records the complete state of a computation on MTurk.
+* The replay engine can also be used to provide mocks for your unit tests.  We will be expanding on these capabilities in the near future--stay tuned!
+* AutoMan now has a simple plugin architecture, designed to support a visual debugger [currently being developed](https://github.com/BartoszJanota/automan-debugger) for IntelliJ IDEA largely through the efforts of our excellent Google Summer of Code intern, Bartosz Janota.  This work was based on an [earlier web-based prototype](https://bitbucket.org/btamaskar/automan-debugger) from a talented undergrad working in our lab, Bianca Tamaskar.  If you would like to develop plugins for AutoMan, get in touch!
+* Many changes to enhance reliability.
+
+Please report any bugs you may find to the project maintainer, Dan Barowy <dbarowy@cs.umass.edu>.
 
 License
 -------
 
-AutoMan is licensed under the GPLv2, Copyright (C) 2011-2014 The
+AutoMan is licensed under the GPLv2, Copyright (C) 2011-2015 The
 University of Massachusetts, Amherst.
 
 Building a JAR
@@ -18,15 +30,18 @@ for you, including downloading all of AutoMan's dependencies.  The build
 script can also build the sample applications that are located in the
 `apps` directory.  These applications are the ones used in our paper.
 
-You can build the AutoMan JAR using the following command:
+You can build the AutoMan JAR using the following commands:
 
+    cd libautoman
     sbt pack
 
 The AutoMan JAR plus all of its dependencies will then be found in the
 `libautoman/target/pack/lib/` folder.
 
-If you want to see a list of other targets, e.g., sample applications,
-just type `sbt projects`.
+Sample applications can be found in the `apps` directory.  Apps can also be built using `pack`.  E.g.,
+
+    cd apps/simple_program
+    sbt pack
 
 Maven Artifact Coming Soon!
 ---------------------------
@@ -41,12 +56,7 @@ Using AutoMan in Your Project
 
 In your source file, import the Mechanical Turk adapter (Scala syntax):
 
-    import edu.umass.cs.automan.adapters.MTurk.MTurkAdapter
-
-Due to a change in Scala's concurrency libraries, you should also add:
-
-    import scala.concurrent._
-    import scala.concurrent.duration._
+    import edu.umass.cs.automan.adapters.mturk._
 
 After that, initialize the AutoMan runtime with an MTurk config:
 
@@ -58,64 +68,74 @@ After that, initialize the AutoMan runtime with an MTurk config:
 
 and then define your tasks:
 
-    def tootsie() = a.RadioButtonQuestion { q =>
+    def which_one() = a.RadioButtonQuestion { q =>
       q.budget = 8.00
-      q.text = "How licks does it take to get to the Tootsie " +
-               "Roll center of a Toosie Pop?"
+      q.text = "Which one of these does not belong?"
       q.options = List(
-        a.Option('one, "One"),
-        a.Option('two, "A-Two"),
-        a.Option('three, "Three! Three!")
+        a.Option('oscar, "Oscar the Grouch"),
+        a.Option('kermit, "Kermit the Frog"),
+        a.Option('spongebob, "Spongebob Squarepants"),
+        a.Option('cookie, "Cookie Monster"),
+        a.Option('count, "The Count")
       )
     }
 
-You may then call those tasks like regular functions.  Note that
-these functions return immediately, as calling a human function execute
-asynchronously in a separate background thread.
+You may then call `which_one` just like an ordinary function (which it is).  Note that AutoMan functions immediately return an `Outcome`, but continue to execute asynchronously in the background.
 
-In order to access data returned by the function, since that data is
-wrapped in a Scala `Future`, you must call the blocking `Await.result`
-to unbox the `Answer` object returned by the function and then access
-the `value` field in the `Answer` object.  E.g.,
+To access return values, you must pattern-match on the `Outcome`, e.g.,
 
-    val future_answer = tootsie()
-    val licks = Await.result(future_answer, Duration.Inf).value
+In order to access data returned by the function, you must pattern-match on   E.g.,
 
-Note: We plan to hide these concurrency operations in a future release.
+    val outcome = which_one()
+    
+    // ... do some other stuff ...
+    
+    // then, when you want answers ...
+    val answer = outcome.answer match {
+      case Answer(value, _, _) => value
+      case _ => throw new Exception("Oh no!")
+    }
 
-Please see the collection of sample programs in the `apps`
-directory. This folder contains the programs we used in the technical
-report (see below).  You can build any one of them by running:
+Other possible `AbstractAnswer` types are `LowConfidenceAnswer` if you run out of money during a computation (which gives you access to lower-confidence results), or `OverBudgetAnswer` in case even low-confidence answers are not possible because you didn't have enough money in your budget to begin with.
 
-    sbt "project [appname]" pack
+Cleanup of AutoMan Resources
+----------------------------
 
-Then look in the `apps/[appname]/target/pack/bin` folder for the
-appropriate runner script.  For example, if you want to run the
-`SimpleProgram` application, do:
+Note that, due to AutoMan's design, you must inform it when to shut down, otherwise it will continue to execute indefinitely and your program will hang:
 
-    sbt "project SimpleProgram" pack
-    apps/simple_program/target/pack/bin/simple_program
+    a.close()
+
+Alternately, you may wrap your program in an `automan` statement, and cleanup will happen automatically.  This feature was [inspired](https://msdn.microsoft.com/en-us/library/vstudio/yh598w02%28v=vs.100%29.aspx) by the C# `using` statement:
+
+        automan(a) {
+          ... your program ...
+        }
+
+We will add more documentation to this site in the near future.  In the interim, please see the collection of sample programs in the `apps`
+directory.
+
+Supported Question Types
+------------------------
+
+|Question Type|Purpose|Quality-Controlled|Number of Answers Returned|
+| `RadioButtonQuestion` | The user is asked to choose one of n options.|yes|1|
+| `CheckboxQuestion` | The user is asked to choose one of m of n options, where m <= n. |yes|1|
+| `FreeTextQuestion` | The user is asked to enter a textual response, such that the response conforms to a simple pattern (a "picture clause"). |yes|1|
+| `RadioButtonDistributionQuestion` | The user is asked to choose one of n options. |no|user-defined|
+| `CheckboxDistributionQuestion` | The user is asked to choose one of m of n options, where m <= n. |no|user-defined|
+| `FreeTextDistributionQuestion` | The user is asked to enter a textual response, such that the response conforms to a simple pattern (a "picture clause"). |no|user-defined|
 
 Using AutoMan with a Different Crowdsourcing Backend
 ----------------------------------------------------
 
 We currently only support Amazon's Mechanical Turk.  However, AutoMan
 was designed to accommodate arbitrary backends.  If you are interested
-in seeing your backend supported, please contact Dan Barowy.
-
-However, we are happy to work with you to ensure that you have all of
-the information you need to write your adapter library. We will also fix
-any compatibility problems with the AutoMan runtime that you might
-encounter along the way.
+in seeing your crowdsourcing platform supported, please contact us.
 
 Memoization
 -----------
 
-AutoMan saves all intermediate human-computed results.  In the event
-of a program exception or unexpected termination, the programmer may
-restart AutoMan and it will reuse any previously-obtained results.  If
-you want to discard these intermediate results, delete the
-AutomanMemoDB file.  The format of this database is Apache Derby 10.8.
+AutoMan saves all intermediate human-computed results by default.  You may turn this feature off by setting `logging = LogConfig.NO_LOGGING` in your AutoMan config.  You may also set the location of the database with `database_path = "/path/to/your/database"`.  Note that the format of the database has changed from earlier versions of AutoMan from Apache Derby to H2.
 
 More Information
 ----------------
@@ -152,14 +172,23 @@ published at OOPSLA 2012, included in the repo as AutoMan-OOPSLA2012.pdf.
 
 Contact information:
 
-  Emery Berger, emery@cs.umass.edu
   Dan Barowy, dbarowy@cs.umass.edu
+  Emery Berger, emery@cs.umass.edu
 
 CHANGELOG:
 ----------
 
 |Version|Notes|
 | --- | --- |
+|1.0|Major release.|
+|   |Syntax changes.|
+|   |New question types.|
+|   |Per-question budgets.|
+|   |Bias due to multiple comparisons eliminated with Bonferroni correction.|
+|   |New memo engine that allows MTurk computation to be resumed without additional cost (timeouts notwithstanding).|
+|   |Support for mocks.|
+|   |Plugin architecture.|
+|   |Numerous other changes for better reliability.|
 |0.4|Maintenance release.|
 |   |Switch to SBT build system. Updates for Scala 2.10.|
 |0.3|Maintenance release|
@@ -173,6 +202,5 @@ CHANGELOG:
 
 ACKNOWLEDGMENTS:
 ----------------
-This material is based upon work supported by the National Science
-Foundation under Grant No. CCF-1144520.
+This material is based on work supported by National Science Foundation Grant Nos. CCF-1144520 and CCF-0953754 and DARPA Award N10AP2026.
 
