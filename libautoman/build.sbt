@@ -10,7 +10,20 @@ scalaVersion := "2.11.4"
 
 exportJars := true
 
-resolvers += "Clojars" at "https://clojars.org/repo"
+resolvers += Resolver.sonatypeRepo("releases")
+
+val memoClean = TaskKey[Unit]("memo-clean", "Deletes AutoMan memo database files.")
+
+memoClean := {
+  val dbs = Seq.concat(
+    (baseDirectory.value ** "*.mv.db").get,
+    (baseDirectory.value ** "*.trace.db").get
+  )
+  dbs.foreach { f: File =>
+    println(s"Deleting: ${f.getName}")
+    f.delete()
+  }
+}
 
 libraryDependencies ++= {
   val akkaVer   = "2.3.7"
@@ -20,7 +33,7 @@ libraryDependencies ++= {
     "org.scalatest"              %%  "scalatest"            % "2.2.1"    % "test",
     "commons-codec"              % "commons-codec"          % "1.4",
     "log4j"                      % "log4j"                  % "1.2.17",
-    "org.clojars.zaxtax"         % "java-aws-mturk"         % "1.6.2"
+    "net.ettinsmoor"         % "java-aws-mturk"         % "1.6.2"
       exclude("org.apache.commons","not-yet-commons-ssl")
       exclude("apache-xerces","xercesImpl")
       exclude("apache-xerces","resolver")
