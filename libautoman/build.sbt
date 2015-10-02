@@ -10,8 +10,6 @@ scalaVersion := "2.11.4"
 
 exportJars := true
 
-resolvers += Resolver.sonatypeRepo("releases")
-
 val memoClean = TaskKey[Unit]("memo-clean", "Deletes AutoMan memo database files.")
 
 memoClean := {
