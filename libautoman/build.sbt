@@ -60,12 +60,12 @@ concurrentRestrictions in Global := Seq(
 
 parallelExecution in Test := false
 
-## MAVEN
+// MAVEN
 
-# yes, we want Maven artifacts
+// yes, we want Maven artifacts
 publishMavenStyle := true
 
-# specify repository
+// specify repository
 publishTo := {
   val nexus = "https://oss.sonatype.org/"
   if (isSnapshot.value)
@@ -74,13 +74,13 @@ publishTo := {
     Some("releases"  at nexus + "service/local/staging/deploy/maven2")
 }
 
-# don't publish test artifacts
+// don't publish test artifacts
 publishArtifact in Test := false
 
-# don't include optional repositories
+// don't include optional repositories
 pomIncludeRepository := { _ => false }
 
-# POM body
+// POM body
 pomExtra := (
   <scm>
     <url>git@github.com:dbarowy/AutoMan.git</url>
