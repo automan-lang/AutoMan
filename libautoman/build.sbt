@@ -62,6 +62,18 @@ parallelExecution in Test := false
 
 ## MAVEN
 
+# yes, we want Maven artifacts
+publishMavenStyle := true
+
+# specify repository
+publishTo := {
+  val nexus = "https://oss.sonatype.org/"
+  if (isSnapshot.value)
+    Some("snapshots" at nexus + "content/repositories/snapshots")
+  else
+    Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+}
+
 # don't publish test artifacts
 publishArtifact in Test := false
 
