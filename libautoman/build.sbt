@@ -6,6 +6,10 @@ version := "1.0"
 
 organization := "edu.umass.cs"
 
+licenses := Seq("GPL-2.0" -> url("http://opensource.org/licenses/GPL-2.0"))
+
+homepage := Some(url("http://github.com/dbarowy/AutoMan"))
+
 scalaVersion := "2.11.4"
 
 exportJars := true
@@ -56,3 +60,24 @@ concurrentRestrictions in Global := Seq(
 
 parallelExecution in Test := false
 
+## MAVEN
+
+# don't publish test artifacts
+publishArtifact in Test := false
+
+# don't include optional repositories
+pomIncludeRepository := { _ => false }
+
+# POM body
+pomExtra := (
+  <scm>
+    <url>git@github.com:dbarowy/AutoMan.git</url>
+    <connection>scm:git:git@github.com:dbarowy/AutoMan.git</connection>
+  </scm>
+  <developers>
+    <developer>
+      <id>dbarowy</id>
+      <name>Daniel Barowy</name>
+      <url>http://people.cs.umass.edu/~dbarowy</url>
+    </developer>
+  </developers>)
