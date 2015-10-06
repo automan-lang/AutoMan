@@ -1,5 +1,4 @@
-packSettings
-
+// METADATA
 name := "automan"
 
 version := "1.0"
@@ -10,28 +9,18 @@ licenses := Seq("GPL-2.0" -> url("http://opensource.org/licenses/GPL-2.0"))
 
 homepage := Some(url("http://github.com/dbarowy/AutoMan"))
 
-scalaVersion := "2.11.4"
+scalaVersion := "2.11.7"
 
 exportJars := true
 
-val memoClean = TaskKey[Unit]("memo-clean", "Deletes AutoMan memo database files.")
+// SUPPORTED SCALA VERSIONS
+crossScalaVersions := Seq("2.10.6", "2.11.4")
 
-memoClean := {
-  val dbs = Seq.concat(
-    (baseDirectory.value ** "*.mv.db").get,
-    (baseDirectory.value ** "*.trace.db").get
-  )
-  dbs.foreach { f: File =>
-    println(s"Deleting: ${f.getName}")
-    f.delete()
-  }
-}
-
-libraryDependencies ++= {
+// DEPENDENCIES
+libraryDependencies := {
   val akkaVer   = "2.3.7"
   val sprayVer  = "1.3.2"
   Seq(
-    "org.scala-lang.modules"     %%  "scala-xml"            % "1.0.2",
     "org.scalatest"              %%  "scalatest"            % "2.2.1"    % "test",
     "commons-codec"              % "commons-codec"          % "1.4",
     "log4j"                      % "log4j"                  % "1.2.17",
@@ -54,6 +43,34 @@ libraryDependencies ++= {
   )
 }
 
+// add scala-xml if scala major version >= 11
+libraryDependencies := {
+  CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, scalaMajor)) if scalaMajor >= 11 =>
+      libraryDependencies.value :+ "org.scala-lang.modules" %% "scala-xml" % "1.0.2"
+    case _ =>
+      libraryDependencies.value
+  }
+}
+
+// CUSTOM TASKS
+val memoClean = TaskKey[Unit]("memo-clean", "Deletes AutoMan memo database files.")
+
+memoClean := {
+  val dbs = Seq.concat(
+    (baseDirectory.value ** "*.mv.db").get,
+    (baseDirectory.value ** "*.trace.db").get
+  )
+  dbs.foreach { f: File =>
+    println(s"Deleting: ${f.getName}")
+    f.delete()
+  }
+}
+
+// GENERATING JAR
+packSettings
+
+// TESTING
 concurrentRestrictions in Global := Seq(
   Tags.limit(Tags.Test, 1)
 )
