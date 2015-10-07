@@ -27,7 +27,7 @@ abstract class DistributionValidationPolicy(question: DistributionQuestion)
     } else {
       val distribution: Set[(String, Question#A)] = valid_tasks.map { t => (t.worker_id.get, t.answer.get) }.toSet
       val cost: BigDecimal = valid_tasks.map { t => t.cost }.foldLeft(BigDecimal(0)) { (acc, c) => acc + c }
-      LowConfidenceAnswers(distribution, cost).asInstanceOf[Question#AA]
+      IncompleteAnswers(distribution, cost).asInstanceOf[Question#AA]
     }
   }
   override def tasks_to_accept(tasks: List[Task]): List[Task] = {

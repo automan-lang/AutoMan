@@ -7,10 +7,10 @@ package object mturk {
   val Answers = edu.umass.cs.automan.core.answer.Answers
   val DistributionOutcome = edu.umass.cs.automan.core.answer.DistributionOutcome
   val OverBudgetAnswer = edu.umass.cs.automan.core.answer.OverBudgetAnswer
-  val OverBudgetAnswers = edu.umass.cs.automan.core.answer.LowConfidenceAnswers
+  val OverBudgetAnswers = edu.umass.cs.automan.core.answer.OverBudgetAnswers
   val LogConfig = edu.umass.cs.automan.core.logging.LogConfig
   val LowConfidenceAnswer = edu.umass.cs.automan.core.answer.LowConfidenceAnswer
-  val LowConfidenceAnswers = edu.umass.cs.automan.core.answer.LowConfidenceAnswers
+  val IncompleteAnswers = edu.umass.cs.automan.core.answer.IncompleteAnswers
   val ScalarOutcome = edu.umass.cs.automan.core.answer.ScalarOutcome
   val Utilities = edu.umass.cs.automan.core.util.Utilities
 }

@@ -25,6 +25,6 @@ case class OverBudgetAnswer[T](need: BigDecimal, have: BigDecimal) extends Abstr
 
 case class Answers[T](values: Set[(String,T)], override val cost: BigDecimal)
   extends AbstractVectorAnswer[T](cost)
-case class LowConfidenceAnswers[T](values: Set[(String,T)], override val cost: BigDecimal)
+case class IncompleteAnswers[T](values: Set[(String,T)], override val cost: BigDecimal)
   extends AbstractVectorAnswer[T](cost)
 case class OverBudgetAnswers[T](need: BigDecimal, have: BigDecimal) extends AbstractScalarAnswer[T](need)
