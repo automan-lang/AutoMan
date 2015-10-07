@@ -1,5 +1,4 @@
 import edu.umass.cs.automan.adapters.mturk._
-import edu.umass.cs.automan.core.logging._
 import anprlib._
 
 object anpr extends App {
@@ -9,7 +8,6 @@ object anpr extends App {
     mt.access_key_id = opts('key)
     mt.secret_access_key = opts('secret)
     mt.sandbox_mode = opts('sandbox).toBoolean
-    mt.log_verbosity = LogLevelDebug()
   }
 
   automan(a) {

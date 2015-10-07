@@ -8,15 +8,13 @@ version := "0.2"
 
 organization := "edu.umass.cs"
 
-scalaVersion := "2.11.4"
+scalaVersion := "2.11.7"
 
 exportJars := true
 
 libraryDependencies ++= Seq(
-  "edu.umass.cs" %% "automan" % "0.5-SNAPSHOT",
-  "com.amazonaws" % "aws-java-sdk" % "1.7.5" exclude("org.apache.httpcomponents", "httpclient"),
-  "org.imgscalr" % "imgscalr-lib" % "4.2",
-  "net.ettinsmoor" % "bingerator_2.10" % "0.2.2"
+  "edu.umass.cs"    %% "automan"      % "1.0.0",
+  "com.amazonaws"   %  "aws-java-sdk"	% "1.10.23",
+  "org.imgscalr"    %  "imgscalr-lib"	% "4.2",
+  "net.ettinsmoor"  %% "bingerator"		% "0.2.4"
 )
-
-//net.virtualvoid.sbt.graph.Plugin.graphSettings
