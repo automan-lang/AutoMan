@@ -13,11 +13,11 @@ object simple_program extends App {
     q.budget = 8.00
     q.text = "Which one of these does not belong?"
     q.options = List(
-      a.Option('oscar, "Oscar the Grouch"),
-      a.Option('kermit, "Kermit the Frog"),
-      a.Option('spongebob, "Spongebob Squarepants"),
-      a.Option('cookie, "Cookie Monster"),
-      a.Option('count, "The Count")
+      a.Option('oscar, "Oscar the Grouch", "http://tinyurl.com/qfwlx56"),
+      a.Option('kermit, "Kermit the Frog", "http://tinyurl.com/nuwyz3u"),
+      a.Option('spongebob, "Spongebob Squarepants", "http://tinyurl.com/oj6wzx6"),
+      a.Option('cookie, "Cookie Monster", "http://tinyurl.com/otb6thl"),
+      a.Option('count, "The Count", "http://tinyurl.com/nfdbyxa")
     )
   }
 
