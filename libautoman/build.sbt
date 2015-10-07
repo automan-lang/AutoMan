@@ -14,7 +14,7 @@ scalaVersion := "2.11.7"
 exportJars := true
 
 // SUPPORTED SCALA VERSIONS
-crossScalaVersions := Seq("2.10.6", "2.11.4")
+crossScalaVersions := Seq("2.10.6", "2.11.7")
 
 // DEPENDENCIES
 libraryDependencies := {
