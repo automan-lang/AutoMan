@@ -587,7 +587,14 @@ object Pool {
 
     val hitstate = internal_state.getHITState(hit_key)
 
-    backend.extendHIT(hitstate.HITId, ts.size, timeout_in_s.toLong)
+    // MTurk does not allow expiration dates sooner than
+    // 60 seconds into the future
+    val expiry_s = Math.max(60, timeout_in_s).toLong
+
+    // Note that extending HITs is only useful when the only
+    // parameters that can change are the 1) number of assignments and
+    // the 2) expiration date.
+    backend.extendHIT(hitstate.HITId, ts.size, expiry_s)
     // we immediately query the backend for the HIT's complete details
     // to update our cached data
 
