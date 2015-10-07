@@ -4,6 +4,31 @@
 
 This is a major release of AutoMan.  Code written using earlier versions (< 1.0) will need to be rewritten as AutoMan's syntax has changed.  See below for details.
 
+## What is AutoMan?
+
+AutoMan is the first fully automatic _crowdprogramming_ system. AutoMan integrates human-based ("crowdsourced") computations into a standard programming language as ordinary function calls that can be intermixed freely with traditional functions. This abstraction lets  programmers focus on their programming logic. An AutoMan program specifies a _confidence level_ for the overall computation and a _budget_. The AutoMan runtime system then transparently manages all details necessary for scheduling, pricing, and quality
+control. AutoMan automatically schedules human tasks for each computation until it achieves the desired confidence level; monitors, reprices, and restarts human tasks as necessary; and maximizes parallelism across human workers while staying under budget.
+
+AutoMan is available as a library for Scala.
+
+## Getting AutoMan
+
+The easiest way to get AutoMan is via the Maven Central Repository.  If you're using SBT:
+
+    libraryDependencies += "edu.umass.cs" %% "automan" % "1.0.0"
+
+_or_ if you're using Maven:
+
+    <dependency>
+      <groupId>edu.umass.cs</groupId>
+      <artifactId>automan_X.XX</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+
+where `X.XX` is `2.10` or `2.11` depending on your Scala version.
+
+## Latest Updates
+
 Major changes include:
 
 * Support for non-quality-controlled question types in addition to the standard quality-controlled types.
@@ -15,39 +40,13 @@ Major changes include:
 * AutoMan now has a simple plugin architecture, designed to support a visual debugger [currently being developed](https://github.com/BartoszJanota/automan-debugger) for IntelliJ IDEA largely through the efforts of our excellent Google Summer of Code intern, Bartosz Janota.  This work was based on an [earlier web-based prototype](https://bitbucket.org/btamaskar/automan-debugger) from a talented undergrad working in our lab, Bianca Tamaskar.  If you would like to develop plugins for AutoMan, get in touch!
 * Many changes to enhance reliability.
 
-Please report any bugs you may find to the project maintainer, Dan Barowy <dbarowy@cs.umass.edu>.
+## Bug Reports.
+
+Please report bugs using this repository's issue tracker.
 
 ## License
 
-AutoMan is licensed under the GPLv2, Copyright (C) 2011-2015 The
-University of Massachusetts, Amherst.
-
-## Building a JAR
-
-This release incorporates an SBT build script that can build the AutoMan JAR
-for you, including downloading all of AutoMan's dependencies.  The build
-script can also build the sample applications that are located in the
-`apps` directory.  These applications are the ones used in our paper.
-
-You can build the AutoMan JAR using the following commands:
-
-    cd libautoman
-    sbt pack
-
-The AutoMan JAR plus all of its dependencies will then be found in the
-`libautoman/target/pack/lib/` folder.
-
-Sample applications can be found in the `apps` directory.  Apps can also be built using `pack`.  E.g.,
-
-    cd apps/simple_program
-    sbt pack
-
-## Maven Artifact Coming Soon!
-
-We have registered with SonaType as an organization and will be pushing
-AutoMan to the Central Repository soon.  This means that you will simply
-be able to list AutoMan as a dependency in your `build.sbt` and all
-of its dependencies will be handled by SBT.  Stay tuned!
+AutoMan is licensed under the GPLv2, Copyright (C) 2011-2015 The University of Massachusetts, Amherst.
 
 ## Using AutoMan in Your Project
 
@@ -129,6 +128,30 @@ in seeing your crowdsourcing platform supported, please contact us.
 
 AutoMan saves all intermediate human-computed results by default.  You may turn this feature off by setting `logging = LogConfig.NO_LOGGING` in your AutoMan config.  You may also set the location of the database with `database_path = "/path/to/your/database"`.  Note that the format of the database has changed from earlier versions of AutoMan from Apache Derby to H2.
 
+## Building the JAR Yourself
+
+This release incorporates an SBT build script that can build the AutoMan JAR
+for you, including downloading all of AutoMan's dependencies.  The build
+script can also build the sample applications that are located in the
+`apps` directory.  These applications are the ones used in our paper.
+
+You can build the AutoMan JAR using the following commands:
+
+    cd libautoman
+    sbt pack
+
+The AutoMan JAR plus all of its dependencies will then be found in the
+`libautoman/target/pack/lib/` folder.
+
+## Sample Applications
+
+Sample applications can be found in the `apps` directory.  Apps can also be built using `pack`.  E.g.,
+
+    cd apps/simple_program
+    sbt pack
+
+Unix/DOS shell scripts for running the programs can then be found in `apps/[the app]/target/pack/bin/`.
+
 ## More Information
 
 More detailed information is available in the following paper,
@@ -170,27 +193,26 @@ Contact information:
 
 |Version|Notes|
 | --- | --- |
-|1.0|Major release.|
-|   |Syntax changes.|
-|   |New question types.|
-|   |Per-question budgets.|
-|   |Bias due to multiple comparisons eliminated with Bonferroni correction.|
-|   |New memo engine that allows MTurk computation to be resumed without additional cost (timeouts notwithstanding).|
-|   |Support for mocks.|
-|   |Plugin architecture.|
-|   |Numerous other changes for better reliability.|
-|0.4|Maintenance release.|
-|   |Switch to SBT build system. Updates for Scala 2.10.|
-|0.3|Maintenance release|
-|   |Buildr Buildfile, including reorganization of project directory.|
+|1.0.0|Major release.|
+|     |Syntax changes.|
+|     |New question types.|
+|     |Per-question budgets.|
+|     |Bias due to multiple comparisons eliminated with Bonferroni correction.|
+|     |New memo engine that allows MTurk computation to be resumed without additional cost (timeouts notwithstanding).|
+|     |Support for mocks.|
+|     |Plugin architecture.|
+|     |Numerous other changes for better reliability.|
+|0.4.0|Maintenance release.|
+|     |Switch to SBT build system. Updates for Scala 2.10.|
+|0.3.0|Maintenance release|
+|     |Buildr Buildfile, including reorganization of project directory.|
 |0.2.1|Maintenance release|
-|   |Update to work with latest MTurk API (1.6.0).|
-|   |Better log output, including scheduler object logging.|
-|   |New Automatic Number Plate Recognition (ANPR) app.|
-|0.2|Major rewrite to simplify syntax.|
-|0.1|First release.|
+|     |Update to work with latest MTurk API (1.6.0).|
+|     |Better log output, including scheduler object logging.|
+|     |New Automatic Number Plate Recognition (ANPR) app.|
+|0.2.0|Major rewrite to simplify syntax.|
+|0.1.0|First release.|
 
 ## Acknowledgements
 
 This material is based on work supported by National Science Foundation Grant Nos. CCF-1144520 and CCF-0953754 and DARPA Award N10AP2026.
-
