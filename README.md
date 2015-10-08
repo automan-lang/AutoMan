@@ -15,14 +15,14 @@ AutoMan is available as a library for Scala.
 
 The easiest way to get AutoMan is via the Maven Central Repository.  If you're using SBT:
 
-    libraryDependencies += "edu.umass.cs" %% "automan" % "1.0.0"
+    libraryDependencies += "edu.umass.cs" %% "automan" % "1.0.1"
 
 _or_ if you're using Maven:
 
     <dependency>
       <groupId>edu.umass.cs</groupId>
       <artifactId>automan_X.XX</artifactId>
-      <version>1.0.0</version>
+      <version>1.0.1</version>
     </dependency>
 
 where `X.XX` is `2.10` or `2.11` depending on your Scala version.
@@ -193,6 +193,9 @@ Contact information:
 
 |Version|Notes|
 | --- | --- |
+|1.0.1|Maintenance release.|
+|     |Bugfix for timeout policy calculation.|
+|     |Renamed misleading distribution answer type name.|
 |1.0.0|Major release.|
 |     |Syntax changes.|
 |     |New question types.|
