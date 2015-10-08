@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/dbarowy/AutoMan.svg?branch=master)](https://travis-ci.org/dbarowy/AutoMan)
+[![Circle CI](https://circleci.com/gh/dbarowy/AutoMan.svg?style=shield)](https://circleci.com/gh/dbarowy/AutoMan)
 
 # AutoMan: Human-Computation Runtime v1.0 
 
