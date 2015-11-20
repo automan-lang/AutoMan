@@ -22,7 +22,7 @@ abstract class DistributionValidationPolicy(question: DistributionQuestion)
   }
   def select_over_budget_answer(tasks: List[Task], need: BigDecimal, have: BigDecimal) : Question#AA = {
     val valid_tasks: List[Task] = completed_workerunique_tasks(tasks)
-    if (valid_tasks.size == 0) {
+    if (valid_tasks.isEmpty) {
       OverBudgetAnswers(need, have).asInstanceOf[Question#AA]
     } else {
       val distribution: Set[(String, Question#A)] = valid_tasks.map { t => (t.worker_id.get, t.answer.get) }.toSet
