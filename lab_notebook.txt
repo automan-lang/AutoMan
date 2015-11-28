@@ -89,3 +89,28 @@
 * Of course, every time we recalculate the sample size, we will ALSO need to adjust our confidence level for multiple comparisons.  This should be the same procedure that we currently use in AutoMan.
 
 * One last thought: confidence level and error are more or less interchangeable here.  So even though AutoMan currently accepts a confidence parameter, a user could instead provide the error that indicates (say) the 95% confidence interval.  I think that makes more sense intuitively, and it would be a nice usability concession.
+
+2015-11-27
+----------
+
+* OK, I thought about this all day yesterday.  Something was bothering me about the above formulation, even though it is definitely better than the one before it.  Basically: the power analysis uses a test whereas the estimation does not.  On one level, this makes sense: estimation is not about testing.  I think the reason why I conflated the two is that estimation procedures produce statistics which can themselves be tested.  Anyway, this is a bit of an issue because the bootstrap power analysis only tells you one thing: the power of the TEST.  So let's step back a bit and talk about what we want.
+
+* What we want is for a user to be able to estimate some parameter of interest.  They do this by i.i.d. sampling and computing a statistic.  Whether the statistic in question is a good estimator for the parameter is an interesting question but ultimately, not my problem.
+
+* Of course, the issue with the above is that it's just a point estimate.  Usually, a person wants to know whether an estimate is "good".  One way of understanding this goodness is in terms of the error: what range of values are also likely?  So a user could ask for a 95% confidence interval around their estimate, and then when we give them the estimate and the interval, they know the range of values that the true parameter is likely to take, although we still have not given them any indication of the probability of those values (i.e., like a PDF).  A query of this form might look like "estimate X with a 95% CI."
+
+* Another, possibly more intuitive, form of the query above is for a user to ask for an estimate and the confidence level of a particular error bound.  This is because for a sampling distribution, the confidence level and the confidence interval are duals.  A query of this form might look like "estimate X +/- 5."  In this latter case, of course, we will need to tell them the confidence level otherwise their bound is meaningless.
+
+* The bootstrap (in its many forms) can actually produce estimates and their confidence intervals.  Whether the bootstrapped estimate is close to the true parameter depends on a few factors: 1. the estimator (function), 2. the number of bootstrap replications, and 3. the sample size.  For WoCMan, #1 is out of our control.  And I am largely content with leaving #2 as a user parameter, setting it fairly high by default, or just by making it the function of a time bound (i.e., an anytime algorithm).  But #3... how do we determine this?  This is where my idea about doing a power analysis came in.  With a power analysis we can find a sample size that puts the procedure over some user-defined quality threshold (i.e., the false negative rate).  But the problem is... power analyses are for TESTS.
+
+* There are two possible approaches for this:
+  1. Give up on finding a sample size.  The USER specifies the sample size.  Or better still, they specify a fixed budget, and we do our best with those resources.
+  2. We try to elicit some kind of test from the user so that we can do a power analysis.  One interesting approach is something called a "testimator".  A testimator is defined an estimator whose value depends on the result of a test for statistical significance.  So, e.g., a user doesn't just say "estimate the number of M&Ms in the jar with a 95% CI" or "estimate the number of M&Ms in the jar +/- 5 M&Ms," they actually give us something that we can test and confirm or deny the truth of.  So, e.g., "the estimated number of M&Ms in the jar +/- 5 M&Ms is likely to be true with a 95% probability."  Now here's something that we can actually work with:
+    a. Take an initial (small, "pilot") sample.
+    b. Construct a true alternative hypothesis using the estimate (e.g., by shifting the null hypothesis to make a claim about the estimate with respect to the user-specified confidence interval).
+    c. Resample with replacement from the pilot sample B times.
+    d. For each b of B resamples, compute the outcome of the test (is the estimate within the bounds?).
+    e. Count the number of times the null hypothesis is rejected.
+    f. Increase the sample size, correct the significance level for multiple comparisons, and goto a. until either i. the test passes the threshold, or ii. the user runs out of money.
+    
+* Gotta go.  Guests here for dinner.  But I believe the above satisfactorily deals with the test/estimation conflation and also should satisfy Emery that we are not "breaking new statistical ground."
