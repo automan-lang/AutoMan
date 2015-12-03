@@ -2,13 +2,14 @@ package edu.umass.cs.automan.core.policy.aggregation
 
 import edu.umass.cs.automan.core.answer.{LowConfidenceEstimate, LowConfidenceAnswer, OverBudgetAnswer, Estimate}
 import edu.umass.cs.automan.core.logging.{LogType, LogLevelInfo, DebugLog}
+import edu.umass.cs.automan.core.question.confidence._
 import edu.umass.cs.automan.core.question.{EstimationQuestion, Question}
-import edu.umass.cs.automan.core.scheduler.Task
+import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 
 import scala.util.Random
 
 class BootstrapEstimationPolicy(estimator: Seq[Double] => Double, ci_width: Double, question: EstimationQuestion)
-  extends ScalarPolicy(question) {
+  extends AggregationPolicy(question) {
 
   val NumBootstraps = 512
 
@@ -17,6 +18,29 @@ class BootstrapEstimationPolicy(estimator: Seq[Double] => Double, ci_width: Doub
   /**
     * PRIVATE METHODS
     */
+
+  /**
+    * Calculates the best estimate so far, returning the answer, confidence bounds, cost, and confidence level.
+    * @param tasks The tasks
+    * @return Tuple (estimate, low CI bound, high CI bound, cost, confidence)
+    */
+  private def answer_selector(tasks: List[Task]): (Double, Double, Double, BigDecimal, Double) = {
+    // extract responses & cast to Double
+    // (EstimationQuestion#A is guaranteed to be Double)
+    val X = tasks.flatMap(_.answer).asInstanceOf[List[Double]]
+
+    // calculate alpha, with Bonferroni correction
+    val adj_conf = bonferroni_confidence(question.confidence, numComparisons(tasks))
+    val alpha = 1 - adj_conf
+
+    // do bootstrap
+    val (low, est, high) = bootstrap(estimator, X, NumBootstraps, alpha)
+
+    // cost
+    val cost = tasks.filter(_.answer.isDefined).map(_.cost).sum
+
+    (est, low, high, cost, adj_conf)
+  }
 
   /**
     * Computes statistic and confidence intervals specified.
@@ -89,6 +113,28 @@ class BootstrapEstimationPolicy(estimator: Seq[Double] => Double, ci_width: Doub
   }
 
   /**
+    * Returns true if the task in not in a 'dead' state.
+    * @param task
+    * @return
+    */
+  private def not_final(task: Task) : Boolean = {
+    task.state != SchedulerState.ACCEPTED &&
+      task.state != SchedulerState.REJECTED &&
+      task.state != SchedulerState.CANCELLED &&
+      task.state != SchedulerState.TIMEOUT
+  }
+
+  /**
+    * The number of comparisons for the current run of tasks.
+    * @param tasks
+    * @return the number of runs/hypotheses
+    */
+  private def numComparisons(tasks: List[Task]) : Int = {
+    // the number of rounds completed == the number of comparisons
+    if (tasks.nonEmpty) { tasks.map(_.round).max } else { 1 }
+  }
+
+  /**
     * Returns an equal-length vector X' formed from resampling with
     * replacement from X with uniform probability.
     * @param X input data vector
@@ -98,53 +144,34 @@ class BootstrapEstimationPolicy(estimator: Seq[Double] => Double, ci_width: Doub
     Array.fill(X.length)(X(Random.nextInt(X.length)))
   }
 
-  private def iterate(N: Int, width: Double, B: Int, alpha: Double, X: Seq[Double], fn: Seq[Double] => Double) : (Double,Double,Double,Int) = {
-    var X_prime = X
-    var n = N / 2
-    var high = Double.MaxValue
-    var low = Double.MinValue
-    var est = 0.0
-    while (high - low > width) {
-      n *= 2
-      // double length and keep going
-      if (n > X_prime.length) {
-        X_prime = Seq.concat(X_prime, resampleWithReplacement(X_prime))
-      }
-      val (l, e, h) = bootstrap(fn, X_prime.take(n), B, alpha)
-      high = h
-      low = l
-      est = e
-    }
-
-    (high,low,est,n)
-  }
-
-  /**
-    * Calculates the best estimate so far, returning the answer, confidence bounds, cost, and confidence level.
-    * @param tasks The tasks
-    * @return Tuple (estimate, low CI bound, high CI bound, cost, confidence)
-    */
-  private def answer_selector(tasks: List[Task]): (Double, Double, Double, BigDecimal, Double) = {
-    // extract responses & cast to Double
-    // (EstimationQuestion#A is guaranteed to be Double)
-    val X = tasks.flatMap(_.answer).asInstanceOf[List[Double]]
-
-    // calculate alpha, with Bonferroni correction
-    val adj_conf = bonferroni_confidence(question.confidence, numComparisons(tasks))
-    val alpha = 1 - adj_conf
-
-    // do bootstrap
-    val (low, est, high) = bootstrap(estimator, X, NumBootstraps, alpha)
-
-    // cost
-    val cost = tasks.filter(_.answer.isDefined).map(_.cost).sum
-
-    (est, low, high, cost, adj_conf)
-  }
-
   /**
     * IMPLEMENTATIONS
     */
+
+  /**
+    * Returns true if the strategy has enough data to stop scheduling work.
+    * @param tasks The complete list of scheduled tasks.
+    * @return true iff done
+    */
+  override def is_done(tasks: List[Task]): Boolean = {
+    if (completed_workerunique_tasks(tasks).size == 0) {
+      false
+    } else {
+      answer_selector(tasks) match {
+        case (est, low, high, cost, conf) =>
+          question.confidence_interval match {
+            case Unconstrained() =>
+              completed_workerunique_tasks(tasks).size == question.default_sample_size
+            case SymmetricCI(err) =>
+              est - low <= err / 2 &&
+              high - est <= err / 2
+            case AsymmetricCI(lerr, herr) =>
+              est - low <= lerr &&
+              high - est <= herr
+           }
+      }
+    }
+  }
 
   override def rejection_response(tasks: List[Task]): String = ???
 
@@ -183,32 +210,6 @@ class BootstrapEstimationPolicy(estimator: Seq[Double] => Double, ci_width: Doub
 
   // by default, we reject nothing
   override def tasks_to_reject(tasks: List[Task]): List[Task] = List.empty
-
-  override def current_confidence(tasks: List[Task]): Double =
-    // TODO: funny question, right? Isn't it always question.confidence unless tasks is empty?
-    ???
-
-  override def is_confident(tasks: List[Task], num_hypotheses: Int): Boolean = {
-    if (tasks.isEmpty) {
-      DebugLog("Have no tasks; confidence is undefined.", LogLevelInfo(), LogType.STRATEGY, question.id)
-      false
-    } else {
-      val conf = current_confidence(tasks)
-      val thresh = bonferroni_confidence(question.confidence, num_hypotheses)
-      if (conf >= thresh) {
-        DebugLog("Reached or exceeded alpha = " + (1 - thresh).toString, LogLevelInfo(), LogType.STRATEGY, question.id)
-        true
-      } else {
-        val valid_ts = completed_workerunique_tasks(tasks)
-        if (valid_ts.nonEmpty) {
-          val biggest_answer = valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
-          DebugLog("Need more tasks for alpha = " + (1 - thresh) + "; have " + biggest_answer + " agreeing tasks.", LogLevelInfo(), LogType.STRATEGY, question.id)
-        } else {
-          DebugLog("Need more tasks for alpha = " + (1 - thresh) + "; currently have no agreement.", LogLevelInfo(), LogType.STRATEGY, question.id)
-        }
-        false
-      }
-    }
 
   /**
     * Computes the number of tasks needed to satisfy the quality-control
