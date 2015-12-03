@@ -8,7 +8,7 @@ import edu.umass.cs.automan.core.scheduler.Scheduler
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 
-abstract class FreeTextDistributionQuestion extends DistributionQuestion {
+abstract class FreeTextVectorQuestion extends VectorQuestion {
   type A = String
   type AA = Answers[A]
   type O = DistributionOutcome[A]

@@ -7,7 +7,7 @@ import edu.umass.cs.automan.core.exception.OverBudgetException
 import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.mock.MockAnswer
 import edu.umass.cs.automan.core.question.Question
-import edu.umass.cs.automan.core.policy.validation.ValidationPolicy
+import edu.umass.cs.automan.core.policy.aggregation.AggregationPolicy
 import edu.umass.cs.automan.core.util.{Stopwatch, Utilities}
 import scala.collection.mutable
 
@@ -246,7 +246,7 @@ class Scheduler(val question: Question,
    * @return The tasks passed in, with new states.
    */
   def accept_reject_and_cancel[A](all_tasks: List[Task],
-                                  strategy: ValidationPolicy,
+                                  strategy: AggregationPolicy,
                                   backend: AutomanAdapter) : List[Task] = {
     val to_cancel = strategy.tasks_to_cancel(all_tasks)
     val to_accept = strategy.tasks_to_accept(all_tasks)

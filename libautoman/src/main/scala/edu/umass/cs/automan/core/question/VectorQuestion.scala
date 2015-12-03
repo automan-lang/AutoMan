@@ -1,26 +1,25 @@
 package edu.umass.cs.automan.core.question
 
-import edu.umass.cs.automan.core.answer.{ScalarOutcome, AbstractScalarAnswer}
-import edu.umass.cs.automan.core.policy.price.MLEPricePolicy
-import edu.umass.cs.automan.core.policy.timeout.DoublingTimeoutPolicy
-import edu.umass.cs.automan.core.policy.validation.DefaultScalarPolicy
+import edu.umass.cs.automan.core.answer._
+import edu.umass.cs.automan.core.policy.price.FixedPricePolicy
+import edu.umass.cs.automan.core.policy.timeout.FixedTimeoutPolicy
+import edu.umass.cs.automan.core.policy.aggregation.SimpleVectorPolicy
 
-abstract class ScalarQuestion extends Question {
-  type AA = AbstractScalarAnswer[A]
-  type O = ScalarOutcome[A]
-  type VP = DefaultScalarPolicy
-  type PP = MLEPricePolicy
-  type TP = DoublingTimeoutPolicy
+abstract class VectorQuestion extends Question {
+  type AA <: AbstractVectorAnswer[A]
+  type O <: DistributionOutcome[A]
+  type AP = SimpleVectorPolicy
+  type PP = FixedPricePolicy
+  type TP = FixedTimeoutPolicy
 
-  protected var _confidence: Double = 0.95
+  private var _sample_size: Int = 30
 
-  def confidence_=(c: Double) { _confidence = c }
-  def confidence: Double = _confidence
+  def sample_size_=(n: Int) { _sample_size = n }
+  def sample_size : Int = _sample_size
 
-  // private methods
   override private[automan] def init_validation_policy(): Unit = {
     _validation_policy_instance = _validation_policy match {
-      case None => new VP(this)
+      case None => new AP(this)
       case Some(policy) => policy.getConstructor(classOf[Question]).newInstance(this)
     }
   }

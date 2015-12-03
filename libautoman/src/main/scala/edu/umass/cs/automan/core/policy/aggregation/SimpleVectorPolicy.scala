@@ -1,14 +1,16 @@
-package edu.umass.cs.automan.core.policy.validation
+package edu.umass.cs.automan.core.policy.aggregation
 
 import java.util.UUID
 
 import edu.umass.cs.automan.core.logging.{LogLevelInfo, DebugLog, LogLevel, LogType}
-import edu.umass.cs.automan.core.question.DistributionQuestion
+import edu.umass.cs.automan.core.question.VectorQuestion
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 import edu.umass.cs.automan.core.policy.price.FixedPricePolicy
 
-class DefaultDistributionPolicy(question: DistributionQuestion)
-  extends DistributionValidationPolicy(question) {
+class SimpleVectorPolicy(question: VectorQuestion)
+  extends VectorPolicy(question) {
+
+  DebugLog("Policy: simple vector",LogLevelInfo(),LogType.STRATEGY, question.id)
 
   def num_to_run(tasks: List[Task]) : Int = {
     // additional number needed to reach num_samples

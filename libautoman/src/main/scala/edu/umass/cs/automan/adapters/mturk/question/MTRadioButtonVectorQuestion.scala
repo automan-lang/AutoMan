@@ -3,12 +3,12 @@ package edu.umass.cs.automan.adapters.mturk.question
 import java.util.{Date, UUID}
 import edu.umass.cs.automan.adapters.mturk.mock.RadioButtonMockResponse
 import edu.umass.cs.automan.core.logging._
-import edu.umass.cs.automan.core.question.RadioButtonDistributionQuestion
+import edu.umass.cs.automan.core.question.RadioButtonVectorQuestion
 import edu.umass.cs.automan.core.util.Utilities
 import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
 
-class MTRadioButtonDistributionQuestion extends RadioButtonDistributionQuestion with MTurkQuestion {
+class MTRadioButtonVectorQuestion extends RadioButtonVectorQuestion with MTurkQuestion {
   type QuestionOptionType = MTQuestionOption
   override type A = Symbol
 

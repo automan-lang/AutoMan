@@ -10,11 +10,11 @@ abstract class AutomanAdapter {
   // question types are determined by adapter implementations
   // answer types are invariant
   type CBQ    <: CheckboxQuestion                 // answer scalar
-  type CBDQ   <: CheckboxDistributionQuestion     // answer vector
+  type CBDQ   <: CheckboxVectorQuestion     // answer vector
   type FTQ    <: FreeTextQuestion                 // answer scalar
-  type FTDQ   <: FreeTextDistributionQuestion     // answer vector
+  type FTDQ   <: FreeTextVectorQuestion     // answer vector
   type RBQ    <: RadioButtonQuestion              // answer scalar
-  type RBDQ   <: RadioButtonDistributionQuestion  // answer vector
+  type RBDQ   <: RadioButtonVectorQuestion  // answer vector
   type MemoDB <: Memo
 
   protected var _database_path: String = "AutoManMemoDB_" + UUID.randomUUID()

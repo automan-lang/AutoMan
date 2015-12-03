@@ -1,43 +1,36 @@
 package edu.umass.cs.automan.core.question
 
 import edu.umass.cs.automan.core.AutomanAdapter
-import edu.umass.cs.automan.core.answer._
+import edu.umass.cs.automan.core.answer.{AbstractScalarAnswer, ScalarOutcome}
 import edu.umass.cs.automan.core.info.QuestionType
-import edu.umass.cs.automan.core.policy.aggregation.AdversarialPolicy
+import edu.umass.cs.automan.core.policy.aggregation.BootstrapEstimationPolicy
 import edu.umass.cs.automan.core.policy.price.MLEPricePolicy
 import edu.umass.cs.automan.core.policy.timeout.DoublingTimeoutPolicy
 import edu.umass.cs.automan.core.scheduler.Scheduler
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 
-abstract class FreeTextQuestion extends DiscreteScalarQuestion {
-  type A = String
-  type QuestionOptionType <: QuestionOption
-  type AP = AdversarialPolicy
+abstract class EstimationQuestion extends Question {
+  type A = Double
+  type AA = AbstractScalarAnswer[A]
+  type O = ScalarOutcome[A]
+  type AP = BootstrapEstimationPolicy
   type PP = MLEPricePolicy
   type TP = DoublingTimeoutPolicy
 
-  protected var _allow_empty: Boolean = false
-  protected var _num_possibilities: BigInt = 1000
-  protected var _pattern: Option[String] = None
-  protected var _pattern_error_text: String = ""
+  protected var _confidence: Double = 0.95
+  protected var _confidence_width: Double = 100
+  protected var _estimator: Seq[Double] => Double = {
+    // by default, use the mean
+    ds => ds.sum / ds.length
+  }
 
-  def allow_empty_pattern_=(ae: Boolean) { _allow_empty = ae }
-  def allow_empty_pattern: Boolean = _allow_empty
-  def num_possibilities: BigInt = _pattern match {
-    case Some(p) =>
-      val count = PictureClause(p, _allow_empty)._2
-      if (count > 1000) 1000 else count
-    case None => 1000
-  }
-  def pattern: String = _pattern match { case Some(p) => p; case None => ".*" }
-  def pattern_=(p: String) { _pattern = Some(p) }
-  def pattern_error_text: String = _pattern_error_text
-  def pattern_error_text_=(p: String) { _pattern_error_text = p }
-  def regex: String = _pattern match {
-    case Some(p) => PictureClause(p, _allow_empty)._1
-    case None => "^.*$"
-  }
+  def confidence_=(c: Double) { _confidence = c }
+  def confidence: Double = _confidence
+  def confidence_width_=(width: Double) { _confidence_width = width }
+  def confidence_width: Double = _confidence_width
+  def estimator: Seq[Double] => Double = _estimator
+  def estimator_=(fn: Seq[Double] => Double) { _estimator = fn }
 
   override protected[automan] def getQuestionType = QuestionType.FreeTextQuestion
   override protected[automan] def getOutcome(adapter: AutomanAdapter) : O = {
@@ -49,10 +42,11 @@ abstract class FreeTextQuestion extends DiscreteScalarQuestion {
     }
     ScalarOutcome(f)
   }
+
   // private methods
   override private[automan] def init_validation_policy(): Unit = {
     _validation_policy_instance = _validation_policy match {
-      case None => new AP(this)
+      case None => new AP(_estimator, _confidence_width, this)
       case Some(policy) => policy.getConstructor(classOf[Question]).newInstance(this)
     }
   }

@@ -9,13 +9,13 @@ import edu.umass.cs.automan.core.logging.Memo
 import edu.umass.cs.automan.core.mock.{MockAnswer, MockResponse}
 import edu.umass.cs.automan.core.policy.price.PricePolicy
 import edu.umass.cs.automan.core.policy.timeout.TimeoutPolicy
-import edu.umass.cs.automan.core.policy.validation.ValidationPolicy
+import edu.umass.cs.automan.core.policy.aggregation.AggregationPolicy
 
 abstract class Question {
   type A <: Any
   type AA <: AbstractAnswer[A]
   type O <: Outcome[A]
-  type VP <: ValidationPolicy
+  type AP <: AggregationPolicy
   type PP <: PricePolicy
   type TP <: TimeoutPolicy
 
@@ -45,8 +45,8 @@ abstract class Question {
   protected[automan] var _price_policy_instance: PP = _
   protected[automan] var _timeout_policy: Option[Class[TP]] = None
   protected[automan] var _timeout_policy_instance: TP = _
-  protected[automan] var _validation_policy: Option[Class[VP]] = None
-  protected[automan] var _validation_policy_instance: VP = _
+  protected[automan] var _validation_policy: Option[Class[AP]] = None
+  protected[automan] var _validation_policy_instance: AP = _
 
   def before_filter_=(f: A => A) { _before_filter = f }
   def before_filter: A => A = _before_filter
@@ -76,7 +76,7 @@ abstract class Question {
   def question_timeout_multiplier_=(t: Double) { _question_timeout_multiplier = t }
   def question_timeout_multiplier: Double = _question_timeout_multiplier
   def strategy = _validation_policy match { case Some(vs) => vs; case None => null }
-  def strategy_=(s: Class[VP]) { _validation_policy = Some(s) }
+  def strategy_=(s: Class[AP]) { _validation_policy = Some(s) }
   def text: String = _text match { case Some(t) => t; case None => "Question not specified." }
   def text_=(s: String) { _text = Some(s) }
   def time_value_per_hour: BigDecimal = _time_value_per_hour match { case Some(v) => v; case None => _wage }

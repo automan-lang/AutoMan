@@ -28,11 +28,11 @@ class MTurkAdapter extends AutomanAdapter {
   // these types provide MTurk implementations for
   // AutomanAdapter virtual methods
   override type CBQ     = MTCheckboxQuestion
-  override type CBDQ    = MTCheckboxDistributionQuestion
+  override type CBDQ    = MTCheckboxVectorQuestion
   override type FTQ     = MTFreeTextQuestion
-  override type FTDQ    = MTFreeTextDistributionQuestion
+  override type FTDQ    = MTFreeTextVectorQuestion
   override type RBQ     = MTRadioButtonQuestion
-  override type RBDQ    = MTRadioButtonDistributionQuestion
+  override type RBDQ    = MTRadioButtonVectorQuestion
   override type MemoDB  = MTMemo
 
   private var _access_key_id: Option[String] = None
@@ -74,11 +74,11 @@ class MTurkAdapter extends AutomanAdapter {
   def secret_access_key_=(s: String) { _secret_access_key = Some(s) }
 
   protected def CBQFactory()  = new MTCheckboxQuestion
-  protected def CBDQFactory() = new MTCheckboxDistributionQuestion
+  protected def CBDQFactory() = new MTCheckboxVectorQuestion
   protected def FTQFactory()  = new MTFreeTextQuestion
-  protected def FTDQFactory() = new MTFreeTextDistributionQuestion
+  protected def FTDQFactory() = new MTFreeTextVectorQuestion
   protected def RBQFactory()  = new MTRadioButtonQuestion
-  protected def RBDQFactory() = new MTRadioButtonDistributionQuestion
+  protected def RBDQFactory() = new MTRadioButtonVectorQuestion
 
   def Option(id: Symbol, text: String) = new MTQuestionOption(id, text, "")
   def Option(id: Symbol, text: String, image_url: String) = new MTQuestionOption(id, text, image_url)

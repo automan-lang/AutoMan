@@ -1,10 +1,10 @@
-package edu.umass.cs.automan.core.policy.validation
+package edu.umass.cs.automan.core.policy.aggregation
 
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 
-abstract class ValidationPolicy(question: Question) {
-  class PrematureValidationCompletionException(methodname: String, classname: String)
+abstract class AggregationPolicy(question: Question) {
+  class PrematureAggregationException(methodname: String, classname: String)
     extends Exception(methodname + " called prematurely in " + classname)
 
   /**
@@ -28,9 +28,9 @@ abstract class ValidationPolicy(question: Question) {
   def mark_duplicates(tasks: List[Task]): List[Task] = {
     val (answered_tasks, unanswered_tasks) = tasks.partition(_.state == SchedulerState.ANSWERED)
 
-    answered_tasks.groupBy(_.worker_id).map { case (worker_id, ts) =>
-        ts.head :: ts.tail.map(_.copy_as_duplicate())
-    }.flatten.toList
+    answered_tasks.groupBy(_.worker_id).flatMap { case (worker_id, ts) =>
+      ts.head :: ts.tail.map(_.copy_as_duplicate())
+    }.toList
 
     answered_tasks ::: unanswered_tasks
   }

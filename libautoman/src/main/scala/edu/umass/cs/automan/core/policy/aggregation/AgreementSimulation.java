@@ -1,9 +1,9 @@
-package edu.umass.cs.automan.core.policy.validation;
+package edu.umass.cs.automan.core.policy.aggregation;
 
 import java.util.Random;
 
-public final class MonteCarlo {
-    private MonteCarlo() {
+public final class AgreementSimulation {
+    private AgreementSimulation() {
         throw new AssertionError();
     }
 
