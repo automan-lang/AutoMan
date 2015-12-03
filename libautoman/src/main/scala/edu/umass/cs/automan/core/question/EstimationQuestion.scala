@@ -50,7 +50,7 @@ abstract class EstimationQuestion extends Question {
   // private methods
   override private[automan] def init_validation_policy(): Unit = {
     _validation_policy_instance = _validation_policy match {
-      case None => new AP(_estimator, _confidence_interval, this)
+      case None => new AP(this)
       case Some(policy) => policy.getConstructor(classOf[Question]).newInstance(this)
     }
   }

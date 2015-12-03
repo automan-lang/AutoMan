@@ -1,5 +1,7 @@
 package edu.umass.cs.automan.core.policy.aggregation
 
+import java.util.UUID
+
 import edu.umass.cs.automan.core.answer.{LowConfidenceEstimate, LowConfidenceAnswer, OverBudgetAnswer, Estimate}
 import edu.umass.cs.automan.core.logging.{LogType, LogLevelInfo, DebugLog}
 import edu.umass.cs.automan.core.question.confidence._
@@ -8,7 +10,7 @@ import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 
 import scala.util.Random
 
-class BootstrapEstimationPolicy(estimator: Seq[Double] => Double, ci_width: Double, question: EstimationQuestion)
+class BootstrapEstimationPolicy(question: EstimationQuestion)
   extends AggregationPolicy(question) {
 
   val NumBootstraps = 512
@@ -34,7 +36,7 @@ class BootstrapEstimationPolicy(estimator: Seq[Double] => Double, ci_width: Doub
     val alpha = 1 - adj_conf
 
     // do bootstrap
-    val (low, est, high) = bootstrap(estimator, X, NumBootstraps, alpha)
+    val (low, est, high) = bootstrap(question.estimator, X, NumBootstraps, alpha)
 
     // cost
     val cost = tasks.filter(_.answer.isDefined).map(_.cost).sum
@@ -134,6 +136,21 @@ class BootstrapEstimationPolicy(estimator: Seq[Double] => Double, ci_width: Doub
     if (tasks.nonEmpty) { tasks.map(_.round).max } else { 1 }
   }
 
+
+  /**
+    * Calculate the number of new tasks to schedule.
+    * @param tasks
+    * @param round
+    * @param reward
+    * @return
+    */
+  private def num_to_run(tasks: List[Task], round: Int, reward: BigDecimal) : Int = {
+    // eliminate duplicates from the list of Tasks
+    val tasks_no_dupes = tasks.filter(_.state != SchedulerState.DUPLICATE)
+
+
+  }
+
   /**
     * Returns an equal-length vector X' formed from resampling with
     * replacement from X with uniform probability.
@@ -173,7 +190,8 @@ class BootstrapEstimationPolicy(estimator: Seq[Double] => Double, ci_width: Doub
     }
   }
 
-  override def rejection_response(tasks: List[Task]): String = ???
+  override def rejection_response(tasks: List[Task]): String =
+    throw new NotImplementedError("BootstrapEstimationPolicy does not reject.")
 
   override def select_answer(tasks: List[Task]): Question#AA = {
     answer_selector(tasks) match { case (est, low, high, cost, conf) =>
@@ -220,5 +238,62 @@ class BootstrapEstimationPolicy(estimator: Seq[Double] => Double, ci_width: Doub
     * @param suffered_timeout True if any of the latest batch of tasks suffered a timeout.
     * @return A list of new tasks to schedule on the backend.
     */
-  override def spawn(tasks: List[Task], suffered_timeout: Boolean): List[Task] = ???
+  override def spawn(tasks: List[Task], suffered_timeout: Boolean): List[Task] = {
+    // determine current round
+    val round = if (tasks.nonEmpty) {
+      tasks.map(_.round).max
+    } else { 0 }
+
+    var nextRound = round
+
+    // determine duration
+    val worker_timeout_in_s = question._timeout_policy_instance.calculateWorkerTimeout(tasks, round, suffered_timeout)
+    val task_timeout_in_s = question._timeout_policy_instance.calculateTaskTimeout(worker_timeout_in_s)
+
+    // determine reward
+    val reward = question._price_policy_instance.calculateReward(tasks, round, suffered_timeout)
+
+    // num to spawn
+    val num_to_spawn = if (suffered_timeout) {
+      tasks.count { t => t.round == round && t.state == SchedulerState.TIMEOUT }
+    } else {
+      // (don't spawn more if any are running)
+      if (tasks.count(_.state == SchedulerState.RUNNING) == 0) {
+        // whenever we need to run MORE, we update the round counter
+        nextRound = round + 1
+        num_to_run(tasks, round, reward)
+      } else {
+        return List[Task]() // Be patient!
+      }
+    }
+
+    DebugLog("You should spawn " + num_to_spawn +
+      " more Tasks at $" + reward + "/task, " +
+      task_timeout_in_s + "s until question timeout, " +
+      worker_timeout_in_s + "s until worker task timeout.", LogLevelInfo(), LogType.STRATEGY,
+      question.id)
+
+    // allocate Task objects
+    val new_tasks = (0 until num_to_spawn).map { i =>
+      val now = new java.util.Date()
+      val t = new Task(
+        UUID.randomUUID(),
+        question,
+        nextRound,
+        task_timeout_in_s,
+        worker_timeout_in_s,
+        reward,
+        now,
+        SchedulerState.READY,
+        from_memo = false,
+        None,
+        None,
+        now
+      )
+      DebugLog("spawned question_id = " + question.id_string,LogLevelInfo(),LogType.STRATEGY, question.id)
+      t
+    }.toList
+
+    new_tasks
+  }
 }
