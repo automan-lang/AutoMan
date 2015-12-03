@@ -4,6 +4,7 @@ import java.util.UUID
 
 import edu.umass.cs.automan.core.answer.{LowConfidenceAnswer, OverBudgetAnswer, Answer}
 import edu.umass.cs.automan.core.logging.{LogType, LogLevelInfo, DebugLog}
+import edu.umass.cs.automan.core.policy.aggregation
 import edu.umass.cs.automan.core.question.{Question, DiscreteScalarQuestion}
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 
@@ -71,18 +72,6 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
 
     // find answer of the largest group
     groups.maxBy { case(group, ts) => ts.size }
-  }
-
-  /**
-    * Find the multiple-comparisons-adjusted confidence level
-    * using the Bonferroni-Holm adjustment.
-    * @param confidence The unadjusted confidence level.
-    * @param num_hypotheses The number of comparisons.
-    * @return The adjusted confidence level.
-    */
-  private def bonferroni_confidence(confidence: Double, num_hypotheses: Int) : Double = {
-    assert(num_hypotheses > 0)
-    1 - (1 - confidence) / num_hypotheses.toDouble
   }
 
   /**
