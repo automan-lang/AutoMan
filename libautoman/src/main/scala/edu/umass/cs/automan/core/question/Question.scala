@@ -72,7 +72,6 @@ abstract class Question {
   def memo_hash: String
   def mock_answers_=(answers: List[MockAnswer[A]]) { _mock_answers = answers }
   def mock_answers: List[MockAnswer[A]] = _mock_answers
-  def num_possibilities: BigInt
   def question_timeout_multiplier_=(t: Double) { _question_timeout_multiplier = t }
   def question_timeout_multiplier: Double = _question_timeout_multiplier
   def strategy = _validation_policy match { case Some(vs) => vs; case None => null }

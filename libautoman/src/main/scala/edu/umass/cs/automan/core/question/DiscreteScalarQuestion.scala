@@ -10,4 +10,6 @@ abstract class DiscreteScalarQuestion extends Question {
 
   def confidence_=(c: Double) { _confidence = c }
   def confidence: Double = _confidence
+
+  def num_possibilities: BigInt
 }

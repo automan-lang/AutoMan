@@ -145,10 +145,16 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
     * @return
     */
   private def num_to_run(tasks: List[Task], round: Int, reward: BigDecimal) : Int = {
+    assert(round > 0)
+
     // eliminate duplicates from the list of Tasks
-    val tasks_no_dupes = tasks.filter(_.state != SchedulerState.DUPLICATE)
+    val tasks_no_dupes = tasks.count(_.state != SchedulerState.DUPLICATE)
 
+    // calculate the new total sample size (just doubles the total in every round)
+    val ss_tot = question.default_sample_size << (round - 1)
 
+    // minus the number of non-duplicate answers received
+    ss_tot - tasks_no_dupes
   }
 
   /**
