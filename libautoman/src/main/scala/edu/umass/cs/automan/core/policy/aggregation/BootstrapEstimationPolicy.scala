@@ -183,7 +183,7 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
       answer_selector(tasks) match {
         case (est, low, high, cost, conf) =>
           question.confidence_interval match {
-            case Unconstrained() =>
+            case UnconstrainedCI() =>
               completed_workerunique_tasks(tasks).size == question.default_sample_size
             case SymmetricCI(err) =>
               est - low <= err / 2 &&

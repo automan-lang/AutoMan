@@ -20,7 +20,7 @@ abstract class EstimationQuestion extends Question {
   type TP = DoublingTimeoutPolicy
 
   protected var _confidence: Double = 0.95
-  protected var _confidence_interval: ConfidenceInterval = Unconstrained()
+  protected var _confidence_interval: ConfidenceInterval = UnconstrainedCI()
   protected var _default_sample_size: Int = 30
   protected var _estimator: Seq[Double] => Double = {
     // by default, use the mean
