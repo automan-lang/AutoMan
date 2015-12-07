@@ -21,7 +21,7 @@ abstract class EstimationQuestion extends Question {
 
   protected var _confidence: Double = 0.95
   protected var _confidence_interval: ConfidenceInterval = UnconstrainedCI()
-  protected var _default_sample_size: Int = 30
+  protected var _default_sample_size: Int = 8
   protected var _estimator: Seq[Double] => Double = {
     // by default, use the mean
     ds => ds.sum / ds.length

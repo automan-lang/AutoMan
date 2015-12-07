@@ -175,9 +175,10 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
     * @return true iff done
     */
   override def is_done(tasks: List[Task]): Boolean = {
-    if (completed_workerunique_tasks(tasks).size == 0) {
-      false
-    } else {
+    // if there are SOME completed tasks AND
+    // no tasks are READY or RUNNING
+    if (completed_workerunique_tasks(tasks).nonEmpty &&
+        outstanding_tasks(tasks).isEmpty) {
       answer_selector(tasks) match {
         case (est, low, high, cost, conf) =>
           question.confidence_interval match {
@@ -191,6 +192,9 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
               high - est <= herr
            }
       }
+    // otherwise, wait
+    } else {
+      false
     }
   }
 

@@ -131,7 +131,7 @@ class Scheduler(val question: Question,
 
           // ask the backend to retrieve answers for all RUNNING tasks
           val (__running_tasks, __unrunning_tasks) = (__dedup_tasks ::: __new_tasks).partition(_.state == SchedulerState.RUNNING)
-          assert(__running_tasks.size > 0)
+          assert(__running_tasks.nonEmpty)
           DebugLog("Retrieving answers for " + __running_tasks.size + " running tasks from backend.", LogLevelInfo(), LogType.SCHEDULER, question.id)
           val __answered_tasks = backend.retrieve(__running_tasks, Utilities.xMillisecondsFromDate(_current_time, init_time))
           assert(retrieve_invariant(__running_tasks, __answered_tasks))
