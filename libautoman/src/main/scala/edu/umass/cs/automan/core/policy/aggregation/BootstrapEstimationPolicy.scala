@@ -184,8 +184,8 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
             case UnconstrainedCI() =>
               completed_workerunique_tasks(tasks).size == question.default_sample_size
             case SymmetricCI(err) =>
-              est - low <= err / 2 &&
-              high - est <= err / 2
+              est - low <= err &&
+              high - est <= err
             case AsymmetricCI(lerr, herr) =>
               est - low <= lerr &&
               high - est <= herr
