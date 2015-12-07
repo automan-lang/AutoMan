@@ -145,13 +145,11 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
     * @return
     */
   private def num_to_run(tasks: List[Task], round: Int, reward: BigDecimal) : Int = {
-    assert(round > 0)
-
     // eliminate duplicates from the list of Tasks
     val tasks_no_dupes = tasks.count(_.state != SchedulerState.DUPLICATE)
 
     // calculate the new total sample size (just doubles the total in every round)
-    val ss_tot = question.default_sample_size << (round - 1)
+    val ss_tot = question.default_sample_size << round
 
     // minus the number of non-duplicate answers received
     ss_tot - tasks_no_dupes
@@ -197,7 +195,8 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
   }
 
   override def rejection_response(tasks: List[Task]): String =
-    throw new NotImplementedError("BootstrapEstimationPolicy does not reject.")
+    "Your answer is incorrect.  " +
+      "We value your feedback, so if you think that we are in error, please contact us."
 
   override def select_answer(tasks: List[Task]): Question#AA = {
     answer_selector(tasks) match { case (est, low, high, cost, conf) =>
