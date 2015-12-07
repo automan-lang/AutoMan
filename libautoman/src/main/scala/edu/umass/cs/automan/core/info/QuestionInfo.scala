@@ -24,6 +24,7 @@ object QuestionType extends Enumeration {
   type QuestionType = Value
   val CheckboxQuestion = Value("CheckboxQuestion")
   val CheckboxDistributionQuestion = Value("CheckboxDistributionQuestion")
+  val EstimationQuestion = Value("EstimationQuestion")
   val FreeTextQuestion = Value("FreeTextQuestion")
   val FreeTextDistributionQuestion = Value("FreeTextDistributionQuestion")
   val RadioButtonQuestion = Value("RadioButtonQuestion")
