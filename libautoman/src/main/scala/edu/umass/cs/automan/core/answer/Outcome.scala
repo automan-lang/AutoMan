@@ -9,6 +9,8 @@ sealed abstract class Outcome[T](f: Future[AbstractAnswer[T]]) {
   }
 }
 
+case class EstimationOutcome(f: Future[AbstractEstimate]) extends Outcome[Double](f)
+
 case class ScalarOutcome[T](f: Future[AbstractScalarAnswer[T]]) extends Outcome[T](f)
 
 case class DistributionOutcome[T](f: Future[AbstractVectorAnswer[T]]) extends Outcome[T](f)

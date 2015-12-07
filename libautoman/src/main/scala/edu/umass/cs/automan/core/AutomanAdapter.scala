@@ -11,7 +11,7 @@ abstract class AutomanAdapter {
   // answer types are invariant
   type CBQ    <: CheckboxQuestion           // answer scalar
   type CBDQ   <: CheckboxVectorQuestion     // answer vector
-  type EQ     <: EstimationQuestion         // answer scalar
+  type EQ     <: EstimationQuestion         // answer estimate
   type FTQ    <: FreeTextQuestion           // answer scalar
   type FTDQ   <: FreeTextVectorQuestion     // answer vector
   type RBQ    <: RadioButtonQuestion        // answer scalar

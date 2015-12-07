@@ -1,7 +1,7 @@
 package edu.umass.cs.automan.core.question
 
 import edu.umass.cs.automan.core.AutomanAdapter
-import edu.umass.cs.automan.core.answer.{AbstractScalarAnswer, ScalarOutcome}
+import edu.umass.cs.automan.core.answer.{AbstractEstimate, EstimationOutcome}
 import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.policy.aggregation.BootstrapEstimationPolicy
 import edu.umass.cs.automan.core.policy.price.MLEPricePolicy
@@ -13,8 +13,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 abstract class EstimationQuestion extends Question {
   type A = Double
-  type AA = AbstractScalarAnswer[A]
-  type O = ScalarOutcome[A]
+  type AA = AbstractEstimate
+  type O = EstimationOutcome
   type AP = BootstrapEstimationPolicy
   type PP = MLEPricePolicy
   type TP = DoublingTimeoutPolicy
@@ -41,10 +41,10 @@ abstract class EstimationQuestion extends Question {
     val scheduler = new Scheduler(this, adapter)
     val f = Future{
       blocking {
-        scheduler.run().asInstanceOf[AA]
+        scheduler.run()
       }
     }
-    ScalarOutcome(f)
+    EstimationOutcome(f.asInstanceOf[Future[AbstractEstimate]])
   }
 
   // private methods
