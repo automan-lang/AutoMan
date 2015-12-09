@@ -114,3 +114,37 @@
     f. Increase the sample size, correct the significance level for multiple comparisons, and goto a. until either i. the test passes the threshold, or ii. the user runs out of money.
     
 * Gotta go.  Guests here for dinner.  But I believe the above satisfactorily deals with the test/estimation conflation and also should satisfy Emery that we are not "breaking new statistical ground."
+
+2015-12-09
+----------
+
+* Very productive meeting with Dan, Sid, & Emery.
+
+* Dan suggested that I use 12 as the theoretically grounded minimum sample size.  He showed us a book called "Statistical Rules of Thumb" which has a nice derivation.
+
+* graph lunches on plot with ground truth (regression to the mean)
+
+* Dan suggested a better way to increase sample size is based on the observation that estimation error generally drops by the square root of the sample size.  But doubling "isn't terrible".
+
+* No obvious problems with doing multivariate/joint estimation, but Dan will look for citations.
+
+* Evaluation.  Dan and Emery agree that it would be good to show that there's a cost/accuracy tradeoff (e.g., https://en.wikipedia.org/wiki/Pareto_efficiency) and that, without WoCMan, users must choose a point in this space themselves, perhaps unjustifiably so.
+
+* Evaluation: bootstrap does not suffer from model violation assumptions; Dan thinks it would be valuable to demonstrate this since this is a big selling point of nonparametric methods in general
+
+* Default estimator? mean vs median.  Dan said that he sees median being used more than the mean, but also sometimes the geomean.  Perhaps the median would be a better default.
+
+* Long discussion about sample applications:
+	- distance to the moon: Dan Goldstein and Jake ...? Submitted to CHI
+	- good apps have poor google-ability
+	- suggested apps: (non-Googleable) future events: weather, republican primary vote share; ranking (superbowl)
+	- sidebar: filter questions help prediction substantially: do you know anything about sports? (joint prediction?)
+
+* Worth revisiting motivating cases for the crowdsourcing systems out there:
+	- Amazon: mturk created are these two products the same?
+	- Google: are these 5 photos the same storefront?
+	- Yahoo: are ads relevant for this search?
+	- Microsoft: UHRS (universal human relevance system): spammyness
+	- many of these problems fundamentally require humans to answer
+
+* Also: curating content; ecommerce; require human judgement; trending topics (porn can trend, but it is not appropriate!)
