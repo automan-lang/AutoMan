@@ -148,3 +148,5 @@
 	- many of these problems fundamentally require humans to answer
 
 * Also: curating content; ecommerce; require human judgement; trending topics (porn can trend, but it is not appropriate!)
+
+* Finally: the experiment & chart in the SRC submission was not super clear.  We need to do a better job explaining this in the upcoming paper.
