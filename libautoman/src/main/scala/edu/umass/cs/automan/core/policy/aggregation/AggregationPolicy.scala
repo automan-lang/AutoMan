@@ -117,8 +117,6 @@ abstract class AggregationPolicy(question: Question) {
       t.state == SchedulerState.READY ||
       t.state == SchedulerState.RUNNING
     )
-    // don't count duplicates
-    val completed = completed_workerunique_tasks(tasks)
-    outstanding ::: completed
+    outstanding
   }
 }

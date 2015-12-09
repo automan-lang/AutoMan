@@ -56,6 +56,7 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
   type DBQuestion = (UUID, String, QuestionType, String, String)
   type DBRadioButtonAnswer = (Int, Symbol, String)
   type DBCheckboxAnswer = (Int, Set[Symbol], String)
+  type DBEstimationAnswer = (Int, Double, String)
   type DBFreeTextAnswer = (Int, String, String)
   type DBSession = H2Driver.backend.Session
 
@@ -69,9 +70,11 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
   protected[automan] val dbTask = TableQuery[edu.umass.cs.automan.core.logging.tables.DBTask]
   protected[automan] val dbTaskHistory = TableQuery[edu.umass.cs.automan.core.logging.tables.DBTaskHistory]
   protected[automan] val dbQuestion = TableQuery[edu.umass.cs.automan.core.logging.tables.DBQuestion]
-  protected[automan] val dbRadioButtonAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBRadioButtonAnswer]
   protected[automan] val dbCheckboxAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBCheckboxAnswer]
+  protected[automan] val dbEstimationAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBEstimationAnswer]
   protected[automan] val dbFreeTextAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBFreeTextAnswer]
+  protected[automan] val dbRadioButtonAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBRadioButtonAnswer]
+
 
   // registered plugins
   protected var _plugins = List[Plugin]()
@@ -125,9 +128,11 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
       dbTask.ddl ++
       dbTaskHistory.ddl ++
       dbQuestion.ddl ++
-      dbRadioButtonAnswer.ddl ++
       dbCheckboxAnswer.ddl ++
-      dbFreeTextAnswer.ddl
+      dbEstimationAnswer.ddl ++
+      dbFreeTextAnswer.ddl ++
+      dbRadioButtonAnswer.ddl
+
     val all_ddls: H2Driver.DDL = if (ddls.nonEmpty) {
       base_ddls ++ ddls.tail.foldLeft(ddls.head){ case (acc,ddl) => acc ++ ddl }
     } else {
@@ -188,6 +193,27 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
             th.state_change_time,
             QuestionType.CheckboxDistributionQuestion)
         }.list.distinct
+        ts.map { t => new TaskSnapshot(t) }
+      case QuestionType.EstimationQuestion =>
+        val ts = allTasksQuery()
+          .filter { case (q,(t,h)) => q.question_type === qt }
+          .leftJoin(dbEstimationAnswer).on(_._2._2.history_id === _.history_id)
+          .map { case ((q,(t,th)),h) =>
+            ( t.task_id,
+              q.id,
+              q.title,
+              q.text,
+              t.round,
+              t.timeout_in_s,
+              t.worker_timeout_in_s,
+              t.cost,
+              t.creation_time,
+              th.scheduler_state,
+              h.worker_id.?,
+              h.answer.?,
+              th.state_change_time,
+              QuestionType.EstimationQuestion)
+          }.list.distinct
         ts.map { t => new TaskSnapshot(t) }
       case QuestionType.FreeTextQuestion =>
         val ts = allTasksQuery()
@@ -286,6 +312,7 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
         db.withSession { s =>
           restore_task_snapshots_of_type(QuestionType.CheckboxQuestion)(s) :::
           restore_task_snapshots_of_type(QuestionType.CheckboxDistributionQuestion)(s) :::
+          restore_task_snapshots_of_type(QuestionType.EstimationQuestion)(s) :::
           restore_task_snapshots_of_type(QuestionType.FreeTextQuestion)(s) :::
           restore_task_snapshots_of_type(QuestionType.FreeTextDistributionQuestion)(s) :::
           restore_task_snapshots_of_type(QuestionType.RadioButtonQuestion)(s) :::
@@ -337,40 +364,6 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
           // LEFT join with answers
           // ((DBQuestion, (DBtask, DBtaskHistory)), DBAnswerKind)
         val A_QS_TS_THS = q.getQuestionType match {
-          case RadioButtonQuestion => {
-            (fQS_TS_THS leftJoin dbRadioButtonAnswer on (_._2._2.history_id === _.history_id)).map {
-              case ((dbquestion, (dbtask, dbtaskhistory)), dbradiobuttonanswer) =>
-                ( dbtask.task_id,
-                  dbtask.round,
-                  dbtask.timeout_in_s,
-                  dbtask.worker_timeout_in_s,
-                  dbtask.cost,
-                  dbtask.creation_time,
-                  dbtaskhistory.scheduler_state,
-                  true,
-                  dbradiobuttonanswer.worker_id.?,
-                  dbradiobuttonanswer.answer.?,
-                  dbtaskhistory.state_change_time
-                )
-            }
-          }
-          case RadioButtonDistributionQuestion => {
-            (fQS_TS_THS leftJoin dbRadioButtonAnswer on (_._2._2.history_id === _.history_id)).map {
-              case ((dbquestion, (dbtask, dbtaskhistory)), dbrbda) =>
-                ( dbtask.task_id,
-                  dbtask.round,
-                  dbtask.timeout_in_s,
-                  dbtask.worker_timeout_in_s,
-                  dbtask.cost,
-                  dbtask.creation_time,
-                  dbtaskhistory.scheduler_state,
-                  true,
-                  dbrbda.worker_id.?,
-                  dbrbda.answer.?,
-                  dbtaskhistory.state_change_time
-                )
-            }
-          }
           case CheckboxQuestion => {
             (fQS_TS_THS leftJoin dbCheckboxAnswer on (_._2._2.history_id === _.history_id)).map {
               case ((dbquestion, (dbtask, dbtaskhistory)), dbcheckboxanswer) =>
@@ -407,6 +400,23 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
 
             }
           }
+          case EstimationQuestion => {
+            (fQS_TS_THS leftJoin dbFreeTextAnswer on (_._2._2.history_id === _.history_id)).map {
+              case ((dbquestion, (dbtask, dbtaskhistory)), dbestimationanswer) =>
+                ( dbtask.task_id,
+                  dbtask.round,
+                  dbtask.timeout_in_s,
+                  dbtask.worker_timeout_in_s,
+                  dbtask.cost,
+                  dbtask.creation_time,
+                  dbtaskhistory.scheduler_state,
+                  true,
+                  dbestimationanswer.worker_id.?,
+                  dbestimationanswer.answer.?,
+                  dbtaskhistory.state_change_time
+                )
+            }
+          }
           case FreeTextQuestion => {
             (fQS_TS_THS leftJoin dbFreeTextAnswer on (_._2._2.history_id === _.history_id)).map {
               case ((dbquestion, (dbtask, dbtaskhistory)), dbfreetextanswer) =>
@@ -441,7 +451,40 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
                 )
             }
           }
-          case _ => throw new NotImplementedError()
+          case RadioButtonQuestion => {
+            (fQS_TS_THS leftJoin dbRadioButtonAnswer on (_._2._2.history_id === _.history_id)).map {
+              case ((dbquestion, (dbtask, dbtaskhistory)), dbradiobuttonanswer) =>
+                ( dbtask.task_id,
+                  dbtask.round,
+                  dbtask.timeout_in_s,
+                  dbtask.worker_timeout_in_s,
+                  dbtask.cost,
+                  dbtask.creation_time,
+                  dbtaskhistory.scheduler_state,
+                  true,
+                  dbradiobuttonanswer.worker_id.?,
+                  dbradiobuttonanswer.answer.?,
+                  dbtaskhistory.state_change_time
+                  )
+            }
+          }
+          case RadioButtonDistributionQuestion => {
+            (fQS_TS_THS leftJoin dbRadioButtonAnswer on (_._2._2.history_id === _.history_id)).map {
+              case ((dbquestion, (dbtask, dbtaskhistory)), dbrbda) =>
+                ( dbtask.task_id,
+                  dbtask.round,
+                  dbtask.timeout_in_s,
+                  dbtask.worker_timeout_in_s,
+                  dbtask.cost,
+                  dbtask.creation_time,
+                  dbtaskhistory.scheduler_state,
+                  true,
+                  dbrbda.worker_id.?,
+                  dbrbda.answer.?,
+                  dbtaskhistory.state_change_time
+                  )
+            }
+          }
         }
 
         // execute query
@@ -523,18 +566,20 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
   protected[automan] def insertAnswerTable(ts: List[Task], histories: Seq[(UUID, Int)])(implicit session: DBSession) = {
     assert(ts.size != 0)
     ts.head.question.getQuestionType match {
-      case RadioButtonQuestion =>
-        dbRadioButtonAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBRadioButtonAnswer]]
-      case RadioButtonDistributionQuestion =>
-        dbRadioButtonAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBRadioButtonAnswer]]
       case CheckboxQuestion =>
         dbCheckboxAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBCheckboxAnswer]]
       case CheckboxDistributionQuestion =>
         dbCheckboxAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBCheckboxAnswer]]
+      case EstimationQuestion =>
+        dbEstimationAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBEstimationAnswer]]
       case FreeTextQuestion =>
         dbFreeTextAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBFreeTextAnswer]]
       case FreeTextDistributionQuestion =>
         dbFreeTextAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBFreeTextAnswer]]
+      case RadioButtonQuestion =>
+        dbRadioButtonAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBRadioButtonAnswer]]
+      case RadioButtonDistributionQuestion =>
+        dbRadioButtonAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBRadioButtonAnswer]]
     }
   }
 
@@ -544,7 +589,7 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
    * @param updates A list of tasks to update.
    */
   def save(q: Question, inserts: List[Task], updates: List[Task]) : Unit = {
-    if(inserts.size == 0 && updates.size == 0) return
+    if(inserts.isEmpty && updates.isEmpty) return
 
     db_opt match {
       case Some(db) =>

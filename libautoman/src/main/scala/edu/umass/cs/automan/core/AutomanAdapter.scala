@@ -9,11 +9,12 @@ import edu.umass.cs.automan.core.scheduler.Task
 abstract class AutomanAdapter {
   // question types are determined by adapter implementations
   // answer types are invariant
-  type CBQ    <: CheckboxQuestion                 // answer scalar
+  type CBQ    <: CheckboxQuestion           // answer scalar
   type CBDQ   <: CheckboxVectorQuestion     // answer vector
-  type FTQ    <: FreeTextQuestion                 // answer scalar
+  type EQ     <: EstimationQuestion         // answer estimate
+  type FTQ    <: FreeTextQuestion           // answer scalar
   type FTDQ   <: FreeTextVectorQuestion     // answer vector
-  type RBQ    <: RadioButtonQuestion              // answer scalar
+  type RBQ    <: RadioButtonQuestion        // answer scalar
   type RBDQ   <: RadioButtonVectorQuestion  // answer vector
   type MemoDB <: Memo
 
@@ -98,6 +99,7 @@ abstract class AutomanAdapter {
   // User API
   def CheckboxQuestion(init: CBQ => Unit) = schedule(CBQFactory(), init)
   def CheckboxDistributionQuestion(init: CBDQ => Unit) = schedule(CBDQFactory(), init)
+  def EstimationQuestion(init: EQ => Unit) = schedule(EQFactory(), init)
   def FreeTextQuestion(init: FTQ => Unit) = schedule(FTQFactory(), init)
   def FreeTextDistributionQuestion(init: FTDQ => Unit) = schedule(FTDQFactory(), init)
   def RadioButtonQuestion(init: RBQ => Unit) = schedule(RBQFactory(), init)
@@ -156,6 +158,7 @@ abstract class AutomanAdapter {
   // and thus 'new RBQ' does not suffice in the DSL call above
   protected def CBQFactory() : CBQ
   protected def CBDQFactory() : CBDQ
+  protected def EQFactory() : EQ
   protected def FTQFactory() : FTQ
   protected def FTDQFactory() : FTDQ
   protected def RBQFactory() : RBQ

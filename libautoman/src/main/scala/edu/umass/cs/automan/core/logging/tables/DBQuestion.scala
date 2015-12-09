@@ -10,18 +10,20 @@ object DBQuestion {
     {
       case CheckboxQuestion => 0
       case CheckboxDistributionQuestion => 1
-      case FreeTextQuestion => 2
-      case FreeTextDistributionQuestion => 3
-      case RadioButtonQuestion => 4
-      case RadioButtonDistributionQuestion => 5
+      case EstimationQuestion => 2
+      case FreeTextQuestion => 3
+      case FreeTextDistributionQuestion => 4
+      case RadioButtonQuestion => 5
+      case RadioButtonDistributionQuestion => 6
     },
     {
       case 0 => CheckboxQuestion
       case 1 => CheckboxDistributionQuestion
-      case 2 => FreeTextQuestion
-      case 3 => FreeTextDistributionQuestion
-      case 4 => RadioButtonQuestion
-      case 5 => RadioButtonDistributionQuestion
+      case 2 => EstimationQuestion
+      case 3 => FreeTextQuestion
+      case 4 => FreeTextDistributionQuestion
+      case 5 => RadioButtonQuestion
+      case 6 => RadioButtonDistributionQuestion
     }
     )
 }

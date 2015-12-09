@@ -29,6 +29,7 @@ class MTurkAdapter extends AutomanAdapter {
   // AutomanAdapter virtual methods
   override type CBQ     = MTCheckboxQuestion
   override type CBDQ    = MTCheckboxVectorQuestion
+  override type EQ      = MTEstimationQuestion
   override type FTQ     = MTFreeTextQuestion
   override type FTDQ    = MTFreeTextVectorQuestion
   override type RBQ     = MTRadioButtonQuestion
@@ -75,6 +76,7 @@ class MTurkAdapter extends AutomanAdapter {
 
   protected def CBQFactory()  = new MTCheckboxQuestion
   protected def CBDQFactory() = new MTCheckboxVectorQuestion
+  protected def EQFactory()   = new MTEstimationQuestion
   protected def FTQFactory()  = new MTFreeTextQuestion
   protected def FTDQFactory() = new MTFreeTextVectorQuestion
   protected def RBQFactory()  = new MTRadioButtonQuestion
