@@ -315,9 +315,7 @@ class Scheduler(val question: Question,
    * @param new_tasks A list of newly-spawned tasks.
    * @return True if the invariant holds.
    */
-  def spawn_invariant[A](new_tasks: List[Task]) : Boolean = {
-    new_tasks.size != 0
-  }
+  def spawn_invariant[A](new_tasks: List[Task]) : Boolean = new_tasks.nonEmpty
 
   /**
    * Returns true if all of the tasks from the before list are set to the

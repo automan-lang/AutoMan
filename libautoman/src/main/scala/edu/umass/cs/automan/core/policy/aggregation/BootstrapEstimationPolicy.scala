@@ -2,7 +2,7 @@ package edu.umass.cs.automan.core.policy.aggregation
 
 import java.util.UUID
 
-import edu.umass.cs.automan.core.answer.{LowConfidenceEstimate, LowConfidenceAnswer, OverBudgetAnswer, Estimate}
+import edu.umass.cs.automan.core.answer.{LowConfidenceEstimate, OverBudgetAnswer, Estimate}
 import edu.umass.cs.automan.core.logging.{LogType, LogLevelInfo, DebugLog}
 import edu.umass.cs.automan.core.question.confidence._
 import edu.umass.cs.automan.core.question.{EstimationQuestion, Question}
