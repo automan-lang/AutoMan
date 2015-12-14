@@ -36,7 +36,7 @@ abstract class EstimationQuestion extends Question {
   def estimator: Seq[Double] => Double = _estimator
   def estimator_=(fn: Seq[Double] => Double) { _estimator = fn }
 
-  override protected[automan] def getQuestionType = QuestionType.FreeTextQuestion
+  override protected[automan] def getQuestionType = QuestionType.EstimationQuestion
   override protected[automan] def getOutcome(adapter: AutomanAdapter) : O = {
     val scheduler = new Scheduler(this, adapter)
     val f = Future{

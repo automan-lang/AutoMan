@@ -107,8 +107,16 @@ abstract class AggregationPolicy(question: Question) {
   // tasks that have either been retrieved from memo
   // or pulled from backend; and no more than one per worker
   protected def completed_workerunique_tasks(tasks: List[Task]) = {
-    // if a worker completed more than one, take the first
-    unique_by_date(completed_tasks(tasks))
+    // completed
+    val completed = completed_tasks(tasks)
+
+    // check that list is empty
+    if (completed.isEmpty) {
+      List()
+    } else {
+      // if a worker completed more than one, take the first
+      unique_by_date(completed)
+    }
   }
 
   protected def outstanding_tasks(tasks: List[Task]) = {

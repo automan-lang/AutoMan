@@ -324,19 +324,21 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
     }
   }
 
-  protected[automan] def allTasksQuery() = {
-    // subquery: get task_id -> most recent state change time
+  // get task_id -> most recent state change time
+  protected[automan] def mostRecentHistories() = {
     val MSQ = dbTaskHistory.groupBy(_.task_id).map{ case (task_id,row) => task_id -> row.map(_.state_change_time).max }
 
     // get latest task histories
-    val THS = for {
-    th <- dbTaskHistory
-    m <- MSQ
-    if th.task_id === m._1 && th.state_change_time === m._2
-  } yield th
+    for {
+      th <- dbTaskHistory
+      m <- MSQ
+      if th.task_id === m._1 && th.state_change_time === m._2
+    } yield th
+  }
 
+  protected[automan] def allTasksQuery() = {
     // join with task
-    val TS_THS = dbTask join THS on (_.task_id === _.task_id)
+    val TS_THS = dbTask join mostRecentHistories() on (_.task_id === _.task_id)
 
     // join with question
     dbQuestion join TS_THS on (_.id === _._1.question_id)
@@ -401,7 +403,7 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
             }
           }
           case EstimationQuestion => {
-            (fQS_TS_THS leftJoin dbFreeTextAnswer on (_._2._2.history_id === _.history_id)).map {
+            (fQS_TS_THS leftJoin dbEstimationAnswer on (_._2._2.history_id === _.history_id)).map {
               case ((dbquestion, (dbtask, dbtaskhistory)), dbestimationanswer) =>
                 ( dbtask.task_id,
                   dbtask.round,
@@ -556,7 +558,7 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
       t.answer match {
         case Some(ans) =>
           assert(history_dict.contains(t.task_id))
-          assert(t.worker_id != None)
+          assert(t.worker_id.isDefined)
           Some(history_dict(t.task_id), ans, t.worker_id.get)
         case None => None
       }
@@ -564,7 +566,7 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
   }
 
   protected[automan] def insertAnswerTable(ts: List[Task], histories: Seq[(UUID, Int)])(implicit session: DBSession) = {
-    assert(ts.size != 0)
+    assert(ts.nonEmpty)
     ts.head.question.getQuestionType match {
       case CheckboxQuestion =>
         dbCheckboxAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBCheckboxAnswer]]
@@ -611,14 +613,17 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
           // instead we query the table we just inserted into
           val ts = inserts ::: updates
           val t_ids = ts.map(_.task_id).toSet
-          val histories: List[(UUID, Int)] = dbTaskHistory.filter(_.task_id inSet t_ids).map(th => (th.task_id, th.history_id)).list
+          val histories: List[(UUID, Int)] =
+            mostRecentHistories()                         // only the most recent histories
+            .filter(_.task_id inSet t_ids)                // for the ones that we just inserted
+            .map(th => (th.task_id, th.history_id)).list  // and we only care about task_id and history_id
 
           // do bulk insert for all answered tasks
           insertAnswerTable(ts, histories)
 
           // asynchronously send update notifications
           // this should only send changes; for now, send everything
-          if (_plugins.size > 0) {
+          if (_plugins.nonEmpty) {
             Future {
               blocking {
                 val updates = snapshotUpdates()
