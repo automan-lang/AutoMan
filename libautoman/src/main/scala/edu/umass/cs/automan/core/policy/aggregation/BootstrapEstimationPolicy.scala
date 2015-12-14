@@ -233,7 +233,7 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
   }
 
   // by default, we just accept everything
-  override def tasks_to_accept(tasks: List[Task]): List[Task] = tasks
+  override def tasks_to_accept(tasks: List[Task]): List[Task] = tasks.filter(not_final)
 
   // by default, we reject nothing
   override def tasks_to_reject(tasks: List[Task]): List[Task] = List.empty
