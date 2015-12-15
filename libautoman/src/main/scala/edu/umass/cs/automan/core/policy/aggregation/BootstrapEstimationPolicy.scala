@@ -39,7 +39,7 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
     val (low, est, high) = bootstrap(question.estimator, X, NumBootstraps, alpha)
 
     // cost
-    val cost = tasks.filter(_.answer.isDefined).map(_.cost).sum
+    val cost = tasks.filter { t => t.answer.isDefined && !t.from_memo }.map(_.cost).sum
 
     (est, low, high, cost, adj_conf)
   }
