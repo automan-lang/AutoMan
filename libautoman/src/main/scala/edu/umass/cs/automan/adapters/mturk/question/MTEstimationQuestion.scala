@@ -64,9 +64,6 @@ class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
         </QuestionContent>
         <AnswerSpecification>
           <FreeTextAnswer>
-            <NumberOfLinesSuggestion>
-              1
-            </NumberOfLinesSuggestion>
             <Constraints>
               { isNumeric }
             </Constraints>
