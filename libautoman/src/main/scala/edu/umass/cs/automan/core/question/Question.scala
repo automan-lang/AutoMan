@@ -65,8 +65,6 @@ abstract class Question {
   def image_alt_text_=(s: String) { _image_alt_text = Some(s) }
   def image_url: String = _image_url match { case Some(x) => x; case None => "" }
   def image_url_=(s: String) { _image_url = Some(s) }
-  def image: File = _image match { case Some(f) => f; case None => null }
-  def image_=(f: File) { _image = Some(f) }
   def max_replicas: Option[Int] = _max_replicas
   def max_replicas_=(m: Int) { _max_replicas = Some(m) }
   def memo_hash: String
