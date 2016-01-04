@@ -3,7 +3,7 @@ import edu.umass.cs.automan.core.answer._
 
 object CalorieCounter extends App {
 
-  val foodImg = "http://s1.1zoom.me/big3/635/343470-svetik.jpg"
+  val foodImg = "https://s3.amazonaws.com/edu-umass-cs-automan-2014-07-01-calorie/0715a58400d974009fa79368a05471ac.jpg"
   val opts = Utilities.unsafe_optparse(args, "CalorieCounter")
 
   val a = MTurkAdapter { mt =>
@@ -18,6 +18,7 @@ object CalorieCounter extends App {
     q.text = "Estimate how many calories (kcal) are " +
              "present in the picture shown in the photo."
     q.image_url = imgUrl
+    q.min_value = 0
   }
 
   automan(a) {
