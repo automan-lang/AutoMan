@@ -12,9 +12,6 @@ import org.apache.commons.codec.binary.Hex
 class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
   override type A = EstimationQuestion#A
 
-  val _real_number = """/^\s*[-+]?(\d*\.?\d+|\d+\.)(e[-+]?[0-9]+)?\s*$/i"""
-  val _real_errtxt = "Your input must be a positive or negative number with optional fraction, for example, \"3.25\"."
-
   // public API
   def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
@@ -67,12 +64,24 @@ class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
         </QuestionContent>
         <AnswerSpecification>
           <FreeTextAnswer>
+            <NumberOfLinesSuggestion>
+              1
+            </NumberOfLinesSuggestion>
             <Constraints>
-              <AnswerFormatRegex regex={ _real_number } errorText={ _real_errtxt } />
+              { isNumeric }
             </Constraints>
           </FreeTextAnswer>
         </AnswerSpecification>
       </Question>
     </QuestionForm>
+  }
+
+  private def isNumeric : scala.xml.Node = {
+    (_min_value, _max_value) match {
+      case (Some(min),Some(max)) => <IsNumeric minValue={ "\"" + min + "\"" } maxValue={ "\"" + max + "\"" } />
+      case (Some(min),None) => <IsNumeric minValue={ "\"" + min + "\"" } />
+      case (None,Some(max)) => <IsNumeric maxValue={ "\"" + max + "\"" } />
+      case (None,None) => <IsNumeric />
+    }
   }
 }

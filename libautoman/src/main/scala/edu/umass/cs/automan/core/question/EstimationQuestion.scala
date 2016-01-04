@@ -26,6 +26,8 @@ abstract class EstimationQuestion extends Question {
     // by default, use the mean
     ds => ds.sum / ds.length
   }
+  protected var _min_value: Option[Double] = None
+  protected var _max_value: Option[Double] = None
 
   def confidence_=(c: Double) { _confidence = c }
   def confidence: Double = _confidence
@@ -35,6 +37,16 @@ abstract class EstimationQuestion extends Question {
   def default_sample_size_=(n: Int) { _default_sample_size = n }
   def estimator: Seq[Double] => Double = _estimator
   def estimator_=(fn: Seq[Double] => Double) { _estimator = fn }
+  def max_value: Double = _max_value match {
+    case Some(v) => v
+    case None => Double.PositiveInfinity
+  }
+  def max_value_=(max: Double) { _max_value = Some(max) }
+  def min_value: Double = _min_value match {
+    case Some(v) => v
+    case None => Double.NegativeInfinity
+  }
+  def min_value_=(min: Double) { _min_value = Some(min) }
 
   override protected[automan] def getQuestionType = QuestionType.EstimationQuestion
   override protected[automan] def getOutcome(adapter: AutomanAdapter) : O = {
