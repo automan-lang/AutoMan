@@ -75,9 +75,9 @@ class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
 
   private def isNumeric : scala.xml.Node = {
     (_min_value, _max_value) match {
-      case (Some(min),Some(max)) => <IsNumeric minValue={ "\"" + min + "\"" } maxValue={ "\"" + max + "\"" } />
-      case (Some(min),None) => <IsNumeric minValue={ "\"" + min + "\"" } />
-      case (None,Some(max)) => <IsNumeric maxValue={ "\"" + max + "\"" } />
+      case (Some(min),Some(max)) => <IsNumeric minValue={ "\"" + Math.floor(min).toInt + "\"" } maxValue={ "\"" + Math.ceil(max).toInt + "\"" } />
+      case (Some(min),None) => <IsNumeric minValue={ "\"" + Math.floor(min).toInt + "\"" } />
+      case (None,Some(max)) => <IsNumeric maxValue={ "\"" + Math.ceil(max).toInt + "\"" } />
       case (None,None) => <IsNumeric />
     }
   }
