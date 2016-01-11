@@ -38,8 +38,8 @@ class MTurkEstimationTestUnconstrained extends FlatSpec with Matchers {
           (est > 610) should be (true)
           (est < 612) should be (true)
           // using error <- qnorm(0.9875)*sd(foobar[(1:30)])/sqrt(30)
-          (low > 573.7314) should be (true)
-          (high < 648.402) should be (true)
+          (low > 571) should be (true)
+          (high < 651) should be (true)
           (conf >= confidence) should be (true)
           (cost == BigDecimal(1.80)) should be (true)
         case _ =>
