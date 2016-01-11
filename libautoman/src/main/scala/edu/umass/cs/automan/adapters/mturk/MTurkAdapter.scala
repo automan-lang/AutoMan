@@ -112,6 +112,7 @@ class MTurkAdapter extends AutomanAdapter {
     assert(ts.forall(_.state == SchedulerState.RUNNING))
     run_if_initialized((p: Pool) => p.retrieve(ts, current_time))
   }
+  protected[automan] def requesterService = _service
   override protected[automan] def question_startup_hook(q: Question, t: Date): Unit = {
     super.question_startup_hook(q, t)
     // do simulation-specific setup
