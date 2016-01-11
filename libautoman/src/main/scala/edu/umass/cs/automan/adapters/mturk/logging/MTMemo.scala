@@ -8,10 +8,44 @@ import edu.umass.cs.automan.adapters.mturk.logging.tables.{DBAssignment, DBQuali
 import edu.umass.cs.automan.adapters.mturk.util.Key
 import edu.umass.cs.automan.adapters.mturk.util.Key._
 import edu.umass.cs.automan.core.logging._
-import scala.collection.immutable.Iterable
 import scala.slick.driver.H2Driver.simple._
 
 class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(log_config, database_path) {
+  case class Assn(assignmentId: String,
+                  workerId: String,
+                  HITId: String,
+                  assignmentStatus: AssignmentStatus,
+                  autoApprovalTime: Option[Calendar],
+                  acceptTime: Option[Calendar],
+                  submitTime: Option[Calendar],
+                  approvalTime: Option[Calendar],
+                  rejectionTime: Option[Calendar],
+                  deadline: Option[Calendar],
+                  answer: String,
+                  requesterFeedback: Option[String],
+                  taskId: UUID) {
+    def this(a: AssnTuple) = this(a._1, a._2, a._3, a._4, a._5, a._6, a._7, a._8, a._9, a._10, a._11, a._12, a._13)
+    def toAssignment() : Assignment = {
+      new Assignment(
+        null,
+        this.assignmentId,
+        this.workerId,
+        this.HITId,
+        this.assignmentStatus,
+        this.autoApprovalTime.orNull,
+        this.acceptTime.orNull,
+        this.submitTime.orNull,
+        this.approvalTime.orNull,
+        this.rejectionTime.orNull,
+        this.deadline.orNull,
+        this.answer,
+        this.requesterFeedback.orNull
+      )
+    }
+  }
+
+  type AssnTuple = (String, String, String, AssignmentStatus, Option[Calendar], Option[Calendar], Option[Calendar], Option[Calendar], Option[Calendar], Option[Calendar], String, Option[String], UUID)
+
   type DBHITType = (String, String, Int)
   type DBQualificationRequirement = (String, String)
 
@@ -82,33 +116,10 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
     dbWorker ++= inserts
   }
 
-  def assignmentFromDBAssnRow(row: (String, String, String, AssignmentStatus, Option[Calendar], Option[Calendar], Option[Calendar], Option[Calendar], Option[Calendar], Option[Calendar], String, Option[String], UUID)) : Assignment = {
-    val (assignmentId, workerId, hit_id, assignmentStatus, autoApprovalTime, acceptTime, submitTime, approvalTime, rejectionTime, deadline, answer, requesterFeedback, taskId) = row
-    new Assignment(
-      null,
-      assignmentId,
-      workerId,
-      hit_id,
-      assignmentStatus,
-      autoApprovalTime.orNull,
-      acceptTime.orNull,
-      submitTime.orNull,
-      approvalTime.orNull,
-      rejectionTime.orNull,
-      deadline.orNull,
-      answer,
-      requesterFeedback.orNull
-    )
-  }
+  def getHITInsertsAndUpdates(existing_hits: Map[String, (String, String, Boolean)], hit_states: Map[HITID,HITState])
+    : (List[HITID], List[HITID]) = {
 
-  def updateHITs(hit_states: Map[HITID,HITState], hit_ids: Map[HITKey,HITID])(implicit session: DBSession) : Unit = {
-    implicit val statusMapper = DBAssignment.statusMapper
-
-    val existing_hits = allHITs.list.map { case (hit_id, hit_type_id, is_cancelled) => hit_id -> (hit_id, hit_type_id, is_cancelled) }.toMap
-    val existing_assignments = allAssignments.list.map { assn => assn._1 -> assn }.toMap
-
-    // HITs
-    val (hit_inserts, hit_updates) = hit_states.values.map { hitstate =>
+    hit_states.values.map { hitstate =>
       if (existing_hits.contains(hitstate.HITId)) {
         if (existing_hits(hitstate.HITId)._3 != hitstate.isCancelled) {
           Update(hitstate.HITId)
@@ -125,14 +136,17 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
         case Skip(hitid) => acc
       }
     }
+  }
 
-    // Assignments
-    val (assignment_inserts, assignment_updates) = hit_states.values.map { hitstate =>
+  def getAssignmentInsertsAndUpdates(existing_assignments: Map[String, Assn], hit_states: Map[HITID,HITState])
+    : (List[(Assignment, UUID)], List[(Assignment, UUID)]) = {
+
+    hit_states.values.flatMap { hitstate =>
       hitstate.t_a_map.flatMap { case (task_id, assignment_opt) =>
         assignment_opt match {
           case Some(assignment) =>
             if (existing_assignments.contains(assignment.getAssignmentId)) {
-              val existing_assn = assignmentFromDBAssnRow(existing_assignments(assignment.getAssignmentId))
+              val existing_assn = existing_assignments(assignment.getAssignmentId).toAssignment()
               if (existing_assn.equals(assignment)) {
                 Some(Skip(assignment,task_id))
               } else {
@@ -144,18 +158,46 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
           case None => None
         }
       }
-    }.flatten.foldLeft(List.empty[(Assignment,UUID)],List.empty[(Assignment,UUID)]) { case (acc,action) =>
+    }.foldLeft(List.empty[(Assignment,UUID)],List.empty[(Assignment,UUID)]) { case (acc,action) =>
       action match {
         case Insert(data) => (data :: acc._1, acc._2)
         case Update(data) => (acc._1, data :: acc._2)
         case Skip(data) => acc
       }
     }
+  }
+
+  def updateHITs(hit_states: Map[HITID,HITState], hit_ids: Map[HITKey,HITID])(implicit session: DBSession) : Unit = {
+    implicit val statusMapper = DBAssignment.statusMapper
+
+    val ah = allHITs.list
+    val aa = allAssignments.list.map(new Assn(_))
+
+    val existing_hits = ah.map { case (hit_id, hit_type_id, is_cancelled) => hit_id -> (hit_id, hit_type_id, is_cancelled) }.toMap
+    val existing_assignments = aa.map { assn => assn.assignmentId -> assn }.toMap
+
+    // if these sizes are different, then we are losing HITs or assignments when we make a map
+    assert(ah.size == existing_hits.size)
+    assert(aa.size == existing_assignments.size)
+
+    // HITs
+    val (hit_inserts: List[HITID], hit_updates: List[HITID]) = getHITInsertsAndUpdates(existing_hits, hit_states)
+
+    // lists should only contain distinct elements
+    assert(hit_inserts.distinct.length == hit_inserts.length)
+    assert(hit_updates.distinct.length == hit_updates.length)
+
+    // Assignments
+    val (assignment_inserts, assignment_updates) = getAssignmentInsertsAndUpdates(existing_assignments, hit_states)
+
+    // lists should only contain distinct elements
+    assert(assignment_inserts.map(_._1.getAssignmentId).distinct.length == assignment_inserts.length)
+    assert(assignment_updates.map(_._1.getAssignmentId).distinct.length == assignment_updates.length)
 
     // HIT inserts
     dbHIT ++= HITState2HITTuples(hit_inserts.map { hitid => hit_states(hitid)} )
 
-    // HIT updates
+    // mark cancelled HITs as cancelled in the database
     hit_updates.foreach { hit_id => dbHIT.filter(_.HITId === hit_id).map(_.isCancelled).update(hit_states(hit_id).isCancelled)}
 
     // TaskHIT inserts (no updates needed)
