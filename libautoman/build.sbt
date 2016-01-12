@@ -70,13 +70,6 @@ memoClean := {
 // GENERATING JAR
 packSettings
 
-// TESTING
-concurrentRestrictions in Global := Seq(
-  Tags.limit(Tags.Test, 1)
-)
-
-parallelExecution in Test := false
-
 // MAVEN
 
 // yes, we want Maven artifacts
