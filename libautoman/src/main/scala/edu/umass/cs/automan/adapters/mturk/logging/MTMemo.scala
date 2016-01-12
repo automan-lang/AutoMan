@@ -183,7 +183,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
     // HITs
     val (hit_inserts: List[HITID], hit_updates: List[HITID]) = getHITInsertsAndUpdates(existing_hits, hit_states)
 
-    // lists should only contain distinct elements
+    // lists should only contain distinct elements & be completely disjoint
     assert(hit_inserts.distinct.length == hit_inserts.length)
     assert(hit_updates.distinct.length == hit_updates.length)
     assert((hit_inserts ::: hit_updates).distinct.length == hit_inserts.length + hit_updates.length)
@@ -191,24 +191,25 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
     // Assignments
     val (assignment_inserts, assignment_updates) = getAssignmentInsertsAndUpdates(existing_assignments, hit_states)
 
-    // lists should only contain distinct elements
+    // lists should only contain distinct elements & be completely disjoint
     assert(assignment_inserts.map(_._1.getAssignmentId).distinct.length == assignment_inserts.length)
     assert(assignment_updates.map(_._1.getAssignmentId).distinct.length == assignment_updates.length)
+    assert((assignment_inserts ::: assignment_updates).distinct.length == assignment_inserts.length + assignment_updates.length)
 
-    // HIT inserts
+    // insert new HITs
     dbHIT ++= HITState2HITTuples(hit_inserts.map { hitid => hit_states(hitid)} )
 
     // mark cancelled HITs as cancelled in the database
     hit_updates.foreach { hit_id => dbHIT.filter(_.HITId === hit_id).map(_.isCancelled).update(hit_states(hit_id).isCancelled)}
 
-    // TaskHIT inserts (no updates needed)
+    // insert TaskHITs (updates never needed)
     dbTaskHIT ++= HITState2TaskHITTuples(hit_inserts.map { hitid => hit_states(hitid)})
 
-    // Assignment inserts
+    // insert new Assignments
     val a_inserts = Assignment2AssignmentTuple(assignment_inserts)
     dbAssignment ++= a_inserts
 
-    // Assignment updates
+    // update existing Assignments
     // a.getAssignmentStatus, a.getAutoApprovalTime, a.getAcceptTime, a.getSubmitTime, a.getApprovalTime, a.getRejectionTime, a.getDeadline, a.getRequesterFeedback
     assignment_updates.foreach { case (a, task_id) =>
       dbAssignment
