@@ -186,6 +186,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(lo
     // lists should only contain distinct elements
     assert(hit_inserts.distinct.length == hit_inserts.length)
     assert(hit_updates.distinct.length == hit_updates.length)
+    assert((hit_inserts ::: hit_updates).distinct.length == hit_inserts.length + hit_updates.length)
 
     // Assignments
     val (assignment_inserts, assignment_updates) = getAssignmentInsertsAndUpdates(existing_assignments, hit_states)
