@@ -1,7 +1,8 @@
 package edu.umass.cs.automan.core.logging
 
+import java.io.File
 import java.util.UUID
-import edu.umass.cs.automan.core.answer.OverBudgetEstimate
+import edu.umass.cs.automan.core.answer.{LowConfidenceEstimate, OverBudgetEstimate}
 
 import scala.util.Random
 import edu.umass.cs.automan.test._
@@ -10,13 +11,19 @@ import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 import org.scalatest.{Matchers, FlatSpec}
 
 class H2KillerTest extends FlatSpec with Matchers {
-  "An estimator program" should "not crash under high load" in {
+  "An estimator program" should "not experience a database primary key error under load" in {
+    val db_name = "H2KillerTestDB.mv.db"
+
+    if (new File(db_name).exists()) {
+      new File(db_name).delete()
+    }
+
     val dollar_budget = BigDecimal(8.00)
     val wage = BigDecimal(7.25)
     val time_budget_in_sec = 30  // in seconds
     val hour_in_sec = 3600
     val reward = (wage / (hour_in_sec / time_budget_in_sec)).setScale(2, BigDecimal.RoundingMode.HALF_DOWN)
-    val n = (dollar_budget / reward).setScale(0, BigDecimal.RoundingMode.FLOOR) + 1
+    val n = (dollar_budget / reward).setScale(0, BigDecimal.RoundingMode.FLOOR) * 2
     val rng = new Random()
 
     // this set of values is virtually guaranteed not
@@ -31,7 +38,7 @@ class H2KillerTest extends FlatSpec with Matchers {
       mt.secret_access_key = UUID.randomUUID().toString
       mt.use_mock = MockSetup(budget = 8.00)
       mt.logging = LogConfig.TRACE_MEMOIZE_VERBOSE
-      mt.database_path = "H2KillerTestDB"
+      mt.database_path = db_name
     }
 
     def countJellies() = a.EstimationQuestion { q =>
@@ -48,7 +55,7 @@ class H2KillerTest extends FlatSpec with Matchers {
 
       val outcome = answers.map { a =>
         a.answer match {
-          case OverBudgetEstimate(_, _) => true
+          case LowConfidenceEstimate(_,_,_,_,_) => true
           case _ => false
         }
       }.foldLeft(true) { case (acc, v) => acc && v }
