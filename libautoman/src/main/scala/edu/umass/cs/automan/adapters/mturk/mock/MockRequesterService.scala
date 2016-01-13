@@ -88,7 +88,6 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
     _state = _state.updateAssignmentStatus(UUID.fromString(assignmentId), AssignmentStatus.REJECTED)
   }
 
-  // This version just returns all available assignments, regardless of HIT ID
   override def getAllAssignmentsForHIT(hitId: String): Array[Assignment] = synchronized {
     val question_id = UUID.fromString(_state.getHITforHITId(hitId).getRequesterAnnotation)
 
