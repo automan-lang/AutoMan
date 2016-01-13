@@ -33,9 +33,6 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
     case None => new MTState()
   }
 
-  // DEBUG: TODO REMOVE
-  val all_saved_tasks = memo_handle.snapshot()
-
   // worker
   startWorker()
 
