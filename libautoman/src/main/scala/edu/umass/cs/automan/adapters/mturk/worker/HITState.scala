@@ -13,8 +13,8 @@ object HITState {
     HITState(hit, t_a_map, hittype, cancelled = false)
   }
 
-  def distinctBy[T,U](xs: Seq[T])(pred: T => U): Seq[T] = {
-    xs.groupBy(pred(_)).flatMap { case (key,xs_filt) => xs_filt.headOption }.toSeq
+  def distinctBy[T,U](xs: Seq[T])(fn: T => U): Seq[T] = {
+    xs.groupBy(fn(_)).flatMap { case (key,xs_filt) => xs_filt.headOption }.toSeq
   }
 }
 
@@ -25,14 +25,17 @@ case class HITState(hit: HIT, t_a_map: Map[UUID,Option[Assignment]], hittype: HI
   val aid_t_map = t_a_map.flatMap { case (t, a_o) => a_o match { case Some(a) => Some(a.getAssignmentId -> t); case None => None }}
 
   def matchAssignments(assns: Array[Assignment], mock_service: Option[MockRequesterService]) : HITState = {
+    // make sure that our list of assignments only
+    // contains new, unique assignments
+    val gathered_assn_ids = t_a_map.values.flatten.map(_.getAssignmentId).toList
+    val assns_new = HITState.distinctBy(assns){ a => a.getAssignmentId }
+                            .filterNot { a => !gathered_assn_ids.contains(a.getAssignmentId) }
+
     // for every available assignment and unmatched task,
     // pair the two and update the map
     // we compare IDs since we may get duplicate Assignment
     // and task objects as we run
-    val assns_distinct = HITState.distinctBy(assns){ a => a.getAssignmentId }
-    assert(assns.length == assns_distinct.length)
-
-    val (new_t_a_map,_) = assns.foldLeft(t_a_map,unmatchedTasks){ case ((tam, ts), a) =>
+    val (new_t_a_map,_) = assns_new.foldLeft(t_a_map,unmatchedTasks){ case ((tam, ts), a) =>
         if (!aid_t_map.contains(a.getAssignmentId) && ts.nonEmpty) {
           (tam + (ts.head -> Some(a)), ts.tail)
         } else {

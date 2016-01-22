@@ -99,8 +99,10 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
     // inappropriate ones to try to trip up our duplicate
     // assignment ID detection code
     val assn_ids: List[UUID] =
-              (if (aibqi.nonEmpty) { List[UUID](aibqi.head) } else { List[UUID]() }) :::
+              // inappropriate
+//              (if (aibqi.nonEmpty) { List[UUID](aibqi.head) } else { List[UUID]() }) :::
 //              (if (aibqi.nonEmpty) { List[UUID](aibqi.last) } else { List[UUID]() }) :::
+              // appropriate
               aibqi.filter { assn_id =>
                 _state.assignment_status_by_assignment_id(assn_id)._1 == AssignmentStatus.UNANSWERED
               }
