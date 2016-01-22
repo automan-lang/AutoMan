@@ -1,6 +1,7 @@
 package edu.umass.cs.automan.core
 
 import java.util.{UUID, Date, Locale}
+import edu.umass.cs.automan.adapters.mturk.util.AliveOrFail
 import edu.umass.cs.automan.core.logging.LogConfig.LogConfig
 import edu.umass.cs.automan.core.question._
 import edu.umass.cs.automan.core.logging._
@@ -39,15 +40,29 @@ abstract class AutomanAdapter {
   def log_verbosity_=(v: LogLevel) { DebugLog.level = v }
 
   // marshaling calls
-  // invariant: every task that is passed in is passed back
+  // invariants:
+  //  1. every task that is passed in is passed back with modified state.
+  //  2. return values are optional: None signals fatal backend failure.
   /**
    * Tell the backend to accept the answer associated with this ANSWERED task.
    * @param ts ANSWERED tasks.
-   * @return ACCEPTED tasks.
+   * @return Some ACCEPTED tasks if successful.
    */
-  protected[automan] def accept(ts: List[Task]) : List[Task]
-  protected[automan] def backend_budget(): BigDecimal
-  protected[automan] def cancel(ts: List[Task]) : List[Task]
+  protected[automan] def accept(ts: List[Task]) : Option[List[Task]]
+
+  /**
+    * Get the budget from the backend.
+    * @return Some budget if successful.
+    */
+  protected[automan] def backend_budget(): Option[BigDecimal]
+
+  /**
+    * Cancel the given tasks.
+    * @param ts A list of tasks to cancel.
+    * @return Some list of cancelled tasks if successful.
+    */
+  protected[automan] def cancel(ts: List[Task]) : Option[List[Task]]
+
   /**
    * Post tasks on the backend, one task for each task.  All tasks given should
    * be marked READY. The method returns the complete list of tasks passed
@@ -55,16 +70,16 @@ abstract class AutomanAdapter {
    * tasks == the size of the list of the output tasks.
    * @param ts A list of new tasks.
    * @param exclude_worker_ids Worker IDs to exclude, if any.
-   * @return A list of the posted tasks.
+   * @return Some list of the posted tasks if successful.
    */
-  protected[automan] def post(ts: List[Task], exclude_worker_ids: List[String]) : List[Task]
+  protected[automan] def post(ts: List[Task], exclude_worker_ids: List[String]) : Option[List[Task]]
 
   /**
    * Tell the backend to reject the answer associated with this ANSWERED task.
    * @param ts_reasons A list of pairs of ANSWERED tasks and their rejection reasons.
-   * @return REJECTED tasks.
+   * @return Some REJECTED tasks if succesful.
    */
-  protected[automan] def reject(ts_reasons: List[(Task,String)]) : List[Task]
+  protected[automan] def reject(ts_reasons: List[(Task,String)]) : Option[List[Task]]
 
   /**
    * Ask the backend to retrieve answers given a list of RUNNING tasks. Invariant:
@@ -72,9 +87,9 @@ abstract class AutomanAdapter {
    * tasks. The virtual_time parameter is ignored when not running in simulator mode.
    * @param ts A list of RUNNING tasks.
    * @param current_time The current virtual time.
-   * @return A list of RUNNING, RETRIEVED, or TIMEOUT tasks.
+   * @return Some list of RUNNING, RETRIEVED, or TIMEOUT tasks if successful.
    */
-  protected[automan] def retrieve(ts: List[Task], current_time: Date) : List[Task]
+  protected[automan] def retrieve(ts: List[Task], current_time: Date) : Option[List[Task]]
 
   /**
    * This method is called by the scheduler after question initialization

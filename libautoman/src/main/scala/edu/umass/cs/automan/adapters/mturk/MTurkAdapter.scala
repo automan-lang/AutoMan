@@ -4,7 +4,8 @@ import java.util.{Date, Locale}
 import com.amazonaws.mturk.requester.HIT
 import com.amazonaws.mturk.util.ClientConfig
 import com.amazonaws.mturk.service.axis.RequesterService
-import edu.umass.cs.automan.adapters.mturk.connectionpool.{MTState, Pool}
+import edu.umass.cs.automan.adapters.mturk.util.{Alive, AliveOrFail}
+import edu.umass.cs.automan.adapters.mturk.worker.{TurkWorker, MTState, TurkWorker$}
 import edu.umass.cs.automan.adapters.mturk.logging.MTMemo
 import edu.umass.cs.automan.adapters.mturk.mock.{MockSetup, MockServiceState, MockRequesterService}
 import edu.umass.cs.automan.adapters.mturk.question._
@@ -38,7 +39,7 @@ class MTurkAdapter extends AutomanAdapter {
 
   private var _access_key_id: Option[String] = None
   private var _backend_update_frequency_ms : Int = 1500 // lower than 1 second is inadvisable
-  private var _pool : Option[Pool] = None
+  private var _worker : Option[TurkWorker] = None
   private var _retriable_errors = Set("Server.ServiceUnavailable")
   private var _retry_attempts : Int = 10
   private var _retry_delay_millis : Int = _backend_update_frequency_ms
@@ -87,8 +88,9 @@ class MTurkAdapter extends AutomanAdapter {
 
   protected[automan] def accept(ts: List[Task]) = {
     assert(ts.forall { t => t.state == SchedulerState.ANSWERED } )
-    run_if_initialized((p: Pool) => p.accept(ts))
+    run_if_initialized((p: TurkWorker) => p.accept(ts))
   }
+  protected[automan] def backend_budget() = run_if_initialized((p: TurkWorker) => p.backend_budget)
   protected[automan] def cancel(ts: List[Task]) = {
     assert(
       ts.forall { t =>
@@ -97,20 +99,19 @@ class MTurkAdapter extends AutomanAdapter {
           t.state != SchedulerState.REJECTED
       }
     )
-    run_if_initialized((p: Pool) => p.cancel(ts))
+    run_if_initialized((p: TurkWorker) => p.cancel(ts))
   }
-  protected[automan] def backend_budget() = run_if_initialized((p: Pool) => p.backend_budget)
   protected[automan] def post(ts: List[Task], exclude_worker_ids: List[String]) = {
     assert(ts.forall(_.state == SchedulerState.READY))
-    run_if_initialized((p: Pool) => p.post(ts, exclude_worker_ids))
+    run_if_initialized((p: TurkWorker) => p.post(ts, exclude_worker_ids))
   }
   protected[automan] def reject(ts_reasons: List[(Task, String)]) = {
     ts_reasons.foreach{ case (t,_) => assert(t.state == SchedulerState.ANSWERED, "State during reject is: " + t.state) }
-    run_if_initialized((p: Pool) => p.reject(ts_reasons))
+    run_if_initialized((p: TurkWorker) => p.reject(ts_reasons))
   }
   protected[automan] def retrieve(ts: List[Task], current_time: Date) = {
     assert(ts.forall(_.state == SchedulerState.RUNNING))
-    run_if_initialized((p: Pool) => p.retrieve(ts, current_time))
+    run_if_initialized((p: TurkWorker) => p.retrieve(ts, current_time))
   }
   protected[automan] def requesterService = _service
   override protected[automan] def question_startup_hook(q: Question, t: Date): Unit = {
@@ -128,12 +129,12 @@ class MTurkAdapter extends AutomanAdapter {
   override protected[automan] def question_shutdown_hook(q: Question): Unit = {
     super.question_shutdown_hook(q)
     // cleanup qualifications
-    run_if_initialized((p: Pool) => p.cleanup_qualifications(q.asInstanceOf[MTurkQuestion]))
+    run_if_initialized((p: TurkWorker) => p.cleanup_qualifications(q.asInstanceOf[MTurkQuestion]))
   }
 
   // exception helper function
-  private def run_if_initialized[U](f: Pool => U) : U = {
-    _pool match {
+  private def run_if_initialized[U](f: TurkWorker => U) : U = {
+    _worker match {
       case Some(p) => f(p)
       case None => {
         throw MTurkAdapterNotInitialized("MTurkAdapter must be initialized before attempting to communicate.")
@@ -159,12 +160,12 @@ class MTurkAdapter extends AutomanAdapter {
     }
     val pool = _use_mock match {
       case Some(mock_setup) =>
-        new Pool(rs, 0, Some(rs.asInstanceOf[MockRequesterService]), _memoizer)
+        new TurkWorker(rs, 0, Some(rs.asInstanceOf[MockRequesterService]), _memoizer)
       case None =>
-        new Pool(rs, _backend_update_frequency_ms, None, _memoizer)
+        new TurkWorker(rs, _backend_update_frequency_ms, None, _memoizer)
     }
     _service = Some(rs)
-    _pool = Some(pool)
+    _worker = Some(pool)
   }
 
   private def toClientConfig : ClientConfig = {
@@ -182,7 +183,7 @@ class MTurkAdapter extends AutomanAdapter {
 
   override protected[automan] def close(): Unit = {
     super.close()
-    _pool match {
+    _worker match {
       case Some(p) => p.shutdown()
       case None => ()
     }

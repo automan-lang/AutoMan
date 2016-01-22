@@ -1,7 +1,6 @@
-package edu.umass.cs.automan.adapters.mturk.connectionpool
+package edu.umass.cs.automan.adapters.mturk.worker
 
-import java.util.{Date, UUID}
-
+import java.util.UUID
 import com.amazonaws.mturk.requester.{Assignment, HIT}
 import edu.umass.cs.automan.adapters.mturk.mock.MockRequesterService
 import edu.umass.cs.automan.core.scheduler.Task
@@ -12,6 +11,10 @@ object HITState {
   def apply(hit: HIT, ts: List[Task], hittype: HITType) : HITState = {
     val t_a_map = ts.map(_.task_id -> None).toMap
     HITState(hit, t_a_map, hittype, cancelled = false)
+  }
+
+  def distinctBy[T,U](xs: Seq[T])(pred: T => U): Seq[T] = {
+    xs.groupBy(pred(_)).flatMap { case (key,xs_filt) => xs_filt.headOption }.toSeq
   }
 }
 
@@ -26,6 +29,9 @@ case class HITState(hit: HIT, t_a_map: Map[UUID,Option[Assignment]], hittype: HI
     // pair the two and update the map
     // we compare IDs since we may get duplicate Assignment
     // and task objects as we run
+    val assns_distinct = HITState.distinctBy(assns){ a => a.getAssignmentId }
+    assert(assns.length == assns_distinct.length)
+
     val (new_t_a_map,_) = assns.foldLeft(t_a_map,unmatchedTasks){ case ((tam, ts), a) =>
         if (!aid_t_map.contains(a.getAssignmentId) && ts.nonEmpty) {
           (tam + (ts.head -> Some(a)), ts.tail)
@@ -43,7 +49,7 @@ case class HITState(hit: HIT, t_a_map: Map[UUID,Option[Assignment]], hittype: HI
 
   private def unmatchedTasks : List[UUID] = {
     t_a_map.flatMap { case (t_id: UUID, a_o: Option[Assignment]) =>
-      if (a_o == None) Some(t_id) else None
+      if (a_o.isEmpty) Some(t_id) else None
     }.toList
   }
 

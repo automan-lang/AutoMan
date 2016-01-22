@@ -2,8 +2,9 @@ package edu.umass.cs.automan.core.scheduler
 
 import java.util.{UUID, Date}
 
+import edu.umass.cs.automan.adapters.mturk.util.Fail
 import edu.umass.cs.automan.core.AutomanAdapter
-import edu.umass.cs.automan.core.exception.OverBudgetException
+import edu.umass.cs.automan.core.exception.{BackendFailureException, OverBudgetException}
 import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.mock.MockAnswer
 import edu.umass.cs.automan.core.question.Question
@@ -133,7 +134,7 @@ class Scheduler(val question: Question,
           val (__running_tasks, __unrunning_tasks) = (__dedup_tasks ::: __new_tasks).partition(_.state == SchedulerState.RUNNING)
           assert(__running_tasks.nonEmpty)
           DebugLog("Retrieving answers for " + __running_tasks.size + " running tasks from backend.", LogLevelInfo(), LogType.SCHEDULER, question.id)
-          val __answered_tasks = backend.retrieve(__running_tasks, Utilities.xMillisecondsFromDate(_current_time, init_time))
+          val __answered_tasks = failUnWrap(backend.retrieve(__running_tasks, Utilities.xMillisecondsFromDate(_current_time, init_time)))
           assert(retrieve_invariant(__running_tasks, __answered_tasks))
 
           // complete list of tasks
@@ -192,7 +193,8 @@ class Scheduler(val question: Question,
     if (timeouts.nonEmpty) {
       DebugLog("Cancelling " + timeouts.size + " timed-out tasks.", LogLevelInfo(), LogType.SCHEDULER, question.id)
       // cancel and make state TIMEOUT
-      val timed_out = backend.cancel(timeouts).map(_.copy_as_timeout())
+      val cancels = failUnWrap(backend.cancel(timeouts))
+      val timed_out = cancels.map(_.copy_as_timeout())
       // return all updated Task objects and signal whether timeout occurred
       (timed_out ::: otherwise, timeouts.nonEmpty)
     } else {
@@ -228,7 +230,7 @@ class Scheduler(val question: Question,
         throw new OverBudgetException(cost, question.budget)
       } else {
         // yes, so post and return all posted tasks
-        val posted = backend.post(new_tasks, blacklist)
+        val posted = failUnWrap(backend.post(new_tasks, blacklist))
         DebugLog("Posting " + posted.size + " tasks to backend.", LogLevelInfo(), LogType.SCHEDULER, question.id)
         posted
       }
@@ -261,13 +263,20 @@ class Scheduler(val question: Question,
 
     val remaining_tasks = all_tasks.filterNot(action_items.contains(_))
 
-    val cancelled = if (to_cancel.nonEmpty) { backend.cancel(to_cancel) } else { List.empty }
+    val cancelled = if (to_cancel.nonEmpty) { failUnWrap(backend.cancel(to_cancel)) } else { List.empty }
     assert(all_set_invariant(to_cancel, cancelled, SchedulerState.CANCELLED))
-    val accepted = if (to_accept.nonEmpty) { backend.accept(to_accept) } else { List.empty }
+    val accepted = if (to_accept.nonEmpty) { failUnWrap(backend.accept(to_accept)) } else { List.empty }
     assert(all_set_invariant(to_accept, accepted, SchedulerState.ACCEPTED))
-    val rejected = if (to_reject.nonEmpty) { backend.reject(to_reject.map { t => (t,correct_answer) }) } else { List.empty }
+    val rejected = if (to_reject.nonEmpty) { failUnWrap(backend.reject(to_reject.map { t => (t,correct_answer) })) } else { List.empty }
     assert(all_set_invariant(to_reject, rejected, SchedulerState.REJECTED))
     remaining_tasks ::: cancelled ::: accepted ::: rejected
+  }
+
+  def failUnWrap(tso: Option[List[Task]]) : List[Task] = {
+    tso match {
+      case Some(ts) => ts
+      case None => throw BackendFailureException()
+    }
   }
 
   /**

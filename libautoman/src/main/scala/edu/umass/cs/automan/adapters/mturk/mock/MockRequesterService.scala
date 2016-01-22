@@ -93,9 +93,17 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
 
     val question = _state.question_by_question_id(question_id).asInstanceOf[MTurkQuestion]
 
-    val assn_ids = _state.assignment_ids_by_question_id(question_id).filter { assn_id =>
-      _state.assignment_status_by_assignment_id(assn_id)._1 == AssignmentStatus.UNANSWERED
-    }
+    val aibqi = _state.assignment_ids_by_question_id(question_id)
+
+    // grab the appropriate assignment UUIDs, plus some
+    // inappropriate ones to try to trip up our duplicate
+    // assignment ID detection code
+    val assn_ids: List[UUID] =
+              (if (aibqi.nonEmpty) { List[UUID](aibqi.head) } else { List[UUID]() }) :::
+//              (if (aibqi.nonEmpty) { List[UUID](aibqi.last) } else { List[UUID]() }) :::
+              aibqi.filter { assn_id =>
+                _state.assignment_status_by_assignment_id(assn_id)._1 == AssignmentStatus.UNANSWERED
+              }
 
     assn_ids.map { assn_id =>
       val mock_response = _state.answers_by_assignment_id(assn_id)
@@ -106,7 +114,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
         UUID.randomUUID().toString,
         hitId,
         com.amazonaws.mturk.requester.AssignmentStatus.Submitted,
-        Utilities.calInSeconds(Utilities.nowCal(), 16400),
+        Utilities.calInSeconds(mock_response.responseTime, 16400),
         null,
         mock_response.responseTime,
         null,

@@ -1,4 +1,4 @@
-package edu.umass.cs.automan.adapters.mturk.connectionpool
+package edu.umass.cs.automan.adapters.mturk.worker
 
 import java.text.SimpleDateFormat
 import java.util.concurrent.PriorityBlockingQueue
@@ -10,13 +10,12 @@ import edu.umass.cs.automan.adapters.mturk.mock.MockRequesterService
 import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
 import edu.umass.cs.automan.adapters.mturk.util.Key
 import edu.umass.cs.automan.adapters.mturk.util.Key.{HITKey, BatchKey}
-import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 import edu.umass.cs.automan.core.util.{Utilities, Stopwatch}
 
-class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRequesterService], memo_handle: MTMemo) {
+class TurkWorker(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRequesterService], memo_handle: MTMemo) {
   type HITID = String
   type BatchKey = (String,BigDecimal,Int)   // (group_id, cost, timeout); uniquely identifies a batch
   type HITKey = (BatchKey, String)          // (BatchKey, memo_hash); uniquely identifies a HIT
@@ -33,33 +32,39 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
     case None => new MTState()
   }
 
+  // worker exit condition
+  private var _workerExitState: Option[Throwable] = None
+
   // worker
   startWorker()
 
   // API
-  def accept(ts: List[Task]) : List[Task] = {
+  def accept(ts: List[Task]) : Option[List[Task]] = {
     blocking_enqueue[AcceptReq, List[Task]](AcceptReq(ts))
   }
-  def backend_budget: BigDecimal = {
+  def backend_budget: Option[BigDecimal] = {
     blocking_enqueue[BudgetReq, BigDecimal](BudgetReq())
   }
-  def cancel(ts: List[Task]) : List[Task] = {
+  def cancel(ts: List[Task]) : Option[List[Task]] = {
     // don't bother to schedule cancellation if the task
     // is not actually running
     val (ts_cancels,ts_noncancels) = ts.partition(_.state == SchedulerState.RUNNING)
-    val ts_cancelled = blocking_enqueue[CancelReq, List[Task]](CancelReq(ts))
-    ts_cancelled ::: ts_noncancels.map(_.copy_as_cancelled())
+    val ts_cancelled_opt = blocking_enqueue[CancelReq, List[Task]](CancelReq(ts))
+    ts_cancelled_opt match {
+      case Some(ts_cancelled) => Some(ts_cancelled ::: ts_noncancels.map(_.copy_as_cancelled()))
+      case None => None
+    }
   }
   def cleanup_qualifications(mtq: MTurkQuestion) : Unit = {
     nonblocking_enqueue[DisposeQualsReq, Unit](DisposeQualsReq(mtq))
   }
-  def post(ts: List[Task], exclude_worker_ids: List[String]) : List[Task] = {
+  def post(ts: List[Task], exclude_worker_ids: List[String]) : Option[List[Task]] = {
     blocking_enqueue[CreateHITReq, List[Task]](CreateHITReq(ts, exclude_worker_ids))
   }
-  def reject(ts_reasons: List[(Task, String)]) : List[Task] = {
+  def reject(ts_reasons: List[(Task, String)]) : Option[List[Task]] = {
     blocking_enqueue[RejectReq, List[Task]](RejectReq(ts_reasons))
   }
-  def retrieve(ts: List[Task], current_time: Date) : List[Task] = {
+  def retrieve(ts: List[Task], current_time: Date) : Option[List[Task]] = {
     blocking_enqueue[RetrieveReq, List[Task]](RetrieveReq(ts, current_time))
   }
   def shutdown(): Unit = {
@@ -71,11 +76,13 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
     // put job in queue
     _requests.add(req)
   }
-  private def blocking_enqueue[M <: Message, T](req: M) : T = {
+  private def blocking_enqueue[M <: Message, T](req: M) : Option[T] = {
     // wait for response
     // while loop is because the JVM is
-    // permitted to send spurious wakeups
-    while(synchronized { !_responses.contains(req) }) {
+    // permitted to send spurious wakeups;
+    // also enture that backend is still running
+    while(synchronized { !_responses.contains(req) }
+          && _workerExitState.isEmpty) {
       var enqueued = false
       // Note that the purpose of this second lock
       // is to provide blocking semantics
@@ -91,9 +98,16 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
 
     // return output
     synchronized {
-      val ret = _responses(req).asInstanceOf[T]
-      _responses.remove(req)
-      ret
+      // check that loop did not end due to fatal error
+      _workerExitState match {
+        case None => {
+          val ret = _responses(req).asInstanceOf[T]
+          _responses.remove(req)
+          Some(ret)
+        }
+        case Some(throwable) => None
+      }
+
     }
   }
   private def startWorker() : Thread = {
@@ -110,18 +124,25 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
           val time = Stopwatch {
             val work_item = _requests.take()
 
-            work_item match {
-              case req: ShutdownReq => {
-                DebugLog("Connection pool shutdown requested.", LogLevelInfo(), LogType.ADAPTER, null)
+            try {
+              work_item match {
+                case req: ShutdownReq => {
+                  DebugLog("Connection pool shutdown requested.", LogLevelInfo(), LogType.ADAPTER, null)
+                  return
+                }
+                case req: AcceptReq => do_sync_action(req, () => scheduled_accept(req.ts))
+                case req: BudgetReq => do_sync_action(req, () => scheduled_get_budget())
+                case req: CancelReq => do_sync_action(req, () => scheduled_cancel(req.ts))
+                case req: DisposeQualsReq => do_sync_action(req, () => scheduled_cleanup_qualifications(req.q))
+                case req: CreateHITReq => do_sync_action(req, () => scheduled_post(req.ts, req.exclude_worker_ids))
+                case req: RejectReq => do_sync_action(req, () => scheduled_reject(req.ts_reasons))
+                case req: RetrieveReq => do_sync_action(req, () => scheduled_retrieve(req.ts, req.current_time))
+              }
+            } catch {
+              case t: Throwable => {
+                failureCleanup(work_item, t)
                 return
               }
-              case req: AcceptReq => do_sync_action(req, () => scheduled_accept(req.ts))
-              case req: BudgetReq => do_sync_action(req, () => scheduled_get_budget())
-              case req: CancelReq => do_sync_action(req, () => scheduled_cancel(req.ts))
-              case req: DisposeQualsReq => do_sync_action(req, () => scheduled_cleanup_qualifications(req.q))
-              case req: CreateHITReq => do_sync_action(req, () => scheduled_post(req.ts, req.exclude_worker_ids))
-              case req: RejectReq => do_sync_action(req, () => scheduled_reject(req.ts_reasons))
-              case req: RetrieveReq => do_sync_action(req, () => scheduled_retrieve(req.ts, req.current_time))
             }
           }
 
@@ -135,12 +156,33 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
             Thread.`yield`()
           }
         } // exit loop
-
       }
     })
-    t.setName("MTurk Connection Pool Thread")
+    t.setName("MTurk Worker Thread")
     t
   }
+
+  private def failureCleanup(failed_request: Message, throwable: Throwable): Unit = {
+    // cleanup
+    synchronized {
+      // set exit state
+      _workerExitState = Some(throwable)
+
+      // unblock owner of failed request
+      failed_request.synchronized {
+        failed_request.notifyAll()
+      }
+
+      // unblock remaining threads
+      while (!_requests.isEmpty) {
+        val req = _requests.take()
+        req.synchronized {
+          req.notifyAll()
+        }
+      }
+    }
+  }
+
   private def do_sync_action[T](message: Message, action: () => T) : Unit = {
     // do request
     val response = action()
@@ -233,10 +275,10 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
         // have we already posted a HIT for these tasks?
         if (internal_state.hit_ids.contains(hit_key)) {
           // if so, get HITState and extend it
-          internal_state = Pool.mturk_extendHIT(tz, tz.head.timeout_in_s, hit_key, internal_state, backend)
+          internal_state = TurkWorker.mturk_extendHIT(tz, tz.head.timeout_in_s, hit_key, internal_state, backend)
         } else {
           // if not, post a new HIT on MTurk
-          internal_state = Pool.mturk_createHIT(tz, batch_key, q, internal_state, backend)
+          internal_state = TurkWorker.mturk_createHIT(tz, batch_key, q, internal_state, backend)
         }
 
         // mark as running
@@ -309,7 +351,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
 
       // return answered tasks, updating tasks only
       // with those events that do not happen in the future
-      val (answered, state2) = Pool.answer_tasks(bts, batch_key, current_time, internal_state, backend, mock_service)
+      val (answered, state2) = TurkWorker.answer_tasks(bts, batch_key, current_time, internal_state, backend, mock_service)
       internal_state = state2
 
       answered
@@ -340,7 +382,7 @@ class Pool(backend: RequesterService, sleep_ms: Int, mock_service: Option[MockRe
 
 }
 
-object Pool {
+object TurkWorker {
 
   private def mtquestion_for_tasks(ts: List[Task]) : MTurkQuestion = {
     // determine which MT question we've been asked about

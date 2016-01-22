@@ -1,4 +1,4 @@
-package edu.umass.cs.automan.adapters.mturk.connectionpool
+package edu.umass.cs.automan.adapters.mturk.worker
 
 import com.amazonaws.mturk.requester.QualificationRequirement
 

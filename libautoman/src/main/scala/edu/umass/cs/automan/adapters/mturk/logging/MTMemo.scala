@@ -3,7 +3,7 @@ package edu.umass.cs.automan.adapters.mturk.logging
 import java.util.{UUID, Calendar}
 import com.amazonaws.mturk.requester._
 import com.amazonaws.mturk.service.axis.RequesterService
-import edu.umass.cs.automan.adapters.mturk.connectionpool.{MTState, HITState, HITType, Pool}
+import edu.umass.cs.automan.adapters.mturk.worker.{MTState, HITState, HITType, TurkWorker$}
 import edu.umass.cs.automan.adapters.mturk.logging.tables.{DBAssignment, DBQualificationRequirement}
 import edu.umass.cs.automan.adapters.mturk.util.Key
 import edu.umass.cs.automan.adapters.mturk.util.Key._
