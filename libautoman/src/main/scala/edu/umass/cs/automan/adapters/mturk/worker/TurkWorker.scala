@@ -141,7 +141,7 @@ class TurkWorker(backend: RequesterService, sleep_ms: Int, mock_service: Option[
             } catch {
               case t: Throwable => {
                 failureCleanup(work_item, t)
-                return
+                throw t
               }
             }
           }
