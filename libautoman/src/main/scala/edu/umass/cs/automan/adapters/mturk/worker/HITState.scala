@@ -29,7 +29,7 @@ case class HITState(hit: HIT, t_a_map: Map[UUID,Option[Assignment]], hittype: HI
     // contains new, unique assignments
     val gathered_assn_ids = t_a_map.values.flatten.map(_.getAssignmentId).toList
     val assns_new = HITState.distinctBy(assns){ a => a.getAssignmentId }
-                            .filterNot { a => !gathered_assn_ids.contains(a.getAssignmentId) }
+                            .filterNot { a => gathered_assn_ids.contains(a.getAssignmentId) }
 
     // for every available assignment and unmatched task,
     // pair the two and update the map
