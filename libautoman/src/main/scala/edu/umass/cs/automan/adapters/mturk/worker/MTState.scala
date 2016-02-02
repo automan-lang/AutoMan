@@ -71,6 +71,10 @@ case class MTState(hit_types: Map[BatchKey,HITType],
     )
   }
   def getHITType(batch_key: BatchKey) : HITType = {
+    assert(hit_types.contains(batch_key),
+      "Looking for:\n" + batch_key +
+        "\nhit_types contains:\n" + hit_types
+    )
     hit_types(batch_key)
   }
   def getHITIDsForBatch(batch_key: BatchKey) : List[HITID] = {
