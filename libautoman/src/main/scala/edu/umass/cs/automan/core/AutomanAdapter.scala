@@ -1,7 +1,6 @@
 package edu.umass.cs.automan.core
 
 import java.util.{UUID, Date, Locale}
-import edu.umass.cs.automan.adapters.mturk.util.AliveOrFail
 import edu.umass.cs.automan.core.logging.LogConfig.LogConfig
 import edu.umass.cs.automan.core.question._
 import edu.umass.cs.automan.core.logging._

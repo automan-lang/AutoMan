@@ -4,8 +4,7 @@ import java.util.{Date, Locale}
 import com.amazonaws.mturk.requester.HIT
 import com.amazonaws.mturk.util.ClientConfig
 import com.amazonaws.mturk.service.axis.RequesterService
-import edu.umass.cs.automan.adapters.mturk.util.{Alive, AliveOrFail}
-import edu.umass.cs.automan.adapters.mturk.worker.{TurkWorker, MTState, TurkWorker$}
+import edu.umass.cs.automan.adapters.mturk.worker.TurkWorker
 import edu.umass.cs.automan.adapters.mturk.logging.MTMemo
 import edu.umass.cs.automan.adapters.mturk.mock.{MockSetup, MockServiceState, MockRequesterService}
 import edu.umass.cs.automan.adapters.mturk.question._

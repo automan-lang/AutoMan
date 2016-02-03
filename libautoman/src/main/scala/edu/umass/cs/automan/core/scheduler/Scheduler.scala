@@ -2,7 +2,6 @@ package edu.umass.cs.automan.core.scheduler
 
 import java.util.{UUID, Date}
 
-import edu.umass.cs.automan.adapters.mturk.util.Fail
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.exception.{BackendFailureException, OverBudgetException}
 import edu.umass.cs.automan.core.logging._
