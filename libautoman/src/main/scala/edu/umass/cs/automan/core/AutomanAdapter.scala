@@ -172,13 +172,20 @@ abstract class AutomanAdapter {
       } else {
         // initialize question with end-user lambda
         init(q)
+
+        // get outcome
+        val o = q.getOutcome(this)
+
         // put outcome into cache
-        _ref_cache += memo_hash -> q.getOutcome(this)
+        _ref_cache += memo_hash -> o
 
         // return outcome
-        _ref_cache(memo_hash).asInstanceOf[Q#O]
+        o
       }
     }
+//
+//    init(q)
+//    q.getOutcome(this)
   }
 
   // subclass instantiators; these are needed because

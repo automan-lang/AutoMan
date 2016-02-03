@@ -11,7 +11,9 @@ package edu.umass.cs.automan.core.answer
  * @param cost Cost of the answer returned.
  * @tparam T The type of the enclosed answer.
  */
-abstract class AbstractAnswer[T](val cost: BigDecimal)
+abstract class AbstractAnswer[T](val cost: BigDecimal) {
+  def alias() : AbstractAnswer[T]
+}
 
 sealed abstract class AbstractEstimate(cost: BigDecimal)
   extends AbstractAnswer[Double](cost)
@@ -21,10 +23,16 @@ sealed abstract class AbstractVectorAnswer[T](cost: BigDecimal)
   extends AbstractAnswer[T](cost)
 
 case class Estimate(value: Double, low: Double, high: Double, override val cost: BigDecimal, confidence: Double)
-  extends AbstractEstimate(cost)
+  extends AbstractEstimate(cost) {
+  def alias() = Estimate(value, low, high, BigDecimal(0.00), confidence)
+}
 case class LowConfidenceEstimate(value: Double, low: Double, high: Double, override val cost: BigDecimal, confidence: Double)
-  extends AbstractEstimate(cost)
-case class OverBudgetEstimate(need: BigDecimal, have: BigDecimal) extends AbstractEstimate(need)
+  extends AbstractEstimate(cost) {
+  def alias() = LowConfidenceEstimate(value, low, high, BigDecimal(0.00), confidence)
+}
+case class OverBudgetEstimate(need: BigDecimal, have: BigDecimal) extends AbstractEstimate(need) {
+  def alias() = OverBudgetEstimate(need, have)
+}
 
 case class Answer[T](value: T, override val cost: BigDecimal, confidence: Double)
   extends AbstractScalarAnswer[T](cost)
