@@ -1,6 +1,7 @@
 package edu.umass.cs.automan.core
 
 import java.util.{UUID, Date, Locale}
+import edu.umass.cs.automan.core.answer.Outcome
 import edu.umass.cs.automan.core.logging.LogConfig.LogConfig
 import edu.umass.cs.automan.core.question._
 import edu.umass.cs.automan.core.logging._
@@ -25,6 +26,7 @@ abstract class AutomanAdapter {
   protected var _memoizer: MemoDB = _
   protected var _plugins: List[Class[_ <: Plugin]] = List.empty
   protected var _plugins_initialized: List[_ <: Plugin] = List.empty
+  protected var _ref_cache: Map[String, Outcome[_]] = Map()
 
   // user-visible getters and setters
   def database_path: String = _database_path
@@ -161,10 +163,22 @@ abstract class AutomanAdapter {
 
   // thread management
   private def schedule[Q <: Question](q: Q, init: Q => Unit): Q#O = {
-    // initialize question with end-user lambda
-    init(q)
-    // start job
-    q.getOutcome(this)
+    val memo_hash = q.memo_hash
+
+    // first check reference cache (to ensure ref. transparency)
+    _ref_cache.synchronized {
+      if (_ref_cache.contains(memo_hash)) {
+        _ref_cache(memo_hash).asInstanceOf[Q#O]
+      } else {
+        // initialize question with end-user lambda
+        init(q)
+        // put outcome into cache
+        _ref_cache += memo_hash -> q.getOutcome(this)
+
+        // return outcome
+        _ref_cache(memo_hash).asInstanceOf[Q#O]
+      }
+    }
   }
 
   // subclass instantiators; these are needed because
