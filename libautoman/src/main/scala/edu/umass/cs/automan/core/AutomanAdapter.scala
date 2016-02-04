@@ -26,7 +26,10 @@ abstract class AutomanAdapter {
   protected var _memoizer: MemoDB = _
   protected var _plugins: List[Class[_ <: Plugin]] = List.empty
   protected var _plugins_initialized: List[_ <: Plugin] = List.empty
-  protected var _ref_cache: Map[String, Outcome[_]] = Map()
+  // _ref_cache invariant: newest outcome is always at the head of the list;
+  //                       every Outcome.answer is composed with the Outcome.answer
+  //                       before it (tailward)
+  protected var _ref_cache: Map[String, List[Outcome[_]]] = Map()
 
   // user-visible getters and setters
   def database_path: String = _database_path
@@ -168,24 +171,31 @@ abstract class AutomanAdapter {
     // first check reference cache (to ensure ref. transparency)
     _ref_cache.synchronized {
       if (_ref_cache.contains(memo_hash)) {
-        _ref_cache(memo_hash).asInstanceOf[Q#O]
+        // get the last requested Outcome
+        val prev = _ref_cache(memo_hash).head.asInstanceOf[q.O]
+
+        // compose it with our new Outcome
+        val o = q.composeOutcome(prev, this)
+
+        // prepend Outcome to list
+        _ref_cache += memo_hash -> (o :: _ref_cache(memo_hash))
+
+        // return
+        o
       } else {
         // initialize question with end-user lambda
         init(q)
 
-        // get outcome
+        // get Outcome
         val o = q.getOutcome(this)
 
-        // put outcome into cache
-        _ref_cache += memo_hash -> o
+        // put Outcome into cache
+        _ref_cache += memo_hash -> List(o)
 
-        // return outcome
+        // return Outcome
         o
       }
     }
-//
-//    init(q)
-//    q.getOutcome(this)
   }
 
   // subclass instantiators; these are needed because

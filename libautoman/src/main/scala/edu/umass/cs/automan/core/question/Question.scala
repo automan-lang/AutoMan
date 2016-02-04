@@ -96,6 +96,7 @@ abstract class Question {
   private[automan] def price_policy_instance = _price_policy_instance
   private[automan] def timeout_policy_instance = _timeout_policy_instance
   protected[automan] def getOutcome(adapter: AutomanAdapter) : O
+  protected[automan] def composeOutcome(o: O, adapter: AutomanAdapter) : O
   protected[automan] def getQuestionType: QuestionType
   protected[automan] def questionStartupHook() {}
   protected[automan] def questionShutdownHook() {}
