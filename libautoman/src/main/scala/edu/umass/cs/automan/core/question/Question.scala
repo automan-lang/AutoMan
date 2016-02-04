@@ -10,8 +10,8 @@ import edu.umass.cs.automan.core.policy.price.PricePolicy
 import edu.umass.cs.automan.core.policy.timeout.TimeoutPolicy
 import edu.umass.cs.automan.core.policy.aggregation.AggregationPolicy
 import edu.umass.cs.automan.core.scheduler.Scheduler
-
 import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 abstract class Question {
   type A <: Any
@@ -106,7 +106,7 @@ abstract class Question {
   }
   protected[automan] def startScheduler(adapter: AutomanAdapter) : AA = {
     blocking {
-      new Scheduler(this, adapter).run()
+      new Scheduler(this, adapter).run().asInstanceOf[AA]
     }
   }
   protected[automan] def getOutcome(adapter: AutomanAdapter) : O

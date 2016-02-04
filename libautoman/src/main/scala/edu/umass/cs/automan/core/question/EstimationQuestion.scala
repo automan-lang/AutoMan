@@ -7,8 +7,6 @@ import edu.umass.cs.automan.core.policy.aggregation.BootstrapEstimationPolicy
 import edu.umass.cs.automan.core.policy.price.MLEPricePolicy
 import edu.umass.cs.automan.core.policy.timeout.DoublingTimeoutPolicy
 import edu.umass.cs.automan.core.question.confidence._
-import edu.umass.cs.automan.core.scheduler.Scheduler
-import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 abstract class EstimationQuestion extends Question {
