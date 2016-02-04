@@ -1,7 +1,7 @@
 package edu.umass.cs.automan.core.question
 
 import edu.umass.cs.automan.core.AutomanAdapter
-import edu.umass.cs.automan.core.answer.{AbstractEstimate, EstimationOutcome}
+import edu.umass.cs.automan.core.answer._
 import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.policy.aggregation.BootstrapEstimationPolicy
 import edu.umass.cs.automan.core.policy.price.MLEPricePolicy
@@ -50,13 +50,26 @@ abstract class EstimationQuestion extends Question {
 
   override protected[automan] def getQuestionType = QuestionType.EstimationQuestion
   override protected[automan] def getOutcome(adapter: AutomanAdapter) : O = {
-    val scheduler = new Scheduler(this, adapter)
-    val f = Future{
-      blocking {
-        scheduler.run()
-      }
+    EstimationOutcome(schedulerFuture(adapter))
+  }
+  protected[automan] def composeOutcome(o: O, adapter: AutomanAdapter) : O = {
+    // unwrap future from previous Outcome
+    val f = o.f map {
+      case Estimate(value, low, high, cost, conf) =>
+        if (this.confidence <= conf) {
+          Estimate(
+            value,
+            low,
+            high,
+            BigDecimal(0.00).setScale(2, math.BigDecimal.RoundingMode.FLOOR),
+            conf
+          )
+        } else {
+          startScheduler(adapter)
+        }
+      case _ => startScheduler(adapter)
     }
-    EstimationOutcome(f.asInstanceOf[Future[AbstractEstimate]])
+    EstimationOutcome(f)
   }
 
   // private methods

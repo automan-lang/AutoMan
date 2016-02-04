@@ -3,13 +3,15 @@ package edu.umass.cs.automan.core.question
 import java.io.File
 import java.util.{Date, UUID}
 import edu.umass.cs.automan.core.AutomanAdapter
-import edu.umass.cs.automan.core.answer.{AbstractAnswer, Outcome}
+import edu.umass.cs.automan.core.answer._
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
-import edu.umass.cs.automan.core.logging.Memo
 import edu.umass.cs.automan.core.mock.{MockAnswer, MockResponse}
 import edu.umass.cs.automan.core.policy.price.PricePolicy
 import edu.umass.cs.automan.core.policy.timeout.TimeoutPolicy
 import edu.umass.cs.automan.core.policy.aggregation.AggregationPolicy
+import edu.umass.cs.automan.core.scheduler.Scheduler
+
+import scala.concurrent._
 
 abstract class Question {
   type A <: Any
@@ -95,6 +97,18 @@ abstract class Question {
   private[automan] def validation_policy_instance = _validation_policy_instance
   private[automan] def price_policy_instance = _price_policy_instance
   private[automan] def timeout_policy_instance = _timeout_policy_instance
+  protected[automan] def schedulerFuture(adapter: AutomanAdapter) : Future[AA] = {
+    Future{
+      blocking {
+        startScheduler(adapter)
+      }
+    }
+  }
+  protected[automan] def startScheduler(adapter: AutomanAdapter) : AA = {
+    blocking {
+      new Scheduler(this, adapter).run()
+    }
+  }
   protected[automan] def getOutcome(adapter: AutomanAdapter) : O
   protected[automan] def composeOutcome(o: O, adapter: AutomanAdapter) : O
   protected[automan] def getQuestionType: QuestionType
