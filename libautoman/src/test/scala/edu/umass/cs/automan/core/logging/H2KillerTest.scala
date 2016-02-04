@@ -12,12 +12,6 @@ import org.scalatest.{Matchers, FlatSpec}
 
 class H2KillerTest extends FlatSpec with Matchers {
   "An estimator program" should "not experience a database primary key error under load" in {
-    val db_name = "H2KillerTestDB.mv.db"
-
-    if (new File(db_name).exists()) {
-      new File(db_name).delete()
-    }
-
     val dollar_budget = BigDecimal(8.00)
     val wage = BigDecimal(7.25)
     val time_budget_in_sec = 30  // in seconds
@@ -38,7 +32,6 @@ class H2KillerTest extends FlatSpec with Matchers {
       mt.secret_access_key = UUID.randomUUID().toString
       mt.use_mock = MockSetup(budget = 8.00)
       mt.logging = LogConfig.TRACE_MEMOIZE_VERBOSE
-      mt.database_path = db_name
     }
 
     def countJellies() = a.EstimationQuestion { q =>
