@@ -1,36 +1,26 @@
 package edu.umass.cs.automan.core.scheduler
 
 import java.util.{UUID, Date}
-
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.exception.{BackendFailureException, OverBudgetException}
 import edu.umass.cs.automan.core.logging._
-import edu.umass.cs.automan.core.mock.MockAnswer
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.policy.aggregation.AggregationPolicy
-import edu.umass.cs.automan.core.util.{Stopwatch, Utilities}
-import scala.collection.mutable
+import edu.umass.cs.automan.core.util.Stopwatch
 
 /**
  * Controls scheduling of tasks for a given question.
- *
- * Note on virtual ticks:
- * 1. The user supplies mock answers, each with a delay_in_s parameter.
- * 2. When the scheduler starts up, if a question comes with mock answers,
- *    the scheduler knows that it should use virtual ticks.
- * 3. For each "tick group" (the set of answers with the same delay_in_s),
- *    the scheduler advances exactly one loop iteration.
- * 4. When the scheduler calls backend operations, it forwards the current
- *    time, virtual or otherwise.  The backend should only return
- *    answered thunks when the current time is after the time of the
- *    response.
  *
  * @param question
  * @param backend
  */
 class Scheduler(val question: Question,
                 val backend: AutomanAdapter) {
+
+  println(s"DEBUG: ********** SCHEDULER CONSTRUCTOR BODY ${question.id} ***********")
+
   // save startup time
+  val VIRT_FREQ = 100 // ms
   val init_time = new Date()
   val use_virt = question.mock_answers.nonEmpty
 
@@ -61,19 +51,6 @@ class Scheduler(val question: Question,
     run_loop(tasks)
   }
 
-  private def initTickQueue[A](ans: List[MockAnswer[A]]) : mutable.PriorityQueue[Long] = {
-    val timeOrd = new Ordering[Long] {
-      def compare(o1: Long, o2: Long) = -o1.compare(o2)
-    }
-    val q = new mutable.PriorityQueue[Long]()(timeOrd)
-    if(ans.nonEmpty) {
-      val times = ans.map(_.time_delta_in_ms).distinct
-      q ++= times
-      Some(q)
-    }
-    q
-  }
-
   private def taskStatus(ts: List[Task]) : Map[UUID,Date] = {
     ts.map { t => t.task_id -> t.state_changed_at }.toMap
   }
@@ -90,50 +67,38 @@ class Scheduler(val question: Question,
       .map { case (uuid,_) => uuid}.toList
   }
 
-  private def realTick() : Long = {
-    Utilities.elapsedMilliseconds(init_time, new Date())
-  }
-
   private def run_loop(tasks: List[Task]) : Question#AA = {
-    val _update_frequency_ms = question.update_frequency_ms
-    val _virtual_times = initTickQueue(question.mock_answers)  // ms quanta
-    var _current_time = // ms since start
-      if (_virtual_times.nonEmpty) {
-        val ct = // pull from the queue for simulations
-          _virtual_times.dequeue()
-        DebugLog("Virtual clock starts at " + ct + " ms.", LogLevelDebug(), LogType.SCHEDULER, question.id)
-        ct
-      } else {
-        0L
-      }
+    // initialize loop
+    val _update_frequency_ms = if (use_virt) { question.update_frequency_ms } else { VIRT_FREQ }
+    var _time = Time.incrTime(use_virt)(init_time)(Time.initTickQueue(init_time, question.mock_answers))
     val _vp = question.validation_policy_instance
-    var _status_changeset = taskStatus(tasks)
-
-    var _timeout_occurred = false
     var _all_tasks = tasks
     var _done = _vp.is_done(_all_tasks) // check for restored memo tasks
 
+    // process until done
     val answer = try {
       while(!_done) {
         val __duration = Stopwatch {
+          DebugLog("Scheduler time is " + Time.format(_time.current_time) + ".", LogLevelInfo(), LogType.SCHEDULER, question.id)
+
           // process timeouts
-          val (__tasks, __suffered_timeout) = process_timeouts(_all_tasks, _current_time)
+          val (__tasks, __suffered_timeout) = process_timeouts(_all_tasks, _time.current_time)
           // get list of workers who may not re-participate
           val __blacklist = _vp.blacklisted_workers(__tasks)
           // filter duplicate work
           val __dedup_tasks = _vp.mark_duplicates(__tasks)
           // post more tasks as needed
           val __new_tasks = post_as_needed(__dedup_tasks, backend, question, __suffered_timeout, __blacklist)
-          // update virtual_ticks with new timeouts (in milliseconds)
+          // update _time with time of future timeouts
           if (use_virt) {
-            _virtual_times ++= __new_tasks.map(_.timeout_in_s).distinct.map(_.toLong * 1000)
+            _time = _time.addTimeoutsFor(__new_tasks)
           }
 
           // ask the backend to retrieve answers for all RUNNING tasks
           val (__running_tasks, __unrunning_tasks) = (__dedup_tasks ::: __new_tasks).partition(_.state == SchedulerState.RUNNING)
           assert(__running_tasks.nonEmpty)
           DebugLog("Retrieving answers for " + __running_tasks.size + " running tasks from backend.", LogLevelInfo(), LogType.SCHEDULER, question.id)
-          val __answered_tasks = failUnWrap(backend.retrieve(__running_tasks, Utilities.xMillisecondsFromDate(_current_time, init_time)))
+          val __answered_tasks = failUnWrap(backend.retrieve(__running_tasks, _time.current_time))
           assert(retrieve_invariant(__running_tasks, __answered_tasks))
 
           // complete list of tasks
@@ -144,22 +109,11 @@ class Scheduler(val question: Question,
 
           // update state
           _all_tasks = __all_tasks
-          _current_time = if (use_virt) {
-            val t = if (_virtual_times.nonEmpty) {
-              // pull from the queue for simulations
-              _virtual_times.dequeue()
-            } else {
-              _current_time + 1000L
-            }
-            DebugLog("Advancing virtual clock to " + t + " ms.", LogLevelDebug(), LogType.SCHEDULER, question.id)
-            t
-          } else {
-            realTick()
-          }
+          _time = _time.incrTime()
         }
 
         // sleep if this loop iteration < update_frequency_ms
-        // prevents flooding connection pool with requests
+        // prevents flooding worker with requests
         if (!_done && __duration.duration_ms < _update_frequency_ms) {
           val t = _update_frequency_ms - __duration.duration_ms
           DebugLog("Putting scheduler to sleep for " + t + " ms.", LogLevelDebug(), LogType.SCHEDULER, question.id)
@@ -183,11 +137,11 @@ class Scheduler(val question: Question,
     answer
   }
 
-  def process_timeouts(ts: List[Task], current_tick: Long) : (List[Task],Boolean) = {
+  def process_timeouts(ts: List[Task], current_time: Date) : (List[Task],Boolean) = {
     // find all timeouts
     val (timeouts,otherwise) = ts.partition { t =>
       t.state == SchedulerState.RUNNING &&
-      t.is_timedout(Utilities.xMillisecondsFromDate(current_tick, init_time))
+      t.is_timedout(current_time)
     }
     if (timeouts.nonEmpty) {
       DebugLog("Cancelling " + timeouts.size + " timed-out tasks.", LogLevelInfo(), LogType.SCHEDULER, question.id)

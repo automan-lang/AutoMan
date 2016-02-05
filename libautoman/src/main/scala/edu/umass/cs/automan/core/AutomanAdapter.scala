@@ -166,11 +166,16 @@ abstract class AutomanAdapter {
 
   // thread management
   private def schedule[Q <: Question](q: Q, init: Q => Unit): Q#O = {
+    println(s"DEBUG: ********** STARTING SCHEDULER ${q.id} ***********")
+
     val memo_hash = q.memo_hash
 
     // first check reference cache (to ensure ref. transparency)
     _ref_cache.synchronized {
-      if (_ref_cache.contains(memo_hash)) {
+      println(s"DEBUG: ********** SCHEDULER ${q.id} ACQUIRED LOCK ***********")
+      val oc = if (_ref_cache.contains(memo_hash)) {
+        println(s"DEBUG: ********** SCHEDULER ${q.id} HASHES TO EXTANT FUTURE ***********")
+
         // get the last requested Outcome
         val prev = _ref_cache(memo_hash).head.asInstanceOf[q.O]
 
@@ -183,6 +188,8 @@ abstract class AutomanAdapter {
         // return
         o
       } else {
+        println(s"DEBUG: ********** SCHEDULER ${q.id} HASHES TO ~~~NEW~~~ FUTURE ***********")
+
         // initialize question with end-user lambda
         init(q)
 
@@ -195,6 +202,10 @@ abstract class AutomanAdapter {
         // return Outcome
         o
       }
+
+      println(s"DEBUG: ********** SCHEDULER ${q.id} RELEASING LOCK ***********")
+
+      oc
     }
   }
 

@@ -158,4 +158,8 @@ object Utilities {
   def elapsedMilliseconds(d1: Date, d2: Date) : Long = {
     math.abs(d1.getTime - d2.getTime)
   }
+
+  def distinctBy[T,U](xs: Seq[T])(fn: T => U): Seq[T] = {
+    xs.groupBy(fn(_)).flatMap { case (key,xs_filt) => xs_filt.headOption }.toSeq
+  }
 }

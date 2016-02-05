@@ -4,6 +4,7 @@ import java.util.UUID
 import com.amazonaws.mturk.requester.{Assignment, HIT}
 import edu.umass.cs.automan.adapters.mturk.mock.MockRequesterService
 import edu.umass.cs.automan.core.scheduler.Task
+import edu.umass.cs.automan.core.util.Utilities
 
 object HITState {
   // creates a HITState object from a HIT data
@@ -11,10 +12,6 @@ object HITState {
   def apply(hit: HIT, ts: List[Task], hittype: HITType) : HITState = {
     val t_a_map = ts.map(_.task_id -> None).toMap
     HITState(hit, t_a_map, hittype, cancelled = false)
-  }
-
-  def distinctBy[T,U](xs: Seq[T])(fn: T => U): Seq[T] = {
-    xs.groupBy(fn(_)).flatMap { case (key,xs_filt) => xs_filt.headOption }.toSeq
   }
 }
 
@@ -28,8 +25,9 @@ case class HITState(hit: HIT, t_a_map: Map[UUID,Option[Assignment]], hittype: HI
     // make sure that our list of assignments only
     // contains new, unique assignments
     val gathered_assn_ids = t_a_map.values.flatten.map(_.getAssignmentId).toList
-    val assns_new = HITState.distinctBy(assns){ a => a.getAssignmentId }
-                            .filterNot { a => gathered_assn_ids.contains(a.getAssignmentId) }
+    val assns_new = Utilities.distinctBy(assns){ a => a.getAssignmentId }
+                             .filterNot { a => gathered_assn_ids.contains(a.getAssignmentId) }
+                             .sortWith { (a1, a2) => a1.getSubmitTime.before(a2.getSubmitTime) }
 
     // for every available assignment and unmatched task,
     // pair the two and update the map

@@ -1,9 +1,8 @@
 package edu.umass.cs.automan.core.logging
 
-import java.io.File
 import java.util.UUID
 import edu.umass.cs.automan.core.answer.{LowConfidenceEstimate, OverBudgetEstimate}
-
+import edu.umass.cs.automan.core.mock.MockAnswer
 import scala.util.Random
 import edu.umass.cs.automan.test._
 import edu.umass.cs.automan.adapters.mturk._
@@ -23,9 +22,9 @@ class H2KillerTest extends FlatSpec with Matchers {
     // this set of values is virtually guaranteed not
     // to have a CI of +/- 50 which means that it should
     // exceed the budget first
-    val mock_answers = Seq.fill(n.toInt)(rng.nextDouble() * 100000)
+    val mock_answers = Seq.fill(n.toInt)(rng.nextDouble() * 100000).toList
 
-    def getMockSeq = makeMocks[Double](rng.shuffle(mock_answers).toList)
+    def getMockList: List[MockAnswer[Double]] = makeMocks[Double](rng.shuffle(mock_answers))
 
     val a = MTurkAdapter { mt =>
       mt.access_key_id = UUID.randomUUID().toString
@@ -34,17 +33,18 @@ class H2KillerTest extends FlatSpec with Matchers {
       mt.logging = LogConfig.TRACE_MEMOIZE_VERBOSE
     }
 
-    def countJellies() = a.EstimationQuestion { q =>
+    def countJellies(i: Int) = a.EstimationQuestion { q =>
+      println(s"(${i}) (${i}) (${i}) (${i}) ####### COUNT THE JELLIES ####### !&!&!&!&!&!&!&!&!&! (${i})")
       q.confidence = 0.95
       q.budget = dollar_budget
       q.wage = wage
-      q.text = "How many jelly beans are in this jar?"
+      q.text = s"${i}. How many jelly beans are in this jar?"
       q.confidence_interval = SymmetricCI(50)
-      q.mock_answers = getMockSeq
+      q.mock_answers = getMockList
     }
 
     try {
-      val answers = (0 until 15).map { i => countJellies() }
+      val answers = (0 until 15).map { i => countJellies(i) }.toArray
 
       val outcome = answers.map { a =>
         a.answer match {

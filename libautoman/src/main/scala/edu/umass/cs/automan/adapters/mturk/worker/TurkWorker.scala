@@ -351,7 +351,15 @@ class TurkWorker(backend: RequesterService, sleep_ms: Int, mock_service: Option[
 
       // return answered tasks, updating tasks only
       // with those events that do not happen in the future
-      val (answered, state2) = TurkWorker.answer_tasks(bts, batch_key, current_time, internal_state, backend, mock_service)
+      val (answered, state2) =
+        TurkWorker.answer_tasks(
+          bts,
+          batch_key,
+          current_time,
+          internal_state,
+          backend,
+          mock_service
+        )
       internal_state = state2
 
       answered
@@ -455,10 +463,9 @@ object TurkWorker {
   }
 
   private def answer_tasks(ts: List[Task], batch_key: BatchKey, current_time: Date, state: MTState, backend: RequesterService, mock_service: Option[MockRequesterService]) : (List[Task],MTState) = {
-    var internal_state = state
-
-    val group_id = batch_key._1
     val ct = Utilities.dateToCalendar(current_time)
+    var internal_state = state
+    val group_id = batch_key._1
 
     // group by HIT
     val answered = ts.groupBy(Key.HITKeyForBatch(batch_key,_)).flatMap { case (hit_key, hts) =>
@@ -474,6 +481,15 @@ object TurkWorker {
           case Some(assignment) =>
             // only update task object if the task isn't already answered
             // and if the answer actually happens in the past (ugly hack for mocks)
+
+//            if (!assignment.getSubmitTime.after(t.created_at)) {
+//              val sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
+//              println("DEBUG: thunk created at: " + sdf.format(t.created_at))
+//              println("DEBUG: current time: " + sdf.format(ct.getTime))
+//              println("DEBUG: assignment time: " + sdf.format(assignment.getSubmitTime.getTime))
+//              println("DEBUG: Assignment " + assignment.getAssignmentId + " occurs in the future!")
+//            }
+
             if (t.state == SchedulerState.RUNNING && !assignment.getSubmitTime.after(ct)) {
               // get worker_id
               val worker_id = assignment.getWorkerId
@@ -525,7 +541,12 @@ object TurkWorker {
               t
             }
           // when a task is not paired with an answer
-          case None => t
+          case None =>
+//            val sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
+//            println("DEBUG: no assignment available")
+//            println("DEBUG: thunk created at: " + sdf.format(t.created_at))
+//            println("DEBUG: current time: " + sdf.format(ct.getTime))
+            t
         }
       }
     }.toList

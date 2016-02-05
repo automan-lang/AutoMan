@@ -15,7 +15,12 @@ class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
   // public API
   def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
-    new String(Hex.encodeHex(md.digest(toXML(randomize = false).toString().getBytes)))
+
+    val xml = toXML(randomize = false).toString()
+
+    println("@@@\n" + xml + "\n@@@")
+
+    new String(Hex.encodeHex(md.digest(xml.getBytes)))
   }
   override def description: String = _description match { case Some(d) => d; case None => this.title }
   override def group_id: String = _group_id match { case Some(g) => g; case None => this.id.toString() }
