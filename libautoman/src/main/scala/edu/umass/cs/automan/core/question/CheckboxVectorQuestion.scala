@@ -11,7 +11,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 abstract class CheckboxVectorQuestion extends VectorQuestion {
   type A = Set[Symbol]
   type AA = Answers[A]
-  type O = DistributionOutcome[A]
+  type O = VectorOutcome[A]
   type QuestionOptionType <: QuestionOption
 
   protected var _options: List[QuestionOptionType] = List[QuestionOptionType]()
@@ -25,13 +25,4 @@ abstract class CheckboxVectorQuestion extends VectorQuestion {
   def randomized_options: List[QuestionOptionType]
 
   override protected[automan] def getQuestionType = QuestionType.CheckboxDistributionQuestion
-  override protected[automan] def getOutcome(adapter: AutomanAdapter) : O = {
-    val scheduler = new Scheduler(this, adapter)
-    val f = Future{
-      blocking {
-        scheduler.run().asInstanceOf[AA]
-      }
-    }
-    DistributionOutcome(f)
-  }
 }

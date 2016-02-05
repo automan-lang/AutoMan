@@ -11,7 +11,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 abstract class FreeTextVectorQuestion extends VectorQuestion {
   type A = String
   type AA = Answers[A]
-  type O = DistributionOutcome[A]
+  type O = VectorOutcome[A]
   type QuestionOptionType <: QuestionOption
 
   protected var _allow_empty: Boolean = false
@@ -37,13 +37,4 @@ abstract class FreeTextVectorQuestion extends VectorQuestion {
   }
 
   override protected[automan] def getQuestionType = QuestionType.FreeTextDistributionQuestion
-  override protected[automan] def getOutcome(adapter: AutomanAdapter) : O = {
-    val scheduler = new Scheduler(this, adapter)
-    val f = Future{
-      blocking {
-        scheduler.run().asInstanceOf[AA]
-      }
-    }
-    DistributionOutcome(f)
-  }
 }

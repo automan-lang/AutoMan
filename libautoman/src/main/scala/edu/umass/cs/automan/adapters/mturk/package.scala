@@ -7,7 +7,7 @@ package object mturk {
   val Answers = edu.umass.cs.automan.core.answer.Answers
   val AsymmetricCI = edu.umass.cs.automan.core.question.confidence.AsymmetricCI
   var Estimate = edu.umass.cs.automan.core.answer.Estimate
-  val DistributionOutcome = edu.umass.cs.automan.core.answer.DistributionOutcome
+  val DistributionOutcome = edu.umass.cs.automan.core.answer.VectorOutcome
   val OverBudgetAnswer = edu.umass.cs.automan.core.answer.OverBudgetAnswer
   val OverBudgetAnswers = edu.umass.cs.automan.core.answer.OverBudgetAnswers
   val LogConfig = edu.umass.cs.automan.core.logging.LogConfig

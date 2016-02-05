@@ -46,8 +46,8 @@ abstract class EstimationQuestion extends Question {
   }
   def min_value_=(min: Double) { _min_value = Some(min) }
 
-  override protected[automan] def getQuestionType = QuestionType.EstimationQuestion
-  override protected[automan] def getOutcome(adapter: AutomanAdapter) : O = {
+  protected[automan] def getQuestionType = QuestionType.EstimationQuestion
+  protected[automan] def getOutcome(adapter: AutomanAdapter) : O = {
     EstimationOutcome(schedulerFuture(adapter))
   }
   protected[automan] def composeOutcome(o: O, adapter: AutomanAdapter) : O = {

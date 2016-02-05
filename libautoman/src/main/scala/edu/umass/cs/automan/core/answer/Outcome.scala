@@ -13,4 +13,4 @@ case class EstimationOutcome(override protected[automan] val f: Future[AbstractE
 
 case class ScalarOutcome[T](override protected[automan] val f: Future[AbstractScalarAnswer[T]]) extends Outcome[T](f)
 
-case class DistributionOutcome[T](override protected[automan] val f: Future[AbstractVectorAnswer[T]]) extends Outcome[T](f)
+case class VectorOutcome[T](override protected[automan] val f: Future[AbstractVectorAnswer[T]]) extends Outcome[T](f)

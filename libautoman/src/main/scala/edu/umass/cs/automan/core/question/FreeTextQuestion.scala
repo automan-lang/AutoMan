@@ -40,15 +40,7 @@ abstract class FreeTextQuestion extends DiscreteScalarQuestion {
   }
 
   override protected[automan] def getQuestionType = QuestionType.FreeTextQuestion
-  override protected[automan] def getOutcome(adapter: AutomanAdapter) : O = {
-    val scheduler = new Scheduler(this, adapter)
-    val f = Future{
-      blocking {
-        scheduler.run().asInstanceOf[AA]
-      }
-    }
-    ScalarOutcome(f)
-  }
+
   // private methods
   override private[automan] def init_validation_policy(): Unit = {
     _validation_policy_instance = _validation_policy match {

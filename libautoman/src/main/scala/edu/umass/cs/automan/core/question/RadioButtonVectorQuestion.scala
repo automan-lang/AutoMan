@@ -11,7 +11,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 abstract class RadioButtonVectorQuestion extends VectorQuestion {
   type A = Symbol
   type AA = Answers[A]
-  type O = DistributionOutcome[A]
+  type O = VectorOutcome[A]
   type QuestionOptionType <: QuestionOption
 
   protected var _options: List[QuestionOptionType] = List[QuestionOptionType]()
@@ -22,14 +22,4 @@ abstract class RadioButtonVectorQuestion extends VectorQuestion {
   def randomized_options: List[QuestionOptionType]
 
   override protected[automan] def getQuestionType = QuestionType.RadioButtonDistributionQuestion
-
-  override protected[automan] def getOutcome(adapter: AutomanAdapter) : O = {
-    val scheduler = new Scheduler(this, adapter)
-    val f = Future{
-      blocking {
-        scheduler.run().asInstanceOf[AA]
-      }
-    }
-    DistributionOutcome(f)
-  }
 }
