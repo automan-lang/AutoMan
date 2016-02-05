@@ -16,7 +16,7 @@ class MTMemoClearTest extends FlatSpec with Matchers {
 
     // init
     val q = new MTRadioButtonQuestion()
-    val m = new MTMemo(LogConfig.TRACE_MEMOIZE_VERBOSE, DB)
+    val m = new MTMemo(LogConfig.TRACE_MEMOIZE_VERBOSE, DB, false)
 
     // create database
     m.init()

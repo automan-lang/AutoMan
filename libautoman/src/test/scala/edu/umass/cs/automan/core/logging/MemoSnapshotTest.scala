@@ -46,7 +46,7 @@ class MemoSnapshotTest extends FlatSpec with Matchers {
       q.mock_answers = makeMocksAt(List(Set('spongebob,'count),Set('spongebob),Set('count,'spongebob),Set('count,'spongebob)), 0)
     }
 
-    automan(a, test_mode = true) {
+    automan(a, test_mode = true, in_mem_db = true) {
       which_one().answer match {
         case Answer(value, _, conf) =>
           println("Answer: '" + value + "', confidence: " + conf)

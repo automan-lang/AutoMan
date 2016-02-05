@@ -189,7 +189,7 @@ class MTurkAdapter extends AutomanAdapter {
   }
   override protected def MemoDBFactory() : MemoDB = {
     DebugLog("Initializing memo DB \"" + _database_path + "\" with MTurk extensions.", LogLevelDebug(), LogType.ADAPTER, null)
-    new MTMemo(_log_config, _database_path)
+    new MTMemo(_log_config, _database_path, _in_mem_db)
   }
   protected[automan] def getAllHITs : Array[HIT] = {
     _service match {

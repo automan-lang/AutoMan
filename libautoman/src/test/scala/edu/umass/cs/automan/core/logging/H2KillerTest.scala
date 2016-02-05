@@ -34,7 +34,6 @@ class H2KillerTest extends FlatSpec with Matchers {
     }
 
     def countJellies(i: Int) = a.EstimationQuestion { q =>
-      println(s"(${i}) (${i}) (${i}) (${i}) ####### COUNT THE JELLIES ####### !&!&!&!&!&!&!&!&!&! (${i})")
       q.confidence = 0.95
       q.budget = dollar_budget
       q.wage = wage
@@ -43,24 +42,23 @@ class H2KillerTest extends FlatSpec with Matchers {
       q.mock_answers = getMockList
     }
 
-    try {
-      val answers = (0 until 15).map { i => countJellies(i) }.toArray
+    automan(a, test_mode = true, in_mem_db = true) {
+      try {
+        val answers = (0 until 15).map { i => countJellies(i) }.toArray
 
-      val outcome = answers.map { a =>
-        a.answer match {
-          case LowConfidenceEstimate(_,_,_,_,_) => true
-          case _ => false
-        }
-      }.foldLeft(true) { case (acc, v) => acc && v }
+        val outcome = answers.map { a =>
+          a.answer match {
+            case LowConfidenceEstimate(_, _, _, _, _) => true
+            case _ => false
+          }
+        }.foldLeft(true) { case (acc, v) => acc && v }
 
-      // all estimates should be over budget.
-      // if anything else happens, the test failed
-      outcome should be(true)
-    } catch {
-      case _: Throwable => fail()
+        // all estimates should be over budget.
+        // if anything else happens, the test failed
+        outcome should be(true)
+      } catch {
+        case _: Throwable => fail()
+      }
     }
-
-    // cleanup
-    a.memo_delete()
   }
 }

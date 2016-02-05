@@ -34,7 +34,7 @@ class FreeTextMemoTest extends FlatSpec with Matchers {
       q.mock_answers = List()
     }
 
-    automan(a, test_mode = true) {
+    automan(a, test_mode = true, in_mem_db = true) {
       which_one("Which 4-letter metasyntactic variable starts with 'q'?").answer match {
         case Answer(value, cost, conf) =>
           println("Answer: '" + value + "', cost: '" + cost + "', confidence: " + conf)

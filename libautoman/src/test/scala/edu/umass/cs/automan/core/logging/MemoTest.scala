@@ -13,9 +13,8 @@ class MemoTest extends FlatSpec with Matchers {
   val DB = "MemoTest_" + UUID.randomUUID()
 
   // init
-  // TODO: switch this to MockQuestion later
   val q = new MTRadioButtonQuestion()
-  val m = new Memo(LogConfig.TRACE_MEMOIZE_VERBOSE, DB)
+  val m = new Memo(LogConfig.TRACE_MEMOIZE_VERBOSE, DB, false)
 
   "The Memo class" should "save and restore execution traces when logging is enabled" in {
     // create database

@@ -32,7 +32,7 @@ class MTurkManyThreadsTest extends FlatSpec with Matchers {
       q.group_id = "foo"
     }
 
-    automan(a, test_mode = true) {
+    automan(a, test_mode = true, in_mem_db = true) {
       // get plate texts from image URLs
       val plate_texts = urls.map { url =>
         (url, plateTxt(url))

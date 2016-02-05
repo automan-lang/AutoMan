@@ -54,7 +54,7 @@ class CheckboxDistribMemoTest extends FlatSpec with Matchers {
       q.mock_answers = List()
     }
 
-    automan(a, test_mode = true) {
+    automan(a, test_mode = true, in_mem_db = true) {
       which_one("Which one of these does not belong?").answer match {
         case Answers(values, cost) =>
           println("Answer: '" + value + "', cost: '" + cost + "'")

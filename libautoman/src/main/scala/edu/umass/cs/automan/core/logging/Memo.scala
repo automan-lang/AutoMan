@@ -43,7 +43,7 @@ object Memo {
   }
 }
 
-class Memo(log_config: LogConfig.Value, database_name: String) {
+class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolean) {
   // implicit conversions
   implicit val javaUtilDateMapper = DBTaskHistory.javaUtilDateMapper
   implicit val symbolStringMapper = DBRadioButtonAnswer.symbolStringMapper
@@ -64,7 +64,7 @@ class Memo(log_config: LogConfig.Value, database_name: String) {
   val path = new File(database_name.replace(".mv.db","")).getCanonicalPath
 
   // connection string
-  protected[automan] val _jdbc_conn_string = "jdbc:h2:" + path
+  protected[automan] val _jdbc_conn_string = if (in_mem_db) { "jdbc:h2:mem:" } else { "jdbc:h2:" + path }
 
   // TableQuery aliases
   protected[automan] val dbTask = TableQuery[edu.umass.cs.automan.core.logging.tables.DBTask]

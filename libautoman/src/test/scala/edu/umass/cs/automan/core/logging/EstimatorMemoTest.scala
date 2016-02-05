@@ -72,7 +72,7 @@ class EstimatorMemoTest extends FlatSpec with Matchers {
       q.mock_answers = List()
     }
 
-    automan(a, test_mode = true) {
+    automan(a, test_mode = true, in_mem_db = true) {
       countJellies().answer match {
         case Estimate(est, low, high, cost, conf) =>
           println("Estimate: " + est + ", low: " + low + ", high: " + high + ", cost: $" + cost + ", confidence: " + conf)

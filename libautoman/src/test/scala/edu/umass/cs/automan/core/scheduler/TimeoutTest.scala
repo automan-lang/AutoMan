@@ -15,29 +15,29 @@ class TimeoutTest extends FlatSpec with Matchers {
       mt.logging = LogConfig.NO_LOGGING
     }
 
-    automan(a) {
-      def which_one() = a.RadioButtonQuestion { q =>
-        q.budget = 0.30
-        q.text = "Which one of these does not belong?"
-        // make sure that this task times out after exactly 30s
-        q.initial_worker_timeout_in_s = 30
-        q.question_timeout_multiplier = 1
-        q.options = List(
-          a.Option('oscar, "Oscar the Grouch"),
-          a.Option('kermit, "Kermit the Frog"),
-          a.Option('spongebob, "Spongebob Squarepants"),
-          a.Option('cookie, "Cookie Monster"),
-          a.Option('count, "The Count")
+    def which_one() = a.RadioButtonQuestion { q =>
+      q.budget = 0.30
+      q.text = "Which one of these does not belong?"
+      // make sure that this task times out after exactly 30s
+      q.initial_worker_timeout_in_s = 30
+      q.question_timeout_multiplier = 1
+      q.options = List(
+        a.Option('oscar, "Oscar the Grouch"),
+        a.Option('kermit, "Kermit the Frog"),
+        a.Option('spongebob, "Spongebob Squarepants"),
+        a.Option('cookie, "Cookie Monster"),
+        a.Option('count, "The Count")
+      )
+      q.mock_answers = makeTimedMocks(
+        List(
+          ('spongebob, 0),
+          ('spongebob, 45000),
+          ('spongebob, 45000)
         )
-        q.mock_answers = makeTimedMocks(
-          List(
-            ('spongebob, 0),
-            ('spongebob, 45000),
-            ('spongebob, 45000)
-          )
-        )
-      }
+      )
+    }
 
+    automan(a, test_mode = true) {
       which_one().answer match {
         case Answer(value, cost, conf) =>
           println("Answer: '" + value + "', cost: '" + cost + "', confidence: " + conf)

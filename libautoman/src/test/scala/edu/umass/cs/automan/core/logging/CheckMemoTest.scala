@@ -46,7 +46,7 @@ class CheckMemoTest extends FlatSpec with Matchers {
       q.mock_answers = List()
     }
 
-    automan(a, test_mode = true) {
+    automan(a, test_mode = true, in_mem_db = true) {
       which_one("Which characters are not Oscar, Kermit, or Cookie Monster?").answer match {
         case Answer(value, cost, conf) =>
           println("Answer: '" + value + "', confidence: " + conf)

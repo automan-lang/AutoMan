@@ -21,6 +21,7 @@ abstract class AutomanAdapter {
 
   protected var _database_path: String = "AutoManMemoDB_" + UUID.randomUUID()
   protected var _default_confidence: Double = 0.95
+  protected var _in_mem_db: Boolean = false
   protected var _locale: Locale = Locale.getDefault
   protected var _log_config: LogConfig = LogConfig.TRACE_MEMOIZE_VERBOSE
   protected var _memoizer: MemoDB = _
@@ -36,6 +37,8 @@ abstract class AutomanAdapter {
   def database_path_=(path: String) = { _database_path = path }
   def default_confidence: Double = _default_confidence
   def default_confidence_=(c: Double) { _default_confidence = c }
+  def in_memory_db: Boolean = _in_mem_db
+  def in_memory_db_=(use_memdb: Boolean) { _in_mem_db = use_memdb }
   def plugins: List[Class[_ <: Plugin]] = _plugins
   def plugins_=(ps: List[Class[_ <: Plugin]]) { _plugins = ps }
   def logging = _log_config
@@ -166,16 +169,15 @@ abstract class AutomanAdapter {
 
   // thread management
   private def schedule[Q <: Question](q: Q, init: Q => Unit): Q#O = {
-    println(s"DEBUG: ********** STARTING SCHEDULER ${q.id} ***********")
+    // initialize question with end-user lambda
+    // memo hash cannot be calculated correctly until Question has been initialized
+    init(q)
 
     val memo_hash = q.memo_hash
 
     // first check reference cache (to ensure ref. transparency)
     _ref_cache.synchronized {
-      println(s"DEBUG: ********** SCHEDULER ${q.id} ACQUIRED LOCK ***********")
-      val oc = if (_ref_cache.contains(memo_hash)) {
-        println(s"DEBUG: ********** SCHEDULER ${q.id} HASHES TO EXTANT FUTURE ***********")
-
+      if (_ref_cache.contains(memo_hash)) {
         // get the last requested Outcome
         val prev = _ref_cache(memo_hash).head.asInstanceOf[q.O]
 
@@ -188,11 +190,6 @@ abstract class AutomanAdapter {
         // return
         o
       } else {
-        println(s"DEBUG: ********** SCHEDULER ${q.id} HASHES TO ~~~NEW~~~ FUTURE ***********")
-
-        // initialize question with end-user lambda
-        init(q)
-
         // get Outcome
         val o = q.getOutcome(this)
 
@@ -202,10 +199,6 @@ abstract class AutomanAdapter {
         // return Outcome
         o
       }
-
-      println(s"DEBUG: ********** SCHEDULER ${q.id} RELEASING LOCK ***********")
-
-      oc
     }
   }
 

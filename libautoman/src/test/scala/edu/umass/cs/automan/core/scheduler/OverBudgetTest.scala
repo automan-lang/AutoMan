@@ -28,7 +28,7 @@ class OverBudgetTest extends FlatSpec with Matchers {
       q.mock_answers = makeMocks(List('spongebob,'spongebob,'spongebob,'spongebob))
     }
 
-    automan(a) {
+    automan(a, test_mode = true) {
       which_one().answer match {
         case Answer(value, cost, conf) =>
           println("Answer: '" + value + "', cost: '" + cost + "', confidence: " + conf)

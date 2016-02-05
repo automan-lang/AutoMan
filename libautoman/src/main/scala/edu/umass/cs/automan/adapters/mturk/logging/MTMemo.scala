@@ -10,7 +10,7 @@ import edu.umass.cs.automan.adapters.mturk.util.Key._
 import edu.umass.cs.automan.core.logging._
 import scala.slick.driver.H2Driver.simple._
 
-class MTMemo(log_config: LogConfig.Value, database_path: String) extends Memo(log_config, database_path) {
+class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Boolean) extends Memo(log_config, database_path, in_mem_db) {
   case class Assn(assignmentId: String,
                   workerId: String,
                   HITId: String,

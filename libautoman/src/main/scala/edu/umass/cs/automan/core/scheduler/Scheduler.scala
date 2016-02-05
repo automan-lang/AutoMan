@@ -16,11 +16,8 @@ import edu.umass.cs.automan.core.util.Stopwatch
  */
 class Scheduler(val question: Question,
                 val backend: AutomanAdapter) {
-
-  println(s"DEBUG: ********** SCHEDULER CONSTRUCTOR BODY ${question.id} ***********")
-
   // save startup time
-  val VIRT_FREQ = 100 // ms
+  val VIRT_FREQ = 1 // ms
   val init_time = new Date()
   val use_virt = question.mock_answers.nonEmpty
 
