@@ -110,7 +110,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
     )
   }
   def getHITforHITId(hitId: String) : HIT = {
-    assert(hits_by_question_id.size >= 1)
+    assert(hits_by_question_id.nonEmpty)
     hits_by_question_id.flatMap(_._2).filter(_.getHITId == hitId).head
   }
   def addQuestion(question: Question) : MockServiceState = {
