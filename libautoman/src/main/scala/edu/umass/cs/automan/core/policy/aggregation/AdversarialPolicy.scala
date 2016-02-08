@@ -152,7 +152,11 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
     // eliminate duplicates from the list of Tasks
     val tasks_no_dupes = tasks.filter(_.state != SchedulerState.DUPLICATE)
 
-    val options: Int = if(question.num_possibilities > BigInt(Int.MaxValue)) 1000 else question.num_possibilities.toInt
+    val options: Int = if(question.num_possibilities > BigInt(Int.MaxValue)) {
+      Int.MaxValue
+    } else {
+      question.num_possibilities.toInt
+    }
 
     // the number of hypotheses is the current round number + 1, since we count from zero
     val adjusted_conf = bonferroni_confidence(question.confidence, round + 1)
