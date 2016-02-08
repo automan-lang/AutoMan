@@ -1,6 +1,6 @@
 packSettings
 
-packMain := Map("PrecomputeNumToRun" -> "edu.umass.cs.automan.adapters.mturk.PrecomputeNumToRun")
+packMain := Map("PrecomputeNumToRun" -> "edu.umass.cs.automan.tools.PrecomputeNumToRun")
 
 name := "AcceptAllFromDB"
 

@@ -24,9 +24,13 @@ class Table(possibilities_sz: Int, reward_sz: Int) extends Serializable {
     assert(num_to_run != 0)
     _store(computeIndex(np, reward)) = num_to_run
   }
-  def getEntry(np: Int, reward: BigDecimal) : Int = {
-    val output = _store(computeIndex(np, reward))
-    assert(output != 0)
-    output
+  def getEntryOrNone(np: Int, reward: BigDecimal) : Option[Int] = {
+    if (computeIndex(np, reward) < possibilities_sz * reward_sz) {
+      val output = _store(computeIndex(np, reward))
+      assert(output != 0)
+      Some(output)
+    } else {
+      None
+    }
   }
 }

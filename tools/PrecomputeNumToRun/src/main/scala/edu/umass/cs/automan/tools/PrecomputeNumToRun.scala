@@ -33,9 +33,10 @@ object PrecomputeNumToRun extends App {
         / BigDecimal(100)
         ).setScale(2, math.BigDecimal.RoundingMode.FLOOR)
 
-    val ntr = table.getEntry(np, reward)
-
-    println(s"$np, $reward: $ntr")
+    table.getEntryOrNone(np, reward) match {
+      case Some(ntr) => println(s"$np, $reward: $ntr")
+      case None => throw new Exception(s"Entry unexpectedly missing for $np, $reward")
+    }
   }
 
   val os = new ObjectOutputStream(new FileOutputStream(output_filename))
