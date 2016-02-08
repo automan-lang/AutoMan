@@ -23,7 +23,7 @@ object AdversarialPolicy {
   */
 class AdversarialPolicy(question: DiscreteScalarQuestion)
   extends ScalarPolicy(question) {
-  private val NumberOfSimulations = 1000000
+  protected[automan] val NumberOfSimulations = 1000000
 
   DebugLog("Policy: adversarial",LogLevelInfo(),LogType.STRATEGY, question.id)
 
