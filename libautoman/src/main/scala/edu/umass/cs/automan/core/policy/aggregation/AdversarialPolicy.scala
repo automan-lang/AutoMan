@@ -1,10 +1,8 @@
 package edu.umass.cs.automan.core.policy.aggregation
 
 import java.util.UUID
-
 import edu.umass.cs.automan.core.answer.{LowConfidenceAnswer, OverBudgetAnswer, Answer}
 import edu.umass.cs.automan.core.logging.{LogType, LogLevelInfo, DebugLog}
-import edu.umass.cs.automan.core.policy.aggregation
 import edu.umass.cs.automan.core.question.{Question, DiscreteScalarQuestion}
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 
@@ -24,8 +22,11 @@ object AdversarialPolicy {
 class AdversarialPolicy(question: DiscreteScalarQuestion)
   extends ScalarPolicy(question) {
   protected[automan] val NumberOfSimulations = 1000000
+  protected[automan] val PrecompPath = "AdversarialPrecompTable.dat"
 
-  DebugLog("Policy: adversarial",LogLevelInfo(),LogType.STRATEGY, question.id)
+  val precompTable = PrecompTable.load(PrecompPath)
+
+  DebugLog(s"Policy: adversarial; precomputed results ${if (precompTable.isDefined) "LOADED" else "NOT LOADED"}.",LogLevelInfo(),LogType.STRATEGY, question.id)
 
   /**
     * PRIVATE METHODS
@@ -65,7 +66,7 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
   private def biggest_group(tasks: List[Task]) : (Option[Question#A], List[Task]) = {
     val rt = completed_workerunique_tasks(tasks)
 
-    assert(rt.size != 0)
+    assert(rt.nonEmpty)
 
     // group by answer (which is actually an Option[Question#A] because Task.answer is Option[Question#A])
     val groups: Map[Option[Question#A], List[Task]] = rt.groupBy(_.answer)
@@ -88,12 +89,12 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
     var to_run = 0
     var done = false
     while(!done) {
-      val key = (question.num_possibilities.toInt, trials + to_run, confidence, 1000000)
+      val key = (numOpts, trials + to_run, confidence, 1000000)
       val min_required = AdversarialPolicy.synchronized {
         if (AdversarialPolicy.cache.contains(key)) {
           AdversarialPolicy.cache(key)
         } else {
-          val rfa = AgreementSimulation.requiredForAgreement(question.num_possibilities.toInt, trials + to_run, confidence, 1000000)
+          val rfa = AgreementSimulation.requiredForAgreement(numOpts, trials + to_run, confidence, 1000000)
           AdversarialPolicy.cache += key -> rfa
           rfa
         }
@@ -116,7 +117,7 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
     val valid_ts = completed_workerunique_tasks(tasks)
     if (valid_ts.isEmpty) return 0.0 // bail if we have no valid responses
     val biggest_answer = valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
-    AgreementSimulation.confidenceOfOutcome(question.num_possibilities.toInt, valid_ts.size, biggest_answer, NumberOfSimulations)
+    AgreementSimulation.confidenceOfOutcome(numOpts, valid_ts.size, biggest_answer, NumberOfSimulations)
   }
 
   def is_confident(tasks: List[Task], num_hypotheses: Int): Boolean = {
@@ -148,15 +149,36 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
     valid_ts.groupBy(_.answer).maxBy{ case(sym,ts) => ts.size }._2.size
   }
 
-  def num_to_run(tasks: List[Task], round: Int, reward: BigDecimal) : Int = {
-    // eliminate duplicates from the list of Tasks
-    val tasks_no_dupes = tasks.filter(_.state != SchedulerState.DUPLICATE)
-
-    val options: Int = if(question.num_possibilities > BigInt(Int.MaxValue)) {
+  def numOpts : Int = {
+    if(question.num_possibilities > BigInt(Int.MaxValue)) {
       Int.MaxValue
     } else {
       question.num_possibilities.toInt
     }
+  }
+
+  def num_to_run(tasks: List[Task], round: Int, reward: BigDecimal) : Int = {
+    precompTable match {
+      case Some(pt) =>
+        if (round == 0) {
+          // table is only valid for first round
+          pt.getEntryOrNone(numOpts, reward) match {
+            // there's an entry in the table
+            case Some(ntr) => ntr
+            // table has no entry
+            case None => num_to_run_fallback(tasks, round, reward)
+          }
+        } else {
+          // no table available; just compute results
+          num_to_run_fallback(tasks, round, reward)
+        }
+      case None => num_to_run_fallback(tasks, round, reward)
+    }
+  }
+
+  def num_to_run_fallback(tasks: List[Task], round: Int, reward: BigDecimal) : Int = {
+    // eliminate duplicates from the list of Tasks
+    val tasks_no_dupes = tasks.filter(_.state != SchedulerState.DUPLICATE)
 
     // the number of hypotheses is the current round number + 1, since we count from zero
     val adjusted_conf = bonferroni_confidence(question.confidence, round + 1)
