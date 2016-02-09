@@ -56,17 +56,26 @@ class MemoSnapshotTest extends FlatSpec with Matchers {
           fail()
       }
 
+      // NOTE: ranges are given here for tests because of numerical
+      //       instability in the monte carlo simulations, despite
+      //       having a precomputed table, because AutoMan always
+      //       reruns the simulation to compute the empirical confidence
+      //       and sometimes the empirical confidence varies enough
+      //       to spawn more tasks.
+
       which_one2("Which characters are not Oscar, Kermit, or Cookie Monster?").answer match {
         case Answer(value, cost, conf) =>
           println("Answer: '" + value + "', confidence: " + conf)
           (value == Set('spongebob,'count)) should be (true)
           (conf >= confidence) should be (true)
-          (cost == BigDecimal(2) * BigDecimal(0.06)) should be(true)
+          (cost >= BigDecimal(2) * BigDecimal(0.06) && cost
+            <= BigDecimal(3) * BigDecimal(0.06)) should be(true)
         case _ =>
           fail()
       }
 
-      a.state_snapshot().size should be (7)
+      val snap = a.state_snapshot()
+      snap.size >= 5 && snap.size <= 7 should be (true)
     }
   }
 }

@@ -1,5 +1,9 @@
 package edu.umass.cs.automan.core.policy.aggregation;
 
+import edu.umass.cs.automan.core.logging.DebugLog;
+import edu.umass.cs.automan.core.logging.LogLevelInfo;
+import edu.umass.cs.automan.core.logging.LogType;
+
 import java.util.Random;
 
 public final class AgreementSimulation {
@@ -89,6 +93,7 @@ public final class AgreementSimulation {
         // If we found an answer, then return # of trials
         if ((i <= trials) && (odds <= alpha)) {
             String msg = String.format("MONTECARLO: %s identical answers required for %s tasks", Integer.toString(i), Integer.toString(trials));
+            DebugLog.apply(msg, LogLevelInfo.apply(), LogType.STRATEGY(), null);
             return i;
             // Otherwise
         } else {
