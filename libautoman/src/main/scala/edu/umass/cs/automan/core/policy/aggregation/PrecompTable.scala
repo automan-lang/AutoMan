@@ -1,11 +1,11 @@
 package edu.umass.cs.automan.core.policy.aggregation
 
-import java.io.{FileInputStream, ObjectInputStream}
+import java.io.ObjectInputStream
 
 object PrecompTable {
-  def load(output_filename: String) : Option[PrecompTable] = {
+  def load(resource_name: String) : Option[PrecompTable] = {
     try {
-      val is = new ObjectInputStream(new FileInputStream(output_filename))
+      val is = new ObjectInputStream(getClass.getResourceAsStream(resource_name))
       val table = is.readObject().asInstanceOf[PrecompTable]
       is.close()
       Some(table)

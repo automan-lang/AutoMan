@@ -61,7 +61,7 @@ class MemoSnapshotTest extends FlatSpec with Matchers {
           println("Answer: '" + value + "', confidence: " + conf)
           (value == Set('spongebob,'count)) should be (true)
           (conf >= confidence) should be (true)
-          (cost == BigDecimal(3) * BigDecimal(0.06)) should be(true)
+          (cost == BigDecimal(2) * BigDecimal(0.06)) should be(true)
         case _ =>
           fail()
       }

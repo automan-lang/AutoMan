@@ -22,7 +22,7 @@ object AdversarialPolicy {
 class AdversarialPolicy(question: DiscreteScalarQuestion)
   extends ScalarPolicy(question) {
   protected[automan] val NumberOfSimulations = 1000000
-  protected[automan] val PrecompPath = "AdversarialPrecompTable.dat"
+  protected[automan] val PrecompPath = "/edu/umass/cs/automan/core/policy/aggregation/PossibilitiesTable.dat"
 
   val precompTable = PrecompTable.load(PrecompPath)
 
