@@ -1,16 +1,17 @@
 package edu.umass.cs.automan.core.logging
 
 import java.util.UUID
-import edu.umass.cs.automan.core.answer.{LowConfidenceEstimate, OverBudgetEstimate}
+import edu.umass.cs.automan.core.answer.LowConfidenceEstimate
 import edu.umass.cs.automan.core.mock.MockAnswer
 import scala.util.Random
 import edu.umass.cs.automan.test._
 import edu.umass.cs.automan.adapters.mturk._
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 import org.scalatest.{Matchers, FlatSpec}
+import org.scalatest.tagobjects.Slow
 
 class H2KillerTest extends FlatSpec with Matchers {
-  "An estimator program" should "not experience a database primary key error under load" in {
+  "An estimator program" should "not experience a database primary key error under load" taggedAs Slow in {
     val dollar_budget = BigDecimal(8.00)
     val wage = BigDecimal(7.25)
     val time_budget_in_sec = 30  // in seconds

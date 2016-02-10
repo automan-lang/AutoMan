@@ -1,7 +1,6 @@
 package edu.umass.cs.automan.core.logging
 
 import java.util.UUID
-
 import edu.umass.cs.automan.adapters.mturk.question.MTRadioButtonQuestion
 import edu.umass.cs.automan.test._
 import org.scalatest._

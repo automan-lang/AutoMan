@@ -5,6 +5,7 @@ import java.util.UUID
 import edu.umass.cs.automan.adapters.mturk._
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 import edu.umass.cs.automan.core.answer.Answer
+import org.scalatest.tagobjects.Slow
 import edu.umass.cs.automan.test._
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -12,7 +13,7 @@ import scala.util.Random
 
 class MTurkManyThreadsTest extends FlatSpec with Matchers {
 
-  "A freetext program with many threads" should "work" in {
+  "A freetext program with many threads" should "work" taggedAs Slow in {
     val urls = Random.alphanumeric.take(1000).mkString.grouped(10).toList
 
     implicit val a = MTurkAdapter { mt =>
