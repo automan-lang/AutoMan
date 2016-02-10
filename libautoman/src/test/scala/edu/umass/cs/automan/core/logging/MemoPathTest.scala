@@ -1,5 +1,7 @@
 package edu.umass.cs.automan.core.logging
 
+import java.io.File
+
 import org.scalatest._
 import java.util.UUID
 import edu.umass.cs.automan.test._
@@ -9,6 +11,13 @@ import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 class MemoPathTest extends FlatSpec with Matchers {
 
   "A checkbox program" should "correctly recall answers when a database path is specified" in {
+    // cleanup if last test's run left junk laying around
+    val db_path = "MemoPathTestDB.mv.db"
+    val db_f = new File(db_path)
+    if (db_f.exists) {
+      db_f.delete()
+    }
+
     val confidence = 0.95
 
     val a = MTurkAdapter { mt =>
@@ -16,7 +25,7 @@ class MemoPathTest extends FlatSpec with Matchers {
       mt.secret_access_key = UUID.randomUUID().toString
       mt.use_mock = MockSetup(budget = 8.00)
       mt.logging = LogConfig.TRACE_MEMOIZE_VERBOSE
-      mt.database_path = "MemoPathTestDB"
+      mt.database_path = db_path
     }
 
     def which_one(text: String) = a.CheckboxQuestion { q =>
@@ -55,7 +64,8 @@ class MemoPathTest extends FlatSpec with Matchers {
           println(s"Answer: $ans, cost: ${'$' + cost.toString}, confidence: $conf")
           (ans == Set('spongebob,'count)) should be (true)
           (conf >= confidence) should be (true)
-          (cost == BigDecimal(2) * BigDecimal(0.06)) should be(true)
+          (cost >= BigDecimal(2) * BigDecimal(0.06)
+            && cost <= BigDecimal(3) * BigDecimal(0.06)) should be(true)
         case _ =>
           fail()
       }
