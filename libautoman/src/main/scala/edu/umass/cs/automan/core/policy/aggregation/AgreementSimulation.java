@@ -3,96 +3,167 @@ package edu.umass.cs.automan.core.policy.aggregation;
 import edu.umass.cs.automan.core.logging.DebugLog;
 import edu.umass.cs.automan.core.logging.LogLevelInfo;
 import edu.umass.cs.automan.core.logging.LogType;
-
 import java.util.Random;
 
+/**
+ * Goal of simulation: to calculate how many trials are
+ * needed to confidently reject the null hypothesis that
+ * the most popular outcome is due to random chance.
+ *
+ * This calculation works as follows:
+ * A "simulation" is an experiment where a "choices"-sided die
+ * is rolled "trials" times and the number of votes for the
+ * most common outcome is recorded.  The entire simulation procedure
+ * is repeated "num_simulations" times.
+ *
+ * Finally, a histogram of simulation outcomes is created
+ * and, starting from the smallest number of trials, the
+ * probability of random agreement is added to the odds
+ * until the probability is >= confidence.  The number
+ * of trials needed to reach this point is then returned.
+ *
+ * Since the number of trials is not known a priori, the
+ * expected way to call minToWin is in a loop,
+ * where "trials" is incremented until the function does
+ * not return -1.
+ */
 public final class AgreementSimulation {
     private AgreementSimulation() {
         throw new AssertionError();
     }
 
-    private static class Occurrences {
-        public int[] occurrences;
-        public Occurrences(int size) {
-            occurrences = new int[size];
-        }
-    }
+    /**
+     * Compute the minimum number of trials that need to
+     * agree in order to win a popularity contest with at
+     * least conf probability.
+     * @param c The number of choices (sides of the die)
+     * @param t The total number of trials (rolls of the die)
+     * @param conf The confidence level
+     * @param numSims The number of simulations to run
+     * @return The minimum agreement threshold
+     */
+    public static int minToWin(int c, int t, double conf, int numSims) {
+        Random r = new Random();
 
-    public static int requiredForAgreement(int choices, int trials, double confidence, int iterations) {
-        // array to track max result of each test
-        Occurrences o = new Occurrences(trials + 1);
+        // object to track frequency of outcomes
+        ChoiceFreq freq = new ChoiceFreq(t);
 
         // Spin up a bunch of runs.
-        for (int i = 0; i < iterations; i++) {
-            iteration(choices, trials, o);
+        for (int i = 0; i < numSims; i++) {
+            simulation(c, t, freq, r);
         }
 
         // Calculate and return minimum number of trials
-        return calculate_min_agreement(trials, confidence, iterations, o);
+        return tailThreshold(t, 1.0 - conf, freq);
     }
 
-    public static double confidenceOfOutcome(int choices, int trials, int max_agree, int iterations) {
+    /**
+     * Compute the confidence in a given outcome where n of t
+     * trials agree on the same answer.
+     * @param c The number of choices (sides of the die)
+     * @param t The total number of trials (rolls of the die)
+     * @param n The number of trials that agree
+     * @param numSims The number of simulations to run.
+     * @return The confidence.
+     */
+    public static double confidenceOfOutcome(int c, int t, int n, int numSims) {
+        Random r = new Random();
+
         // array to track max result of each test
-        Occurrences o = new Occurrences(trials + 1);
+        ChoiceFreq o = new ChoiceFreq(t);
 
         // Spin up a bunch of runs.
-        for (int i = 0; i < iterations; i++) {
-            iteration(choices, trials, o);
+        for (int i = 0; i < numSims; i++) {
+            simulation(c, t, o, r);
         }
 
-        // Calculate and return odds
-        return calculate_odds(trials, max_agree, iterations, o);
+        // the confidence is just 1 - Pr[n or more trials agree]
+        return 1.0 - tailProbability(t, n, o);
     }
 
-    private static void iteration(int choices, int trials, Occurrences o) {
-        Random r = new Random();
-        int[] choice = new int[trials];
+    /**
+     * Run a die-roll experiment.
+     * @param c The number of sides of the die.
+     * @param t The number of times to roll the die.
+     * @param freq The object to store the outcome in.
+     * @param r A random number generator.
+     */
+    private static void simulation(int c, int t, ChoiceFreq freq, Random r) {
+        int[] choice = new int[t];
         // {[0..choices-1], [0..choices-1], ...} // # = trials
 
         // make a choice for every trial
-        for (int j = 0; j < trials; j++) {
-            choice[j] = Math.abs(r.nextInt(Integer.MAX_VALUE)) % choices;
+        for (int j = 0; j < t; j++) {
+            choice[j] = Math.abs(r.nextInt(Integer.MAX_VALUE)) % c;
         }
 
         // Make a histogram, adding up occurrences of each choice.
-        int[] counter = new int[choices];
-        for (int k = 0; k < choices; k++) {
-            counter[k] = 0;
+        int[] histogram = new int[c];
+        // initialize array
+        for (int k = 0; k < c; k++) {
+            histogram[k] = 0;
         }
-        for (int z = 0; z < trials; z++) {
-            counter[choice[z]] += 1;
+        // sum up choices
+        for (int z = 0; z < t; z++) {
+            histogram[choice[z]] += 1;
         }
 
-        // Find the biggest choice
+        // Find the most popular choice
         int max = 0;
-        for (int k = 0; k < choices; k++) {
-            if (counter[k] > max) {
-                max = counter[k];
+        for (int k = 0; k < c; k++) {
+            if (histogram[k] > max) {
+                max = histogram[k];
             }
         }
 
-        // Return the number of votes that the biggest choice got
-        assert (max <= trials);
-        o.occurrences[max]++;
+        // record the number of votes gotten by the most popular choice
+        assert (max <= t);
+        freq.recordOutcome(max);
     }
 
-    private static int calculate_min_agreement(int trials, double confidence, int iterations, Occurrences o) {
-        // Determine the number of trials in order for the odds
-        // to drop below alpha (i.e., 1 - confidence).
-        // This is done by subtracting the area under the histogram for each trial
-        // from 1.0 until the answer is less than alpha.
+    /**
+     * Compute the right tail probability for the distribution of the
+     * number of t needed to win the popularity contest.
+     * @param t The total number of trials.
+     * @param n An agreement threshold that defines the right tail.
+     * @param freq The outcome for a set of simulations.
+     * @return
+     */
+    private static double tailProbability(int t, int n, ChoiceFreq freq) {
+        int i = t;
+        double pr = 0.0;
+        while((i >= n)) {
+            double pr_i = freq.countForOutcome(i) / (double) freq.numSimulations();
+            pr += pr_i;
+            i--;
+        }
+        return pr;
+    }
+
+    /**
+     * Compute the minimum number of votes needed to make winning the
+     * popularity contest likely (with confidence greater than 1 - alpha).
+     * @param t Number of trials
+     * @param alpha 1 - confidence
+     * @param freq The outcome for a set of simulations.
+     * @return The minimal number of trials needed.
+     */
+    private static int tailThreshold(int t, double alpha, ChoiceFreq freq) {
         int i = 1;
-        double odds = 1.0;
-        double alpha = 1.0 - confidence;
-        while ((i <= trials) && (odds > alpha)) {
-            double odds_i = o.occurrences[i] / (double) iterations;
-            odds -= odds_i;
+        double pr = 1.0;
+        while ((i <= t) && (pr > alpha)) {
+            double pr_i = freq.countForOutcome(i) / (double) freq.numSimulations();
+            pr -= pr_i;
             i++;
         }
 
-        // If we found an answer, then return # of trials
-        if ((i <= trials) && (odds <= alpha)) {
-            String msg = String.format("MONTECARLO: %s identical answers required for %s tasks", Integer.toString(i), Integer.toString(trials));
+        if ((i <= t) && (pr <= alpha)) {
+            String msg =
+                    String.format(
+                            "MONTECARLO: %s identical answers required for %s tasks",
+                            Integer.toString(i),
+                            Integer.toString(t)
+                    );
             DebugLog.apply(msg, LogLevelInfo.apply(), LogType.STRATEGY(), null);
             return i;
             // Otherwise
@@ -100,16 +171,5 @@ public final class AgreementSimulation {
             // Error condition: not enough trials to achieve the desired confidence.
             return -1;
         }
-    }
-
-    private static double calculate_odds(int trials, int max_agree, int runs, Occurrences o) {
-        int i = trials;
-        double odds = 0.0;
-        while((i >= max_agree)) {
-            double odds_i = o.occurrences[i] / (double) runs;
-            odds += odds_i;
-            i--;
-        }
-        return 1 - odds;
     }
 }

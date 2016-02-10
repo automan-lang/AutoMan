@@ -94,9 +94,9 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
         if (AdversarialPolicy.cache.contains(key)) {
           AdversarialPolicy.cache(key)
         } else {
-          val rfa = AgreementSimulation.requiredForAgreement(numOpts, trials + to_run, confidence, 1000000)
-          AdversarialPolicy.cache += key -> rfa
-          rfa
+          val min = AgreementSimulation.minToWin(numOpts, trials + to_run, confidence, 1000000)
+          AdversarialPolicy.cache += key -> min
+          min
         }
       }
       val expected = max_agr + to_run
