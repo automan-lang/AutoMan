@@ -78,10 +78,6 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
   def restore_mt_state(backend: RequesterService) : Option[MTState] = {
     db_opt match {
       case Some(db) => db withSession { implicit s =>
-        // debug
-        val hittypes = dbHITType.list
-        val quals = dbQualReq.list
-
         val hit_types: Map[Key.BatchKey, HITType] = getHITTypeMap
         val id_hittypes: Map[String, HITType] = getHITTypesByHITTypeId(hit_types)
         val hit_states: Map[String, HITState] = getHITStateMap(id_hittypes, backend)
@@ -327,13 +323,21 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
   }
 
   private def getHITStateMap(htid_map: Map[String, HITType], backend: RequesterService)(implicit session: DBSession) : Map[String,HITState] = {
+    // restore all HIT IDs from database
     val hit_ids = allHITs.list.map { case(hit_id, hit_type_id, is_cancelled) => hit_id -> (hit_type_id,is_cancelled) }.toMap
+
+    // TODO fix:
+    // because the database only stores the HIT ID and HITType ID, we need
+    // to query MTurk to get the rest of the information;
+    // this means that this call will fail in testing if the
+    // MTAdapter object is completely disposed and constructed again
+    // since mock HITs do not persist between runs.
     val hits = hit_ids.keys.map { hit_id => backend.getHIT(hit_id) }
 
+    // restore saved Task-Assignment pairings
     val all_ta_map = taskAssignmentMap
 
-    val th = dbTaskHIT.list
-
+    // group Task IDs by HIT
     val task_ids_by_hitid = dbTaskHIT
       .list
       .groupBy { case (hit_id: String, _) => hit_id }
@@ -341,10 +345,12 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
         hit_id -> tasks.map { case (_, task_id: UUID) => task_id }
       }
 
-    // we want to construct a task-assignment map specifically for this HITState
+    // return a map from HIT to HITState
     hits.map { hit =>
+      // get all the tasks for this HIT
       val task_ids = task_ids_by_hitid(hit.getHITId)
 
+      // make a task-assignment map for this HIT;
       // when a task_id has no entry in the map, insert value None
       val taskAssignmentMapFiltered : Map[UUID,Option[Assignment]] = task_ids.map { task_id =>
         if (all_ta_map.contains(task_id)) {
@@ -354,6 +360,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
         }
       }.toMap
 
+      // construct HITState
       val hit_id = hit.getHITId
       val hit_type_id = hit_ids(hit_id)._1
       val hit_type = htid_map(hit_type_id)
