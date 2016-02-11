@@ -1,0 +1,3 @@
+#!/bin/sh
+
+sbt 'test-only * -- -l org.scalatest.tags.Slow'
