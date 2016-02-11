@@ -23,11 +23,7 @@ object DebugLog {
             }
         }
 
-      if (level == LogLevelDebug()) {
-        System.out.println(new Date().toString + ": " + level.toString + ": " + source.toString + ": " + idstr + msg)
-      } else {
-        System.err.println(new Date().toString + ": " + level.toString + ": " + source.toString + ": " + idstr + msg)
-      }
+      System.err.println(new Date().toString + ": " + level.toString + ": " + source.toString + ": " + idstr + msg)
     }
   }
 }

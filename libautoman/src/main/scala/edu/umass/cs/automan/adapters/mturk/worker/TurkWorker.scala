@@ -634,6 +634,8 @@ object TurkWorker {
     // calculate new HIT key
     val hit_key = (batch_key, question.memo_hash)
 
+    DebugLog(s"Creating new HIT with ID ${hs.HITId} for batch key ${batch_key}.", LogLevelInfo(), LogType.ADAPTER, question.id)
+
     // we update the state like this so that inconsistent state snapshots are not possible
     // update HIT key -> HIT ID map
     internal_state = internal_state.updateHITIDs(hit_key, hs.HITId)
@@ -691,6 +693,8 @@ object TurkWorker {
 
       // request new HITTypeId from MTurk
       internal_state = mturk_registerHITType(question, batch_key, internal_state, backend)
+    } else {
+      DebugLog(s"Reusing HITType with ID ${internal_state.hit_types(batch_key).id} for batch key ${batch_key}.", LogLevelInfo(), LogType.ADAPTER, question.id)
     }
     (internal_state.hit_types(batch_key), internal_state)
   }
