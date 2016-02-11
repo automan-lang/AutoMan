@@ -575,7 +575,7 @@ object TurkWorker {
     // whenever we create a new group, we need to add the disqualification to the HITType
     // EXCEPT if it's the very first time the group is posted
     // AND we weren't specifically asked to blacklist any workers
-    val quals = if (question.blacklisted_workers.size > 0 || batch_no != 1) {
+    val quals = if (question.blacklisted_workers.nonEmpty || batch_no != 1) {
       disqualification :: question.asInstanceOf[MTurkQuestion].qualifications
     } else {
       question.asInstanceOf[MTurkQuestion].qualifications
@@ -593,7 +593,7 @@ object TurkWorker {
     val hittype = HITType(hit_type_id, quals, disqualification, group_id)
 
     // update disqualification map
-    internal_state= internal_state.updateDisqualifications(disqualification.getQualificationTypeId, hittype.id)
+    internal_state = internal_state.updateDisqualifications(disqualification.getQualificationTypeId, hittype.id)
 
     // update hittype map
     internal_state = internal_state.updateHITTypes(batch_key, hittype)
@@ -634,7 +634,7 @@ object TurkWorker {
     // calculate new HIT key
     val hit_key = (batch_key, question.memo_hash)
 
-    DebugLog(s"Creating new HIT with ID ${hs.HITId} for batch key ${batch_key}.", LogLevelInfo(), LogType.ADAPTER, question.id)
+    DebugLog(s"Creating new HIT with ID ${hs.HITId} for batch key ${batch_key} and ${ts.size} assignments.", LogLevelDebug(), LogType.ADAPTER, question.id)
 
     // we update the state like this so that inconsistent state snapshots are not possible
     // update HIT key -> HIT ID map
@@ -645,13 +645,15 @@ object TurkWorker {
   }
 
   private def mturk_extendHIT(ts: List[Task], timeout_in_s: Int, hit_key: HITKey, state: MTState, backend: RequesterService) : MTState = {
-    var internal_state = state
+    val internal_state = state
 
     val hitstate = internal_state.getHITState(hit_key)
 
     // MTurk does not allow expiration dates sooner than
     // 60 seconds into the future
     val expiry_s = Math.max(60, timeout_in_s).toLong
+
+    DebugLog(s"Extending HIT ID ${hitstate.HITId} with ${ts.size} new assignments and timeout ${expiry_s} sec", LogLevelDebug(), LogType.ADAPTER, ts.head.question.id)
 
     // Note that extending HITs is only useful when the only
     // parameters that can change are the 1) number of assignments and
