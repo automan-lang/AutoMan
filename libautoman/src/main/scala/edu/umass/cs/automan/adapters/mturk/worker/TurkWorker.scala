@@ -265,12 +265,9 @@ class TurkWorker(backend: RequesterService, sleep_ms: Int, mock_service: Option[
       val mtq = q.asInstanceOf[MTurkQuestion]
 
       // also, we need to ensure that all the tasks have the same properties
-      val running = qts.groupBy{ t => (t.cost,t.worker_timeout)}.flatMap { case ((cost,worker_timeout), tz) =>
-        // The batch is uniquely determined by group_id, cost, and worker_timeout
-        val batch_key: BatchKey = (mtq.group_id, cost, worker_timeout)
-
-        // A HIT is uniquely determined by question_id, cost, and worker_timeout
-        val hit_key: HITKey = (batch_key, q.memo_hash)
+      val running = qts.groupBy{ t => HITKey(t)}.flatMap { case (hit_key, tz) =>
+        val group_key = hit_key._1
+        val group_id = group_key._1
 
         // have we already posted a HIT for these tasks?
         if (internal_state.hit_ids.contains(hit_key)) {
@@ -278,7 +275,7 @@ class TurkWorker(backend: RequesterService, sleep_ms: Int, mock_service: Option[
           internal_state = TurkWorker.mturk_extendHIT(tz, tz.head.timeout_in_s, hit_key, internal_state, backend)
         } else {
           // if not, post a new HIT on MTurk
-          internal_state = TurkWorker.mturk_createHIT(tz, batch_key, q, internal_state, backend)
+          internal_state = TurkWorker.mturk_createHIT(tz, group_key, q, internal_state, backend)
         }
 
         // mark as running
@@ -431,20 +428,28 @@ object TurkWorker {
       // the group_id for this HITType
       val group_id = hitstate.hittype.group_id
 
+      // if the worker is known to us, then we've already granted them a disqualification
       if (internal_state.worker_whitelist.contains(worker_id, group_id)) {
+        // if that disqualification is not the same as the one they're asking for, sorry, reject;
+        // granting this would violate i.i.d. guarantee
         if (internal_state.getWhitelistedHITType(worker_id, group_id) != hit_type_id) {
           backend.rejectQualificationRequest(request.getQualificationRequestId,
             "You have already requested a qualification or submitted work for an associated HITType " +
               "that disqualifies you from participating in this HITType."
           )
+        // otherwise, they're requesting something we've already granted; reject
         } else {
           backend.rejectQualificationRequest(request.getQualificationRequestId,
             "You cannot request this qualification more than once."
           )
         }
       } else {
+        // if we don't know them, record the user and grant their disqualification request
         internal_state = internal_state.updateWorkerWhitelist(worker_id, group_id, hit_type_id)
-        backend.grantQualification(request.getQualificationRequestId, internal_state.getBatchNo(hitstate.hittype.group_id))
+        // get the BatchKey associated with the HITType; guaranteed to exist
+        val batchKey = internal_state.getBatchKeyByHITTypeId(hit_type_id).get
+        // get the batch_no associated with the BatchKey; guaranteed to exist
+        backend.grantQualification(request.getQualificationRequestId, internal_state.getBatchNo(batchKey).get)
       }
     }
 
@@ -481,15 +486,6 @@ object TurkWorker {
           case Some(assignment) =>
             // only update task object if the task isn't already answered
             // and if the answer actually happens in the past (ugly hack for mocks)
-
-//            if (!assignment.getSubmitTime.after(t.created_at)) {
-//              val sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
-//              println("DEBUG: thunk created at: " + sdf.format(t.created_at))
-//              println("DEBUG: current time: " + sdf.format(ct.getTime))
-//              println("DEBUG: assignment time: " + sdf.format(assignment.getSubmitTime.getTime))
-//              println("DEBUG: Assignment " + assignment.getAssignmentId + " occurs in the future!")
-//            }
-
             if (t.state == SchedulerState.RUNNING && !assignment.getSubmitTime.after(ct)) {
               // get worker_id
               val worker_id = assignment.getWorkerId
@@ -499,7 +495,7 @@ object TurkWorker {
               if (!internal_state.worker_whitelist.contains(worker_id, group_id)) {
                 internal_state = internal_state.updateWorkerWhitelist(worker_id, group_id, hs.hittype.id)
                 val disqualification_id = hs.hittype.disqualification.getQualificationTypeId
-                backend.assignQualification(disqualification_id, worker_id, internal_state.getBatchNo(hs.hittype.group_id), false)
+                backend.assignQualification(disqualification_id, worker_id, internal_state.getBatchNo(Key.BatchKey(t)).get, false)
               }
 
               // process answer
@@ -541,12 +537,7 @@ object TurkWorker {
               t
             }
           // when a task is not paired with an answer
-          case None =>
-//            val sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
-//            println("DEBUG: no assignment available")
-//            println("DEBUG: thunk created at: " + sdf.format(t.created_at))
-//            println("DEBUG: current time: " + sdf.format(ct.getTime))
-            t
+          case None => t
         }
       }
     }.toList
@@ -566,8 +557,11 @@ object TurkWorker {
 
     val (group_id, cost, worker_timeout) = batch_key
 
-    // get current batch number
-    val batch_no = internal_state.getBatchNo(group_id)
+    // update batch counter
+    internal_state = internal_state.updateBatchNo(batch_key)
+
+    // get just-created batch number; guaranteed to exist because we just created it
+    val batch_no = internal_state.getBatchNo(batch_key).get
 
     // create disqualification for batch
     val disqualification = mturk_createQualification(question.asInstanceOf[MTurkQuestion], question.text, question.id, batch_no, backend)
@@ -690,9 +684,6 @@ object TurkWorker {
     val (group_id, _, _) = batch_key
 
     if (!internal_state.hit_types.contains(batch_key)) {
-      // update batch counter
-      internal_state = internal_state.initOrUpdateBatchNo(group_id)
-
       // request new HITTypeId from MTurk
       internal_state = mturk_registerHITType(question, batch_key, internal_state, backend)
     } else {

@@ -246,14 +246,17 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
   }
 
   // HITTypes and Qualifications never need updating; they are insert-only
-  private def updateHITTypes(hts: Map[BatchKey,HITType], batch_no: Map[GroupID, Int])(implicit session: DBSession) : Unit = {
+  private def updateHITTypes(hittypes_by_batchkey: Map[BatchKey,HITType], batch_no: Map[GroupID, Map[BatchKey,Int]])(implicit session: DBSession) : Unit = {
     val existing_batches: Map[HITTypeID, Int] = allHITTypes.map { r => (r._1, r._5) }.list.toMap
-    val batchkeys: Map[HITTypeID,BatchKey] = hts.map { case (key, hittype) => hittype.id -> key}
-    val inserts: List[(HITType, Int)] = hts.values.flatMap { ht =>
+    val batchkeys: Map[HITTypeID,BatchKey] = hittypes_by_batchkey.map { case (key, hittype) => hittype.id -> key}
+
+    val inserts: List[(HITType, Int)] = hittypes_by_batchkey.values.flatMap { ht =>
       if (existing_batches.contains(ht.id)) {
         None
       } else {
-        Some((ht,batch_no(ht.group_id)))
+        val batchKey = batchkeys(ht.id)
+        val (groupID, _, _) = batchKey
+        Some(ht, batch_no(groupID)(batchKey))
       }
     }.toList
 
@@ -284,7 +287,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
   }
 
   private def allBatchNumbers = {
-    dbHITType.map { row => (row.groupId, row.maxBatchNo) }
+    dbHITType.map { row => (row.groupId, row.batchNo) }
   }
 
   private def allHITTypes = {
@@ -296,7 +299,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
         h.groupId,
         h.cost,
         h.timeoutInS,
-        h.maxBatchNo,
+        h.batchNo,
         q.qualificationTypeId,
         q.comparator,
         q.integerValue,
@@ -425,7 +428,18 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
     dbQualReq.map { r => (r.qualificationTypeId, r.HITTypeId) }.list.toMap
   }
 
-  private def getBatchNos(implicit session: DBSession) : Map[GroupID, Int] = {
-    dbHITType.map { r => (r.groupId, r.maxBatchNo)}.list.toMap
+  private def getBatchNos(implicit session: DBSession) : Map[GroupID, Map[BatchKey, Int]] = {
+    val q = dbHITType.map { r =>
+      (r.groupId, r.cost, r.timeoutInS, r.batchNo)
+    }.list
+    q.foldLeft(Map[GroupID, Map[BatchKey, Int]]()) { case (acc, (group_id, cost, timeout, batch_no)) =>
+      val batchKey = BatchKey(group_id, cost, timeout)
+      if (!acc.contains(group_id)) {
+        acc + (group_id -> Map(batchKey -> batch_no))
+      } else {
+        val submap = acc(group_id) + (batchKey -> batch_no)
+        acc + (group_id -> submap)
+      }
+    }
   }
 }
