@@ -125,7 +125,7 @@ object AcceptAllFromDB extends App {
           totalCost += cost
         } catch {
           case t : Throwable =>
-            System.err.println(s"assignmentID: $assignmentId, workerID: $workerId; Cannot pay because ${t.getCause.getMessage}")
+            System.err.println(s"assignmentID: $assignmentId, workerID: $workerId; Cannot pay because ${t.getMessage}")
             println(List(assignmentId,"fail",question_id,task_id,workerId,schedulerState,assignmentStatus,round,cost).mkString(","))
         }
     }
