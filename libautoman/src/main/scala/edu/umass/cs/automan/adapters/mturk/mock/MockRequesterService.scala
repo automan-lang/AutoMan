@@ -93,19 +93,20 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
 
     val question = _state.question_by_question_id(question_id).asInstanceOf[MTurkQuestion]
 
-    val aibqi = _state.assignment_ids_by_question_id(question_id)
+    // grab our assignments
+    val assn_ids2: List[UUID] =
+      _state.assignment_ids_by_question_id(question_id).filter { assn_id =>
+        _state.assignment_status_by_assignment_id(assn_id)._1 == AssignmentStatus.UNANSWERED
+      }
 
-    // grab the appropriate assignment UUIDs, plus some
-    // inappropriate ones to try to trip up our duplicate
-    // assignment ID detection code
-    val assn_ids: List[UUID] =
-              // inappropriate
-//              (if (aibqi.nonEmpty) { List[UUID](aibqi.head) } else { List[UUID]() }) :::
-//              (if (aibqi.nonEmpty) { List[UUID](aibqi.last) } else { List[UUID]() }) :::
-              // appropriate
-              aibqi.filter { assn_id =>
-                _state.assignment_status_by_assignment_id(assn_id)._1 == AssignmentStatus.UNANSWERED
-              }
+    // duplicate a couple of assignments to ensure that duplicate
+    // message handling works properly; MTurk occasionally resend
+    // assignments
+    val assn_ids = if (assn_ids2.nonEmpty) {
+      assn_ids2.head :: (if (assn_ids2.tail.nonEmpty) List(assn_ids2.tail.head) else List()) ::: assn_ids2
+    } else {
+      assn_ids2
+    }
 
     assn_ids.map { assn_id =>
       val mock_response = _state.answers_by_assignment_id(assn_id)
