@@ -36,7 +36,7 @@ object AcceptAllFromDB extends App {
   println("read memo DB")
 
   // memo db
-  val memo = new MTMemo(LogConfig.TRACE_MEMOIZE_VERBOSE, conf.database_path())
+  val memo = new MTMemo(LogConfig.TRACE_MEMOIZE_VERBOSE, conf.database_path(), false)
 
   println("init MTurkAdapter")
 
