@@ -565,6 +565,7 @@ object TurkWorker {
 
     // create disqualification for batch
     val disqualification = mturk_createQualification(question.asInstanceOf[MTurkQuestion], question.text, question.id, batch_no, backend)
+    DebugLog(s"Created disqualification ${disqualification.getQualificationTypeId} for batch key = " + batch_key, LogLevelDebug(), LogType.ADAPTER, question.id)
 
     // whenever we create a new group, we need to add the disqualification to the HITType
     // EXCEPT if it's the very first time the group is posted
