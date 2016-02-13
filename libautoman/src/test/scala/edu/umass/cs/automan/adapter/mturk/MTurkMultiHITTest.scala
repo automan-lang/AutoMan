@@ -44,7 +44,7 @@ class MTurkMultiHITTest extends FlatSpec with Matchers {
           println("Answer: '" + value + "', confidence: " + conf + ", cost: $" + cost + ", # HITs: " + a.getAllHITs.length)
           (value == 'spongebob) should be (true)
           (conf >= confidence) should be (true)
-          (cost == BigDecimal(0.30)) should be (true)
+          (cost == BigDecimal(0.48)) should be (true)
           a.getAllHITs.length should be (2)
         case LowConfidenceAnswer(value, cost, conf) =>
           fail()
