@@ -13,3 +13,4 @@ tmp
 apps/HowManyThings/HowManyThings.properties
 **/*.mv.db
 **/*.trace.db
+**/.AppleDouble
