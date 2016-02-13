@@ -5,6 +5,7 @@ import java.util.UUID
 import edu.umass.cs.automan.adapters.mturk._
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 import edu.umass.cs.automan.core.answer.Answer
+import edu.umass.cs.automan.core.logging.LogLevelDebug
 import org.scalatest.tagobjects.Slow
 import edu.umass.cs.automan.test._
 import org.scalatest.{FlatSpec, Matchers}
@@ -21,6 +22,7 @@ class MTurkManyThreadsTest extends FlatSpec with Matchers {
       mt.secret_access_key = UUID.randomUUID().toString
       mt.use_mock = MockSetup(budget = 8.00)
       mt.logging = LogConfig.TRACE_MEMOIZE_VERBOSE
+      mt.log_verbosity = LogLevelDebug()
     }
 
     def plateTxt(url: String)(implicit a: MTurkAdapter) = a.FreeTextQuestion { q =>

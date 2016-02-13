@@ -32,6 +32,7 @@ class H2KillerTest extends FlatSpec with Matchers {
       mt.secret_access_key = UUID.randomUUID().toString
       mt.use_mock = MockSetup(budget = 8.00)
       mt.logging = LogConfig.TRACE_MEMOIZE_VERBOSE
+      mt.log_verbosity = LogLevelDebug()
     }
 
     def countJellies(i: Int) = a.EstimationQuestion { q =>

@@ -26,6 +26,7 @@ class MemoPathTest extends FlatSpec with Matchers {
       mt.use_mock = MockSetup(budget = 8.00)
       mt.logging = LogConfig.TRACE_MEMOIZE_VERBOSE
       mt.database_path = db_path
+      mt.log_verbosity = LogLevelDebug()
     }
 
     def which_one(text: String) = a.CheckboxQuestion { q =>

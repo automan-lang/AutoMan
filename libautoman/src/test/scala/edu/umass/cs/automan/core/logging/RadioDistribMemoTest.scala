@@ -16,6 +16,7 @@ class RadioDistribMemoTest extends FlatSpec with Matchers {
       mt.secret_access_key = UUID.randomUUID().toString
       mt.use_mock = MockSetup(budget = 8.00)
       mt.logging = LogConfig.TRACE_MEMOIZE_VERBOSE
+      mt.log_verbosity = LogLevelDebug()
     }
 
     // test params

@@ -1,5 +1,6 @@
 package edu.umass.cs.automan.adapter.mturk
 
+import edu.umass.cs.automan.core.logging.LogLevelDebug
 import org.scalatest._
 import java.util.UUID
 import edu.umass.cs.automan.test._
@@ -14,6 +15,7 @@ class MTurkRadioDistribTest extends FlatSpec with Matchers {
       mt.secret_access_key = UUID.randomUUID().toString
       mt.use_mock = MockSetup(budget = 8.00)
       mt.logging = LogConfig.NO_LOGGING
+      mt.log_verbosity = LogLevelDebug()
     }
 
     val sample_size = 30
