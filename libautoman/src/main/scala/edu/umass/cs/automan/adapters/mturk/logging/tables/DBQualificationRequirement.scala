@@ -29,7 +29,8 @@ object DBQualificationRequirement {
 class DBQualificationRequirement(tag: Tag) extends Table[(String, Int, Comparator, Boolean, Boolean, String)](tag, "DBQualificationRequirement") {
   implicit val comparatorMapper = DBQualificationRequirement.comparatorMapper
 
-  def qualificationTypeId = column[String]("qualificationTypeId", O.PrimaryKey)
+  def id = column[Int]("ID", O.PrimaryKey, O.AutoInc)
+  def qualificationTypeId = column[String]("qualificationTypeId")
   def integerValue = column[Int]("integerValue")
   def comparator = column[Comparator]("comparator")
   def requiredToPreview = column[Boolean]("requiredToPreview")

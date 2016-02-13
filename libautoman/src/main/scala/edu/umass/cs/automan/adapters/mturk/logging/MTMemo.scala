@@ -8,6 +8,7 @@ import edu.umass.cs.automan.adapters.mturk.logging.tables.{DBAssignment, DBQuali
 import edu.umass.cs.automan.adapters.mturk.util.Key
 import edu.umass.cs.automan.adapters.mturk.util.Key._
 import edu.umass.cs.automan.core.logging._
+import edu.umass.cs.automan.core.util.Utilities
 import scala.slick.driver.H2Driver.simple._
 
 class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Boolean) extends Memo(log_config, database_path, in_mem_db) {
@@ -270,14 +271,14 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
 
   private def HITType2QualificationTuples(inserts: List[(HITType,Int)]) : List[(String, Int, Comparator, Boolean, Boolean, String)] = {
     implicit val comparatorMapper = DBQualificationRequirement.comparatorMapper
-    inserts.map { case (hittype,batch_no) =>
+    inserts.flatMap { case (hittype,batch_no) =>
       val d = hittype.disqualification
       val qual = (d.getQualificationTypeId, d.getIntegerValue.toInt, d.getComparator, d.getRequiredToPreview.booleanValue(), true, hittype.id)
       val quals = hittype.quals.map { qr =>
         (qr.getQualificationTypeId, qr.getIntegerValue.toInt, qr.getComparator, qr.getRequiredToPreview.booleanValue(), false, hittype.id)
       }
       qual :: quals
-    }.flatten
+    }
   }
 
   private def HITType2HITTypeTuples(batchkeys: Map[HITTypeID,BatchKey], inserts: List[(HITType,Int)]) : List[(HITTypeID, GroupID, BigDecimal, Int, Int)] = {

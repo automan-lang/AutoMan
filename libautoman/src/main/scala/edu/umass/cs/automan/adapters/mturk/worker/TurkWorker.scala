@@ -462,7 +462,7 @@ object TurkWorker {
     val datestr = sdf.format(new Date())
 
     DebugLog("Creating disqualification.",LogLevelInfo(),LogType.ADAPTER,question_id)
-    val qualtxt = String.format("AutoMan automatically generated Disqualification (title: %s, date: %s)", title, datestr)
+    val qualtxt = String.format("AutoMan automatically generated Disqualification (title: %s, date: %s, question_id: %s)", title, datestr, question_id)
     val qual = backend.createQualificationType("AutoMan " + UUID.randomUUID(), "automan", qualtxt)
     new QualificationRequirement(qual.getQualificationTypeId, Comparator.EqualTo, batch_no, null, false)
   }
