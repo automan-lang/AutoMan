@@ -571,8 +571,10 @@ object TurkWorker {
     // EXCEPT if it's the very first time the group is posted
     // AND we weren't specifically asked to blacklist any workers
     val quals = if (question.blacklisted_workers.nonEmpty || batch_no != 1) {
+      DebugLog(s"Batch #${batch_no} run, not using disqualification ${disqualification.getQualificationTypeId} for batch " + batch_key, LogLevelDebug(), LogType.ADAPTER, question.id)
       disqualification :: question.asInstanceOf[MTurkQuestion].qualifications
     } else {
+      DebugLog(s"Batch #${batch_no} run, using all ${question.asInstanceOf[MTurkQuestion].qualifications.size} qualifications for batch " + batch_key, LogLevelDebug(), LogType.ADAPTER, question.id)
       question.asInstanceOf[MTurkQuestion].qualifications
     }
 
