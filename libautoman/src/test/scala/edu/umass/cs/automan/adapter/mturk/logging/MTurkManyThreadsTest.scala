@@ -27,12 +27,12 @@ class MTurkManyThreadsTest extends FlatSpec with Matchers {
 
     def plateTxt(url: String)(implicit a: MTurkAdapter) = a.FreeTextQuestion { q =>
       q.budget = 5.00
+      q.title = "Transcribe these license plates."
       q.text = "Foobitty foobitty foo? http://" + url
       q.allow_empty_pattern = true
       q.pattern = "XXXXXXXXX"
       q.dont_reject = true
       q.mock_answers = makeMocks(Utilities.randomPermute(List(url, url, url + "z", url)))
-      q.group_id = "foo"
     }
 
     automan(a, test_mode = true, in_mem_db = true) {

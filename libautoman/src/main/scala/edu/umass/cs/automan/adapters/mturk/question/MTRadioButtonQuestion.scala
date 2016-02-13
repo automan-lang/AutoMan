@@ -19,7 +19,7 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
   }
   override def randomized_options: List[QuestionOptionType] = Utilities.randomPermute(options)
   override def description: String = _description match { case Some(d) => d; case None => this.title }
-  override def group_id: String = _group_id match { case Some(g) => g; case None => this.id.toString() }
+  override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
 
   // private API
   override def toMockResponse(question_id: UUID, response_time: Date, a: A) : RadioButtonMockResponse = {

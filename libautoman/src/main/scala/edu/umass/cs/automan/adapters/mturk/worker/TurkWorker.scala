@@ -1,5 +1,6 @@
 package edu.umass.cs.automan.adapters.mturk.worker
 
+import java.io.Serializable
 import java.text.SimpleDateFormat
 import java.util.concurrent.PriorityBlockingQueue
 import java.util.{Date, UUID}
@@ -456,13 +457,16 @@ object TurkWorker {
     internal_state
   }
 
-  private def mturk_createQualification(q: MTurkQuestion, title: String, question_id: UUID, batch_no: Int, backend: RequesterService) : QualificationRequirement = {
+  private def mturk_createQualification(title: String,
+                                        batchKey: BatchKey,
+                                        batch_no: Int,
+                                        backend: RequesterService) : QualificationRequirement = {
     // get a simply-formatted date
     val sdf = new SimpleDateFormat("yyyy-MM-dd:z")
     val datestr = sdf.format(new Date())
 
-    DebugLog("Creating disqualification.",LogLevelInfo(),LogType.ADAPTER,question_id)
-    val qualtxt = String.format("AutoMan automatically generated Disqualification (title: %s, date: %s, question_id: %s)", title, datestr, question_id)
+    DebugLog("Creating disqualification.",LogLevelInfo(),LogType.ADAPTER,null)
+    val qualtxt = s"AutoMan automatically generated Disqualification (title: $title, date: $datestr, batchKey: $batchKey, batch_no: $batch_no)"
     val qual = backend.createQualificationType("AutoMan " + UUID.randomUUID(), "automan", qualtxt)
     new QualificationRequirement(qual.getQualificationTypeId, Comparator.EqualTo, batch_no, null, false)
   }
@@ -547,13 +551,16 @@ object TurkWorker {
 
   /**
    * Create a new HITType on MTurk, with a disqualification if applicable.
-   * @param question An AutoMan Question[_]
-   * @param batch_key Batch parameters
    */
-  private def mturk_registerHITType(question: Question, batch_key: BatchKey, state: MTState, backend: RequesterService) : MTState = {
+  private def mturk_registerHITType(title: String,
+                                    desc: String,
+                                    keywords: List[String],
+                                    batch_key: BatchKey,
+                                    state: MTState,
+                                    backend: RequesterService) : MTState = {
     var internal_state = state
 
-    DebugLog("Registering new HIT Type for batch key = " + batch_key, LogLevelDebug(), LogType.ADAPTER, question.id)
+    DebugLog("Registering new HIT Type for batch key = " + batch_key, LogLevelDebug(), LogType.ADAPTER, null)
 
     val (group_id, cost, worker_timeout) = batch_key
 
@@ -564,30 +571,30 @@ object TurkWorker {
     val batch_no = internal_state.getBatchNo(batch_key).get
 
     // create disqualification for batch
-    val disqualification = mturk_createQualification(question.asInstanceOf[MTurkQuestion], question.text, question.id, batch_no, backend)
-    DebugLog(s"Created disqualification ${disqualification.getQualificationTypeId} for batch key = " + batch_key, LogLevelDebug(), LogType.ADAPTER, question.id)
+    val disqualification = mturk_createQualification(title, batch_key, batch_no, backend)
+    DebugLog(s"Created disqualification ${disqualification.getQualificationTypeId} for batch key = " + batch_key, LogLevelDebug(), LogType.ADAPTER, null)
 
     // whenever we create a new group, we need to add the disqualification to the HITType
     // EXCEPT if it's the very first time the group is posted
-    // AND we weren't specifically asked to blacklist any workers
-    val quals = if (question.blacklisted_workers.nonEmpty || batch_no != 1) {
-      DebugLog(s"Batch #${batch_no} run, not using disqualification ${disqualification.getQualificationTypeId} for batch " + batch_key, LogLevelDebug(), LogType.ADAPTER, question.id)
-      disqualification :: question.asInstanceOf[MTurkQuestion].qualifications
-    } else {
-      DebugLog(s"Batch #${batch_no} run, using all ${question.asInstanceOf[MTurkQuestion].qualifications.size} qualifications for batch " + batch_key, LogLevelDebug(), LogType.ADAPTER, question.id)
-      question.asInstanceOf[MTurkQuestion].qualifications
-    }
+    val qs =
+      if (batch_no != 1) {
+        DebugLog(s"Batch #${batch_no} run, not using disqualification ${disqualification.getQualificationTypeId} for batch " + batch_key, LogLevelDebug(), LogType.ADAPTER, null)
+        List(disqualification)
+      } else {
+        DebugLog(s"Batch #${batch_no} run, using no qualifications for batch " + batch_key, LogLevelDebug(), LogType.ADAPTER, null)
+        Nil
+      }
 
     val hit_type_id = backend.registerHITType(
       (30 * 24 * 60 * 60).toLong,                                   // 30 days
       worker_timeout.toLong,                                        // amount of time the worker has to complete the task
       cost.toDouble,                                                // cost in USD
-      question.title,                                               // title
-      question.asInstanceOf[MTurkQuestion].keywords.mkString(","),  // keywords
-      question.asInstanceOf[MTurkQuestion].description,             // description
-      quals.toArray                                                 // no quals initially
+      title,                                                        // title
+      keywords.mkString(","),                                       // keywords
+      desc,                                                         // description
+      qs.toArray                                                    // qualifications
     )
-    val hittype = HITType(hit_type_id, quals, disqualification, group_id)
+    val hittype = HITType(hit_type_id, qs, disqualification, group_id)
 
     // update disqualification map
     internal_state = internal_state.updateDisqualifications(disqualification.getQualificationTypeId, hittype.id)
@@ -601,8 +608,11 @@ object TurkWorker {
   private def mturk_createHIT(ts: List[Task], batch_key: BatchKey, question: Question, state: MTState, backend: RequesterService) : MTState = {
     var internal_state = state
 
+    // question
+    val q = ts.head.question.asInstanceOf[MTurkQuestion]
+
     // get hit_type for batch
-    val (hit_type,state2) = get_or_create_hittype(batch_key, question, internal_state, backend)
+    val (hit_type,state2) = get_or_create_hittype(question.title, q.description, q.keywords, batch_key, internal_state, backend)
     internal_state = state2
 
     // render XML
@@ -671,10 +681,9 @@ object TurkWorker {
    * if it does, it returns the associated HITType object,
    * otherwise it creates a HITType on MTurk.
    * @param batch_key A GroupKey tuple that uniquely identifies a batch round.
-   * @param question An AutoMan question.
    * @return A HITType
    */
-  private def get_or_create_hittype(batch_key: BatchKey, question: Question, state: MTState, backend: RequesterService) : (HITType, MTState) = {
+  private def get_or_create_hittype(title: String, desc: String, keywords: List[String], batch_key: BatchKey, state: MTState, backend: RequesterService) : (HITType, MTState) = {
     var internal_state = state
 
     // when these properties change from what we've seen before
@@ -688,9 +697,9 @@ object TurkWorker {
 
     if (!internal_state.hit_types.contains(batch_key)) {
       // request new HITTypeId from MTurk
-      internal_state = mturk_registerHITType(question, batch_key, internal_state, backend)
+      internal_state = mturk_registerHITType(title, desc, keywords, batch_key, internal_state, backend)
     } else {
-      DebugLog(s"Reusing HITType with ID ${internal_state.hit_types(batch_key).id} for batch key ${batch_key}.", LogLevelInfo(), LogType.ADAPTER, question.id)
+      DebugLog(s"Reusing HITType with ID ${internal_state.hit_types(batch_key).id} for batch key ${batch_key}.", LogLevelInfo(), LogType.ADAPTER, null)
     }
     (internal_state.hit_types(batch_key), internal_state)
   }

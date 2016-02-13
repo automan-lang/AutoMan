@@ -13,7 +13,6 @@ trait MTurkQuestion {
   protected var _formatted_content: Option[scala.xml.NodeSeq] = None
   protected var _keywords = List[String]()
   protected var _qualifications = List[QualificationRequirement]()
-  protected var _group_id: Option[String] = None
 
   // public API
   def description_=(d: String) { _description = Some(d) }
@@ -23,7 +22,6 @@ trait MTurkQuestion {
     case None => scala.xml.NodeSeq.Empty
   }
   def formatted_content_=(x: scala.xml.NodeSeq) { _formatted_content = Some(x) }
-  def group_id_=(id: String) { _group_id = Some(id) }
   def group_id: String
   def keywords_=(ks: List[String]) { _keywords = ks }
   def keywords: List[String] = _keywords

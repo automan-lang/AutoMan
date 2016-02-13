@@ -17,7 +17,7 @@ class MTFreeTextVectorQuestion extends FreeTextVectorQuestion with MTurkQuestion
     new String(Hex.encodeHex(md.digest(toXML(randomize = false).toString().getBytes)))
   }
   override def description: String = _description match { case Some(d) => d; case None => this.title }
-  override def group_id: String = _group_id match { case Some(g) => g; case None => this.id.toString() }
+  override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
 
   // private API
   override def toMockResponse(question_id: UUID, response_time: Date, a: A) : FreeTextMockResponse = {
