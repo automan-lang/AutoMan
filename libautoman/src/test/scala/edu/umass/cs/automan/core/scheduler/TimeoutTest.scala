@@ -18,7 +18,7 @@ class TimeoutTest extends FlatSpec with Matchers {
     }
 
     def which_one() = a.RadioButtonQuestion { q =>
-      q.budget = 0.30
+      q.budget = 0.42
       q.text = "Which one of these does not belong?"
       // make sure that this task times out after exactly 30s
       q.initial_worker_timeout_in_s = 30
@@ -44,7 +44,7 @@ class TimeoutTest extends FlatSpec with Matchers {
         case Answer(value, cost, conf) =>
           println("Answer: '" + value + "', cost: '" + cost + "', confidence: " + conf)
           (value == 'spongebob) should be (true)
-          cost should be (BigDecimal(0.24))
+          cost should be (BigDecimal(0.42))
           (conf > 0.95) should be (true)
         case _ =>
           fail()
