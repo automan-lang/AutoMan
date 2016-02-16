@@ -266,7 +266,16 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
 
     // do qualification inserts
     val q_inserts = HITType2QualificationTuples(inserts)
-    dbQualReq ++= q_inserts
+
+    try {
+      dbQualReq ++= q_inserts
+    } catch {
+      case t: Throwable =>
+        println(s"hittypes_by_batchkey:\n${hittypes_by_batchkey.mkString("\n")}")
+        println(s"batch_no map:\n${batch_no.mkString("\n")}")
+        println(s"HITType inserts:\n${inserts.mkString("\n")}")
+        println(s"QualificationRequirement inserts:\n${q_inserts.mkString("\n")}")        
+    }
   }
 
   private def HITType2QualificationTuples(inserts: List[(HITType,Int)]) : List[(String, Int, Comparator, Boolean, Boolean, String)] = {
