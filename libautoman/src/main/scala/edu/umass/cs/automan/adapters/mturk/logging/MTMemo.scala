@@ -274,7 +274,8 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
         println(s"hittypes_by_batchkey:\n${hittypes_by_batchkey.mkString("\n")}")
         println(s"batch_no map:\n${batch_no.mkString("\n")}")
         println(s"HITType inserts:\n${inserts.mkString("\n")}")
-        println(s"QualificationRequirement inserts:\n${q_inserts.mkString("\n")}")        
+        println(s"QualificationRequirement inserts:\n${q_inserts.mkString("\n")}")
+        throw t
     }
   }
 
