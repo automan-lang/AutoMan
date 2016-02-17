@@ -578,7 +578,7 @@ object TurkWorker {
     // EXCEPT if it's the very first time the group is posted
     val qs =
       if (batch_no != 1) {
-        DebugLog(s"Batch #${batch_no} run, not using disqualification ${disqualification.getQualificationTypeId} for batch " + batch_key, LogLevelDebug(), LogType.ADAPTER, null)
+        DebugLog(s"Batch #${batch_no} run, using disqualification ${disqualification.getQualificationTypeId} for batch " + batch_key, LogLevelDebug(), LogType.ADAPTER, null)
         List(disqualification)
       } else {
         DebugLog(s"Batch #${batch_no} run, using no qualifications for batch " + batch_key, LogLevelDebug(), LogType.ADAPTER, null)
