@@ -27,11 +27,13 @@ class MLEPricePolicy(question: Question) extends PricePolicy(question) {
   }
 
   def calculateReward(tasks: List[Task], round: Int, timeout_occurred: Boolean) : BigDecimal = {
+    // first round, base case
     if (round == 0 && tasks.isEmpty) {
       val reward = calculateInitialReward()
       DebugLog(s"Initial reward is $$$reward.", LogLevelDebug(), LogType.STRATEGY, question.id)
       reward
-    } else {
+    // the normal-state-of-affairs case
+    } else if (numAnswered(tasks) != 0) {
       // if timeouts occur, a round will contain mixed prices; take the max
       val current_reward = tasks.map(_.cost).max
 
@@ -60,6 +62,21 @@ class MLEPricePolicy(question: Question) extends PricePolicy(question) {
       } else {
         current_reward
       }
+    // the your-task-sucks-so-badly-nobody-will-take-it case
+    } else {
+      // if timeouts occur, a round will contain mixed prices; take the max
+      val current_reward = tasks.map(_.cost).max
+
+      // double the reward
+      val reward = (2.0 * current_reward).setScale(2, math.BigDecimal.RoundingMode.FLOOR)
+
+      DebugLog(s"Timeout occurred. New reward is $$$reward because we cannot estimate acceptance " +
+               s"rate and the current reward is $$$current_reward.",
+               LogLevelDebug(),
+               LogType.STRATEGY,
+               question.id)
+
+      reward
     }
   }
 }
