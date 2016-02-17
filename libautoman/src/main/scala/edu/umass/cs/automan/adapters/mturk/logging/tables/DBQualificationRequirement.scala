@@ -26,7 +26,7 @@ object DBQualificationRequirement {
   )
 }
 
-class DBQualificationRequirement(tag: Tag) extends Table[(String, Int, Comparator, Boolean, Boolean, String)](tag, "DBQualificationRequirement") {
+class DBQualificationRequirement(tag: Tag) extends Table[(Int, String, Int, Comparator, Boolean, Boolean, String)](tag, "DBQualificationRequirement") {
   implicit val comparatorMapper = DBQualificationRequirement.comparatorMapper
 
   def id = column[Int]("ID", O.PrimaryKey, O.AutoInc)
@@ -36,5 +36,5 @@ class DBQualificationRequirement(tag: Tag) extends Table[(String, Int, Comparato
   def requiredToPreview = column[Boolean]("requiredToPreview")
   def isDisqualification = column[Boolean]("isDisqualification")
   def HITTypeId = column[String]("HITTypeId")
-  override def * = (qualificationTypeId, integerValue, comparator, requiredToPreview, isDisqualification, HITTypeId)
+  override def * = (id, qualificationTypeId, integerValue, comparator, requiredToPreview, isDisqualification, HITTypeId)
 }

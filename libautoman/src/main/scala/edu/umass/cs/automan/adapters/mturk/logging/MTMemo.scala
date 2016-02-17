@@ -278,13 +278,14 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
     }
   }
 
-  private def HITType2QualificationTuples(inserts: List[(HITType,Int)]) : List[(String, Int, Comparator, Boolean, Boolean, String)] = {
+  private def HITType2QualificationTuples(inserts: List[(HITType,Int)]) : List[(Int, String, Int, Comparator, Boolean, Boolean, String)] = {
     implicit val comparatorMapper = DBQualificationRequirement.comparatorMapper
     inserts.flatMap { case (hittype,batch_no) =>
       val d = hittype.disqualification
-      val qual = (d.getQualificationTypeId, d.getIntegerValue.toInt, d.getComparator, d.getRequiredToPreview.booleanValue(), true, hittype.id)
+      val qual = (1, d.getQualificationTypeId, d.getIntegerValue.toInt, d.getComparator, d.getRequiredToPreview.booleanValue(), true, hittype.id)
       val quals = hittype.quals.map { qr =>
-        (qr.getQualificationTypeId, qr.getIntegerValue.toInt, qr.getComparator, qr.getRequiredToPreview.booleanValue(), false, hittype.id)
+        // the autoinc ID is ignored but must be present, so we just use 1 here
+        (1, qr.getQualificationTypeId, qr.getIntegerValue.toInt, qr.getComparator, qr.getRequiredToPreview.booleanValue(), false, hittype.id)
       }
       qual :: quals
     }
