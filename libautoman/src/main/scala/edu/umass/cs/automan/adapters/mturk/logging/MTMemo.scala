@@ -281,14 +281,12 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
 
   private def HITType2QualificationTuples(inserts: List[(HITType,Int)]) : List[(Int, String, Int, Comparator, Boolean, Boolean, String)] = {
     implicit val comparatorMapper = DBQualificationRequirement.comparatorMapper
-    inserts.flatMap { case (hittype,batch_no) =>
-      val d = hittype.disqualification
-      val qual = (1, d.getQualificationTypeId, d.getIntegerValue.toInt, d.getComparator, d.getRequiredToPreview.booleanValue(), true, hittype.id)
-      val quals = hittype.quals.map { qr =>
-        // the autoinc ID is ignored but must be present, so we just use 1 here
-        (1, qr.getQualificationTypeId, qr.getIntegerValue.toInt, qr.getComparator, qr.getRequiredToPreview.booleanValue(), false, hittype.id)
-      }
-      qual :: quals
+    inserts.map { case (hittype,batch_no) =>
+      val d: QualificationRequirement = hittype.disqualification
+      // something must be present in the ID field, but since it doesn't
+      // matter what it is, we just use 1; the database subs in the
+      // appropriate autoincremented ID.
+      (1, d.getQualificationTypeId, d.getIntegerValue.toInt, d.getComparator, d.getRequiredToPreview.booleanValue(), true, hittype.id)
     }
   }
 
@@ -397,20 +395,19 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
     grps.map { case (group_key, qualdata) =>
       val (ht_id, grp_id, cost, timeout, batch_no) = group_key
 
-      val quals = qualdata.map { case (_, _, _, _, _, q_id, comp, iv, reqd, is_disq) =>
+      // TODO: we no longer support "normal qualifications"; simply code and remove
+      val disquals = qualdata.flatMap { case (_, _, _, _, _, q_id, comp, iv, reqd, is_disq) =>
         if (is_disq) {
           // a disqualification
-          Left(new QualificationRequirement(q_id, comp, iv, null, reqd))
+          Some(new QualificationRequirement(q_id, comp, iv, null, reqd))
         } else {
-          // a normal qualification
-          Right(new QualificationRequirement(q_id, comp, iv, null, reqd))
+          None
         }
-
       }
-      val normal_quals = quals.flatMap { case Right(q) => Some(q); case Left(q) => None }
-      val disqual = quals.flatMap { case Right(q) => None; case Left(q) => Some(q) }.head
 
-      Key.BatchKey(grp_id, cost, timeout) -> HITType(ht_id, normal_quals, disqual, grp_id)
+      assert(disquals.nonEmpty)
+
+      Key.BatchKey(grp_id, cost, timeout) -> HITType(ht_id, disquals.head, grp_id)
     }
   }
 

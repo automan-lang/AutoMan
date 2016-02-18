@@ -410,10 +410,10 @@ object TurkWorker {
   private def mturk_grantQualifications(hitstate: HITState, state: MTState, backend: RequesterService) : MTState = {
     var internal_state = state
 
-    // get all requests for this HIT's group qualification
-    val requests = hitstate.hittype.quals.flatMap { qual =>
-      backend.getAllQualificationRequests(qual.getQualificationTypeId)
-    }
+    // get all requests for this HIT's group disqualification
+    val requests = backend.getAllQualificationRequests(
+      hitstate.hittype.disqualification.getQualificationTypeId
+    )
 
     requests.foreach { request =>
       // "SubjectId" === "WorkerId"
@@ -594,7 +594,7 @@ object TurkWorker {
       desc,                                                         // description
       qs.toArray                                                    // qualifications
     )
-    val hittype = HITType(hit_type_id, qs, disqualification, group_id)
+    val hittype = HITType(hit_type_id, disqualification, group_id)
 
     // update disqualification map
     internal_state = internal_state.updateDisqualifications(disqualification.getQualificationTypeId, hittype.id)
