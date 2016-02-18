@@ -82,7 +82,7 @@ abstract class AggregationPolicy(question: Question) {
     tasks.filter { t =>
       t.state == SchedulerState.READY ||
       t.state == SchedulerState.RUNNING
-    }.filter(_.state != SchedulerState.CANCELLED )
+    }
   }
   def tasks_to_reject(tasks: List[Task]): List[Task]
 
