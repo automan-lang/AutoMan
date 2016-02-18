@@ -58,7 +58,6 @@ class SimpleVectorPolicy(question: VectorQuestion)
         None,
         now
       )
-      DebugLog("spawned question_id = " + question.id_string,LogLevelInfo(),LogType.STRATEGY, question.id)
       t
     }.toList
 

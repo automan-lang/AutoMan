@@ -294,7 +294,6 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
         None,
         now
       )
-      DebugLog("spawned question_id = " + question.id_string,LogLevelInfo(),LogType.STRATEGY, question.id)
       t
     }.toList
 
