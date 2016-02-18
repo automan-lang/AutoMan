@@ -249,28 +249,28 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
     */
   override def spawn(tasks: List[Task], suffered_timeout: Boolean): List[Task] = {
     // determine current round
-    val round = if (tasks.nonEmpty) {
+    val currentRound = if (tasks.nonEmpty) {
       tasks.map(_.round).max
     } else { 0 }
 
-    var nextRound = round
+    var nextRound = currentRound
 
     // determine duration
-    val worker_timeout_in_s = question._timeout_policy_instance.calculateWorkerTimeout(tasks, round, suffered_timeout)
+    val worker_timeout_in_s = question._timeout_policy_instance.calculateWorkerTimeout(tasks, currentRound, suffered_timeout)
     val task_timeout_in_s = question._timeout_policy_instance.calculateTaskTimeout(worker_timeout_in_s)
 
     // determine reward
-    val reward = question._price_policy_instance.calculateReward(tasks, round, suffered_timeout)
+    val reward = question._price_policy_instance.calculateReward(tasks, currentRound, suffered_timeout)
 
     // num to spawn
     val num_to_spawn = if (suffered_timeout) {
-      tasks.count { t => t.round == round && t.state == SchedulerState.TIMEOUT }
+      tasks.count { t => t.round == currentRound && t.state == SchedulerState.TIMEOUT }
     } else {
       // (don't spawn more if any are running)
       if (tasks.count(_.state == SchedulerState.RUNNING) == 0) {
         // whenever we need to run MORE, we update the round counter
-        nextRound = round + 1
-        num_to_run(tasks, round, reward)
+        nextRound = currentRound + 1
+        num_to_run(tasks, currentRound, reward)
       } else {
         return List[Task]() // Be patient!
       }
