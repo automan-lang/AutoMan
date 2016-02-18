@@ -205,7 +205,7 @@ class TurkWorker(backend: RequesterService, sleep_ms: Int, mock_service: Option[
         internal_state.getAssignmentOption(t) match {
           case Some(assignment) =>
             DebugLog(
-              s"Accepting task ${t.task_id} with assignmentId ${assignment.getAssignmentId} and answer \"${t.answer.getOrElse("n/a")}\".",
+              s"Accepting task ${t.task_id} with assignmentId ${assignment.getAssignmentId} and answer '${t.answer.getOrElse("n/a")}'.",
               LogLevelDebug(),
               LogType.ADAPTER,
               t.question.id)
@@ -318,7 +318,7 @@ class TurkWorker(backend: RequesterService, sleep_ms: Int, mock_service: Option[
         internal_state.getAssignmentOption(t) match {
           case Some(assignment) =>
             DebugLog(
-              s"Rejecting task ${t.task_id} with assignmentId ${assignment.getAssignmentId} and answer \"${t.answer.getOrElse("n/a")}\".",
+              s"Rejecting task ${t.task_id} with assignmentId ${assignment.getAssignmentId} and answer '${t.answer.getOrElse("n/a")}'.",
               LogLevelDebug(),
               LogType.ADAPTER,
               t.question.id)
