@@ -45,15 +45,8 @@ class TurkWorker(backend: RequesterService, sleep_ms: Int, mock_service: Option[
   def backend_budget: Option[BigDecimal] = {
     blocking_enqueue[BudgetReq, BigDecimal](BudgetReq())
   }
-  def cancel(ts: List[Task]) : Option[List[Task]] = {
-    // don't bother to schedule cancellation if the task
-    // is not actually running
-    val (ts_cancels,ts_notrunning) = ts.partition(_.state == SchedulerState.RUNNING)
-    val ts_cancelled_opt = blocking_enqueue[CancelReq, List[Task]](CancelReq(ts))
-    ts_cancelled_opt match {
-      case Some(ts_cancelled) => Some(ts_cancelled ::: ts_notrunning.map(_.copy_as_cancelled()))
-      case None => None
-    }
+  def cancel(ts: List[Task], toState: SchedulerState.Value) : Option[List[Task]] = {
+    blocking_enqueue[CancelReq, List[Task]](CancelReq(ts, toState))
   }
   def cleanup_qualifications(mtq: MTurkQuestion) : Unit = {
     nonblocking_enqueue[DisposeQualsReq, Unit](DisposeQualsReq(mtq))
@@ -143,7 +136,7 @@ class TurkWorker(backend: RequesterService, sleep_ms: Int, mock_service: Option[
                 }
                 case req: AcceptReq => do_sync_action(req, () => scheduled_accept(req.ts))
                 case req: BudgetReq => do_sync_action(req, () => scheduled_get_budget())
-                case req: CancelReq => do_sync_action(req, () => scheduled_cancel(req.ts))
+                case req: CancelReq => do_sync_action(req, () => scheduled_cancel(req.ts, req.toState))
                 case req: DisposeQualsReq => do_sync_action(req, () => scheduled_cleanup_qualifications(req.q))
                 case req: CreateHITReq => do_sync_action(req, () => scheduled_post(req.ts, req.exclude_worker_ids))
                 case req: RejectReq => do_sync_action(req, () => scheduled_reject(req.ts_reasons))
@@ -233,10 +226,20 @@ class TurkWorker(backend: RequesterService, sleep_ms: Int, mock_service: Option[
     }.toList
     // no mt state to update here
   }
-  private def scheduled_cancel(ts: List[Task]) : List[Task] = {
+  private def scheduled_cancel(ts: List[Task], toState: SchedulerState.Value) : List[Task] = {
     var internal_state = _state
 
-    ts.groupBy(_.question).flatMap { case (question, tasks) =>
+    val stateChanger = toState match {
+      case SchedulerState.CANCELLED => (t: Task) => t.copy_as_cancelled()
+      case SchedulerState.TIMEOUT => (t: Task) => t.copy_as_timeout()
+      case SchedulerState.DUPLICATE => (t: Task) => t.copy_as_duplicate()
+      case _ => throw new Exception(s"Invalid target state ${toState} for cancellation request.")
+    }
+
+    // don't bother to contact MTurk to cancel tasks that aren't running
+    val (to_cancel,dont_bother) = ts.partition(t => t.state == SchedulerState.RUNNING || t.state == SchedulerState.READY)
+
+    val cancelled = to_cancel.groupBy(_.question).flatMap { case (question, tasks) =>
       DebugLog(s"Canceling ${tasks.size} tasks.", LogLevelInfo(), LogType.ADAPTER, question.id)
 
       val cancels = tasks.map { t =>
@@ -254,18 +257,28 @@ class TurkWorker(backend: RequesterService, sleep_ms: Int, mock_service: Option[
           internal_state = internal_state.updateHITStates(hit_id, hit_state.cancel())
         }
 
-        t.copy_as_cancelled()
+        stateChanger(t)
       }
-
-      // save point
-      memo_handle.save(question, List.empty, cancels)
-      memo_handle.save_mt_state(internal_state)
-
-      // update adapter state
-      _state = internal_state
 
       cancels
     }.toList
+
+    // change state of things we didn't bother to
+    // contact MTurk about and concat
+    val cancelled_tasks: List[Task] = cancelled ::: dont_bother.map(stateChanger)
+
+    assert(cancelled_tasks.forall(_.state == toState))
+
+    // save point
+    cancelled_tasks.groupBy(_.question).foreach { case (q,qts) =>
+      memo_handle.save(q, List.empty, qts)
+      memo_handle.save_mt_state(internal_state)
+    }
+
+    // update adapter state
+    _state = internal_state
+
+    cancelled_tasks
   }
 
   /**

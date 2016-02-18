@@ -10,6 +10,7 @@ import edu.umass.cs.automan.adapters.mturk.mock.{MockSetup, MockServiceState, Mo
 import edu.umass.cs.automan.adapters.mturk.question._
 import edu.umass.cs.automan.core.logging.{LogType, LogLevelDebug, DebugLog}
 import edu.umass.cs.automan.core.question.Question
+import edu.umass.cs.automan.core.scheduler.SchedulerState._
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 import edu.umass.cs.automan.core.AutomanAdapter
 
@@ -90,7 +91,7 @@ class MTurkAdapter extends AutomanAdapter {
     run_if_initialized((p: TurkWorker) => p.accept(ts))
   }
   protected[automan] def backend_budget() = run_if_initialized((p: TurkWorker) => p.backend_budget)
-  protected[automan] def cancel(ts: List[Task]) = {
+  protected[automan] def cancel(ts: List[Task], toState: SchedulerState.Value) = {
     assert(
       ts.forall { t =>
         t.state != SchedulerState.CANCELLED &&
@@ -98,7 +99,7 @@ class MTurkAdapter extends AutomanAdapter {
           t.state != SchedulerState.REJECTED
       }
     )
-    run_if_initialized((p: TurkWorker) => p.cancel(ts))
+    run_if_initialized((p: TurkWorker) => p.cancel(ts, toState))
   }
   protected[automan] def post(ts: List[Task], exclude_worker_ids: List[String]) = {
     assert(ts.forall(_.state == SchedulerState.READY))

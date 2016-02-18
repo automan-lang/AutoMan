@@ -5,7 +5,8 @@ import edu.umass.cs.automan.core.answer.Outcome
 import edu.umass.cs.automan.core.logging.LogConfig.LogConfig
 import edu.umass.cs.automan.core.question._
 import edu.umass.cs.automan.core.logging._
-import edu.umass.cs.automan.core.scheduler.Task
+import edu.umass.cs.automan.core.scheduler.SchedulerState.SchedulerState
+import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 
 abstract class AutomanAdapter {
   // question types are determined by adapter implementations
@@ -66,9 +67,10 @@ abstract class AutomanAdapter {
   /**
     * Cancel the given tasks.
     * @param ts A list of tasks to cancel.
+    * @param toState Which scheduler state tasks should become after cancellation.
     * @return Some list of cancelled tasks if successful.
     */
-  protected[automan] def cancel(ts: List[Task]) : Option[List[Task]]
+  protected[automan] def cancel(ts: List[Task], toState: SchedulerState.Value) : Option[List[Task]]
 
   /**
    * Post tasks on the backend, one task for each task.  All tasks given should

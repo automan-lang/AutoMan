@@ -1,9 +1,8 @@
 package edu.umass.cs.automan.adapters.mturk.worker
 
 import java.util.Date
-
 import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
-import edu.umass.cs.automan.core.scheduler.Task
+import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 
 protected[mturk] sealed trait Message extends Comparable[Message] {
   protected def order: Int
@@ -18,7 +17,7 @@ protected[mturk] case class AcceptReq(ts: List[Task]) extends Message {
 protected[mturk] case class BudgetReq() extends Message {
   override protected def order = 1
 }
-protected[mturk] case class CancelReq(ts: List[Task]) extends Message {
+protected[mturk] case class CancelReq(ts: List[Task], toState: SchedulerState.Value) extends Message {
   override protected def order = 2
 }
 protected[mturk] case class DisposeQualsReq(q: MTurkQuestion) extends Message {

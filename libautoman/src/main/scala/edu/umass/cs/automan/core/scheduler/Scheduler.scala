@@ -82,8 +82,10 @@ class Scheduler(val question: Question,
           val (__tasks, __suffered_timeout) = process_timeouts(_all_tasks, _time.current_time)
           // get list of workers who may not re-participate
           val __blacklist = _vp.blacklisted_workers(__tasks)
-          // filter duplicate work
-          val __dedup_tasks = _vp.mark_duplicates(__tasks)
+          // filter duplicate work && mark as duplicate
+          val (__non_dupes,__dupes) = _vp.partition_duplicates(__tasks)
+          // mark dupes as duplicate
+          val __dedup_tasks = __non_dupes ::: failUnWrap(backend.cancel(__dupes, SchedulerState.DUPLICATE))
           // post more tasks as needed
           val __new_tasks = post_as_needed(__dedup_tasks, backend, question, __suffered_timeout, __blacklist)
           // update _time with time of future timeouts
@@ -143,8 +145,7 @@ class Scheduler(val question: Question,
     if (timeouts.nonEmpty) {
       DebugLog("Cancelling " + timeouts.size + " timed-out tasks.", LogLevelInfo(), LogType.SCHEDULER, question.id)
       // cancel and make state TIMEOUT
-      val cancels = failUnWrap(backend.cancel(timeouts))
-      val timed_out = cancels.map(_.copy_as_timeout())
+      val timed_out = failUnWrap(backend.cancel(timeouts, SchedulerState.TIMEOUT))
       // return all updated Task objects and signal whether timeout occurred
       (timed_out ::: otherwise, timeouts.nonEmpty)
     } else {
@@ -213,7 +214,7 @@ class Scheduler(val question: Question,
 
     val remaining_tasks = all_tasks.filterNot(action_items.contains(_))
 
-    val cancelled = if (to_cancel.nonEmpty) { failUnWrap(backend.cancel(to_cancel)) } else { List.empty }
+    val cancelled = if (to_cancel.nonEmpty) { failUnWrap(backend.cancel(to_cancel, SchedulerState.CANCELLED)) } else { List.empty }
     assert(all_set_invariant(to_cancel, cancelled, SchedulerState.CANCELLED))
     val accepted = if (to_accept.nonEmpty) { failUnWrap(backend.accept(to_accept)) } else { List.empty }
     assert(all_set_invariant(to_accept, accepted, SchedulerState.ACCEPTED))

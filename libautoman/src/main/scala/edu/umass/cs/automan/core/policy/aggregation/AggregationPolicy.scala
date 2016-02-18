@@ -17,22 +17,28 @@ abstract class AggregationPolicy(question: Question) {
     tasks.flatMap(_.worker_id).distinct
   }
 
+
   /**
-   * Given a list of tasks, this method returns the same list with
-   * all but one task marked as DUPLICATE for each subset submitted by each
-   * distinct worker.  The task left as ANSWERED is chosen arbitrarily (the
-   * first one encountered).
-   * @param tasks A list of ANSWERED tasks.
-   * @return A list of ANSWERED and DUPLICATE tasks.
-   */
-  def mark_duplicates(tasks: List[Task]): List[Task] = {
+    * Partitions a set of tasks into those that should be marked as
+    * duplicate and those that should not be.  All tasks passed in
+    * are passed back out.
+    * @param tasks A list of tasks
+    * @return (list of non-duplicate tasks, list of duplicate tasks)
+    */
+  def partition_duplicates(tasks: List[Task]): (List[Task],List[Task]) = {
+    // unanswered tasks cannot be duplicates
     val (answered_tasks, unanswered_tasks) = tasks.partition(_.state == SchedulerState.ANSWERED)
 
-    answered_tasks.groupBy(_.worker_id).flatMap { case (worker_id, ts) =>
-      ts.head :: ts.tail.map(_.copy_as_duplicate())
-    }.toList
+    // group by worker, and then partition by duplicate status
+    val (not_dupes: List[Task],dupes: List[Task]) = answered_tasks.groupBy(_.worker_id).map { case (_,ts) =>
+      val not_a_dupe = ts.head
+      val bunch_of_dupes = ts.tail
+      (not_a_dupe, bunch_of_dupes)
+    }.foldLeft((List[Task](),List[Task]())) { case ((nonduplicates,duplicates),(not_a_dupe,bunch_of_dupes)) =>
+      (not_a_dupe :: nonduplicates, bunch_of_dupes ::: duplicates)
+    }
 
-    answered_tasks ::: unanswered_tasks
+    (unanswered_tasks ::: not_dupes, dupes)
   }
 
   /**
