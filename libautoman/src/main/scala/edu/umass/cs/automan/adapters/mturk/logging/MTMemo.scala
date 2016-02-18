@@ -63,8 +63,6 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
     init_database_if_required(ddls)
   }
 
-  // to prevent data races, access to this method
-  // should be serialized by a lock
   def save_mt_state(state: MTState) : Unit = {
     db_opt match {
       case Some(db) => db withSession { implicit s =>
@@ -99,7 +97,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
     }
   }
 
-  def updateWhitelist(ww: Map[(WorkerID,GroupID),HITTypeID])(implicit session: DBSession) : Unit = {
+  private def updateWhitelist(ww: Map[(WorkerID,GroupID),HITTypeID])(implicit session: DBSession) : Unit = {
     val existing_whitelist = getWorkerWhitelist
     val inserts = ww.flatMap { case ((worker_id,group_id),hit_type_id) =>
       if (existing_whitelist.contains((worker_id, group_id))) {
@@ -113,7 +111,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
     dbWorker ++= inserts
   }
 
-  def getHITInsertsAndUpdates(existing_hits: Map[String, (String, String, Boolean)], hit_states: Map[HITID,HITState])
+  private def getHITInsertsAndUpdates(existing_hits: Map[String, (String, String, Boolean)], hit_states: Map[HITID,HITState])
     : (List[HITID], List[HITID]) = {
 
     hit_states.values.map { hitstate =>
@@ -135,7 +133,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
     }
   }
 
-  def getAssignmentInsertsAndUpdates(existing_assignments: Map[String, Assn], hit_states: Map[HITID,HITState])
+  private def getAssignmentInsertsAndUpdates(existing_assignments: Map[String, Assn], hit_states: Map[HITID,HITState])
     : (List[(Assignment, UUID)], List[(Assignment, UUID)]) = {
 
     hit_states.values.flatMap { hitstate =>
@@ -164,7 +162,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
     }
   }
 
-  def updateHITs(hit_states: Map[HITID,HITState], hit_ids: Map[HITKey,HITID])(implicit session: DBSession) : Unit = {
+  private def updateHITs(hit_states: Map[HITID,HITState], hit_ids: Map[HITKey,HITID])(implicit session: DBSession) : Unit = {
     implicit val statusMapper = DBAssignment.statusMapper
 
     val ah = allHITs.list
