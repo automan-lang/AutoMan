@@ -204,6 +204,11 @@ class TurkWorker(backend: RequesterService, sleep_ms: Int, mock_service: Option[
       val accepts = tasks.map { t =>
         internal_state.getAssignmentOption(t) match {
           case Some(assignment) =>
+            DebugLog(
+              s"Accepting task ${t.task_id} with assignmentId ${assignment.getAssignmentId} and answer \"${t.answer.getOrElse("n/a")}\".",
+              LogLevelDebug(),
+              LogType.ADAPTER,
+              t.question.id)
             backend.approveAssignment(assignment.getAssignmentId, "Thanks!")
             t.copy_as_accepted()
           case None =>
@@ -230,6 +235,11 @@ class TurkWorker(backend: RequesterService, sleep_ms: Int, mock_service: Option[
 
         // only cancel HIT if it is not already cancelled
         if (!hit_state.isCancelled) {
+          DebugLog(
+            s"Canceling task ${t.task_id}.",
+            LogLevelDebug(),
+            LogType.ADAPTER,
+            t.question.id)
           backend.forceExpireHIT(hit_state.HITId)
           internal_state = internal_state.updateHITStates(hit_id, hit_state.cancel())
         }
@@ -307,6 +317,11 @@ class TurkWorker(backend: RequesterService, sleep_ms: Int, mock_service: Option[
       val rejects = tasks_reasons.map { case (t,reason) =>
         internal_state.getAssignmentOption(t) match {
           case Some(assignment) =>
+            DebugLog(
+              s"Rejecting task ${t.task_id} with assignmentId ${assignment.getAssignmentId} and answer \"${t.answer.getOrElse("n/a")}\".",
+              LogLevelDebug(),
+              LogType.ADAPTER,
+              t.question.id)
             backend.rejectAssignment(assignment.getAssignmentId, reason)
             t.copy_as_rejected()
           case None =>
