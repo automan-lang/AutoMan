@@ -7,10 +7,10 @@ abstract class PricePolicy(question: Question) {
   /**
    * Calculate the price given a question, its tasks, and the number of rounds.
    * @param tasks All elapsed tasks.
-   * @param round Current round.
+   * @param currentRound Current round.
    * @return The price for the current round.
    */
-  def calculateReward(tasks: List[Task], round: Int, timeout_occurred: Boolean) : BigDecimal
+  def calculateReward(tasks: List[Task], currentRound: Int, timeout_occurred: Boolean) : BigDecimal
 
   /**
    * Calculate the initial reward.

@@ -26,11 +26,11 @@ class MLEPricePolicy(question: Question) extends PricePolicy(question) {
     }
   }
 
-  def calculateReward(tasks: List[Task], round: Int, timeout_occurred: Boolean) : BigDecimal = {
+  def calculateReward(tasks: List[Task], currentRound: Int, timeout_occurred: Boolean) : BigDecimal = {
     // first round, base case
-    if (round == 0 && tasks.isEmpty) {
+    if (currentRound == 0 && tasks.isEmpty) {
       val reward = calculateInitialReward()
-      DebugLog(s"Initial reward is $$$reward. Round = $round.", LogLevelDebug(), LogType.STRATEGY, question.id)
+      DebugLog(s"Initial reward is $$$reward. Round = $currentRound.", LogLevelDebug(), LogType.STRATEGY, question.id)
       reward
     // the normal-state-of-affairs case
     } else if (numAnswered(tasks) != 0) {
@@ -53,14 +53,14 @@ class MLEPricePolicy(question: Question) extends PricePolicy(question) {
         val reward = (growth_rate * current_reward).setScale(2, math.BigDecimal.RoundingMode.FLOOR)
 
         DebugLog(s"Timeout occurred. New reward is $$$reward because the estimated acceptance " +
-                 s"rate is $p_a per round and the current reward is $$$current_reward. Round = $round.",
+                 s"rate is $p_a per round and the current reward is $$$current_reward. Round = $currentRound.",
                  LogLevelDebug(),
                  LogType.STRATEGY,
                  question.id)
 
         reward
       } else {
-        DebugLog(s"Insufficient agreement. Keeping reward of $$$current_reward. Round = $round.",
+        DebugLog(s"Insufficient agreement. Keeping reward of $$$current_reward. Round = $currentRound.",
           LogLevelDebug(),
           LogType.STRATEGY,
           question.id)
@@ -76,7 +76,7 @@ class MLEPricePolicy(question: Question) extends PricePolicy(question) {
       val reward = (2.0 * current_reward).setScale(2, math.BigDecimal.RoundingMode.FLOOR)
 
       DebugLog(s"Timeout occurred. New reward is $$$reward because we cannot estimate acceptance " +
-               s"rate and the current reward is $$$current_reward. Round = $round.",
+               s"rate and the current reward is $$$current_reward. Round = $currentRound.",
                LogLevelDebug(),
                LogType.STRATEGY,
                question.id)

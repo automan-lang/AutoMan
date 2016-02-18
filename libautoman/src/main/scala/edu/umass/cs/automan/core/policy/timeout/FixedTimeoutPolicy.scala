@@ -16,10 +16,10 @@ class FixedTimeoutPolicy(question: Question) extends TimeoutPolicy(question) {
    * Calculate the worker timeout given a question, the
    * tasks so far, and the round.
    * @param tasks The Tasks so far.
-   * @param round The current round.
+   * @param currentRound The current round.
    * @return The new worker timeout, in seconds.
    */
-  override def calculateWorkerTimeout(tasks: List[Task], round: Int, had_timeout: Boolean): Int = {
+  override def calculateWorkerTimeout(tasks: List[Task], currentRound: Int, had_timeout: Boolean): Int = {
     question.initial_worker_timeout_in_s
   }
 }
