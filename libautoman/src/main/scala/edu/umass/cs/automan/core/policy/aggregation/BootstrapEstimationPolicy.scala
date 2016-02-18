@@ -2,7 +2,7 @@ package edu.umass.cs.automan.core.policy.aggregation
 
 import java.util.UUID
 
-import edu.umass.cs.automan.core.answer.{LowConfidenceEstimate, OverBudgetAnswer, Estimate}
+import edu.umass.cs.automan.core.answer.{OverBudgetEstimate, LowConfidenceEstimate, Estimate}
 import edu.umass.cs.automan.core.logging.{LogType, LogLevelInfo, DebugLog}
 import edu.umass.cs.automan.core.question.confidence._
 import edu.umass.cs.automan.core.question.{EstimationQuestion, Question}
@@ -219,7 +219,7 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
     // if we've never scheduled anything,
     // there will be no largest group
     if(completed_workerunique_tasks(tasks).isEmpty) {
-      OverBudgetAnswer(need, have).asInstanceOf[Question#AA]
+      OverBudgetEstimate(need, have).asInstanceOf[Question#AA]
     } else {
       answer_selector(tasks) match {
         case (est, low, high, cost, conf) =>
