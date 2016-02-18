@@ -140,16 +140,16 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
   /**
     * Calculate the number of new tasks to schedule.
     * @param tasks
-    * @param round
+    * @param currentRound
     * @param reward
     * @return
     */
-  private def num_to_run(tasks: List[Task], round: Int, reward: BigDecimal) : Int = {
+  private def num_to_run(tasks: List[Task], currentRound: Int, reward: BigDecimal) : Int = {
     // eliminate duplicates from the list of Tasks
     val tasks_no_dupes = tasks.count(_.state != SchedulerState.DUPLICATE)
 
     // calculate the new total sample size (just doubles the total in every round)
-    val ss_tot = question.default_sample_size << round
+    val ss_tot = question.default_sample_size << currentRound
 
     // minus the number of non-duplicate answers received
     ss_tot - tasks_no_dupes
@@ -245,7 +245,7 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
     *
     * @param tasks The complete list of previously-scheduled tasks
     * @param suffered_timeout True if any of the latest batch of tasks suffered a timeout.
-    * @return A list of new tasks to schedule on the backend.
+    * @return A list of NEW tasks to schedule on the backend.
     */
   override def spawn(tasks: List[Task], suffered_timeout: Boolean): List[Task] = {
     // determine current round
