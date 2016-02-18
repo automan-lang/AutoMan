@@ -77,6 +77,17 @@ class TurkWorker(backend: RequesterService, sleep_ms: Int, mock_service: Option[
     // put job in queue
     _requests.add(req)
   }
+
+  /**
+    * Schedule a task on the MTurk worker thread. Returns Some[T]
+    * when everything goes OK.  Returns None when the worker thread
+    * crashed, signaling that the callee should cleanup their own
+    * resources and shutdown their thread.
+    * @param req The request.
+    * @tparam M The request type.
+    * @tparam T The return type.
+    * @return Some return value or None on failure.
+    */
   private def blocking_enqueue[M <: Message, T](req: M) : Option[T] = {
     // wait for response
     // while loop is because the JVM is
