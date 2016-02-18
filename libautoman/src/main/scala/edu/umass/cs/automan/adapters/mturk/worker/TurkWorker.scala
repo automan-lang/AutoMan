@@ -1,6 +1,5 @@
 package edu.umass.cs.automan.adapters.mturk.worker
 
-import java.io.Serializable
 import java.text.SimpleDateFormat
 import java.util.concurrent.PriorityBlockingQueue
 import java.util.{Date, UUID}
@@ -49,10 +48,10 @@ class TurkWorker(backend: RequesterService, sleep_ms: Int, mock_service: Option[
   def cancel(ts: List[Task]) : Option[List[Task]] = {
     // don't bother to schedule cancellation if the task
     // is not actually running
-    val (ts_cancels,ts_noncancels) = ts.partition(_.state == SchedulerState.RUNNING)
+    val (ts_cancels,ts_notrunning) = ts.partition(_.state == SchedulerState.RUNNING)
     val ts_cancelled_opt = blocking_enqueue[CancelReq, List[Task]](CancelReq(ts))
     ts_cancelled_opt match {
-      case Some(ts_cancelled) => Some(ts_cancelled ::: ts_noncancels.map(_.copy_as_cancelled()))
+      case Some(ts_cancelled) => Some(ts_cancelled ::: ts_notrunning.map(_.copy_as_cancelled()))
       case None => None
     }
   }
