@@ -236,7 +236,7 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
   override def tasks_to_accept(tasks: List[Task]): List[Task] = tasks.filter(not_final)
 
   // by default, we reject nothing
-  override def tasks_to_reject(tasks: List[Task]): List[Task] = List.empty
+  override def tasks_to_reject(tasks: List[Task]): List[Task] = Nil
 
   /**
     * Computes the number of tasks needed to satisfy the quality-control

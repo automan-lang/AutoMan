@@ -205,8 +205,8 @@ class Scheduler(val question: Question,
     val to_accept = strategy.tasks_to_accept(all_tasks)
     val to_reject = strategy.tasks_to_reject(all_tasks)
 
-    assert(to_accept.forall(_.state == SchedulerState.ANSWERED), all_tasks.map(_.state).mkString(", "))
-    assert(to_reject.forall(_.state == SchedulerState.ANSWERED), all_tasks.map(_.state).mkString(", "))
+    assert(to_accept.forall(t => t.state == SchedulerState.ANSWERED || t.state == SchedulerState.DUPLICATE), all_tasks.map(_.state).mkString(", "))
+    assert(to_reject.forall(t => t.state == SchedulerState.ANSWERED || t.state == SchedulerState.DUPLICATE), all_tasks.map(_.state).mkString(", "))
 
     val correct_answer = strategy.rejection_response(to_accept)
 
@@ -239,7 +239,7 @@ class Scheduler(val question: Question,
   def total_cost[A](tasks: List[Task]) : BigDecimal = {
     tasks.filter { t =>
       t.state != SchedulerState.CANCELLED &&
-      t.state != SchedulerState.DUPLICATE &&
+//      t.state != SchedulerState.DUPLICATE &&
       t.state != SchedulerState.TIMEOUT &&
       t.state != SchedulerState.REJECTED &&
       !t.from_memo
