@@ -144,25 +144,26 @@ object MTurkMethods {
               // 5. Worker w submits work for HITGroup #2.
               // Since this is unlikely, and violates the i.i.d. guarantee that
               // the Scheduler requires, we consider this a duplicate
-              val whitelisted_hittype = internal_state.getHITTypeForWhitelistedWorker(worker_id, group_id)
-              val whitelisted_hittype_disqual_id = whitelisted_hittype.disqualification.getQualificationTypeId
-              if (whitelisted_hittype_disqual_id != hs.hittype.id) {
-                // immediately revoke the qualification in the other group;
+              val hittype_2 = internal_state.getHITTypeForWhitelistedWorker(worker_id, group_id)
+              val disqual_2 = hittype_2.disqualification.getQualificationTypeId
+              val disqual_1 = hs.hittype.disqualification.getQualificationTypeId
+              if (disqual_2 != disqual_1) {
+                // immediately revoke the qualification in HITGroup 2;
                 // we'll deal with duplicates later
-                backend.revokeQualification(whitelisted_hittype_disqual_id, worker_id,
-                  "For quality control purposes, qualification " + whitelisted_hittype_disqual_id +
+                backend.revokeQualification(disqual_2, worker_id,
+                  "For quality control purposes, qualification " + disqual_2 +
                     " was revoked because you submitted related work for HIT " + hs.HITId +
-                    " in HIT Group " + whitelisted_hittype.id + ".  This is for our own " +
+                    " in HIT Group " + hittype_2.id + ".  This is for our own " +
                     "bookkeeping purposes and is not a reflection on the quality of your work. " +
                     "We apologize for the inconvenience that this may cause and we encourage you to continue " +
                     "working on any of our available HITs."
                 )
 
-                DebugLog("Revoking qualification type ID " +
-                         whitelisted_hittype_disqual_id +
-                         " for HITType ID " + whitelisted_hittype.id +
+                DebugLog("Revoking qualification type ID " + disqual_2 +
+                         " for HITType ID " + hittype_2.id +
+                         " and marking task ID " + t.task_id + " as DUPLICATE " +
                          " because worker " + worker_id +
-                         " submitted a duplicate response.",
+                         " also submitted a response for the HITType ID " + hs.hittype.id,
                          LogLevelInfo(),
                          LogType.ADAPTER,
                          t.question.id
