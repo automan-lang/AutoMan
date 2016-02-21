@@ -60,7 +60,7 @@ object MTurkMethods {
       if (internal_state.worker_whitelist.contains(worker_id, group_id)) {
         // if that disqualification is not the same as the one they're asking for, sorry, reject;
         // granting this would violate i.i.d. guarantee
-        if (internal_state.getWhitelistedHITType(worker_id, group_id) != hit_type_id) {
+        if (internal_state.getHITTypeForWhitelistedWorker(worker_id, group_id).id != hit_type_id) {
           backend.rejectQualificationRequest(request.getQualificationRequestId,
             "You have already requested a qualification or submitted work for an associated HITType " +
               "that disqualifies you from participating in this HITType."
@@ -144,16 +144,28 @@ object MTurkMethods {
               // 5. Worker w submits work for HITGroup #2.
               // Since this is unlikely, and violates the i.i.d. guarantee that
               // the Scheduler requires, we consider this a duplicate
-              val whitelisted_ht_id = internal_state.getWhitelistedHITType(worker_id, group_id)
-              if (whitelisted_ht_id != hs.hittype.id) {
+              val whitelisted_hittype = internal_state.getHITTypeForWhitelistedWorker(worker_id, group_id)
+              val whitelisted_hittype_disqual_id = whitelisted_hittype.disqualification.getQualificationTypeId
+              if (whitelisted_hittype_disqual_id != hs.hittype.id) {
                 // immediately revoke the qualification in the other group;
                 // we'll deal with duplicates later
-                backend.revokeQualification(whitelisted_ht_id, worker_id,
-                  "For quality control purposes, qualification " + whitelisted_ht_id +
+                backend.revokeQualification(whitelisted_hittype_disqual_id, worker_id,
+                  "For quality control purposes, qualification " + whitelisted_hittype_disqual_id +
                     " was revoked because you submitted related work for HIT " + hs.HITId +
-                    ".  This is for our own bookkeeping purposes and is not a reflection on the quality of your work. " +
+                    " in HIT Group " + whitelisted_hittype.id + ".  This is for our own " +
+                    "bookkeeping purposes and is not a reflection on the quality of your work. " +
                     "We apologize for the inconvenience that this may cause and we encourage you to continue " +
-                    "your participation in our HITs."
+                    "working on any of our available HITs."
+                )
+
+                DebugLog("Revoking qualification type ID " +
+                         whitelisted_hittype_disqual_id +
+                         " for HITType ID " + whitelisted_hittype.id +
+                         " because worker " + worker_id +
+                         " submitted a duplicate response.",
+                         LogLevelInfo(),
+                         LogType.ADAPTER,
+                         t.question.id
                 )
               }
 

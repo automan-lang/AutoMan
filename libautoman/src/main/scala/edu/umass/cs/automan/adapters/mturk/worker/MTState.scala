@@ -105,8 +105,9 @@ case class MTState(hit_types: Map[BatchKey,HITType],
   def getHITIDsForBatch(batch_key: BatchKey) : List[HITID] = {
     Key.HITIDsForBatch(batch_key, hit_ids)
   }
-  def getWhitelistedHITType(workerID: WorkerID, groupID: GroupID) : HITTypeID = {
-    worker_whitelist(workerID, groupID)
+  def getHITTypeForWhitelistedWorker(workerID: WorkerID, groupID: GroupID) : HITType = {
+    val htid = worker_whitelist(workerID, groupID)
+    hit_types.filter { case (_,hittype) => hittype.id == htid}.head._2
   }
   def getHITTypeIDforQualificationTypeID(qualificationID: QualificationID) : HITTypeID = {
     disqualifications(qualificationID)
