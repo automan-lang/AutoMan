@@ -92,6 +92,7 @@ class MTurkAdapter extends AutomanAdapter {
   }
   protected[automan] def backend_budget() = run_if_initialized((p: TurkWorker) => p.backend_budget)
   protected[automan] def cancel(ts: List[Task], toState: SchedulerState.Value) = {
+    assert(ts.nonEmpty)
     assert(
       ts.forall { t =>
         t.state != SchedulerState.CANCELLED &&

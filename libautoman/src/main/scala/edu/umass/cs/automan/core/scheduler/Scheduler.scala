@@ -85,7 +85,7 @@ class Scheduler(val question: Question,
           // filter duplicate work && mark as duplicate
           val (__non_dupes,__dupes) = _vp.partition_duplicates(__tasks)
           // mark dupes as duplicate
-          val __dedup_tasks = __non_dupes ::: failUnWrap(backend.cancel(__dupes, SchedulerState.DUPLICATE))
+          val __dedup_tasks = __non_dupes ::: ( if (__dupes.nonEmpty) { failUnWrap(backend.cancel(__dupes, SchedulerState.DUPLICATE)) } else { Nil } )
           // post more tasks as needed
           val __new_tasks = post_as_needed(__dedup_tasks, backend, question, __suffered_timeout, __blacklist)
           // update _time with time of future timeouts
