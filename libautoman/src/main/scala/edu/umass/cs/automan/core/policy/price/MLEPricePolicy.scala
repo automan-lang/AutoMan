@@ -48,8 +48,9 @@ class MLEPricePolicy(question: Question) extends PricePolicy(question) {
         // find the probability that a task will be accepted (p_a).
         // We assume that p_a is a fixed population parameter unaffected by price.
         val p_a: BigDecimal = BigDecimal(num_answered) / BigDecimal(tasks.size)
-        // maximal safe growth rate; see CACM paper.
-        val growth_rate: BigDecimal = 1.0 / p_a
+        // Maximal safe growth rate; see CACM paper.
+        // Here, we never more than double the reward.
+        val growth_rate: BigDecimal = (1.0 / p_a).min(2.0 * current_reward)
         val reward = (growth_rate * current_reward).setScale(2, math.BigDecimal.RoundingMode.FLOOR)
 
         DebugLog(s"Timeout occurred. New reward is $$$reward because the estimated acceptance " +
