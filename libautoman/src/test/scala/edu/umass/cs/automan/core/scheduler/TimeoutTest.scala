@@ -41,10 +41,10 @@ class TimeoutTest extends FlatSpec with Matchers {
 
     automan(a, test_mode = true) {
       which_one().answer match {
-        case Answer(value, cost, conf) =>
+        case Answer(value, cost, conf, _) =>
           println("Answer: '" + value + "', cost: '" + cost + "', confidence: " + conf)
           (value == 'spongebob) should be (true)
-          cost should be (BigDecimal(0.42))
+          cost should be (BigDecimal(0.30))
           (conf > 0.95) should be (true)
         case _ =>
           fail()

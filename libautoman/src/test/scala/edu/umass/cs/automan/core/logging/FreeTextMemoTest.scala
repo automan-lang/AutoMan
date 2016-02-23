@@ -37,7 +37,7 @@ class FreeTextMemoTest extends FlatSpec with Matchers {
 
     automan(a, test_mode = true, in_mem_db = true) {
       which_one("Which 4-letter metasyntactic variable starts with 'q'?").answer match {
-        case Answer(value, cost, conf) =>
+        case Answer(value, cost, conf, _) =>
           println("Answer: '" + value + "', cost: '" + cost + "', confidence: " + conf)
           (value == "quux") should be (true)
           (conf >= confidence) should be (true)
@@ -47,7 +47,7 @@ class FreeTextMemoTest extends FlatSpec with Matchers {
       }
 
       which_one2("Which 4-letter metasyntactic variable starts with 'q'?").answer match {
-        case Answer(value, cost, conf) =>
+        case Answer(value, cost, conf, _) =>
           println("Answer: '" + value + "', cost: '" + cost + "', confidence: " + conf)
           (value == "quux") should be (true)
           (conf >= confidence) should be (true)

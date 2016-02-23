@@ -53,14 +53,15 @@ abstract class EstimationQuestion extends Question {
   protected[automan] def composeOutcome(o: O, adapter: AutomanAdapter) : O = {
     // unwrap future from previous Outcome
     val f = o.f map {
-      case Estimate(value, low, high, cost, conf) =>
+      case Estimate(value, low, high, cost, conf, id) =>
         if (this.confidence <= conf) {
           Estimate(
             value,
             low,
             high,
             BigDecimal(0.00).setScale(2, math.BigDecimal.RoundingMode.FLOOR),
-            conf
+            conf,
+            id
           )
         } else {
           startScheduler(adapter)

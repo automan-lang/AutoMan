@@ -36,11 +36,11 @@ class MTurkRadioTest extends FlatSpec with Matchers {
 
     automan(a, test_mode = true) {
       which_one().answer match {
-        case Answer(value, _, conf) =>
+        case Answer(value, _, conf, _) =>
           println("Answer: '" + value + "', confidence: " + conf)
           (value == 'spongebob) should be (true)
           (conf >= confidence) should be (true)
-        case LowConfidenceAnswer(value, cost, conf) =>
+        case LowConfidenceAnswer(value, cost, conf, _) =>
           fail()
       }
     }

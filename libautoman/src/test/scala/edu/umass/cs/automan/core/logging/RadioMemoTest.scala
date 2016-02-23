@@ -49,7 +49,7 @@ class RadioMemoTest extends FlatSpec with Matchers {
 
     automan(a, test_mode = true, in_mem_db = true) {
       which_one("Which one of these does not belong?").answer match {
-        case Answer(value, cost, conf) =>
+        case Answer(value, cost, conf, _) =>
           println("Answer: '" + value + "', cost: '" + cost + "', confidence: " + conf)
           (value == 'spongebob) should be(true)
           (conf >= confidence) should be(true)
@@ -59,7 +59,7 @@ class RadioMemoTest extends FlatSpec with Matchers {
       }
 
       which_one2("Which one of these does not belong?").answer match {
-        case Answer(value, cost, conf) =>
+        case Answer(value, cost, conf, _) =>
           println("Answer: '" + value + "', cost: '" + cost + "', confidence: " + conf)
           (value == 'spongebob) should be (true)
           (conf >= confidence) should be (true)

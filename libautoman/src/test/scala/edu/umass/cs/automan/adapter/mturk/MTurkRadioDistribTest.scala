@@ -42,7 +42,7 @@ class MTurkRadioDistribTest extends FlatSpec with Matchers {
 
     automan(a, test_mode = true) {
       which_one().answer match {
-        case Answers(values, cost) =>
+        case Answers(values, cost, _) =>
           compareDistributions(mock_answers, values) should be (true)
           cost should be (BigDecimal(0.06) * sample_size)
         case _ =>

@@ -21,12 +21,13 @@ abstract class DiscreteScalarQuestion extends Question {
   protected[automan] def composeOutcome(o: O, adapter: AutomanAdapter) : O = {
     // unwrap future from previous Outcome
     val f = o.f map {
-      case Answer(value, cost, conf) =>
+      case Answer(value, cost, conf, id) =>
         if (this.confidence <= conf) {
           Answer(
             value,
             BigDecimal(0.00).setScale(2, math.BigDecimal.RoundingMode.FLOOR),
-            conf
+            conf,
+            id
           )
         } else {
           startScheduler(adapter)

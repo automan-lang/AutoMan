@@ -44,7 +44,7 @@ class MTurkManyThreadsTest extends FlatSpec with Matchers {
       // print out results
       plate_texts.foreach { case (url, outcome) =>
         outcome.answer match {
-          case Answer(ans, _, _) =>
+          case Answer(ans, _, _, _) =>
             println(url + ": " + ans)
             ans should be (url)
           case _ => fail()

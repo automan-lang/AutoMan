@@ -50,7 +50,7 @@ class H2KillerTest extends FlatSpec with Matchers {
 
         val outcome = answers.map { a =>
           a.answer match {
-            case LowConfidenceEstimate(_, _, _, _, _) => true
+            case LowConfidenceEstimate(_, _, _, _, _, _) => true
             case _ => false
           }
         }.foldLeft(true) { case (acc, v) => acc && v }

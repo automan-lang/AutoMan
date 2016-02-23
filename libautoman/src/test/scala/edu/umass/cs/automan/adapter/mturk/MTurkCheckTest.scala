@@ -36,7 +36,7 @@ class MTurkCheckTest extends FlatSpec with Matchers {
       }
 
       which_ones().answer match {
-        case Answer(value, _, conf) =>
+        case Answer(value, _, conf, _) =>
           println("Answer: '" + value + "', confidence: " + conf)
           (value == Set('spongebob,'count)) should be (true)
           (conf >= confidence) should be (true)

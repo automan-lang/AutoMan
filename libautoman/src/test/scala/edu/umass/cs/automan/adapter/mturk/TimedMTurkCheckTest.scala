@@ -43,7 +43,7 @@ class TimedMTurkCheckTest extends FlatSpec with Matchers {
 
     automan(a, test_mode = true) {
       which_ones().answer match {
-        case Answer(value, _, conf) =>
+        case Answer(value, _, conf, _) =>
           println("Answer: '" + value + "', confidence: " + conf)
           (value == Set('spongebob,'count)) should be (true)
           (conf >= confidence) should be (true)

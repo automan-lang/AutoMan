@@ -30,7 +30,7 @@ class MTurkFreeTextTest extends FlatSpec with Matchers {
       }
 
       which_one().answer match {
-        case Answer(value, _, conf) =>
+        case Answer(value, _, conf, _) =>
           println("Answer: '" + value + "', confidence: " + conf)
           (value == "quux") should be (true)
           (conf >= confidence) should be (true)

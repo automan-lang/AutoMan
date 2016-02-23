@@ -209,7 +209,7 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
         LogType.STRATEGY,
         question.id
       )
-      Estimate(est, low, high, cost, conf).asInstanceOf[Question#AA]
+      Estimate(est, low, high, cost, conf, question.id).asInstanceOf[Question#AA]
     }
   }
 
@@ -219,7 +219,7 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
     // if we've never scheduled anything,
     // there will be no largest group
     if(completed_workerunique_tasks(tasks).isEmpty) {
-      OverBudgetEstimate(need, have).asInstanceOf[Question#AA]
+      OverBudgetEstimate(need, have, question.id).asInstanceOf[Question#AA]
     } else {
       answer_selector(tasks) match {
         case (est, low, high, cost, conf) =>
@@ -227,7 +227,7 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
             LogLevelInfo(),
             LogType.STRATEGY,
             question.id)
-          LowConfidenceEstimate(est, low, high, cost, conf).asInstanceOf[Question#AA]
+          LowConfidenceEstimate(est, low, high, cost, conf, question.id).asInstanceOf[Question#AA]
       }
     }
   }

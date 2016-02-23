@@ -49,11 +49,11 @@ class MemoSnapshotTest extends FlatSpec with Matchers {
 
     automan(a, test_mode = true, in_mem_db = true) {
       which_one().answer match {
-        case Answer(value, _, conf) =>
+        case Answer(value, _, conf, _) =>
           println("Answer: '" + value + "', confidence: " + conf)
           (value == 'spongebob) should be (true)
           (conf >= confidence) should be (true)
-        case LowConfidenceAnswer(value, cost, conf) =>
+        case LowConfidenceAnswer(value, cost, conf, _) =>
           fail()
       }
 
@@ -65,7 +65,7 @@ class MemoSnapshotTest extends FlatSpec with Matchers {
       //       to spawn more tasks.
 
       which_one2("Which characters are not Oscar, Kermit, or Cookie Monster?").answer match {
-        case Answer(value, cost, conf) =>
+        case Answer(value, cost, conf, _) =>
           println("Answer: '" + value + "', confidence: " + conf)
           (value == Set('spongebob,'count)) should be (true)
           (conf >= confidence) should be (true)
