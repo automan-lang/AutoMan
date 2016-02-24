@@ -39,7 +39,8 @@ libraryDependencies := {
     "org.specs2"                 %%  "specs2-core"          % "2.3.11" % "test",
     "com.typesafe.slick"         %% "slick"                 % "2.1.0",
     "com.h2database"             % "h2"                     % "1.4.189",
-    "org.slf4j"                  % "slf4j-nop"              % "1.6.4"
+    "org.slf4j"                  % "slf4j-nop"              % "1.6.4",
+    "org.scala-lang"             % "scala-reflect"          % scalaVersion.value
   )
 }
 

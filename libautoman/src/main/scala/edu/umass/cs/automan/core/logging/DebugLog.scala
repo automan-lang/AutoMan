@@ -2,6 +2,8 @@ package edu.umass.cs.automan.core.logging
 
 import java.util.{Date, UUID}
 
+import edu.umass.cs.automan.core.macros.GitMacro
+
 object DebugLog {
   private var _level : LogLevel = LogLevelInfo()
 
@@ -23,7 +25,7 @@ object DebugLog {
             }
         }
 
-      System.err.println(new Date().toString + ": " + level.toString + ": " + source.toString + ": " + idstr + msg)
+      System.err.println(GitMacro.currentHash() + ": " + new Date().toString + ": " + level.toString + ": " + source.toString + ": " + idstr + msg)
     }
   }
 }
