@@ -30,6 +30,6 @@ protected[mturk] case class RejectReq(ts_reasons: List[(Task,String)]) extends M
   override protected def order = 5
 }
 protected[mturk] case class RetrieveReq(ts: List[Task], current_time: Date) extends Message {
-  override protected def order = 4
+  override protected def order = 3
 }
 
