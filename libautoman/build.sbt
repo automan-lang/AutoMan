@@ -39,8 +39,7 @@ libraryDependencies := {
     "org.specs2"                 %%  "specs2-core"          % "2.3.11" % "test",
     "com.typesafe.slick"         %% "slick"                 % "2.1.0",
     "com.h2database"             % "h2"                     % "1.4.189",
-    "org.slf4j"                  % "slf4j-nop"              % "1.6.4",
-    "org.scala-lang"             % "scala-reflect"          % scalaVersion.value
+    "org.slf4j"                  % "slf4j-nop"              % "1.6.4"
   )
 }
 
@@ -67,6 +66,34 @@ memoClean := {
     f.delete()
   }
 }
+
+val gitHash = TaskKey[String]("githash", "Gets the git hash of HEAD.")
+
+gitHash := {
+  import scala.sys.process._
+  ("git rev-parse HEAD" !!).replace("\n","")
+}
+
+val hashAsConstant = TaskKey[Unit]("hash-as-constant", "Creates a Scala source file containing the git hash for HEAD.")
+
+hashAsConstant := {
+  import java.io._
+
+  val path = "src/main/scala/edu/umass/cs/automan/core/util/GitHash.scala"
+
+  val clazz =
+    "package edu.umass.cs.automan.core.util\n\n" +
+    "object GitHash {\n" +
+    "  val value = \"" + gitHash.value + "\"\n" +
+    "}"
+
+  val pw = new PrintWriter(new File(path))
+  pw.write(clazz)
+  pw.close()
+}
+
+// MODIFY BUILD
+compile <<= (compile in Compile) dependsOn hashAsConstant
 
 // GENERATING JAR
 packSettings
