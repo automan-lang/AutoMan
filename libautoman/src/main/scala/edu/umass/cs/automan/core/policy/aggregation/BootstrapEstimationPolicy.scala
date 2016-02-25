@@ -136,6 +136,17 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
     if (tasks.nonEmpty) { tasks.map(_.round).max } else { 1 }
   }
 
+  def hasUnmarkedDuplicate(tasks: List[Task]) : Boolean = {
+    tasks
+      .filter(t => t.state == SchedulerState.ACCEPTED || t.state == SchedulerState.ANSWERED)
+      .groupBy(t => t.worker_id)
+      .foldLeft(false){ case (acc, (wrk_opt, ts)) =>
+          wrk_opt match {
+            case None => throw new Exception("ACCEPTED and ANSWERED tasks must have associated worker IDs.")
+            case Some(w) => acc || (ts.size > 1)
+          }
+      }
+  }
 
   /**
     * Calculate the number of new tasks to schedule.
@@ -145,14 +156,16 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
     * @return
     */
   private def num_to_run(tasks: List[Task], currentRound: Int, reward: BigDecimal) : Int = {
-    // eliminate duplicates from the list of Tasks
-    val tasks_no_dupes = tasks.count(_.state != SchedulerState.DUPLICATE)
+    // duplicates should already be marked as dupes here from the list of Tasks
+    assert(!hasUnmarkedDuplicate(tasks))
+
+    val answered_no_dupes = tasks.count(t => t.state == SchedulerState.ANSWERED)
 
     // calculate the new total sample size (just doubles the total in every round)
     val ss_tot = question.default_sample_size << currentRound
 
     // minus the number of non-duplicate answers received
-    ss_tot - tasks_no_dupes
+    ss_tot - answered_no_dupes
   }
 
   /**
