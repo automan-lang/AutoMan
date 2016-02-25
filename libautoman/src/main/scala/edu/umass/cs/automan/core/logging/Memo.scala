@@ -362,16 +362,16 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
       case Some(db) => {
         val QS_TS_THS = allTasksQuery()
 
-          // filter by memo_hash
+        // filter by memo_hash
         val fQS_TS_THS = QS_TS_THS.filter(_._1.memo_hash === q.memo_hash)
 
-          // LEFT join with answers
-          // ((DBQuestion, (DBtask, DBtaskHistory)), DBAnswerKind)
+        // LEFT join with answers
+        // ((DBQuestion, (DBtask, DBtaskHistory)), DBAnswerKind)
         val A_QS_TS_THS = q.getQuestionType match {
           case CheckboxQuestion => {
             (fQS_TS_THS leftJoin dbCheckboxAnswer on (_._2._2.history_id === _.history_id)).map {
               case ((dbquestion, (dbtask, dbtaskhistory)), dbcheckboxanswer) =>
-                ( dbtask.task_id,
+                (dbtask.task_id,
                   dbtask.round,
                   dbtask.timeout_in_s,
                   dbtask.worker_timeout_in_s,
@@ -382,14 +382,14 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
                   dbcheckboxanswer.worker_id.?,
                   dbcheckboxanswer.answer.?,
                   dbtaskhistory.state_change_time
-                )
+                  )
 
             }
           }
           case CheckboxDistributionQuestion => {
             (fQS_TS_THS leftJoin dbCheckboxAnswer on (_._2._2.history_id === _.history_id)).map {
               case ((dbquestion, (dbtask, dbtaskhistory)), dbcbda) =>
-                ( dbtask.task_id,
+                (dbtask.task_id,
                   dbtask.round,
                   dbtask.timeout_in_s,
                   dbtask.worker_timeout_in_s,
@@ -400,14 +400,14 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
                   dbcbda.worker_id.?,
                   dbcbda.answer.?,
                   dbtaskhistory.state_change_time
-                )
+                  )
 
             }
           }
           case EstimationQuestion => {
             (fQS_TS_THS leftJoin dbEstimationAnswer on (_._2._2.history_id === _.history_id)).map {
               case ((dbquestion, (dbtask, dbtaskhistory)), dbestimationanswer) =>
-                ( dbtask.task_id,
+                (dbtask.task_id,
                   dbtask.round,
                   dbtask.timeout_in_s,
                   dbtask.worker_timeout_in_s,
@@ -418,13 +418,13 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
                   dbestimationanswer.worker_id.?,
                   dbestimationanswer.answer.?,
                   dbtaskhistory.state_change_time
-                )
+                  )
             }
           }
           case FreeTextQuestion => {
             (fQS_TS_THS leftJoin dbFreeTextAnswer on (_._2._2.history_id === _.history_id)).map {
               case ((dbquestion, (dbtask, dbtaskhistory)), dbfreetextanswer) =>
-                ( dbtask.task_id,
+                (dbtask.task_id,
                   dbtask.round,
                   dbtask.timeout_in_s,
                   dbtask.worker_timeout_in_s,
@@ -441,7 +441,7 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
           case FreeTextDistributionQuestion => {
             (fQS_TS_THS leftJoin dbFreeTextAnswer on (_._2._2.history_id === _.history_id)).map {
               case ((dbquestion, (dbtask, dbtaskhistory)), dbftda) =>
-                ( dbtask.task_id,
+                (dbtask.task_id,
                   dbtask.round,
                   dbtask.timeout_in_s,
                   dbtask.worker_timeout_in_s,
@@ -452,13 +452,13 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
                   dbftda.worker_id.?,
                   dbftda.answer.?,
                   dbtaskhistory.state_change_time
-                )
+                  )
             }
           }
           case RadioButtonQuestion => {
             (fQS_TS_THS leftJoin dbRadioButtonAnswer on (_._2._2.history_id === _.history_id)).map {
               case ((dbquestion, (dbtask, dbtaskhistory)), dbradiobuttonanswer) =>
-                ( dbtask.task_id,
+                (dbtask.task_id,
                   dbtask.round,
                   dbtask.timeout_in_s,
                   dbtask.worker_timeout_in_s,
@@ -475,7 +475,7 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
           case RadioButtonDistributionQuestion => {
             (fQS_TS_THS leftJoin dbRadioButtonAnswer on (_._2._2.history_id === _.history_id)).map {
               case ((dbquestion, (dbtask, dbtaskhistory)), dbrbda) =>
-                ( dbtask.task_id,
+                (dbtask.task_id,
                   dbtask.round,
                   dbtask.timeout_in_s,
                   dbtask.worker_timeout_in_s,
@@ -494,19 +494,19 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
         // execute query
         val results = db.withSession { implicit s => A_QS_TS_THS.list }.distinct
 
-          // make and return tasks
-        results.map {
+        // make and return tasks
+        val tasks = results.map {
           case (task_id,
-                round,
-                timeout_in_s,
-                worker_timeout_in_s,
-                cost,
-                created_at,
-                state,
-                from_memo,
-                worker_id,
-                answer,
-                state_changed_at) =>
+          round,
+          timeout_in_s,
+          worker_timeout_in_s,
+          cost,
+          created_at,
+          state,
+          from_memo,
+          worker_id,
+          answer,
+          state_changed_at) =>
             Task(
               task_id,
               q,
@@ -522,6 +522,11 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
               state_changed_at
             )
         }
+
+        // restore task cache
+        _task_state_cache = tasks.map { t => t.task_id -> t.state }.toMap
+
+        tasks
       }
       case None => List.empty
     }
