@@ -75,9 +75,11 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
   protected[automan] val dbFreeTextAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBFreeTextAnswer]
   protected[automan] val dbRadioButtonAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBRadioButtonAnswer]
 
-
   // registered plugins
   protected var _plugins = List[Plugin]()
+
+  // task state cache
+  var _task_state_cache = Map[UUID,SchedulerState]()
 
   // get DB handle
   var db_opt = log_config match {
@@ -585,13 +587,28 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
     }
   }
 
+  def findNecessaryUpdates(tasks: List[Task]) : List[Task] = {
+    // only update those tasks whose state has changed
+    val updates = tasks.filter { t => _task_state_cache(t.task_id) != t.state }
+
+    // update cache
+    _task_state_cache = _task_state_cache ++ updates.map { t => t.task_id -> t.state}
+
+    updates
+  }
+
   /**
    * Updates the database given a complete list of tasks.
    * @param inserts A list of tasks to insert.
    * @param updates A list of tasks to update.
    */
   def save(q: Question, inserts: List[Task], updates: List[Task]) : Unit = {
-    if(inserts.isEmpty && updates.isEmpty) return
+    // update cache
+    _task_state_cache = _task_state_cache ++ inserts.map { t => t.task_id -> t.state}
+
+    val necessary_updates = findNecessaryUpdates(updates)
+
+    if(inserts.isEmpty && necessary_updates.isEmpty) return
 
     db_opt match {
       case Some(db) =>
@@ -606,12 +623,12 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
           dbTask ++= task2TaskTuple(inserts)
 
           // do bulk insert for all task histories (inserts and updates)
-          dbTaskHistory ++= task2TaskHistoryTuple(inserts ::: updates)
+          dbTaskHistory ++= task2TaskHistoryTuple(inserts ::: necessary_updates)
 
           // H2 can only return a single autoinc row, so we were not able to
           // get a task_id -> history_map in the previous step;
           // instead we query the table we just inserted into
-          val ts = inserts ::: updates
+          val ts = inserts ::: necessary_updates
           val t_ids = ts.map(_.task_id).toSet
           val histories: List[(UUID, Int)] =
             mostRecentHistories()                         // only the most recent histories
