@@ -15,7 +15,7 @@ class TurkWorker(val backend: RequesterService, val sleep_ms: Int, val mock_serv
   type HITKey = (BatchKey, String)          // (BatchKey, memo_hash); uniquely identifies a HIT
 
   // work queue
-  private val _requests: PriorityBlockingQueue[Message] = new PriorityBlockingQueue[Message]()
+  private val _requests = new PriorityBlockingQueue[FIFOMessage]()
 
   // response data
   private val _responses = scala.collection.mutable.Map[Message, Any]()
@@ -28,34 +28,34 @@ class TurkWorker(val backend: RequesterService, val sleep_ms: Int, val mock_serv
 
   // API
   def accept(ts: List[Task]) : Option[List[Task]] = {
-    blocking_enqueue[AcceptReq, List[Task]](AcceptReq(ts))
+    blocking_enqueue[List[Task]](AcceptReq(ts))
   }
   def backend_budget: Option[BigDecimal] = {
-    blocking_enqueue[BudgetReq, BigDecimal](BudgetReq())
+    blocking_enqueue[BigDecimal](BudgetReq())
   }
   def cancel(ts: List[Task], toState: SchedulerState.Value) : Option[List[Task]] = {
-    blocking_enqueue[CancelReq, List[Task]](CancelReq(ts, toState))
+    blocking_enqueue[List[Task]](CancelReq(ts, toState))
   }
   def cleanup_qualifications(mtq: MTurkQuestion) : Unit = {
-    nonblocking_enqueue[DisposeQualsReq, Unit](DisposeQualsReq(mtq))
+    nonblocking_enqueue(DisposeQualsReq(mtq))
   }
   def post(ts: List[Task], exclude_worker_ids: List[String]) : Option[List[Task]] = {
-    blocking_enqueue[CreateHITReq, List[Task]](CreateHITReq(ts, exclude_worker_ids))
+    blocking_enqueue[List[Task]](CreateHITReq(ts, exclude_worker_ids))
   }
   def reject(ts_reasons: List[(Task, String)]) : Option[List[Task]] = {
-    blocking_enqueue[RejectReq, List[Task]](RejectReq(ts_reasons))
+    blocking_enqueue[List[Task]](RejectReq(ts_reasons))
   }
   def retrieve(ts: List[Task], current_time: Date) : Option[List[Task]] = {
-    blocking_enqueue[RetrieveReq, List[Task]](RetrieveReq(ts, current_time))
+    blocking_enqueue[List[Task]](RetrieveReq(ts, current_time))
   }
   def shutdown(): Unit = {
-    nonblocking_enqueue[ShutdownReq, Unit](ShutdownReq())
+    nonblocking_enqueue(ShutdownReq())
   }
 
   // IMPLEMENTATIONS
-  private def nonblocking_enqueue[M <: Message, T](req: M) = this.synchronized {
+  private def nonblocking_enqueue(req: Message) : Unit = this.synchronized {
     // put job in queue
-    _requests.add(req)
+    _requests.add(new FIFOMessage(req))
   }
 
   /**
@@ -64,11 +64,10 @@ class TurkWorker(val backend: RequesterService, val sleep_ms: Int, val mock_serv
     * crashed, signaling that the callee should cleanup their own
     * resources and shutdown their thread.
     * @param req The request.
-    * @tparam M The request type.
     * @tparam T The return type.
     * @return Some return value or None on failure.
     */
-  private def blocking_enqueue[M <: Message, T](req: M) : Option[T] = {
+  private def blocking_enqueue[T](req: Message) : Option[T] = {
     // wait for response
     // while loop is because the JVM is
     // permitted to send spurious wakeups;

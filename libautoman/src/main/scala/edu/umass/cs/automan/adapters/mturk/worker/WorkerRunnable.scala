@@ -17,7 +17,7 @@ import edu.umass.cs.automan.core.util.Stopwatch
   * @param responses A response data structure.
   */
 class WorkerRunnable(tw: TurkWorker,
-                     requests: PriorityBlockingQueue[Message],
+                     requests: PriorityBlockingQueue[FIFOMessage],
                      responses: scala.collection.mutable.Map[Message, Any]) extends Runnable {
   // MTurk-related state
   private var _state = tw.memo_handle.restore_mt_state(tw.backend) match {
@@ -29,7 +29,9 @@ class WorkerRunnable(tw: TurkWorker,
     while (true) {
 
       val time = Stopwatch {
-        val work_item = requests.take()
+
+        // take item off queue and unwrap from FIFO comparator
+        val work_item = requests.take().getEntry
 
         try {
           work_item match {
