@@ -26,24 +26,56 @@ package object test {
     )
   }
 
+  /**
+    * Create a list of timed mock answers, with roughly the proportion
+    * specified as duplicates.
+    * @param proportion The fraction of responses that should be duplicates.
+    * @param answers A list of valid answers.
+    * @tparam T The type of the answer.
+    * @return A list of mock answers.
+    */
+  def makeDuplicateMocks[T](proportion: Double, answers: T*) : List[MockAnswer[T]] = {
+    assert(proportion > 0 && proportion < 1)
+
+    val recip = (1/proportion).toInt
+
+    // pad answers
+    val (_,_,mocks) =
+      (0 until (answers.size * (1.0 + proportion)).toInt)
+      .foldLeft((0,0,List[MockAnswer[T]]())) {
+        case ((time,ptr,xs),x) =>
+          // + 1 is to avoid the conditional being true the first time around
+          // when 'last' is undefined
+          if ((x + 1) % recip == 0) {
+            // retrieve the last mock answer so that we may
+            // reuse both the answer itself and the worker_id
+            val last = xs(x - 1)
+            (time + 1, ptr, MockAnswer(last.answer, time, last.worker_id) :: xs)
+          } else {
+            (time + 1, ptr + 1, MockAnswer(answers(ptr), time, UUID.randomUUID()) :: xs)
+          }
+      }
+    mocks
+  }
+
   def makeMocks[T](answers: T*) : List[MockAnswer[T]] = {
     makeMocks(answers.toList)
   }
 
   def makeMocks[T](answers: List[T]) : List[MockAnswer[T]] = {
     val (_, mocks) = answers.foldLeft(0,List[MockAnswer[T]]()){
-      case ((t,xs),x) => (t+1, MockAnswer(x, t) :: xs)
+      case ((t,xs),x) => (t+1, MockAnswer(x, t, UUID.randomUUID()) :: xs)
     }
     mocks
   }
 
   def makeMocksAt[T](answers: List[T], time: Long) : List[MockAnswer[T]] = {
-    answers.map(MockAnswer(_,time))
+    answers.map(MockAnswer(_,time, UUID.randomUUID()))
   }
 
   def makeTimedMocks[T](answer_time_pairs: List[(T,Int)]) : List[MockAnswer[T]] = {
     // make MockAnswers, converting times in seconds to times in milliseconds
-    answer_time_pairs.map { case (a,t) => MockAnswer(a,t * 1000) }
+    answer_time_pairs.map { case (a,t) => MockAnswer(a,t * 1000, UUID.randomUUID()) }
   }
 
   def genAnswers[T : ClassTag](from_vector: Array[T], with_probabilities: Array[String], of_size: Int) : Array[T] = {

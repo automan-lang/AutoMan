@@ -38,7 +38,9 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
     * @return A tuple, (answer, cost, confidence)
     */
   private def answer_selector(tasks: List[Task]) : (Question#A,BigDecimal,Double) = {
-    val bgrp = biggest_group(tasks)
+    val valid_tasks = completed_workerunique_tasks(tasks)
+
+    val bgrp = biggest_group(valid_tasks)
 
     // find answer (actually an Option[Question#A]) of the largest group
     val answer_opt: Option[Question#A] = bgrp match { case (group,_) => group }
@@ -47,7 +49,7 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
     val value = answer_opt.get
 
     // get the confidence
-    val conf = current_confidence(tasks)
+    val conf = current_confidence(valid_tasks)
 
     // calculate cost
     val cost = (bgrp match { case (_,ts) => ts.filterNot(_.from_memo) })

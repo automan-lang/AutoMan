@@ -93,7 +93,7 @@ abstract class AggregationPolicy(question: Question) {
   def tasks_to_reject(tasks: List[Task]): List[Task]
 
   protected def unique_by_date(ts: List[Task]) = {
-    // worker_id should always be set for RETRIEVED and PROCESSED
+    // worker_id should always be set for ANSWERED, ACCEPTED, and REJECTED
     val tw_groups = ts.groupBy( t => t.worker_id.get )
     // sort by creation date and take the first
     tw_groups.map{ case(worker_id,tz) =>

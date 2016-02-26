@@ -26,6 +26,8 @@ class Scheduler(val question: Question,
   question.init_price_policy()
   question.init_timeout_policy()
 
+  val VP = question.validation_policy_instance
+
   /** Crowdsources a task on the desired backend, scheduling and
     * rescheduling enough jobs until the chosen quality-control
     * mechanism is confident in the result, and paying for answers
@@ -64,13 +66,83 @@ class Scheduler(val question: Question,
       .map { case (uuid,_) => uuid}.toList
   }
 
+  object Sch {
+    private def schTimeouts(allTasks: List[Task], time: Time) : (List[Task],Boolean,Time) = {
+      val (ok, sufferedTimeout) = process_timeouts(allTasks, time.current_time)
+      (ok, sufferedTimeout, time)
+    }
+
+    private def schPost(tasks: List[Task], sufferedTimeout: Boolean, time: Time) : (List[Task],List[Task],Time) = {
+      // get list of workers who may not re-participate
+      val __blacklist = VP.blacklisted_workers(tasks)
+
+      // post more tasks as needed
+      val __new_tasks = post_as_needed(tasks, backend, question, sufferedTimeout, __blacklist)
+
+      // update _time with time of future timeouts
+      val time2 = if (use_virt) {
+        time.addTimeoutsFor(__new_tasks)
+      } else {
+        time
+      }
+
+      val (running, unrunning) = (tasks ::: __new_tasks).partition(_.state == SchedulerState.RUNNING)
+
+      assert(running.nonEmpty)
+
+      (running, unrunning, time2)
+    }
+
+    private def schRetrieve(running: List[Task], unrunning: List[Task], time: Time) : (List[Task], List[Task], Time) = {
+      DebugLog(
+        "Retrieving answers for " + running.size + " running tasks from backend.",
+        LogLevelInfo(),
+        LogType.SCHEDULER,
+        question.id
+      )
+
+      val __answered_tasks = failUnWrap(backend.retrieve(running, time.current_time))
+      assert(retrieve_invariant(running, __answered_tasks))
+
+      (__answered_tasks, unrunning, time)
+    }
+
+    private def schDeDup(answered: List[Task], unrunning: List[Task], time: Time) : (List[Task],Time) = {
+      val (nonDupes, dupes) = VP.partition_duplicates(answered ::: unrunning)
+      // mark dupes as duplicate
+      val allTasks = nonDupes ::: (
+        if (dupes.nonEmpty) {
+          failUnWrap(backend.cancel(dupes, SchedulerState.DUPLICATE))
+        } else {
+          Nil
+        } )
+      (allTasks, time)
+    }
+
+    private def schIncrTime(allTasks: List[Task], time: Time) : (List[Task], Time) = {
+      (allTasks, time.incrTime())
+    }
+
+    private val timeout = (schTimeouts _).tupled
+    private val post = (schPost _).tupled
+    private val retrieve = (schRetrieve _).tupled
+    private val dedup = (schDeDup _).tupled
+    private val incrtime = (schIncrTime _).tupled
+
+    val marshal =
+      timeout andThen   // process timeouts
+      post andThen      // post new tasks
+      retrieve andThen  // retrieve task answers
+      dedup andThen     // deduplicate
+      incrtime          // advance clock
+  }
+
   private def run_loop(tasks: List[Task]) : Question#AA = {
     // initialize loop
     val _update_frequency_ms = if (use_virt) { question.update_frequency_ms } else { VIRT_FREQ }
     var _time = Time.incrTime(use_virt)(init_time)(Time.initTickQueue(init_time, question.mock_answers))
-    val _vp = question.validation_policy_instance
     var _all_tasks = tasks
-    var _done = _vp.is_done(_all_tasks) // check for restored memo tasks
+    var _done = question.validation_policy_instance.is_done(_all_tasks) // check for restored memo tasks
 
     // process until done
     val answer = try {
@@ -78,38 +150,16 @@ class Scheduler(val question: Question,
         val __duration = Stopwatch {
           DebugLog("Scheduler time is " + Time.format(_time.current_time) + ".", LogLevelInfo(), LogType.SCHEDULER, question.id)
 
-          // process timeouts
-          val (__tasks, __suffered_timeout) = process_timeouts(_all_tasks, _time.current_time)
-          // get list of workers who may not re-participate
-          val __blacklist = _vp.blacklisted_workers(__tasks)
-          // filter duplicate work && mark as duplicate
-          val (__non_dupes,__dupes) = _vp.partition_duplicates(__tasks)
-          // mark dupes as duplicate
-          val __dedup_tasks = __non_dupes ::: ( if (__dupes.nonEmpty) { failUnWrap(backend.cancel(__dupes, SchedulerState.DUPLICATE)) } else { Nil } )
-          // post more tasks as needed
-          val __new_tasks = post_as_needed(__dedup_tasks, backend, question, __suffered_timeout, __blacklist)
-          // update _time with time of future timeouts
-          if (use_virt) {
-            _time = _time.addTimeoutsFor(__new_tasks)
-          }
-
-          // ask the backend to retrieve answers for all RUNNING tasks
-          val (__running_tasks, __unrunning_tasks) = (__dedup_tasks ::: __new_tasks).partition(_.state == SchedulerState.RUNNING)
-          assert(__running_tasks.nonEmpty)
-          DebugLog("Retrieving answers for " + __running_tasks.size + " running tasks from backend.", LogLevelInfo(), LogType.SCHEDULER, question.id)
-          val __answered_tasks = failUnWrap(backend.retrieve(__running_tasks, _time.current_time))
-          assert(retrieve_invariant(__running_tasks, __answered_tasks))
-
-          // complete list of tasks
-          val __all_tasks = __answered_tasks ::: __unrunning_tasks
-
-          // continue?
-          _done = _vp.is_done(__all_tasks)
+          // marshal and unmarshal from backend
+          val (__tasks, __time) = Sch.marshal(_all_tasks, _time)
 
           // update state
-          _all_tasks = __all_tasks
-          _time = _time.incrTime()
+          _all_tasks = __tasks
+          _time = __time
         }
+
+        // continue?
+        _done = VP.is_done(_all_tasks)
 
         // sleep if this loop iteration < update_frequency_ms
         // prevents flooding worker with requests
@@ -120,14 +170,17 @@ class Scheduler(val question: Question,
         }
       }
 
+      // select answer
+      val answer = VP.select_answer(_all_tasks)
+
       // pay for answers
-      _all_tasks = accept_reject_and_cancel(_all_tasks, _vp, backend)
+      _all_tasks = accept_reject_and_cancel(_all_tasks, VP, backend)
 
       // return answer
-      _vp.select_answer(_all_tasks)
+      answer
     } catch {
       case o: OverBudgetException =>
-        _vp.select_over_budget_answer(_all_tasks, o.need, o.have)
+        VP.select_over_budget_answer(_all_tasks, o.need, o.have)
     }
 
     // run shutdown hook

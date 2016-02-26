@@ -87,7 +87,11 @@ class MTurkAdapter extends AutomanAdapter {
   def Option(id: Symbol, text: String, image_url: String) = new MTQuestionOption(id, text, image_url)
 
   protected[automan] def accept(ts: List[Task]) = {
-    assert(ts.forall { t => t.state == SchedulerState.ANSWERED } )
+    assert(ts.forall { t =>
+        t.state == SchedulerState.ANSWERED ||
+        t.state == SchedulerState.DUPLICATE
+      }
+    )
     run_if_initialized((p: TurkWorker) => p.accept(ts))
   }
   protected[automan] def backend_budget() = run_if_initialized((p: TurkWorker) => p.backend_budget)

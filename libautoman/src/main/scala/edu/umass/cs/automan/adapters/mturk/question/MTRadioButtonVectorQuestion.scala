@@ -22,8 +22,8 @@ class MTRadioButtonVectorQuestion extends RadioButtonVectorQuestion with MTurkQu
   override def randomized_options: List[QuestionOptionType] = Utilities.randomPermute(options)
 
   // private API
-  override def toMockResponse(question_id: UUID, response_time: Date, a: A) : RadioButtonMockResponse = {
-    RadioButtonMockResponse(question_id, response_time, a)
+  override def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID) : RadioButtonMockResponse = {
+    RadioButtonMockResponse(question_id, response_time, a, worker_id)
   }
   override protected[mturk] def fromXML(x: scala.xml.Node) : A = {
     // There should only be a SINGLE answer here, like this:

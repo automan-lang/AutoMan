@@ -22,8 +22,8 @@ class MTCheckboxVectorQuestion extends CheckboxVectorQuestion with MTurkQuestion
   override def randomized_options: List[QuestionOptionType] = Utilities.randomPermute(options)
 
   // private API
-  override def toMockResponse(question_id: UUID, response_time: Date, a: A) : CheckboxMockResponse = {
-    CheckboxMockResponse(question_id, response_time, a)
+  override def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID) : CheckboxMockResponse = {
+    CheckboxMockResponse(question_id, response_time, a, worker_id)
   }
   override protected[mturk] def fromXML(x: scala.xml.Node) : A = {
     // There may be MULTIPLE answers here, like this:

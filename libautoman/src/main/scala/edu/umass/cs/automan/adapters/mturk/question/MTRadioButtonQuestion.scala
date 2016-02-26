@@ -22,8 +22,8 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
   override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
 
   // private API
-  override def toMockResponse(question_id: UUID, response_time: Date, a: A) : RadioButtonMockResponse = {
-    RadioButtonMockResponse(question_id, response_time, a)
+  override def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID) : RadioButtonMockResponse = {
+    RadioButtonMockResponse(question_id, response_time, a, worker_id)
   }
   override protected[mturk] def fromXML(x: scala.xml.Node) : A = {
     // There should only be a SINGLE answer here, like this:

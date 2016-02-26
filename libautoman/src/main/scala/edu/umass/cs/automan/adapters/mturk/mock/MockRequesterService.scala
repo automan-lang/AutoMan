@@ -114,7 +114,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
       newAssignment(
         null,
         assn_id.toString,
-        UUID.randomUUID().toString,
+        mock_response.workerId.toString,
         hitId,
         com.amazonaws.mturk.requester.AssignmentStatus.Submitted,
         Utilities.calInSeconds(mock_response.responseTime, 16400),
@@ -224,7 +224,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
       // get time x milliseconds from t
       val d = Utilities.xMillisecondsFromDate(a.time_delta_in_ms, t)
       // pair with random assignment IDs
-      UUID.randomUUID() -> q.toMockResponse(q.id, d, a.answer)
+      UUID.randomUUID() -> q.toMockResponse(q.id, d, a.answer, a.worker_id)
     }.toMap
     // add question to mock state
     _state = _state.addQuestion(q)

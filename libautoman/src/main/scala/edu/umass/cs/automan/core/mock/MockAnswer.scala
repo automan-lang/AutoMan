@@ -1,3 +1,5 @@
 package edu.umass.cs.automan.core.mock
 
-case class MockAnswer[T](answer: T, time_delta_in_ms: Long)
+import java.util.UUID
+
+case class MockAnswer[T](answer: T, time_delta_in_ms: Long, worker_id: UUID)

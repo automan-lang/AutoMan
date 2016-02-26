@@ -27,19 +27,29 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
     * @return Tuple (estimate, low CI bound, high CI bound, cost, confidence)
     */
   private def answer_selector(tasks: List[Task]): (Double, Double, Double, BigDecimal, Double) = {
+    val valid_tasks = completed_workerunique_tasks(tasks)
+
+    val excludes = tasks.flatMap(t => if (!valid_tasks.contains(t)) { Some(t) } else { None })
+
+    println("***DEBUG***\nComputing estimate from:\n"
+      + valid_tasks.map(t => t.state + ": " + t.answer + " : " + t.worker_id).mkString("\n")
+      + "\nwhich excludes:\n" + excludes.map(t => t.state + ": " + t.answer + " : " + t.worker_id).mkString("\n")
+      + "\nfor a total of " + (excludes.size + valid_tasks.size) + " tasks which is the same as " + tasks.size
+    )
+
     // extract responses & cast to Double
     // (EstimationQuestion#A is guaranteed to be Double)
-    val X = tasks.flatMap(_.answer).asInstanceOf[List[Double]]
+    val X = valid_tasks.flatMap(_.answer).asInstanceOf[List[Double]]
 
     // calculate alpha, with Bonferroni correction
-    val adj_conf = bonferroni_confidence(question.confidence, numComparisons(tasks))
+    val adj_conf = bonferroni_confidence(question.confidence, numComparisons(valid_tasks))
     val alpha = 1 - adj_conf
 
     // do bootstrap
     val (low, est, high) = bootstrap(question.estimator, X, NumBootstraps, alpha)
 
     // cost
-    val cost = tasks.filter { t => t.answer.isDefined && !t.from_memo }.map(_.cost).sum
+    val cost = valid_tasks.filter { t => t.answer.isDefined && !t.from_memo }.map(_.cost).sum
 
     (est, low, high, cost, adj_conf)
   }
