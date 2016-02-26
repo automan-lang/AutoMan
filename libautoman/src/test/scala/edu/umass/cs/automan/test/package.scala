@@ -43,16 +43,16 @@ package object test {
     val (_,_,mocks) =
       (0 until (answers.size * (1.0 + proportion)).toInt)
       .foldLeft((0,0,List[MockAnswer[T]]())) {
-        case ((time,ptr,xs),x) =>
+        case ((time,ptr,newAnswers),i) =>
           // + 1 is to avoid the conditional being true the first time around
           // when 'last' is undefined
-          if ((x + 1) % recip == 0) {
+          if ((i + 1) % recip == 0) {
             // retrieve the last mock answer so that we may
             // reuse both the answer itself and the worker_id
-            val last = xs(x - 1)
-            (time + 1, ptr, MockAnswer(last.answer, time, last.worker_id) :: xs)
+            val last = newAnswers.head
+            (time + 1, ptr, MockAnswer(last.answer, time, last.worker_id) :: newAnswers)
           } else {
-            (time + 1, ptr + 1, MockAnswer(answers(ptr), time, UUID.randomUUID()) :: xs)
+            (time + 1, ptr + 1, MockAnswer(answers(ptr), time, UUID.randomUUID()) :: newAnswers)
           }
       }
     mocks
