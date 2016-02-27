@@ -79,10 +79,10 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
   protected var _plugins = List[Plugin]()
 
   // task state cache
-  var _task_state_cache = Map[UUID,SchedulerState]()
+  private var _task_state_cache = Map[UUID,SchedulerState]()
 
   // get DB handle
-  var db_opt = log_config match {
+  protected var db_opt = log_config match {
     case LogConfig.NO_LOGGING => None
     case _ => {
       Some(Database.forURL(_jdbc_conn_string, driver = "org.h2.Driver"))
@@ -358,6 +358,12 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
    * @return A list of tasks.
    */
   def restore(q: Question) : List[Task] = {
+    DebugLog(s"Called restore.",
+      LogLevelDebug(),
+      LogType.MEMOIZER,
+      q.id
+    )
+
     db_opt match {
       case Some(db) => {
         val QS_TS_THS = allTasksQuery()
@@ -524,7 +530,7 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
         }
 
         // restore task cache
-        _task_state_cache = tasks.map { t => t.task_id -> t.state }.toMap
+        _task_state_cache = _task_state_cache ++ tasks.map { t => t.task_id -> t.state }.toMap
 
         tasks
       }
@@ -592,14 +598,12 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
     }
   }
 
-  def findNecessaryUpdates(tasks: List[Task]) : List[Task] = {
-    // only update those tasks whose state has changed
-    val updates = tasks.filter { t => _task_state_cache(t.task_id) != t.state }
-
-    // update cache
-    _task_state_cache = _task_state_cache ++ updates.map { t => t.task_id -> t.state}
-
-    updates
+  private def findNecessaryUpdates(tasks: List[Task]) : List[Task] = {
+    // only update those tasks whose state has changed or are not in the map
+    tasks.filter { t =>
+      !_task_state_cache.contains(t.task_id) ||
+      _task_state_cache(t.task_id) != t.state
+    }
   }
 
   /**
@@ -608,10 +612,19 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
    * @param updates A list of tasks to update.
    */
   def save(q: Question, inserts: List[Task], updates: List[Task]) : Unit = {
+    DebugLog(s"Called save.",
+      LogLevelDebug(),
+      LogType.MEMOIZER,
+      q.id
+    )
+
     // update cache
     _task_state_cache = _task_state_cache ++ inserts.map { t => t.task_id -> t.state}
 
     val necessary_updates = findNecessaryUpdates(updates)
+
+    // update cache
+    _task_state_cache = _task_state_cache ++ necessary_updates.map { t => t.task_id -> t.state}
 
     if(inserts.isEmpty && necessary_updates.isEmpty) return
 
