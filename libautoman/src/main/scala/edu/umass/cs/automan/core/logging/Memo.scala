@@ -599,11 +599,10 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
   }
 
   private def findNecessaryUpdates(tasks: List[Task]) : List[Task] = {
+    assert(tasks.forall(t => _task_state_cache.contains(t.task_id)))
+
     // only update those tasks whose state has changed or are not in the map
-    tasks.filter { t =>
-      !_task_state_cache.contains(t.task_id) ||
-      _task_state_cache(t.task_id) != t.state
-    }
+    tasks.filter { t => _task_state_cache(t.task_id) != t.state }
   }
 
   /**
