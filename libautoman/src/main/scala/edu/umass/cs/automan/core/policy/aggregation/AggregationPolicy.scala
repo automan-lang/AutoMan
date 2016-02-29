@@ -1,5 +1,9 @@
 package edu.umass.cs.automan.core.policy.aggregation
 
+import java.util.UUID
+
+import edu.umass.cs.automan.core.logging.{LogType, LogLevelInfo, DebugLog}
+import edu.umass.cs.automan.core.policy._
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 
@@ -17,6 +21,14 @@ abstract class AggregationPolicy(question: Question) {
     tasks.flatMap(_.worker_id).distinct
   }
 
+  /**
+    * Returns true if the strategy has enough data to stop scheduling work.
+    * @param tasks The complete list of scheduled tasks.
+    * @return
+    */
+  def is_done(tasks: List[Task]) : Boolean
+
+  protected[policy] def num_to_run(tasks: List[Task], currentRound: Int, reward: BigDecimal) : Int
 
   /**
     * Partitions a set of tasks into those that should be marked as
@@ -40,13 +52,6 @@ abstract class AggregationPolicy(question: Question) {
 
     (unanswered_tasks ::: not_dupes, dupes)
   }
-
-  /**
-   * Returns true if the strategy has enough data to stop scheduling work.
-   * @param tasks The complete list of scheduled tasks.
-   * @return
-   */
-  def is_done(tasks: List[Task]) : Boolean
 
   /**
    * Returns a string explaining why the worker's answer was not accepted.
@@ -80,7 +85,58 @@ abstract class AggregationPolicy(question: Question) {
    * @param suffered_timeout True if any of the latest batch of tasks suffered a timeout.
    * @return A list of new tasks to schedule on the backend.
    */
-  def spawn(tasks: List[Task], suffered_timeout: Boolean): List[Task]
+  def spawn(tasks: List[Task], suffered_timeout: Boolean): List[Task] = {
+    // determine current round
+    val cRound = currentRound(tasks)
+
+    // determine timeouts
+    val worker_timeout_in_s = question._timeout_policy_instance.calculateWorkerTimeout(tasks, cRound, suffered_timeout)
+    val task_timeout_in_s = question._timeout_policy_instance.calculateTaskTimeout(worker_timeout_in_s)
+
+    // determine reward
+    val reward = question._price_policy_instance.calculateReward(tasks, cRound, suffered_timeout)
+
+    // determine number to spawn
+    val num_to_spawn = if (suffered_timeout) {
+      // spawn as many tasks as those that timed out
+      tasks.count { t => t.round == cRound && t.state == SchedulerState.TIMEOUT }
+    } else {
+      // (don't spawn more if any are running)
+      if (tasks.count(_.state == SchedulerState.RUNNING) == 0) {
+        num_to_run(tasks, cRound, reward)
+      } else {
+        return List[Task]() // Be patient!
+      }
+    }
+
+    DebugLog("You should spawn " + num_to_spawn +
+      " more Tasks at $" + reward + "/task, " +
+      task_timeout_in_s + "s until question timeout, " +
+      worker_timeout_in_s + "s until worker task timeout.", LogLevelInfo(), LogType.STRATEGY,
+      question.id)
+
+    // allocate Task objects
+    val now = new java.util.Date()
+    val new_tasks = (0 until num_to_spawn).map { i =>
+      val t = new Task(
+        UUID.randomUUID(),
+        question,
+        nextRound(tasks, suffered_timeout),
+        task_timeout_in_s,
+        worker_timeout_in_s,
+        reward,
+        now,
+        SchedulerState.READY,
+        from_memo = false,
+        None,
+        None,
+        now
+      )
+      t
+    }.toList
+
+    new_tasks
+  }
 
   def tasks_to_accept(tasks: List[Task]): List[Task]
 

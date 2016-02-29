@@ -1,6 +1,5 @@
 package edu.umass.cs.automan.core.policy.aggregation
 
-import java.util.UUID
 import edu.umass.cs.automan.core.answer.{LowConfidenceAnswer, OverBudgetAnswer, Answer}
 import edu.umass.cs.automan.core.logging.{LogType, LogLevelInfo, DebugLog}
 import edu.umass.cs.automan.core.question.{Question, DiscreteScalarQuestion}
@@ -242,64 +241,6 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
           LowConfidenceAnswer(value, cost, conf, question.id).asInstanceOf[Question#AA]
       }
     }
-  }
-
-  def spawn(tasks: List[Task], had_timeout: Boolean): List[Task] = {
-    // determine current round
-    val round = if (tasks.nonEmpty) {
-      tasks.map(_.round).max
-    } else { 0 }
-
-    var nextRound = round
-
-    // determine duration
-    val worker_timeout_in_s = question._timeout_policy_instance.calculateWorkerTimeout(tasks, round, had_timeout)
-    val task_timeout_in_s = question._timeout_policy_instance.calculateTaskTimeout(worker_timeout_in_s)
-
-    // determine reward
-    val reward = question._price_policy_instance.calculateReward(tasks, round, had_timeout)
-
-    // num to spawn
-    val num_to_spawn = if (had_timeout) {
-      tasks.count { t => t.round == round && t.state == SchedulerState.TIMEOUT }
-    } else {
-      // (don't spawn more if any are running)
-      if (tasks.count(_.state == SchedulerState.RUNNING) == 0) {
-        // whenever we need to run MORE, we update the round counter
-        nextRound = round + 1
-        num_to_run(tasks, round, reward)
-      } else {
-        return List[Task]() // Be patient!
-      }
-    }
-
-    DebugLog("You should spawn " + num_to_spawn +
-      " more Tasks at $" + reward + "/task, " +
-      task_timeout_in_s + "s until question timeout, " +
-      worker_timeout_in_s + "s until worker task timeout.", LogLevelInfo(), LogType.STRATEGY,
-      question.id)
-
-    // allocate Task objects
-    val new_tasks = (0 until num_to_spawn).map { i =>
-      val now = new java.util.Date()
-      val t = new Task(
-        UUID.randomUUID(),
-        question,
-        nextRound,
-        task_timeout_in_s,
-        worker_timeout_in_s,
-        reward,
-        now,
-        SchedulerState.READY,
-        from_memo = false,
-        None,
-        None,
-        now
-      )
-      t
-    }.toList
-
-    new_tasks
   }
 
   def tasks_to_accept(tasks: List[Task]): List[Task] = {
