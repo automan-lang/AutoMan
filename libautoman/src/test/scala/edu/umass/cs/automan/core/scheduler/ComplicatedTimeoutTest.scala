@@ -46,8 +46,6 @@ class ComplicatedTimeoutTest extends FlatSpec with Matchers {
           ('spongebob,  65),
           ('spongebob,  65),
           ('spongebob,  65),
-          ('spongebob,  65),
-          ('spongebob,  65),
           ('spongebob,  65)
         )
       )
