@@ -109,19 +109,21 @@ abstract class AggregationPolicy(question: Question) {
       }
     }
 
-    DebugLog("You should spawn " + num_to_spawn +
+    // allocate Task objects
+    val now = new java.util.Date()
+    val nRound = nextRound(tasks, suffered_timeout)
+
+    DebugLog("Round = " + nRound + " . You should spawn " + num_to_spawn +
       " more Tasks at $" + reward + "/task, " +
       task_timeout_in_s + "s until question timeout, " +
       worker_timeout_in_s + "s until worker task timeout.", LogLevelInfo(), LogType.STRATEGY,
       question.id)
 
-    // allocate Task objects
-    val now = new java.util.Date()
     val new_tasks = (0 until num_to_spawn).map { i =>
       val t = new Task(
         UUID.randomUUID(),
         question,
-        nextRound(tasks, suffered_timeout),
+        nRound,
         task_timeout_in_s,
         worker_timeout_in_s,
         reward,
