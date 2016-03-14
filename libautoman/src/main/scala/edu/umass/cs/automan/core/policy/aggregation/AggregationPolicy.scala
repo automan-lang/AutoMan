@@ -97,7 +97,7 @@ abstract class AggregationPolicy(question: Question) {
     val reward = question._price_policy_instance.calculateReward(tasks, cRound, suffered_timeout)
 
     // determine number to spawn
-    val num_to_spawn = if (suffered_timeout) {
+    val min_to_spawn = if (suffered_timeout) {
       // spawn as many tasks as those that timed out
       tasks.count { t => t.round == cRound && t.state == SchedulerState.TIMEOUT }
     } else {
@@ -108,6 +108,9 @@ abstract class AggregationPolicy(question: Question) {
         return List[Task]() // Be patient!
       }
     }
+
+    // apply minimum policy
+    val num_to_spawn = Math.max(question._minimum_spawn_policy_instance.min, min_to_spawn)
 
     // allocate Task objects
     val now = new java.util.Date()

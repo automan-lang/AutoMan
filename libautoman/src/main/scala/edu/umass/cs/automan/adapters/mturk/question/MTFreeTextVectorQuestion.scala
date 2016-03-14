@@ -8,8 +8,9 @@ import edu.umass.cs.automan.core.question.FreeTextVectorQuestion
 import org.apache.commons.codec.binary.Hex
 
 class MTFreeTextVectorQuestion extends FreeTextVectorQuestion with MTurkQuestion {
+  type MS = MTSpawn
   type QuestionOptionType = MTQuestionOption
-  override type A = String
+  override type A = FreeTextVectorQuestion#A
 
   // public API
   def memo_hash: String = {

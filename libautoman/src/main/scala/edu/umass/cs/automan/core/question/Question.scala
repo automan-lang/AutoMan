@@ -8,7 +8,7 @@ import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 import edu.umass.cs.automan.core.mock.{MockAnswer, MockResponse}
 import edu.umass.cs.automan.core.policy.price.PricePolicy
 import edu.umass.cs.automan.core.policy.timeout.TimeoutPolicy
-import edu.umass.cs.automan.core.policy.aggregation.AggregationPolicy
+import edu.umass.cs.automan.core.policy.aggregation.{MinimumSpawnPolicy, AggregationPolicy}
 import edu.umass.cs.automan.core.scheduler.Scheduler
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -20,6 +20,7 @@ abstract class Question {
   type AP <: AggregationPolicy
   type PP <: PricePolicy
   type TP <: TimeoutPolicy
+  type MS <: MinimumSpawnPolicy
 
   class QuestionStillExecutingException extends Exception
 
@@ -49,6 +50,8 @@ abstract class Question {
   protected[automan] var _timeout_policy_instance: TP = _
   protected[automan] var _validation_policy: Option[Class[AP]] = None
   protected[automan] var _validation_policy_instance: AP = _
+  protected[automan] var _minimum_spawn_policy: Option[Class[MS]] = None
+  protected[automan] var _minimum_spawn_policy_instance: MS = _
 
   def before_filter_=(f: A => A) { _before_filter = f }
   def before_filter: A => A = _before_filter

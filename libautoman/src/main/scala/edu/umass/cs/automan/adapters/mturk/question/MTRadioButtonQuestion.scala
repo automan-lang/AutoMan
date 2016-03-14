@@ -9,8 +9,9 @@ import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
 
 class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
+  type MS = MTSpawn
   type QuestionOptionType = MTQuestionOption
-  override type A = Symbol
+  override type A = RadioButtonQuestion#A
 
   // public API
   def memo_hash: String = {

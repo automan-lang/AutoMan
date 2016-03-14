@@ -1,5 +1,6 @@
 package edu.umass.cs.automan.adapters.mturk.question
 
+import edu.umass.cs.automan.core.policy.aggregation.MinimumSpawnPolicy
 import edu.umass.cs.automan.core.scheduler.BackendResult
 import com.amazonaws.mturk.requester.{Assignment, QualificationRequirement}
 import xml.XML
@@ -7,6 +8,7 @@ import xml.XML
 trait MTurkQuestion {
   type R
   type A
+  type MTSpawn = MinimumSpawnPolicy
 
   protected var _description: Option[String] = None
   protected var _qualified_workers = Map[String,Set[String]]() // (QualificationTypeId -> Set[worker_id])
