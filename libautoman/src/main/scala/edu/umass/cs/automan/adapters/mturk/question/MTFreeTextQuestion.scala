@@ -8,7 +8,6 @@ import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
 
 class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
-  type MS = MTSpawn
   override type A = FreeTextQuestion#A
 
   // public API

@@ -9,7 +9,6 @@ import edu.umass.cs.automan.core.util.Utilities
 import org.apache.commons.codec.binary.Hex
 
 class MTCheckboxVectorQuestion extends CheckboxVectorQuestion with MTurkQuestion {
-  type MS = MTSpawn
   type QuestionOptionType = MTQuestionOption
   override type A = CheckboxVectorQuestion#A
 

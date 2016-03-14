@@ -8,7 +8,6 @@ import xml.XML
 trait MTurkQuestion {
   type R
   type A
-  type MTSpawn = MinimumSpawnPolicy
 
   protected var _description: Option[String] = None
   protected var _qualified_workers = Map[String,Set[String]]() // (QualificationTypeId -> Set[worker_id])

@@ -9,7 +9,6 @@ import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
 
 class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
-  type MS = MTSpawn
   type QuestionOptionType = MTQuestionOption
   override type A = CheckboxQuestion#A
 

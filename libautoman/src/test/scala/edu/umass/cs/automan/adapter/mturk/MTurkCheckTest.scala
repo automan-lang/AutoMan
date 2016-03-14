@@ -32,7 +32,21 @@ class MTurkCheckTest extends FlatSpec with Matchers {
           a.Option('cookie, "Cookie Monster"),
           a.Option('count, "The Count")
         )
-        q.mock_answers = makeMocks(List(Set('spongebob,'count),Set('spongebob),Set('count,'spongebob),Set('count,'spongebob)))
+        // temporary hack to deal with MTurk spawn minimums
+        q.mock_answers = makeMocks(
+          List(
+            Set('spongebob,'count),
+            Set('spongebob),
+            Set('count,'spongebob),
+            Set('count,'spongebob),
+            Set('count,'spongebob),
+            Set('count,'spongebob),
+            Set('count,'spongebob),
+            Set('count,'spongebob),
+            Set('count,'spongebob),
+            Set('count,'spongebob)
+          )
+        )
       }
 
       which_ones().answer match {

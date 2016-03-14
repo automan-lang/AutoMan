@@ -10,7 +10,6 @@ import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
 
 class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
-  type MS = MTSpawn
   override type A = EstimationQuestion#A
 
   // public API
