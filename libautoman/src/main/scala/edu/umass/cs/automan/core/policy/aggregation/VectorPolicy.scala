@@ -31,8 +31,12 @@ abstract class VectorPolicy(question: VectorQuestion)
     }
   }
   override def tasks_to_accept(tasks: List[Task]): List[Task] = {
+    val cancels = tasks_to_cancel(tasks).toSet
     completed_workerunique_tasks(tasks)
-      .filter(not_final)
+      .filter { t =>
+        not_final(t) &&
+        !cancels.contains(t)
+      }
   }
   override def tasks_to_reject(tasks: List[Task]): List[Task] = {
     val accepts = tasks_to_accept(tasks).toSet

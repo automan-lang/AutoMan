@@ -259,8 +259,11 @@ class Scheduler(val question: Question,
     val to_accept = strategy.tasks_to_accept(all_tasks)
     val to_reject = strategy.tasks_to_reject(all_tasks)
 
-    assert(to_accept.forall(t => t.state == SchedulerState.ANSWERED || t.state == SchedulerState.DUPLICATE), all_tasks.map(_.state).mkString(", "))
-    assert(to_reject.forall(t => t.state == SchedulerState.ANSWERED || t.state == SchedulerState.DUPLICATE), all_tasks.map(_.state).mkString(", "))
+    assert(accept_invariant(to_accept), to_accept.map(_.state).mkString(", "))
+    assert(reject_invariant(to_reject), to_reject.map(_.state).mkString(", "))
+    assert(mutex_invariant(to_cancel, to_accept, to_reject),
+      (to_cancel ::: to_accept ::: to_reject).map(_.task_id).mkString(", ")
+    )
 
     val correct_answer = strategy.rejection_response(to_accept)
 
@@ -275,6 +278,31 @@ class Scheduler(val question: Question,
     val rejected = if (to_reject.nonEmpty) { failUnWrap(backend.reject(to_reject.map { t => (t,correct_answer) })) } else { List.empty }
     assert(all_set_invariant(to_reject, rejected, SchedulerState.REJECTED))
     remaining_tasks ::: cancelled ::: accepted ::: rejected
+  }
+
+  def accept_invariant(ts: List[Task]) : Boolean = {
+    ts.forall { t =>
+      t.state == SchedulerState.ANSWERED || // the typical case
+      t.state == SchedulerState.DUPLICATE // in case we accept dupes
+    }
+  }
+
+  def reject_invariant(ts: List[Task]) : Boolean = {
+    ts.forall { t =>
+      t.state == SchedulerState.ANSWERED || // the typical case
+      t.state == SchedulerState.DUPLICATE   // in case we do not accept dupes
+    }
+  }
+
+  def mutex_invariant(to_cancel: List[Task], to_accept: List[Task], to_reject: List[Task]) : Boolean = {
+    (to_cancel ::: to_accept ::: to_reject).foldLeft(Set[UUID](), true) {
+      case ((uSet, acc), t) =>
+        if (uSet.contains(t.task_id)) {
+          (uSet, false)
+        } else {
+          (uSet + t.task_id, acc)
+        }
+    }._2
   }
 
   def failUnWrap(tso: Option[List[Task]]) : List[Task] = {

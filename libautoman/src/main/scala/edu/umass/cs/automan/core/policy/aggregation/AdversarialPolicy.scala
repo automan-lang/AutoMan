@@ -244,14 +244,20 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
   }
 
   def tasks_to_accept(tasks: List[Task]): List[Task] = {
+    val cancels = tasks_to_cancel(tasks).toSet
     (biggest_group(tasks) match { case (_, ts) => ts })
-      .filter(not_final)
+      .filter { t =>
+        not_final(t) &&
+        !cancels.contains(t)
+      }
   }
 
   def tasks_to_reject(tasks: List[Task]): List[Task] = {
+    val cancels = tasks_to_cancel(tasks).toSet
     val accepts = tasks_to_accept(tasks).toSet
+    val accepts_and_cancels = accepts.union(cancels)
     tasks.filter { t =>
-      !accepts.contains(t) &&
+      !accepts_and_cancels.contains(t) &&
         not_final(t)
     }
   }

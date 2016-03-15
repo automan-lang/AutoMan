@@ -247,7 +247,13 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
   }
 
   // by default, we just accept everything
-  override def tasks_to_accept(tasks: List[Task]): List[Task] = tasks.filter(not_final)
+  override def tasks_to_accept(tasks: List[Task]): List[Task] = {
+    val cancels = tasks_to_cancel(tasks).toSet
+    tasks.filter { t =>
+      not_final(t) &&
+      !cancels.contains(t)
+    }
+  }
 
   // by default, we reject nothing
   override def tasks_to_reject(tasks: List[Task]): List[Task] = Nil
