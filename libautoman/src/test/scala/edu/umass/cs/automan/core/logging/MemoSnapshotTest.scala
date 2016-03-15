@@ -1,5 +1,6 @@
 package edu.umass.cs.automan.core.logging
 
+import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
 import org.scalatest._
 import java.util.UUID
 import edu.umass.cs.automan.test._
@@ -31,6 +32,7 @@ class MemoSnapshotTest extends FlatSpec with Matchers {
         a.Option('count, "The Count")
       )
       q.mock_answers = makeMocksAt(List('spongebob,'spongebob,'spongebob,'spongebob,'spongebob,'spongebob), 0)
+      q.minimum_spawn_policy = UserDefinableSpawnPolicy(0)
     }
 
     def which_one2(text: String) = a.CheckboxQuestion { q =>
@@ -45,6 +47,7 @@ class MemoSnapshotTest extends FlatSpec with Matchers {
         a.Option('count, "The Count")
       )
       q.mock_answers = makeMocksAt(List(Set('spongebob,'count),Set('spongebob),Set('count,'spongebob),Set('count,'spongebob)), 0)
+      q.minimum_spawn_policy = UserDefinableSpawnPolicy(0)
     }
 
     automan(a, test_mode = true, in_mem_db = true) {

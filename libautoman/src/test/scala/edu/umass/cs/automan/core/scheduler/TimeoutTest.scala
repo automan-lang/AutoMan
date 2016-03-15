@@ -1,6 +1,7 @@
 package edu.umass.cs.automan.core.scheduler
 
 import edu.umass.cs.automan.core.logging.LogLevelDebug
+import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
 import org.scalatest._
 import java.util.UUID
 import edu.umass.cs.automan.test._
@@ -37,6 +38,7 @@ class TimeoutTest extends FlatSpec with Matchers {
           ('spongebob, 45000)
         )
       )
+      q.minimum_spawn_policy = UserDefinableSpawnPolicy(0)
     }
 
     automan(a, test_mode = true) {
