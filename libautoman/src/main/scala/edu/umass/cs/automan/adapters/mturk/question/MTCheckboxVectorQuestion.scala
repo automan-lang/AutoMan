@@ -2,6 +2,7 @@ package edu.umass.cs.automan.adapters.mturk.question
 
 import java.util.{Date, UUID}
 import edu.umass.cs.automan.adapters.mturk.mock.CheckboxMockResponse
+import edu.umass.cs.automan.adapters.mturk.policy.aggregation.MTurkMinimumSpawnPolicy
 import edu.umass.cs.automan.core.logging._
 import java.security.MessageDigest
 import edu.umass.cs.automan.core.question.CheckboxVectorQuestion
@@ -22,6 +23,7 @@ class MTCheckboxVectorQuestion extends CheckboxVectorQuestion with MTurkQuestion
   override def randomized_options: List[QuestionOptionType] = Utilities.randomPermute(options)
 
   // private API
+  override protected[automan] val _minimum_spawn_policy = MTurkMinimumSpawnPolicy
   override def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID) : CheckboxMockResponse = {
     CheckboxMockResponse(question_id, response_time, a, worker_id)
   }

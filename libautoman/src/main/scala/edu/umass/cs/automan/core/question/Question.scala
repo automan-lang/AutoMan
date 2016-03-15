@@ -20,7 +20,6 @@ abstract class Question {
   type AP <: AggregationPolicy
   type PP <: PricePolicy
   type TP <: TimeoutPolicy
-  type MS <: MinimumSpawnPolicy
 
   class QuestionStillExecutingException extends Exception
 
@@ -50,7 +49,7 @@ abstract class Question {
   protected[automan] var _timeout_policy_instance: TP = _
   protected[automan] var _validation_policy: Option[Class[AP]] = None
   protected[automan] var _validation_policy_instance: AP = _
-  protected[automan] var _minimum_spawn_policy: MS = _
+  protected[automan] val _minimum_spawn_policy: MinimumSpawnPolicy
 
   def before_filter_=(f: A => A) { _before_filter = f }
   def before_filter: A => A = _before_filter

@@ -174,6 +174,7 @@ class Scheduler(val question: Question,
       val answer = VP.select_answer(_all_tasks)
 
       // pay for answers
+      // TODO: fix early cancellation
       _all_tasks = accept_reject_and_cancel(_all_tasks, VP, backend)
 
       // return answer

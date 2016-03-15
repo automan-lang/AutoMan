@@ -1,6 +1,5 @@
 package edu.umass.cs.automan.adapters.mturk.question
 
-import edu.umass.cs.automan.core.policy.aggregation.MinimumSpawnPolicy
 import edu.umass.cs.automan.core.scheduler.BackendResult
 import com.amazonaws.mturk.requester.{Assignment, QualificationRequirement}
 import xml.XML
