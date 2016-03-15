@@ -1,6 +1,7 @@
 package edu.umass.cs.automan.adapter.mturk
 
 import edu.umass.cs.automan.core.logging.LogLevelDebug
+import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
 import org.scalatest._
 import java.util.UUID
 import edu.umass.cs.automan.test._
@@ -44,6 +45,8 @@ class MTurkExtendHITTest extends FlatSpec with Matchers {
         'spongebob,
         'spongebob
       )
+      // opt out of MTurk spawn min to simplify test
+      q.minimum_spawn_policy = UserDefinableSpawnPolicy(0)
     }
 
     automan(a, test_mode = true) {

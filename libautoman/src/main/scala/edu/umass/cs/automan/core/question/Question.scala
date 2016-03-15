@@ -8,7 +8,7 @@ import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 import edu.umass.cs.automan.core.mock.{MockAnswer, MockResponse}
 import edu.umass.cs.automan.core.policy.price.PricePolicy
 import edu.umass.cs.automan.core.policy.timeout.TimeoutPolicy
-import edu.umass.cs.automan.core.policy.aggregation.{MinimumSpawnPolicy, AggregationPolicy}
+import edu.umass.cs.automan.core.policy.aggregation.{UserDefinableSpawnPolicy, MinimumSpawnPolicy, AggregationPolicy}
 import edu.umass.cs.automan.core.scheduler.Scheduler
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -49,7 +49,7 @@ abstract class Question {
   protected[automan] var _timeout_policy_instance: TP = _
   protected[automan] var _validation_policy: Option[Class[AP]] = None
   protected[automan] var _validation_policy_instance: AP = _
-  protected[automan] val _minimum_spawn_policy: MinimumSpawnPolicy
+  protected[automan] var _minimum_spawn_policy: MinimumSpawnPolicy = UserDefinableSpawnPolicy(0)
 
   def before_filter_=(f: A => A) { _before_filter = f }
   def before_filter: A => A = _before_filter
@@ -71,6 +71,8 @@ abstract class Question {
   def max_replicas: Option[Int] = _max_replicas
   def max_replicas_=(m: Int) { _max_replicas = Some(m) }
   def memo_hash: String
+  def minimum_spawn_policy_=(p: MinimumSpawnPolicy) { _minimum_spawn_policy = p }
+  def minimum_spawn_policy: MinimumSpawnPolicy = _minimum_spawn_policy
   def mock_answers_=(answers: List[MockAnswer[A]]) { _mock_answers = answers }
   def mock_answers: List[MockAnswer[A]] = _mock_answers
   def question_timeout_multiplier_=(t: Double) { _question_timeout_multiplier = t }

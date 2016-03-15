@@ -22,7 +22,7 @@ class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
   override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
 
   // private API
-  override protected[automan] val _minimum_spawn_policy = MTurkMinimumSpawnPolicy
+  _minimum_spawn_policy = MTurkMinimumSpawnPolicy
   override def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID) : EstimationMockResponse = {
     EstimationMockResponse(question_id, response_time, a, worker_id)
   }
