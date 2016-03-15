@@ -261,15 +261,16 @@ class Scheduler(val question: Question,
 
     assert(accept_invariant(to_accept), to_accept.map(_.state).mkString(", "))
     assert(reject_invariant(to_reject), to_reject.map(_.state).mkString(", "))
-    assert(mutex_invariant(to_cancel, to_accept, to_reject),
-      (to_cancel ::: to_accept ::: to_reject).map(_.task_id).mkString(", ")
-    )
 
     val correct_answer = strategy.rejection_response(to_accept)
 
     val action_items = to_cancel ::: to_accept ::: to_reject
 
     val remaining_tasks = all_tasks.filterNot(action_items.contains(_))
+
+    assert(mutex_invariant(to_cancel, to_accept, to_reject, remaining_tasks),
+      (to_cancel ::: to_accept ::: to_reject ::: remaining_tasks).map(_.task_id).mkString(", ")
+    )
 
     val cancelled = if (to_cancel.nonEmpty) { failUnWrap(backend.cancel(to_cancel, SchedulerState.CANCELLED)) } else { List.empty }
     assert(all_set_invariant(to_cancel, cancelled, SchedulerState.CANCELLED))
@@ -294,8 +295,8 @@ class Scheduler(val question: Question,
     }
   }
 
-  def mutex_invariant(to_cancel: List[Task], to_accept: List[Task], to_reject: List[Task]) : Boolean = {
-    (to_cancel ::: to_accept ::: to_reject).foldLeft(Set[UUID](), true) {
+  def mutex_invariant(to_cancel: List[Task], to_accept: List[Task], to_reject: List[Task], remaining: List[Task]) : Boolean = {
+    (to_cancel ::: to_accept ::: to_reject ::: remaining).foldLeft(Set[UUID](), true) {
       case ((uSet, acc), t) =>
         if (uSet.contains(t.task_id)) {
           (uSet, false)
