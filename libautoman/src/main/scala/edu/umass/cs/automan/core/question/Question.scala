@@ -30,6 +30,7 @@ abstract class Question {
   protected var _image_alt_text: Option[String] = None
   protected var _image_url: Option[String] = None
   protected var _initial_worker_timeout_in_s: Int = 30
+  protected var _payOnFailure: Boolean = true
   protected var _question_timeout_multiplier: Double = 100
   protected var _text: Option[String] = None
   protected var _title: Option[String] = None
@@ -75,6 +76,8 @@ abstract class Question {
   def minimum_spawn_policy: MinimumSpawnPolicy = _minimum_spawn_policy
   def mock_answers_=(answers: List[MockAnswer[A]]) { _mock_answers = answers }
   def mock_answers: List[MockAnswer[A]] = _mock_answers
+  def pay_all_on_failure_=(pay: Boolean) { _payOnFailure = pay }
+  def pay_all_on_failure: Boolean = _payOnFailure
   def question_timeout_multiplier_=(t: Double) { _question_timeout_multiplier = t }
   def question_timeout_multiplier: Double = _question_timeout_multiplier
   def strategy = _validation_policy match { case Some(vs) => vs; case None => null }

@@ -186,14 +186,16 @@ class Scheduler(val question: Question,
       val answer = VP.select_answer(_all_tasks, _num_comparisons)
 
       // pay for answers
-      // TODO: fix early cancellation
       _all_tasks = accept_reject_and_cancel(_all_tasks, VP, backend)
 
       // return answer
       answer
     } catch {
       case o: OverBudgetException =>
-        VP.select_over_budget_answer(_all_tasks, o.need, o.have, _num_comparisons)
+        val answer = VP.select_over_budget_answer(_all_tasks, o.need, o.have, _num_comparisons)
+        // make sure workers are paid when failures occur
+        _all_tasks = if (question.pay_all_on_failure) { accept_on_failure(_all_tasks, VP, backend) } else { _all_tasks }
+        answer
     }
 
     // run shutdown hook
@@ -268,6 +270,35 @@ class Scheduler(val question: Question,
       // 2. we still have tasks running and should just wait
       (List.empty, num_comparisons2)
     }
+  }
+
+  def accept_on_failure[A](all_tasks: List[Task],
+                           strategy: AggregationPolicy,
+                           backend: AutomanAdapter) : List[Task] = {
+    val to_cancel = strategy.tasks_to_cancel(all_tasks)
+    val to_accept = strategy.tasks_to_accept(all_tasks)
+    val to_also_accept = strategy.tasks_to_reject(all_tasks)
+
+    assert(accept_invariant(to_accept), to_accept.map(_.state).mkString(", "))
+    assert(reject_invariant(to_also_accept), to_also_accept.map(_.state).mkString(", "))
+
+    val correct_answer = strategy.rejection_response(to_accept)
+
+    val action_items = to_cancel ::: to_accept ::: to_also_accept
+
+    val remaining_tasks = all_tasks.filterNot(action_items.contains(_))
+
+    assert(mutex_invariant(to_cancel, to_accept, to_also_accept, remaining_tasks),
+      (to_cancel ::: to_accept ::: to_also_accept ::: remaining_tasks).map(_.task_id).mkString(", ")
+    )
+
+    val cancelled = if (to_cancel.nonEmpty) { failUnWrap(backend.cancel(to_cancel, SchedulerState.CANCELLED)) } else { List.empty }
+    assert(all_set_invariant(to_cancel, cancelled, SchedulerState.CANCELLED))
+    val accepted = if (to_accept.nonEmpty) { failUnWrap(backend.accept(to_accept)) } else { List.empty }
+    assert(all_set_invariant(to_accept, accepted, SchedulerState.ACCEPTED))
+    val also_accepted = if (to_also_accept.nonEmpty) { failUnWrap(backend.accept(to_also_accept)) } else { List.empty }
+    assert(all_set_invariant(to_also_accept, also_accepted, SchedulerState.REJECTED))
+    remaining_tasks ::: cancelled ::: accepted ::: also_accepted
   }
 
   /**

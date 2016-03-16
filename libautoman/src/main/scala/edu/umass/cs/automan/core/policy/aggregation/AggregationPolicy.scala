@@ -159,7 +159,7 @@ abstract class AggregationPolicy(question: Question) {
     }.toList
   }
 
-  protected def completed_tasks(tasks: List[Task]) = {
+  def completed_tasks(tasks: List[Task]) = {
     // tasks should be
     tasks.filter(t =>
       t.state == SchedulerState.ANSWERED ||   // retrieved from MTurk
@@ -170,7 +170,7 @@ abstract class AggregationPolicy(question: Question) {
 
   // tasks that have either been retrieved from memo
   // or pulled from backend; and no more than one per worker
-  protected def completed_workerunique_tasks(tasks: List[Task]) = {
+  def completed_workerunique_tasks(tasks: List[Task]) = {
     // completed
     val completed = completed_tasks(tasks)
 
@@ -183,7 +183,7 @@ abstract class AggregationPolicy(question: Question) {
     }
   }
 
-  protected def outstanding_tasks(tasks: List[Task]) = {
+  def outstanding_tasks(tasks: List[Task]) = {
     // basically, not TIMEOUTs and REJECTs
     val outstanding = tasks.filter(t =>
       t.state == SchedulerState.READY ||
