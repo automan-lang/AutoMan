@@ -13,16 +13,4 @@ abstract class ScalarPolicy(question: Question)
   def is_done(tasks: List[Task], num_comparisons: Int) : (Boolean,Int) = {
     is_confident(tasks, num_comparisons)
   }
-
-  def not_final(task: Task) : Boolean = {
-    task.state != SchedulerState.ACCEPTED &&
-    task.state != SchedulerState.REJECTED &&
-    task.state != SchedulerState.CANCELLED &&
-    task.state != SchedulerState.TIMEOUT
-  }
-
-//  def numComparisons(tasks: List[Task]) : Int = {
-//    // the number of rounds completed == the number of comparisons
-//    if (tasks.nonEmpty) { tasks.map(_.round).max } else { 1 }
-//  }
 }

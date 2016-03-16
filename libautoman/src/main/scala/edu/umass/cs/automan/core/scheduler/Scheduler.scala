@@ -276,29 +276,25 @@ class Scheduler(val question: Question,
                            strategy: AggregationPolicy,
                            backend: AutomanAdapter) : List[Task] = {
     val to_cancel = strategy.tasks_to_cancel(all_tasks)
-    val to_accept = strategy.tasks_to_accept(all_tasks)
-    val to_also_accept = strategy.tasks_to_reject(all_tasks)
+    val to_accept = strategy.tasks_to_accept_on_failure(all_tasks)
 
     assert(accept_invariant(to_accept), to_accept.map(_.state).mkString(", "))
-    assert(reject_invariant(to_also_accept), to_also_accept.map(_.state).mkString(", "))
 
     val correct_answer = strategy.rejection_response(to_accept)
 
-    val action_items = to_cancel ::: to_accept ::: to_also_accept
+    val action_items = to_cancel ::: to_accept
 
     val remaining_tasks = all_tasks.filterNot(action_items.contains(_))
 
-    assert(mutex_invariant(to_cancel, to_accept, to_also_accept, remaining_tasks),
-      (to_cancel ::: to_accept ::: to_also_accept ::: remaining_tasks).map(_.task_id).mkString(", ")
+    assert(mutex_invariant(to_cancel, to_accept, List.empty, remaining_tasks),
+      (to_cancel ::: to_accept ::: remaining_tasks).map(_.task_id).mkString(", ")
     )
 
     val cancelled = if (to_cancel.nonEmpty) { failUnWrap(backend.cancel(to_cancel, SchedulerState.CANCELLED)) } else { List.empty }
     assert(all_set_invariant(to_cancel, cancelled, SchedulerState.CANCELLED))
     val accepted = if (to_accept.nonEmpty) { failUnWrap(backend.accept(to_accept)) } else { List.empty }
     assert(all_set_invariant(to_accept, accepted, SchedulerState.ACCEPTED))
-    val also_accepted = if (to_also_accept.nonEmpty) { failUnWrap(backend.accept(to_also_accept)) } else { List.empty }
-    assert(all_set_invariant(to_also_accept, also_accepted, SchedulerState.REJECTED))
-    remaining_tasks ::: cancelled ::: accepted ::: also_accepted
+    remaining_tasks ::: cancelled ::: accepted
   }
 
   /**

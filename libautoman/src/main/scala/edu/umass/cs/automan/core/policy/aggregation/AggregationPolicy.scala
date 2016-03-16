@@ -29,6 +29,13 @@ abstract class AggregationPolicy(question: Question) {
     */
   def is_done(tasks: List[Task], num_comparisons: Int) : (Boolean,Int)
 
+  def not_final(task: Task) : Boolean = {
+    task.state != SchedulerState.ACCEPTED &&
+      task.state != SchedulerState.REJECTED &&
+      task.state != SchedulerState.CANCELLED &&
+      task.state != SchedulerState.TIMEOUT
+  }
+
   protected[policy] def num_to_run(tasks: List[Task], num_comparisons: Int, reward: BigDecimal) : Int
 
   /**
@@ -141,6 +148,15 @@ abstract class AggregationPolicy(question: Question) {
   }
 
   def tasks_to_accept(tasks: List[Task]): List[Task]
+
+  def tasks_to_accept_on_failure(tasks: List[Task]) : List[Task] = {
+    val cancels = tasks_to_cancel(tasks).toSet
+    completed_tasks(tasks)
+      .filter { t =>
+        not_final(t) &&
+        !cancels.contains(t)
+      }
+  }
 
   def tasks_to_cancel(tasks: List[Task]): List[Task] = {
     tasks.filter { t =>

@@ -47,10 +47,4 @@ abstract class VectorPolicy(question: VectorQuestion)
       not_final(t)
     }
   }
-
-  def not_final(task: Task) : Boolean = {
-    task.state != SchedulerState.ACCEPTED &&
-      task.state != SchedulerState.REJECTED &&
-      task.state != SchedulerState.CANCELLED
-  }
 }

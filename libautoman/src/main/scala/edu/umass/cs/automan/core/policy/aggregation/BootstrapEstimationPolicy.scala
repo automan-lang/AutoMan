@@ -116,28 +116,6 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
     if (X(b) < t) 1 else 0
   }
 
-  /**
-    * Returns true if the task in not in a 'dead' state.
-    * @param task
-    * @return
-    */
-  private def not_final(task: Task) : Boolean = {
-    task.state != SchedulerState.ACCEPTED &&
-      task.state != SchedulerState.REJECTED &&
-      task.state != SchedulerState.CANCELLED &&
-      task.state != SchedulerState.TIMEOUT
-  }
-
-//  /**
-//    * The number of comparisons for the current run of tasks.
-//    * @param tasks
-//    * @return the number of runs/hypotheses
-//    */
-//  private def numComparisons(tasks: List[Task]) : Int = {
-//    // the number of rounds completed == the number of comparisons
-//    if (tasks.nonEmpty) { tasks.map(_.round).max } else { 1 }
-//  }
-
   def hasUnmarkedDuplicate(tasks: List[Task]) : Boolean = {
     tasks
       .filter(t => t.state == SchedulerState.ACCEPTED || t.state == SchedulerState.ANSWERED)
