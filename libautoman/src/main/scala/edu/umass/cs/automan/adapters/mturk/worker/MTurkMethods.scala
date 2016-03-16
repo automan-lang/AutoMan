@@ -17,6 +17,9 @@ import edu.umass.cs.automan.core.util.Utilities
   * A collection of stateless MTurk utility functions.
   */
 object MTurkMethods {
+  // give workers a tiny amount of leeway since sometimes their computers are actually slow
+  val WORKER_TIMEOUT_EPSILON = 15
+
   private[worker] def mtquestion_for_tasks(ts: List[Task]) : MTurkQuestion = {
     // determine which MT question we've been asked about
     question_for_tasks(ts) match {
@@ -227,7 +230,7 @@ object MTurkMethods {
 
     val hit_type_id = backend.registerHITType(
       (30 * 24 * 60 * 60).toLong,                                   // 30 days
-      worker_timeout.toLong,                                        // amount of time the worker has to complete the task
+      worker_timeout.toLong + WORKER_TIMEOUT_EPSILON,               // amount of time the worker has to complete the task
       cost.toDouble,                                                // cost in USD
       title,                                                        // title
       keywords.mkString(","),                                       // keywords
