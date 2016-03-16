@@ -9,7 +9,7 @@ class SimpleVectorPolicy(question: VectorQuestion)
 
   DebugLog("Policy: simple vector",LogLevelInfo(),LogType.STRATEGY, question.id)
 
-  override protected[policy] def num_to_run(tasks: List[Task], currentRound: Int, reward: BigDecimal): Int = {
+  override protected[policy] def num_to_run(tasks: List[Task], num_comparisons: Int, reward: BigDecimal): Int = {
     // additional number needed to reach num_samples
     Math.max(question.sample_size - outstanding_tasks(tasks).size, 0)
   }

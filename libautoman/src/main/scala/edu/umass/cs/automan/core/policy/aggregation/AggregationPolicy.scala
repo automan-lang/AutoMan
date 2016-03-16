@@ -24,11 +24,12 @@ abstract class AggregationPolicy(question: Question) {
   /**
     * Returns true if the strategy has enough data to stop scheduling work.
     * @param tasks The complete list of scheduled tasks.
-    * @return
+    * @param num_comparisons The number of times this function has been called, inclusive.
+    * @return (true iff done, new num_comparisons)
     */
-  def is_done(tasks: List[Task]) : Boolean
+  def is_done(tasks: List[Task], num_comparisons: Int) : (Boolean,Int)
 
-  protected[policy] def num_to_run(tasks: List[Task], currentRound: Int, reward: BigDecimal) : Int
+  protected[policy] def num_to_run(tasks: List[Task], num_comparisons: Int, reward: BigDecimal) : Int
 
   /**
     * Partitions a set of tasks into those that should be marked as
@@ -63,18 +64,20 @@ abstract class AggregationPolicy(question: Question) {
   /**
    * Returns the top answer.
    * @param tasks The complete list of tasks.
+   * @param num_comparisons The number of times is_done has been called.
    * @return Top answer
    */
-  def select_answer(tasks: List[Task]) : Question#AA
+  def select_answer(tasks: List[Task], num_comparisons: Int) : Question#AA
 
   /**
    * Returns an appropriate response for when the computation ran out of money.
    * @param tasks The complete list of tasks.
    * @param need The smallest amount of money needed to complete the computation under optimistic assumptions.
    * @param have The amount of money we have.
+   * @param num_comparisons The number of times is_done has been called.
    * @return A low-confidence or over-budget answer.
    */
-  def select_over_budget_answer(tasks: List[Task], need: BigDecimal, have: BigDecimal) : Question#AA
+  def select_over_budget_answer(tasks: List[Task], need: BigDecimal, have: BigDecimal, num_comparisons: Int) : Question#AA
 
   /**
    * Computes the number of tasks needed to satisfy the quality-control
@@ -85,7 +88,7 @@ abstract class AggregationPolicy(question: Question) {
    * @param suffered_timeout True if any of the latest batch of tasks suffered a timeout.
    * @return A list of new tasks to schedule on the backend.
    */
-  def spawn(tasks: List[Task], suffered_timeout: Boolean): List[Task] = {
+  def spawn(tasks: List[Task], suffered_timeout: Boolean, num_comparisons: Int): List[Task] = {
     // determine current round
     val cRound = currentRound(tasks)
 
@@ -97,19 +100,13 @@ abstract class AggregationPolicy(question: Question) {
     val reward = question._price_policy_instance.calculateReward(tasks, cRound, suffered_timeout)
 
     // determine number to spawn
-    val num_to_spawn = if (suffered_timeout) {
-      // spawn as many tasks as those that timed out
-      tasks.count { t => t.round == cRound && t.state == SchedulerState.TIMEOUT }
+    val num_to_spawn = if (tasks.count(_.state == SchedulerState.RUNNING) == 0) {
+      val min_to_spawn = num_to_run(tasks, num_comparisons, reward)
+      // this is an ugly hack for MTurk;
+      // TODO: think of better way to deal with MTurk's HIT extension policy
+      Math.max(question._minimum_spawn_policy.min, min_to_spawn)
     } else {
-      // (don't spawn more if any are running)
-      if (tasks.count(_.state == SchedulerState.RUNNING) == 0) {
-        val min_to_spawn = num_to_run(tasks, cRound, reward)
-        // this is an ugly hack for MTurk;
-        // TODO: think of better way to deal with MTurk's HIT extension policy
-        Math.max(question._minimum_spawn_policy.min, min_to_spawn)
-      } else {
-        return List[Task]() // Be patient!
-      }
+      return List[Task]() // Be patient!
     }
 
     // allocate Task objects

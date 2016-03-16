@@ -92,6 +92,9 @@ hashAsConstant := {
   pw.close()
 }
 
+// TEST CONFIGURATION
+parallelExecution in Test := false
+
 // MODIFY BUILD
 compile <<= (compile in Compile) dependsOn hashAsConstant
 

@@ -67,17 +67,17 @@ class Scheduler(val question: Question,
   }
 
   object Sch {
-    private def schTimeouts(allTasks: List[Task], time: Time) : (List[Task],Boolean,Time) = {
+    private def schTimeouts(allTasks: List[Task], time: Time, num_comparisons: Int) : (List[Task],Boolean,Time,Int) = {
       val (ok, sufferedTimeout) = process_timeouts(allTasks, time.current_time)
-      (ok, sufferedTimeout, time)
+      (ok, sufferedTimeout, time, num_comparisons)
     }
 
-    private def schPost(tasks: List[Task], sufferedTimeout: Boolean, time: Time) : (List[Task],List[Task],Time) = {
+    private def schPost(tasks: List[Task], sufferedTimeout: Boolean, time: Time, num_comparisons: Int) : (List[Task],List[Task],Time,Int) = {
       // get list of workers who may not re-participate
       val __blacklist = VP.blacklisted_workers(tasks)
 
       // post more tasks as needed
-      val __new_tasks = post_as_needed(tasks, backend, question, sufferedTimeout, __blacklist)
+      val (__new_tasks, num_comparisons2) = post_as_needed(tasks, backend, question, sufferedTimeout, __blacklist, num_comparisons)
 
       // update _time with time of future timeouts
       val time2 = if (use_virt) {
@@ -90,10 +90,10 @@ class Scheduler(val question: Question,
 
       assert(running.nonEmpty)
 
-      (running, unrunning, time2)
+      (running, unrunning, time2, num_comparisons2)
     }
 
-    private def schRetrieve(running: List[Task], unrunning: List[Task], time: Time) : (List[Task], List[Task], Time) = {
+    private def schRetrieve(running: List[Task], unrunning: List[Task], time: Time, num_comparisons: Int) : (List[Task],List[Task],Time,Int) = {
       DebugLog(
         "Retrieving answers for " + running.size + " running tasks from backend.",
         LogLevelInfo(),
@@ -104,10 +104,10 @@ class Scheduler(val question: Question,
       val __answered_tasks = failUnWrap(backend.retrieve(running, time.current_time))
       assert(retrieve_invariant(running, __answered_tasks))
 
-      (__answered_tasks, unrunning, time)
+      (__answered_tasks, unrunning, time, num_comparisons)
     }
 
-    private def schDeDup(answered: List[Task], unrunning: List[Task], time: Time) : (List[Task],Time) = {
+    private def schDeDup(answered: List[Task], unrunning: List[Task], time: Time, num_comparisons: Int) : (List[Task],Time,Int) = {
       val (nonDupes, dupes) = VP.partition_duplicates(answered ::: unrunning)
       // mark dupes as duplicate
       val allTasks = nonDupes ::: (
@@ -116,11 +116,11 @@ class Scheduler(val question: Question,
         } else {
           Nil
         } )
-      (allTasks, time)
+      (allTasks, time, num_comparisons)
     }
 
-    private def schIncrTime(allTasks: List[Task], time: Time) : (List[Task], Time) = {
-      (allTasks, time.incrTime())
+    private def schIncrTime(allTasks: List[Task], time: Time, num_comparisons: Int) : (List[Task],Time,Int) = {
+      (allTasks, time.incrTime(),num_comparisons)
     }
 
     private val timeout = (schTimeouts _).tupled
@@ -142,7 +142,16 @@ class Scheduler(val question: Question,
     val _update_frequency_ms = if (use_virt) { question.update_frequency_ms } else { VIRT_FREQ }
     var _time = Time.incrTime(use_virt)(init_time)(Time.initTickQueue(init_time, question.mock_answers))
     var _all_tasks = tasks
-    var _done = question.validation_policy_instance.is_done(_all_tasks) // check for restored memo tasks
+    var _num_comparisons = 1
+    var _done = false
+    // if we have restored tasks from memo DB
+    // check to see if we're done, incrementing
+    // num_comparisons as appropriate.
+    if (_all_tasks.nonEmpty) {
+      val (done, nc) = question.validation_policy_instance.is_done(_all_tasks, _num_comparisons) // check for restored memo tasks
+      _done = done
+      _num_comparisons = nc
+    }
 
     // process until done
     val answer = try {
@@ -151,15 +160,18 @@ class Scheduler(val question: Question,
           DebugLog("Scheduler time is " + Time.format(_time.current_time) + ".", LogLevelInfo(), LogType.SCHEDULER, question.id)
 
           // marshal and unmarshal from backend
-          val (__tasks, __time) = Sch.marshal(_all_tasks, _time)
+          val (__tasks, __time, __num_comparisons) = Sch.marshal(_all_tasks, _time, _num_comparisons)
 
           // update state
           _all_tasks = __tasks
           _time = __time
+          _num_comparisons = __num_comparisons
         }
 
         // continue?
-        _done = VP.is_done(_all_tasks)
+        val (__done,__nc) = VP.is_done(_all_tasks, _num_comparisons)
+        _done = __done
+        _num_comparisons = __nc
 
         // sleep if this loop iteration < update_frequency_ms
         // prevents flooding worker with requests
@@ -171,7 +183,7 @@ class Scheduler(val question: Question,
       }
 
       // select answer
-      val answer = VP.select_answer(_all_tasks)
+      val answer = VP.select_answer(_all_tasks, _num_comparisons)
 
       // pay for answers
       // TODO: fix early cancellation
@@ -181,7 +193,7 @@ class Scheduler(val question: Question,
       answer
     } catch {
       case o: OverBudgetException =>
-        VP.select_over_budget_answer(_all_tasks, o.need, o.have)
+        VP.select_over_budget_answer(_all_tasks, o.need, o.have, _num_comparisons)
     }
 
     // run shutdown hook
@@ -212,20 +224,31 @@ class Scheduler(val question: Question,
    * @param tasks The complete list of tasks.
    * @param question Question data.
    * @param suffered_timeout True if any tasks suffered a timeout on the last iteration.
-   * @return A list of newly-created tasks.
+   * @param num_comparisons The number of times we've called is_done, inclusive
+   * @return A list of newly-created tasks
    */
   def post_as_needed(tasks: List[Task],
                      backend: AutomanAdapter,
                      question: Question,
                      suffered_timeout: Boolean,
-                     blacklist: List[String]) : List[Task] = {
+                     blacklist: List[String],
+                     num_comparisons: Int) : (List[Task],Int) = {
     val s = question.validation_policy_instance
 
+    // if we suffered a timeout, we might as well
+    // check to see if we can terminate early
+    val (done, num_comparisons2) = if (suffered_timeout) {
+      VP.is_done(tasks, num_comparisons)
+    } else {
+      // no timeout, just keep going
+      (false, num_comparisons)
+    }
+
     // are any tasks still running?
-    if (tasks.count(_.state == SchedulerState.RUNNING) == 0) {
+    if (!done && tasks.count(_.state == SchedulerState.RUNNING) == 0) {
       // no, so post more
       // compute set of new tasks
-      val new_tasks = s.spawn(tasks, suffered_timeout)
+      val new_tasks = s.spawn(tasks, suffered_timeout, num_comparisons2)
       assert(spawn_invariant(new_tasks))
       // can we afford these?
       val cost = total_cost(tasks ::: new_tasks)
@@ -237,11 +260,13 @@ class Scheduler(val question: Question,
         // yes, so post and return all posted tasks
         val posted = failUnWrap(backend.post(new_tasks, blacklist))
         DebugLog("Posting " + posted.size + " tasks to backend.", LogLevelInfo(), LogType.SCHEDULER, question.id)
-        posted
+        (posted, num_comparisons2)
       }
     } else {
-      // do nothing for now
-      List.empty
+      // post nothing if either
+      // 1. we had a timeout but answers are sufficient to terminate early, or
+      // 2. we still have tasks running and should just wait
+      (List.empty, num_comparisons2)
     }
   }
 

@@ -43,6 +43,7 @@ class MTurkExtendHITTest extends FlatSpec with Matchers {
         'kermit,
         'spongebob,
         'spongebob,
+        'spongebob,
         'spongebob
       )
       // opt out of MTurk spawn min to simplify test
@@ -55,7 +56,7 @@ class MTurkExtendHITTest extends FlatSpec with Matchers {
           println("Answer: '" + value + "', confidence: " + conf + ", cost: $" + cost + ", # HITs: " + a.getAllHITs.length)
           (value == 'spongebob) should be (true)
           (conf >= confidence) should be (true)
-          (cost == BigDecimal(0.42)) should be (true)
+          (cost == BigDecimal(0.06) * BigDecimal(8)) should be (true)
           a.getAllHITs.length should be (1)
         case LowConfidenceAnswer(value, cost, conf, _) =>
           fail()

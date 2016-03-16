@@ -7,20 +7,22 @@ import edu.umass.cs.automan.core.scheduler._
 abstract class VectorPolicy(question: VectorQuestion)
   extends AggregationPolicy(question) {
 
-  def is_done(tasks: List[Task]) = {
+  def is_done(tasks: List[Task], num_comparisons: Int) = {
     val done = completed_workerunique_tasks(tasks).size
-    done >= question.sample_size
+    // num_comparisons is irrelevant for termination based
+    // on a fixed sample size but bump anyway for consistency
+    (done >= question.sample_size, num_comparisons + 1)
   }
   def rejection_response(tasks: List[Task]): String = {
     "We can only accept a single answer per worker."
   }
-  def select_answer(tasks: List[Task]) : Question#AA = {
+  def select_answer(tasks: List[Task], num_comparisons: Int) : Question#AA = {
     val valid_tasks: List[Task] = completed_workerunique_tasks(tasks)
     val distribution: Set[(String,Question#A)] = valid_tasks.map { t => (t.worker_id.get, t.answer.get) }.toSet
     val cost: BigDecimal = valid_tasks.filterNot(_.from_memo).foldLeft(BigDecimal(0)){ case (acc,t) => acc + t.cost }
     Answers(distribution, cost, question.id).asInstanceOf[Question#AA]
   }
-  def select_over_budget_answer(tasks: List[Task], need: BigDecimal, have: BigDecimal) : Question#AA = {
+  def select_over_budget_answer(tasks: List[Task], need: BigDecimal, have: BigDecimal, num_comparisons: Int) : Question#AA = {
     val valid_tasks: List[Task] = completed_workerunique_tasks(tasks)
     if (valid_tasks.isEmpty) {
       OverBudgetAnswers(need, have, question.id).asInstanceOf[Question#AA]

@@ -5,13 +5,6 @@ import edu.umass.cs.automan.core.logging.{LogType, LogLevelInfo, DebugLog}
 import edu.umass.cs.automan.core.question.{Question, DiscreteScalarQuestion}
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 
-object AdversarialPolicy {
-  // this serializes computation of outcomes using MC, but it
-  // ought to be outweighed by the fact that many tasks often
-  // compute exactly the same thing
-  var cache = Map[(Int,Int,Double,Int), Double]()
-}
-
 /**
   * This policy aggregates a set of discrete-valued responses
   * into a single best response using the adversarial scheme
@@ -34,9 +27,10 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
   /***
     * Calculates the best answer so far, returning the answer, cost, and confidence level.
     * @param tasks A list of tasks.
+    * @param num_comparisons The number of times we called is_done.
     * @return A tuple, (answer, cost, confidence)
     */
-  private def answer_selector(tasks: List[Task]) : (Question#A,BigDecimal,Double) = {
+  private def answer_selector(tasks: List[Task], num_comparisons: Int) : (Question#A,BigDecimal,Double) = {
     val valid_tasks = completed_workerunique_tasks(tasks)
 
     val bgrp = biggest_group(valid_tasks)
@@ -91,15 +85,7 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
     var done = false
     while(!done) {
       val key = (numOpts, trials + to_run, confidence, 1000000)
-      val min_required = AdversarialPolicy.synchronized {
-        if (AdversarialPolicy.cache.contains(key)) {
-          AdversarialPolicy.cache(key)
-        } else {
-          val min = AgreementSimulation.minToWin(numOpts, trials + to_run, confidence, 1000000)
-          AdversarialPolicy.cache += key -> min
-          min
-        }
-      }
+      val min_required = AgreementSimulation.minToWin(numOpts, trials + to_run, confidence, 1000000)
       val expected = max_agr + to_run
       if (min_required < 0 || min_required > expected) {
         to_run += 1
@@ -121,14 +107,14 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
     AgreementSimulation.confidenceOfOutcome(numOpts, valid_ts.size, biggest_answer, NumberOfSimulations)
   }
 
-  def is_confident(tasks: List[Task], num_hypotheses: Int): Boolean = {
+  def is_confident(tasks: List[Task], num_comparisons: Int): (Boolean,Int) = {
     if (tasks.isEmpty) {
       DebugLog("Have no tasks; confidence is undefined.", LogLevelInfo(), LogType.STRATEGY, question.id)
-      false
+      (false, num_comparisons)
     } else {
       val conf = current_confidence(tasks)
-      val thresh = bonferroni_confidence(question.confidence, num_hypotheses)
-      if (conf >= thresh) {
+      val thresh = bonferroni_confidence(question.confidence, num_comparisons)
+      val done = if (conf >= thresh) {
         DebugLog("Reached or exceeded alpha = " + (1 - thresh).toString, LogLevelInfo(), LogType.STRATEGY, question.id)
         true
       } else {
@@ -141,6 +127,7 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
         }
         false
       }
+      (done, num_comparisons + 1)
     }
   }
 
@@ -158,31 +145,30 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
     }
   }
 
-  def num_to_run(tasks: List[Task], round: Int, reward: BigDecimal) : Int = {
+  def num_to_run(tasks: List[Task], num_comparisons: Int, reward: BigDecimal) : Int = {
     precompTable match {
       case Some(pt) =>
-        if (round == 0) {
+        if (num_comparisons == 1) {
           // table is only valid for first round
           pt.getEntryOrNone(numOpts, reward) match {
             // there's an entry in the table
             case Some(ntr) => ntr
             // table has no entry
-            case None => num_to_run_fallback(tasks, round, reward)
+            case None => num_to_run_fallback(tasks, num_comparisons, reward)
           }
         } else {
           // no table available; just compute results
-          num_to_run_fallback(tasks, round, reward)
+          num_to_run_fallback(tasks, num_comparisons, reward)
         }
-      case None => num_to_run_fallback(tasks, round, reward)
+      case None => num_to_run_fallback(tasks, num_comparisons, reward)
     }
   }
 
-  def num_to_run_fallback(tasks: List[Task], round: Int, reward: BigDecimal) : Int = {
+  def num_to_run_fallback(tasks: List[Task], num_comparisons: Int, reward: BigDecimal) : Int = {
     // eliminate duplicates from the list of Tasks
     val tasks_no_dupes = tasks.filter(_.state != SchedulerState.DUPLICATE)
 
-    // the number of hypotheses is the current round number + 1, since we count from zero
-    val adjusted_conf = bonferroni_confidence(question.confidence, round + 1)
+    val adjusted_conf = bonferroni_confidence(question.confidence, num_comparisons)
 
     // compute # expected for agreement
     val expected = expected_for_agreement(tasks_no_dupes.size, max_agree(tasks_no_dupes), adjusted_conf)
@@ -222,20 +208,20 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
     }
   }
 
-  def select_answer(tasks: List[Task]) : Question#AA = {
-    answer_selector(tasks) match { case (value,cost,conf) =>
+  def select_answer(tasks: List[Task], num_comparisons: Int) : Question#AA = {
+    answer_selector(tasks, num_comparisons) match { case (value,cost,conf) =>
       DebugLog("Most popular answer is " + value.toString, LogLevelInfo(), LogType.STRATEGY, question.id)
       Answer(value, cost, conf, question.id).asInstanceOf[Question#AA]
     }
   }
 
-  def select_over_budget_answer(tasks: List[Task], need: BigDecimal, have: BigDecimal) : Question#AA = {
+  def select_over_budget_answer(tasks: List[Task], need: BigDecimal, have: BigDecimal, num_comparisons: Int) : Question#AA = {
     // if we've never scheduled anything,
     // there will be no largest group
     if(completed_workerunique_tasks(tasks).isEmpty) {
       OverBudgetAnswer(need, have, question.id).asInstanceOf[Question#AA]
     } else {
-      answer_selector(tasks) match {
+      answer_selector(tasks, num_comparisons) match {
         case (value, cost, conf) =>
           DebugLog("Over budget.  Best answer so far is " + value.toString, LogLevelInfo(), LogType.STRATEGY, question.id)
           LowConfidenceAnswer(value, cost, conf, question.id).asInstanceOf[Question#AA]

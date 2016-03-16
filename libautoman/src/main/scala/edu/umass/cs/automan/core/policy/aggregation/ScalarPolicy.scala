@@ -9,9 +9,9 @@ abstract class ScalarPolicy(question: Question)
   extends AggregationPolicy(question) {
 
   def current_confidence(tasks: List[Task]) : Double
-  def is_confident(tasks: List[Task], num_hypotheses: Int) : Boolean
-  def is_done(tasks: List[Task]) = {
-    is_confident(tasks, numComparisons(tasks))
+  def is_confident(tasks: List[Task], num_comparisons: Int) : (Boolean, Int)
+  def is_done(tasks: List[Task], num_comparisons: Int) : (Boolean,Int) = {
+    is_confident(tasks, num_comparisons)
   }
 
   def not_final(task: Task) : Boolean = {
@@ -21,8 +21,8 @@ abstract class ScalarPolicy(question: Question)
     task.state != SchedulerState.TIMEOUT
   }
 
-  def numComparisons(tasks: List[Task]) : Int = {
-    // the number of rounds completed == the number of comparisons
-    if (tasks.nonEmpty) { tasks.map(_.round).max } else { 1 }
-  }
+//  def numComparisons(tasks: List[Task]) : Int = {
+//    // the number of rounds completed == the number of comparisons
+//    if (tasks.nonEmpty) { tasks.map(_.round).max } else { 1 }
+//  }
 }

@@ -23,9 +23,10 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
   /**
     * Calculates the best estimate so far, returning the answer, confidence bounds, cost, and confidence level.
     * @param tasks The tasks
+    * @param num_comparisons The number of times is_done has been called, inclusive.
     * @return Tuple (estimate, low CI bound, high CI bound, cost, confidence)
     */
-  private def answer_selector(tasks: List[Task]): (Double, Double, Double, BigDecimal, Double) = {
+  private def answer_selector(tasks: List[Task], num_comparisons: Int): (Double, Double, Double, BigDecimal, Double) = {
     val valid_tasks = completed_workerunique_tasks(tasks)
 
     // extract responses & cast to Double
@@ -33,7 +34,7 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
     val X = valid_tasks.flatMap(_.answer).asInstanceOf[List[Double]]
 
     // calculate alpha, with Bonferroni correction
-    val adj_conf = bonferroni_confidence(question.confidence, numComparisons(valid_tasks))
+    val adj_conf = bonferroni_confidence(question.confidence, num_comparisons)
     val alpha = 1 - adj_conf
 
     // do bootstrap
@@ -127,15 +128,15 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
       task.state != SchedulerState.TIMEOUT
   }
 
-  /**
-    * The number of comparisons for the current run of tasks.
-    * @param tasks
-    * @return the number of runs/hypotheses
-    */
-  private def numComparisons(tasks: List[Task]) : Int = {
-    // the number of rounds completed == the number of comparisons
-    if (tasks.nonEmpty) { tasks.map(_.round).max } else { 1 }
-  }
+//  /**
+//    * The number of comparisons for the current run of tasks.
+//    * @param tasks
+//    * @return the number of runs/hypotheses
+//    */
+//  private def numComparisons(tasks: List[Task]) : Int = {
+//    // the number of rounds completed == the number of comparisons
+//    if (tasks.nonEmpty) { tasks.map(_.round).max } else { 1 }
+//  }
 
   def hasUnmarkedDuplicate(tasks: List[Task]) : Boolean = {
     tasks
@@ -152,18 +153,21 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
   /**
     * Calculate the number of new tasks to schedule.
     * @param tasks
-    * @param currentRound
+    * @param num_comparisons
     * @param reward
     * @return
     */
-  protected[policy] def num_to_run(tasks: List[Task], currentRound: Int, reward: BigDecimal) : Int = {
+  protected[policy] def num_to_run(tasks: List[Task], num_comparisons: Int, reward: BigDecimal) : Int = {
     // duplicates should already be marked as dupes here from the list of Tasks
     assert(!hasUnmarkedDuplicate(tasks))
 
     val answered_no_dupes = tasks.count(t => t.state == SchedulerState.ANSWERED)
 
+    // determine current round
+    val cRound = currentRound(tasks)
+
     // calculate the new total sample size (just doubles the total in every round)
-    val ss_tot = question.default_sample_size << currentRound
+    val ss_tot = question.default_sample_size << cRound
 
     // minus the number of non-duplicate answers received
     ss_tot - answered_no_dupes
@@ -186,29 +190,34 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
   /**
     * Returns true if the strategy has enough data to stop scheduling work.
     * @param tasks The complete list of scheduled tasks.
-    * @return true iff done
+    * @param num_comparisons The number of times this function has been called, inclusive.
+    * @return true iff done.
     */
-  override def is_done(tasks: List[Task]): Boolean = {
-    // if there are SOME completed tasks AND
-    // no tasks are READY or RUNNING
+  override def is_done(tasks: List[Task], num_comparisons: Int): (Boolean,Int) = {
+    // if there are SOME completed tasks and
+    // our sample size is at least the initial size requested
     if (completed_workerunique_tasks(tasks).nonEmpty &&
-        outstanding_tasks(tasks).isEmpty) {
-      answer_selector(tasks) match {
+        completed_workerunique_tasks(tasks).size >= 12) {
+      val done = answer_selector(tasks, num_comparisons) match {
         case (est, low, high, cost, conf) =>
           question.confidence_interval match {
             case UnconstrainedCI() =>
-              completed_workerunique_tasks(tasks).size == question.default_sample_size
+              completed_workerunique_tasks(tasks).size ==
+              question.default_sample_size
             case SymmetricCI(err) =>
-              est - low <= err &&
-              high - est <= err
+              est - low < err &&
+              high - est < err
             case AsymmetricCI(lerr, herr) =>
-              est - low <= lerr &&
-              high - est <= herr
+              est - low < lerr &&
+              high - est < herr
            }
       }
+      // bump comparisons
+      (done, num_comparisons + 1)
     // otherwise, wait
     } else {
-      false
+      // do not bump comparisons
+      (false, num_comparisons)
     }
   }
 
@@ -216,8 +225,8 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
     "Your answer is incorrect.  " +
       "We value your feedback, so if you think that we are in error, please contact us."
 
-  override def select_answer(tasks: List[Task]): Question#AA = {
-    answer_selector(tasks) match { case (est, low, high, cost, conf) =>
+  override def select_answer(tasks: List[Task], num_comparisons: Int): Question#AA = {
+    answer_selector(tasks, num_comparisons) match { case (est, low, high, cost, conf) =>
       DebugLog("Estimate is " + low + " ≤ " + est + " ≤ " + high,
         LogLevelInfo(),
         LogType.STRATEGY,
@@ -229,13 +238,14 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
 
   override def select_over_budget_answer(tasks: List[Task],
                                          need: BigDecimal,
-                                         have: BigDecimal): Question#AA = {
+                                         have: BigDecimal,
+                                         num_comparisons: Int): Question#AA = {
     // if we've never scheduled anything,
     // there will be no largest group
     if(completed_workerunique_tasks(tasks).isEmpty) {
       OverBudgetEstimate(need, have, question.id).asInstanceOf[Question#AA]
     } else {
-      answer_selector(tasks) match {
+      answer_selector(tasks, num_comparisons) match {
         case (est, low, high, cost, conf) =>
           DebugLog("Over budget.  Best estimate so far is " + low + " ≤ " + est + " ≤ " + high,
             LogLevelInfo(),
