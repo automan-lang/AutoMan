@@ -62,11 +62,15 @@ package object test {
     makeMocks(answers.toList)
   }
 
-  def makeMocks[T](answers: List[T]) : List[MockAnswer[T]] = {
+  def makeMocksWithDelta[T](answers: List[T], delta_in_sec: Int) : List[MockAnswer[T]] = {
     val (_, mocks) = answers.foldLeft(0,List[MockAnswer[T]]()){
-      case ((t,xs),x) => (t+1, MockAnswer(x, t, UUID.randomUUID()) :: xs)
+      case ((t,xs),x) => (t + delta_in_sec * 1000, MockAnswer(x, t, UUID.randomUUID()) :: xs)
     }
     mocks
+  }
+
+  def makeMocks[T](answers: List[T]) : List[MockAnswer[T]] = {
+    makeMocksWithDelta(answers, 1)
   }
 
   def makeMocksAt[T](answers: List[T], time: Long) : List[MockAnswer[T]] = {
