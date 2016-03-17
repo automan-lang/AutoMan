@@ -32,6 +32,7 @@ class WorkerRunnable(tw: TurkWorker,
 
         // take item off queue and unwrap from FIFO comparator
         val work_item = requests.take().getEntry
+        DebugLog("MTurk worker took 1 job; remaining jobs in queue = " + requests.size(), LogLevelDebug(), LogType.ADAPTER, null)
 
         try {
           work_item match {
@@ -58,10 +59,10 @@ class WorkerRunnable(tw: TurkWorker,
       // rate-limit
       val duration = Math.max(tw.sleep_ms - time.duration_ms, 0)
       if (duration > 0) {
-        DebugLog("MTurk connection pool sleeping for " + duration.toString + " milliseconds.", LogLevelInfo(), LogType.ADAPTER, null)
+        DebugLog("MTurk worker sleeping for " + duration.toString + " milliseconds.", LogLevelInfo(), LogType.ADAPTER, null)
         Thread.sleep(duration)
       } else {
-        DebugLog("MTurk connection pool thread yield.", LogLevelInfo(), LogType.ADAPTER, null)
+        DebugLog("MTurk worker yield.", LogLevelInfo(), LogType.ADAPTER, null)
         Thread.`yield`()
       }
     } // exit loop
