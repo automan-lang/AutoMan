@@ -98,7 +98,7 @@ object MTurkMethods {
     DebugLog("Creating disqualification.",LogLevelInfo(),LogType.ADAPTER,null)
     val qualtxt = s"AutoMan automatically generated Disqualification (title: $title, date: $datestr, batchKey: $batchKey, batch_no: $batch_no)"
     val qual = backend.createQualificationType("AutoMan " + UUID.randomUUID(), "automan", qualtxt)
-    new QualificationRequirement(qual.getQualificationTypeId, Comparator.EqualTo, batch_no, null, false)
+    new QualificationRequirement(qual.getQualificationTypeId, Comparator.EqualTo, Array(batch_no), null, false)
   }
 
   private[worker] def answer_tasks(ts: List[Task], batch_key: BatchKey, current_time: Date, state: MTState, backend: RequesterService, mock_service: Option[MockRequesterService]) : (List[Task],MTState) = {
