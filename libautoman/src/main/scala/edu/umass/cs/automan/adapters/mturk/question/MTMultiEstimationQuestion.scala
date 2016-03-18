@@ -5,14 +5,15 @@ import java.util.{Date, UUID}
 import edu.umass.cs.automan.adapters.mturk.mock.MultiEstimationMockResponse
 import edu.umass.cs.automan.adapters.mturk.policy.aggregation.MTurkMinimumSpawnPolicy
 import edu.umass.cs.automan.core.logging.{LogType, LogLevelDebug, DebugLog}
-import edu.umass.cs.automan.core.question.MultiEstimationQuestion
+import edu.umass.cs.automan.core.question.{Dimension, MultiEstimationQuestion}
 import org.apache.commons.codec.binary.Hex
 
-class MTMultiEstimationQuestion(questions: Array[MTEstimationQuestion]) extends MultiEstimationQuestion[MTEstimationQuestion](questions) with MTurkQuestion {
+class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestion with MTurkQuestion {
   override type A = Array[Double]
 
-  private val _MTQuestionIDs = questions.map(_.id)
-  private var _action: String = ???
+  _minimum_spawn_policy = MTurkMinimumSpawnPolicy
+  private val _action = if (sandbox) { "sandbox" } else { "production" }
+  private val _MTQuestionIDs = _dimensions.map(_.id)
   private var _iframe_height = 450
   private var _layout: Option[scala.xml.Node] = None
 
@@ -32,7 +33,6 @@ class MTMultiEstimationQuestion(questions: Array[MTEstimationQuestion]) extends 
   override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
 
   // private API
-  _minimum_spawn_policy = MTurkMinimumSpawnPolicy
   override def toMockResponse(question_id: UUID, response_time: Date, as: A, worker_id: UUID) : MultiEstimationMockResponse = {
     MultiEstimationMockResponse(_MTQuestionIDs, response_time, as, worker_id)
   }
@@ -43,15 +43,15 @@ class MTMultiEstimationQuestion(questions: Array[MTEstimationQuestion]) extends 
     val answer_map = identifiers
       .map { id =>
         val answer = (x \\ "Answer").filter(a => a.descendant.contains(id)).head
-        (UUID.fromString(id.text), (answer \\ "FreeText").text)
+        (Symbol(id.text), (answer \\ "FreeText").text)
       }.toMap
     _MTQuestionIDs.map ( id => answer_map(id).toDouble )
   }
 
-  def renderQuestion(question: MTEstimationQuestion ) : scala.xml.Node = {
+  def renderQuestion(dimension: Dimension) : scala.xml.Node = {
     <p>
-      <span>{ question.text }</span>
-      <input type="text" name={ question.id.toString } />
+      <span>{ dimension.id.toString }</span><br/>
+      <input type="text" name={ dimension.id.toString } />
     </p>
   }
 
@@ -86,7 +86,7 @@ class MTMultiEstimationQuestion(questions: Array[MTEstimationQuestion]) extends 
                     case None => Unit
                   }
                 }
-                <p>{ questions.map(renderQuestion) }</p>
+                <p>{ dimensions.map(renderQuestion) }</p>
                 <p>
                   <input type="submit" id="submitButton" value="Submit"/>
                 </p>

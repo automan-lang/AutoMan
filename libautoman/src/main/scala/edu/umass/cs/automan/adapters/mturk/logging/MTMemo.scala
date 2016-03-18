@@ -283,10 +283,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
       // something must be present in the ID field, but since it doesn't
       // matter what it is, we just use 1; the database subs in the
       // appropriate autoincremented ID.
-      // NOTE: the MTurk SDK as of 2016-03-16 changed getIntegerValue to an array;
-      //       we only use a single element for disqualifications representing
-      //       the batch number (the first and only element of the array).
-      (1, d.getQualificationTypeId, d.getIntegerValue(0), d.getComparator, d.getRequiredToPreview.booleanValue(), true, hittype.id)
+      (1, d.getQualificationTypeId, d.getIntegerValue.toInt, d.getComparator, d.getRequiredToPreview.booleanValue(), true, hittype.id)
     }
   }
 
@@ -399,7 +396,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
       val disquals = qualdata.flatMap { case (_, _, _, _, _, q_id, comp, iv, reqd, is_disq) =>
         if (is_disq) {
           // a disqualification
-          Some(new QualificationRequirement(q_id, comp, Array(iv), null, reqd))
+          Some(new QualificationRequirement(q_id, comp, iv, null, reqd))
         } else {
           None
         }
@@ -421,7 +418,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
   }
 
   private def createQualificationFromType(qualtype: QualificationType, batch_no: Int) : QualificationRequirement = {
-    new QualificationRequirement(qualtype.getQualificationTypeId, Comparator.EqualTo, Array(batch_no), null, false)
+    new QualificationRequirement(qualtype.getQualificationTypeId, Comparator.EqualTo, batch_no, null, false)
   }
 
   private def getQualRecFromMTurk(qual_id: String, batch_no: Int, backend: RequesterService) : QualificationRequirement = {

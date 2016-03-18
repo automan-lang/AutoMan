@@ -13,6 +13,7 @@ abstract class AutomanAdapter {
   // answer types are invariant
   type CBQ    <: CheckboxQuestion           // answer scalar
   type CBDQ   <: CheckboxVectorQuestion     // answer vector
+  type MEQ    <: MultiEstimationQuestion    // answer multi-estimate
   type EQ     <: EstimationQuestion         // answer estimate
   type FTQ    <: FreeTextQuestion           // answer scalar
   type FTDQ   <: FreeTextVectorQuestion     // answer vector
@@ -123,6 +124,7 @@ abstract class AutomanAdapter {
   // User API
   def CheckboxQuestion(init: CBQ => Unit) = schedule(CBQFactory(), init)
   def CheckboxDistributionQuestion(init: CBDQ => Unit) = schedule(CBDQFactory(), init)
+  def MultiEstimationQuestion(init: MEQ => Unit) = schedule(MEQFactory(), init)
   def EstimationQuestion(init: EQ => Unit) = schedule(EQFactory(), init)
   def FreeTextQuestion(init: FTQ => Unit) = schedule(FTQFactory(), init)
   def FreeTextDistributionQuestion(init: FTDQ => Unit) = schedule(FTDQFactory(), init)
@@ -209,6 +211,7 @@ abstract class AutomanAdapter {
   // and thus 'new RBQ' does not suffice in the DSL call above
   protected def CBQFactory() : CBQ
   protected def CBDQFactory() : CBDQ
+  protected def MEQFactory() : MEQ
   protected def EQFactory() : EQ
   protected def FTQFactory() : FTQ
   protected def FTDQFactory() : FTDQ

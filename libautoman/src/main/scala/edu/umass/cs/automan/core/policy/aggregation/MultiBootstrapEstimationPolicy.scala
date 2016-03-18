@@ -8,7 +8,7 @@ import edu.umass.cs.automan.core.question.{EstimationQuestion, MultiEstimationQu
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 import scala.util.Random
 
-class MultiBootstrapEstimationPolicy[E <: EstimationQuestion](question: MultiEstimationQuestion[E])
+class MultiBootstrapEstimationPolicy(question: MultiEstimationQuestion)
   extends AggregationPolicy(question) {
 
   val NumBootstraps = 512 * question.cardinality
@@ -37,12 +37,12 @@ class MultiBootstrapEstimationPolicy[E <: EstimationQuestion](question: MultiEst
     val alpha = 1 - adj_conf
 
     // do bootstrap
-    val (low, est, high) = bootstrap(question.estimator, X, NumBootstraps, alpha)
+    val (lows, ests, highs) = bootstrap(question.estimator, X, NumBootstraps, alpha)
 
     // cost
     val cost = valid_tasks.filter { t => t.answer.isDefined && !t.from_memo }.map(_.cost).sum
 
-    (est, low, high, cost, adj_conf)
+    (ests, lows, highs, cost, adj_conf)
   }
 
   /**

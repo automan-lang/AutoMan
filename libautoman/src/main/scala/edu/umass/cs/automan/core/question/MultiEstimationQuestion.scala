@@ -10,30 +10,32 @@ import edu.umass.cs.automan.core.policy.timeout.DoublingTimeoutPolicy
 import edu.umass.cs.automan.core.question.confidence.ConfidenceInterval
 import scala.concurrent.ExecutionContext.Implicits.global
 
-abstract class MultiEstimationQuestion[E <: EstimationQuestion](questions: Array[E]) extends Question {
+abstract class MultiEstimationQuestion extends Question {
   type A = Array[Double]
   type AA = AbstractMultiEstimate
   type O = MultiEstimationOutcome
-  type AP = MultiBootstrapEstimationPolicy[E]
+  type AP = MultiBootstrapEstimationPolicy
   type PP = MLEPricePolicy
   type TP = DoublingTimeoutPolicy
 
-  protected val _cardinality: Int = questions.length
   protected var _confidence: Double = 0.95
   protected var _default_sample_size: Int = 12
+  protected var _dimensions: Array[Dimension] = Array()
   protected var _estimator: Seq[Array[Double]] => Array[Double] = {
     // use whatever default is set for each estimation question
     dss => dss.zipWithIndex.map { case (ds,i) =>
-      questions(i).estimator(ds)
+      _dimensions(i).estimator(ds)
     }.toArray
   }
 
-  def cardinality: Int = _cardinality
+  def cardinality: Int = dimensions.length
   def confidence_=(c: Double) { _confidence = c }
   def confidence: Double = _confidence
-  def confidence_region: Array[ConfidenceInterval] = questions.map(_.confidence_interval)
+  def confidence_region: Array[ConfidenceInterval] = _dimensions.map(_.confidence_interval)
   def default_sample_size: Int = _default_sample_size
   def default_sample_size_=(n: Int) { _default_sample_size = n }
+  def dimensions_=(dim: Array[Dimension]) { _dimensions = dim }
+  def dimensions: Array[Dimension] = _dimensions
   def estimator: Seq[Array[Double]] => Array[Double] = _estimator
   def estimator_=(fn: Seq[Array[Double]] => Array[Double]) { _estimator = fn }
 

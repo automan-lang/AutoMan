@@ -3,8 +3,8 @@ package edu.umass.cs.automan.adapters.mturk.mock
 import java.util.{Date, UUID}
 import edu.umass.cs.automan.core.mock.MockResponse
 
-case class MultiEstimationMockResponse(question_ids: Array[UUID], response_time: Date, answers: Array[Double], worker_id: UUID)
-  extends MockResponse(question_ids(0), response_time, worker_id) {
+case class MultiEstimationMockResponse(question_ids: Array[Symbol], response_time: Date, answers: Array[Double], worker_id: UUID)
+  extends MockResponse(UUID.randomUUID(), response_time, worker_id) {
 
   assert(question_ids.length == answers.length)
 
