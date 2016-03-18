@@ -73,6 +73,16 @@ package object test {
     makeMocksWithDelta(answers, 1)
   }
 
+  def makeMultiMocks[T : ClassTag](answers: List[T], dim: Int) : List[MockAnswer[Array[T]]] = {
+    val answerses = (0 until dim).map { d => Random.shuffle(answers).toArray }.toArray
+    makeMocksWithDelta[Array[T]](
+      answers.indices.map { i =>
+        (0 until dim).map { j => answerses(j)(i) }.toArray
+      }.toList,
+      1
+    )
+  }
+
   def makeMocksAt[T](answers: List[T], time: Long) : List[MockAnswer[T]] = {
     answers.map(MockAnswer(_,time, UUID.randomUUID()))
   }
