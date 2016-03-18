@@ -228,8 +228,10 @@ object MTurkMethods {
         Nil
       }
 
+    val autoApprovalDelayInSeconds = (3 * 24 * 60 * 60).toLong     // 3 days
+
     val hit_type_id = backend.registerHITType(
-      (30 * 24 * 60 * 60).toLong,                                   // 30 days
+      autoApprovalDelayInSeconds,
       worker_timeout.toLong + WORKER_TIMEOUT_EPSILON,               // amount of time the worker has to complete the task
       cost.toDouble,                                                // cost in USD
       title,                                                        // title
