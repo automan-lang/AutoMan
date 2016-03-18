@@ -1,19 +1,19 @@
 package edu.umass.cs.automan.core.policy.aggregation
 
 import edu.umass.cs.automan.core.policy._
-import edu.umass.cs.automan.core.answer.{OverBudgetEstimate, LowConfidenceEstimate, Estimate}
+import edu.umass.cs.automan.core.answer._
 import edu.umass.cs.automan.core.logging.{LogType, LogLevelInfo, DebugLog}
 import edu.umass.cs.automan.core.question.confidence._
-import edu.umass.cs.automan.core.question.{EstimationQuestion, Question}
+import edu.umass.cs.automan.core.question.{EstimationQuestion, MultiEstimationQuestion, Question}
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 import scala.util.Random
 
-class BootstrapEstimationPolicy(question: EstimationQuestion)
+class MultiBootstrapEstimationPolicy[E <: EstimationQuestion](question: MultiEstimationQuestion[E])
   extends AggregationPolicy(question) {
 
-  val NumBootstraps = 512
+  val NumBootstraps = 512 * question.cardinality
 
-  DebugLog("Policy: bootstrap estimation (1-dimensional)",LogLevelInfo(),LogType.STRATEGY, question.id)
+  DebugLog("Policy: bootstrap estimation (" + question.cardinality + "-dimensional)",LogLevelInfo(),LogType.STRATEGY, question.id)
 
   /**
     * PRIVATE METHODS
@@ -25,12 +25,12 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
     * @param num_comparisons The number of times is_done has been called, inclusive.
     * @return Tuple (estimate, low CI bound, high CI bound, cost, confidence)
     */
-  private def answer_selector(tasks: List[Task], num_comparisons: Int): (Double, Double, Double, BigDecimal, Double) = {
+  private def answer_selector(tasks: List[Task], num_comparisons: Int): (Array[Double], Array[Double], Array[Double], BigDecimal, Double) = {
     val valid_tasks = completed_workerunique_tasks(tasks)
 
     // extract responses & cast to Double
     // (EstimationQuestion#A is guaranteed to be Double)
-    val X = valid_tasks.flatMap(_.answer).asInstanceOf[List[Double]]
+    val X = valid_tasks.flatMap(_.answer).asInstanceOf[List[Array[Double]]]
 
     // calculate alpha, with Bonferroni correction
     val adj_conf = bonferroni_confidence(question.confidence, num_comparisons)
@@ -48,26 +48,29 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
   /**
     * Computes statistic and confidence intervals specified.
     * @param statistic An arbitrary function of the data.
-    * @param X an input vector
+    * @param X an input matrix
     * @param B the number of bootstrap replications to perform
     * @param alpha the margin of error
     * @return
     */
-  private def bootstrap(statistic: Seq[Double] => Double, X: Seq[Double], B: Int, alpha: Double) : (Double,Double,Double) = {
-    // compute statistic
-    val theta_hat = statistic(X)
+  private def bootstrap(statistic: Seq[Array[Double]] => Array[Double],
+                        X: Seq[Array[Double]],
+                        B: Int,
+                        alpha: Double) : (Array[Double],Array[Double],Array[Double]) = {
+    // compute statistics
+    val theta_hats = statistic(X)
 
     // compute bootstrap replications
     val replications = (1 to B).map { b => statistic(resampleWithReplacement(X)) }
 
-    // compute lower bound
-    val low = cdfInverse(alpha / 2.0, replications)
+    // compute lower bounds
+    val lows = replications.map { rep => cdfInverse(alpha / 2.0, rep) }.toArray
 
-    // compute upper bound
-    val high = cdfInverse(1.0 - (alpha / 2.0), replications)
+    // compute upper bounds
+    val highs = replications.map { rep => cdfInverse(1.0 - (alpha / 2.0), rep) }.toArray
 
     // return
-    (low, theta_hat, high)
+    (lows, theta_hats, highs)
   }
 
   /**
@@ -120,10 +123,10 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
       .filter(t => t.state == SchedulerState.ACCEPTED || t.state == SchedulerState.ANSWERED)
       .groupBy(t => t.worker_id)
       .foldLeft(false){ case (acc, (wrk_opt, ts)) =>
-          wrk_opt match {
-            case None => throw new Exception("ACCEPTED and ANSWERED tasks must have associated worker IDs.")
-            case Some(w) => acc || (ts.size > 1)
-          }
+        wrk_opt match {
+          case None => throw new Exception("ACCEPTED and ANSWERED tasks must have associated worker IDs.")
+          case Some(w) => acc || (ts.size > 1)
+        }
       }
   }
 
@@ -156,8 +159,10 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
     * @param X input data vector
     * @return X'
     */
-  private def resampleWithReplacement(X: Seq[Double]) : Seq[Double] = {
-    Array.fill(X.length)(X(Random.nextInt(X.length)))
+  private def resampleWithReplacement(X: Seq[Array[Double]]) : Seq[Array[Double]] = {
+    X.map {
+      x => Array.fill(x.length)(x(Random.nextInt(x.length)))
+    }
   }
 
   /**
@@ -174,24 +179,30 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
     // if there are SOME completed tasks and
     // our sample size is at least the initial size requested
     if (completed_workerunique_tasks(tasks).nonEmpty &&
-        completed_workerunique_tasks(tasks).size >= 12) {
+      completed_workerunique_tasks(tasks).size >= 12) {
       val done = answer_selector(tasks, num_comparisons) match {
-        case (est, low, high, cost, conf) =>
-          question.confidence_interval match {
-            case UnconstrainedCI() =>
-              completed_workerunique_tasks(tasks).size ==
-              question.default_sample_size
-            case SymmetricCI(err) =>
-              est - low < err &&
-              high - est < err
-            case AsymmetricCI(lerr, herr) =>
-              est - low < lerr &&
-              high - est < herr
-           }
+        case (ests, lows, highs, cost, conf) =>
+          ests.indices.foldLeft(true) { case (acc,i) =>
+            question.confidence_region(i) match {
+              case UnconstrainedCI() =>
+                acc &&
+                  completed_workerunique_tasks(tasks).size ==
+                  question.default_sample_size
+              case SymmetricCI(err) =>
+                acc &&
+                  ests(i) - lows(i) < err &&
+                  highs(i) - ests(i) < err
+              case AsymmetricCI(lerr, herr) =>
+                acc &&
+                  ests(i) - lows(i) < lerr &&
+                  highs(i) - ests(i) < herr
+            }
+          }
+
       }
       // bump comparisons
       (done, num_comparisons + 1)
-    // otherwise, wait
+      // otherwise, wait
     } else {
       // do not bump comparisons
       (false, num_comparisons)
@@ -203,13 +214,15 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
       "We value your feedback, so if you think that we are in error, please contact us."
 
   override def select_answer(tasks: List[Task], num_comparisons: Int): Question#AA = {
-    answer_selector(tasks, num_comparisons) match { case (est, low, high, cost, conf) =>
-      DebugLog("Estimate is " + low + " ≤ " + est + " ≤ " + high,
-        LogLevelInfo(),
-        LogType.STRATEGY,
-        question.id
-      )
-      Estimate(est, low, high, cost, conf, question.id).asInstanceOf[Question#AA]
+    answer_selector(tasks, num_comparisons) match { case (ests, lows, highs, cost, conf) =>
+      ests.indices.foreach { i =>
+        DebugLog("Estimate is " + lows(i) + " ≤ " + ests(i) + " ≤ " + highs(i),
+          LogLevelInfo(),
+          LogType.STRATEGY,
+          question.id
+        )
+      }
+      MultiEstimate(ests, lows, highs, cost, conf, question.id).asInstanceOf[Question#AA]
     }
   }
 
@@ -223,12 +236,14 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
       OverBudgetEstimate(need, have, question.id).asInstanceOf[Question#AA]
     } else {
       answer_selector(tasks, num_comparisons) match {
-        case (est, low, high, cost, conf) =>
-          DebugLog("Over budget.  Best estimate so far is " + low + " ≤ " + est + " ≤ " + high,
-            LogLevelInfo(),
-            LogType.STRATEGY,
-            question.id)
-          LowConfidenceEstimate(est, low, high, cost, conf, question.id).asInstanceOf[Question#AA]
+        case (ests, lows, highs, cost, conf) =>
+          ests.indices.foreach { i =>
+            DebugLog("Over budget.  Best estimate so far is " + lows(i) + " ≤ " + ests(i) + " ≤ " + highs(i),
+              LogLevelInfo(),
+              LogType.STRATEGY,
+              question.id)
+          }
+          LowConfidenceMultiEstimate(ests, lows, highs, cost, conf, question.id).asInstanceOf[Question#AA]
       }
     }
   }
@@ -238,7 +253,7 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
     val cancels = tasks_to_cancel(tasks).toSet
     tasks.filter { t =>
       not_final(t) &&
-      !cancels.contains(t)
+        !cancels.contains(t)
     }
   }
 

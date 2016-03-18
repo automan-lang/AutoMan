@@ -9,6 +9,8 @@ sealed abstract class Outcome[T](protected[automan] val f: Future[AbstractAnswer
   }
 }
 
+case class MultiEstimationOutcome(override protected[automan] val f: Future[AbstractMultiEstimate]) extends Outcome[Array[Double]](f)
+
 case class EstimationOutcome(override protected[automan] val f: Future[AbstractEstimate]) extends Outcome[Double](f)
 
 case class ScalarOutcome[T](override protected[automan] val f: Future[AbstractScalarAnswer[T]]) extends Outcome[T](f)

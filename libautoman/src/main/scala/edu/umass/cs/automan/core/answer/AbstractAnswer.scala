@@ -15,12 +15,31 @@ import java.util.UUID
  */
 abstract class AbstractAnswer[T](val cost: BigDecimal, val question_id: UUID)
 
+sealed abstract class AbstractMultiEstimate(cost: BigDecimal, question_id: UUID)
+  extends AbstractAnswer[Array[Double]](cost, question_id)
 sealed abstract class AbstractEstimate(cost: BigDecimal, question_id: UUID)
   extends AbstractAnswer[Double](cost, question_id)
 sealed abstract class AbstractScalarAnswer[T](cost: BigDecimal, question_id: UUID)
   extends AbstractAnswer[T](cost, question_id)
 sealed abstract class AbstractVectorAnswer[T](cost: BigDecimal, question_id: UUID)
   extends AbstractAnswer[T](cost, question_id)
+
+case class MultiEstimate(values: Array[Double],
+                         lows: Array[Double],
+                         highs: Array[Double],
+                         override val cost: BigDecimal,
+                         confidence: Double,
+                         override val question_id: UUID)
+  extends AbstractMultiEstimate(cost, question_id)
+case class LowConfidenceMultiEstimate(values: Array[Double],
+                                      lows: Array[Double],
+                                      highs: Array[Double],
+                                      override val cost: BigDecimal,
+                                      confidence: Double,
+                                      override val question_id: UUID)
+  extends AbstractMultiEstimate(cost, question_id)
+case class OverBudgetMultiEstimate(need: BigDecimal, have: BigDecimal, override val question_id: UUID)
+  extends AbstractMultiEstimate(need, question_id)
 
 case class Estimate(value: Double, low: Double, high: Double, override val cost: BigDecimal, confidence: Double, override val question_id: UUID)
   extends AbstractEstimate(cost, question_id)
