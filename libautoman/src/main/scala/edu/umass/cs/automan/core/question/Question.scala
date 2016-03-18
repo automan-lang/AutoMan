@@ -31,7 +31,7 @@ abstract class Question {
   protected var _image_url: Option[String] = None
   protected var _initial_worker_timeout_in_s: Int = 30
   protected var _payOnFailure: Boolean = true
-  protected var _question_timeout_multiplier: Double = 100
+  protected var _question_timeout_multiplier: Double = 500
   protected var _text: Option[String] = None
   protected var _title: Option[String] = None
   protected var _time_value_per_hour: Option[BigDecimal] = None
