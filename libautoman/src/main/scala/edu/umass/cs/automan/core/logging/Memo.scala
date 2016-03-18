@@ -20,7 +20,7 @@ object Memo {
   def sameTasks[A](ts1: List[Task], ts2: List[Task]) : Boolean = {
     val t1_map = ts1.map { t => t.task_id -> t }.toMap
     ts1.size == ts2.size &&                   // same size
-      ts1.size != 0 &&                        // non-empty
+      ts1.nonEmpty &&                         // non-empty
       ts2.foldLeft (true) { case (acc, t) =>  // all the elements are the same
       acc && t1_map.contains(t.task_id) && sameTask(t1_map(t.task_id), t)
     }
@@ -49,6 +49,7 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
   implicit val symbolStringMapper = DBRadioButtonAnswer.symbolStringMapper
   implicit val symbolSetStringMapper = DBCheckboxAnswer.symbolSetStringMapper
   implicit val questionTypeMapper = DBQuestion.questionTypeMapper
+  implicit val estimateArrayMapper = DBMultiEstimationAnswer.estimateArrayMapper
 
   // typedefs
   type DBTask = (UUID, UUID, BigDecimal, Date, Int, Int)
@@ -58,6 +59,7 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
   type DBCheckboxAnswer = (Int, Set[Symbol], String)
   type DBEstimationAnswer = (Int, Double, String)
   type DBFreeTextAnswer = (Int, String, String)
+  type DBMultiEstimationAnswer = (Int, Array[Double], String)
   type DBSession = H2Driver.backend.Session
 
   // canonical path
@@ -73,6 +75,7 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
   protected[automan] val dbCheckboxAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBCheckboxAnswer]
   protected[automan] val dbEstimationAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBEstimationAnswer]
   protected[automan] val dbFreeTextAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBFreeTextAnswer]
+  protected[automan] val dbMultiEstimationAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBMultiEstimationAnswer]
   protected[automan] val dbRadioButtonAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBRadioButtonAnswer]
 
   // registered plugins
@@ -133,7 +136,8 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
       dbCheckboxAnswer.ddl ++
       dbEstimationAnswer.ddl ++
       dbFreeTextAnswer.ddl ++
-      dbRadioButtonAnswer.ddl
+      dbRadioButtonAnswer.ddl ++
+      dbMultiEstimationAnswer.ddl
 
     val all_ddls: H2Driver.DDL = if (ddls.nonEmpty) {
       base_ddls ++ ddls.tail.foldLeft(ddls.head){ case (acc,ddl) => acc ++ ddl }
@@ -215,6 +219,27 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
               h.answer.?,
               th.state_change_time,
               QuestionType.EstimationQuestion)
+          }.list.distinct
+        ts.map { t => new TaskSnapshot(t) }
+      case QuestionType.MultiEstimationQuestion =>
+        val ts = allTasksQuery()
+          .filter { case (q,(t,h)) => q.question_type === qt }
+          .leftJoin(dbMultiEstimationAnswer).on(_._2._2.history_id === _.history_id)
+          .map { case ((q,(t,th)),h) =>
+            ( t.task_id,
+              q.id,
+              q.title,
+              q.text,
+              t.round,
+              t.timeout_in_s,
+              t.worker_timeout_in_s,
+              t.cost,
+              t.creation_time,
+              th.scheduler_state,
+              h.worker_id.?,
+              h.answers.?,
+              th.state_change_time,
+              QuestionType.MultiEstimationQuestion)
           }.list.distinct
         ts.map { t => new TaskSnapshot(t) }
       case QuestionType.FreeTextQuestion =>
@@ -318,7 +343,8 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
           restore_task_snapshots_of_type(QuestionType.FreeTextQuestion)(s) :::
           restore_task_snapshots_of_type(QuestionType.FreeTextDistributionQuestion)(s) :::
           restore_task_snapshots_of_type(QuestionType.RadioButtonQuestion)(s) :::
-          restore_task_snapshots_of_type(QuestionType.RadioButtonDistributionQuestion)(s)
+          restore_task_snapshots_of_type(QuestionType.RadioButtonDistributionQuestion)(s) :::
+          restore_task_snapshots_of_type(QuestionType.MultiEstimationQuestion)(s)
         }
 
       }
@@ -423,6 +449,23 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
                   true,
                   dbestimationanswer.worker_id.?,
                   dbestimationanswer.answer.?,
+                  dbtaskhistory.state_change_time
+                  )
+            }
+          }
+          case MultiEstimationQuestion => {
+            (fQS_TS_THS leftJoin dbMultiEstimationAnswer on (_._2._2.history_id === _.history_id)).map {
+              case ((dbquestion, (dbtask, dbtaskhistory)), dbmultiestimationanswer) =>
+                (dbtask.task_id,
+                  dbtask.round,
+                  dbtask.timeout_in_s,
+                  dbtask.worker_timeout_in_s,
+                  dbtask.cost,
+                  dbtask.creation_time,
+                  dbtaskhistory.scheduler_state,
+                  true,
+                  dbmultiestimationanswer.worker_id.?,
+                  dbmultiestimationanswer.answers.?,
                   dbtaskhistory.state_change_time
                   )
             }
@@ -587,6 +630,8 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
         dbCheckboxAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBCheckboxAnswer]]
       case EstimationQuestion =>
         dbEstimationAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBEstimationAnswer]]
+      case MultiEstimationQuestion =>
+        dbMultiEstimationAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBMultiEstimationAnswer]]
       case FreeTextQuestion =>
         dbFreeTextAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBFreeTextAnswer]]
       case FreeTextDistributionQuestion =>
