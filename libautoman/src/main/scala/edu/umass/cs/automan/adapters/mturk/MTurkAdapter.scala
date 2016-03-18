@@ -39,7 +39,7 @@ class MTurkAdapter extends AutomanAdapter {
   override type MemoDB  = MTMemo
 
   private var _access_key_id: Option[String] = None
-  private var _backend_update_frequency_ms : Int = 3000 // lower than 1 second is inadvisable
+  private var _backend_update_frequency_ms : Int = 4500 // lower than 1 second is inadvisable
   private var _worker : Option[TurkWorker] = None
   private var _retriable_errors = Set("Server.ServiceUnavailable")
   private var _retry_attempts : Int = 10
