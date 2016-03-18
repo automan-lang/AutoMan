@@ -1,12 +1,7 @@
 package edu.umass.cs.automan.core.question
 
-import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer._
 import edu.umass.cs.automan.core.info.QuestionType
-import edu.umass.cs.automan.core.logging.Memo
-import edu.umass.cs.automan.core.scheduler.Scheduler
-import scala.concurrent._
-import scala.concurrent.ExecutionContext.Implicits.global
 
 abstract class FreeTextVectorQuestion extends VectorQuestion {
   type A = String
@@ -37,4 +32,6 @@ abstract class FreeTextVectorQuestion extends VectorQuestion {
   }
 
   override protected[automan] def getQuestionType = QuestionType.FreeTextDistributionQuestion
+
+  override protected[automan] def prettyPrintAnswer(answer: String): String = answer
 }

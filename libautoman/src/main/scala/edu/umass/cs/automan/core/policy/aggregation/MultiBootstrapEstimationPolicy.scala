@@ -63,14 +63,26 @@ class MultiBootstrapEstimationPolicy(question: MultiEstimationQuestion)
     // compute bootstrap replications
     val replications = (1 to B).map { b => statistic(resampleWithReplacement(X)) }
 
+    val repSlice = slice(replications)
+
     // compute lower bounds
-    val lows = replications.map { rep => cdfInverse(alpha / 2.0, rep) }.toArray
+    val lows = repSlice.map { rep => cdfInverse(alpha / 2.0, rep) }.toArray
 
     // compute upper bounds
-    val highs = replications.map { rep => cdfInverse(1.0 - (alpha / 2.0), rep) }.toArray
+    val highs = repSlice.map { rep => cdfInverse(1.0 - (alpha / 2.0), rep) }.toArray
+
+    assert(lows.length == question.cardinality)
+    assert(theta_hats.length == question.cardinality)
+    assert(highs.length == question.cardinality)
 
     // return
     (lows, theta_hats, highs)
+  }
+
+  def slice(replications: Seq[Array[Double]]) : Seq[Array[Double]] = {
+    (0 until question.cardinality).map { dim =>
+      replications.map(_(dim)).toArray
+    }
   }
 
   /**

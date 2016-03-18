@@ -43,4 +43,8 @@ abstract class CheckboxQuestion extends DiscreteScalarQuestion {
       case Some(policy) => policy.getConstructor(classOf[Question]).newInstance(this)
     }
   }
+
+  override protected[automan] def prettyPrintAnswer(answer: Set[Symbol]): String = {
+    "(" + answer.map(_.toString().drop(1)).mkString(", ") + ")"
+  }
 }

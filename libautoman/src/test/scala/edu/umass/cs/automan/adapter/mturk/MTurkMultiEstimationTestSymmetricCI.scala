@@ -76,14 +76,12 @@ class MTurkMultiEstimationTestSymmetricCI extends FlatSpec with Matchers {
         case MultiEstimate(ests, lows, highs, cost, conf, _) =>
           println("cost: $" + cost + ", confidence: " + conf)
           ests.indices.foreach { i =>
-            println("Estimate: " + ests + ", lows: " + lows + ", highs: " + highs)
+            println("Estimate: " + ests(i) + ", low: " + lows(i) + ", high: " + highs(i) + ", width: " + (highs(i) - lows(i)))
             (ests(i) - lows(i) <= ci.error) should be (true)
             (highs(i) - ests(i) <= ci.error) should be (true)
             (ests(i) > lows(i) && ests(i) < highs(i)) should be (true)
           }
-
           (conf >= confidence) should be (true)
-          (cost >= BigDecimal(0.48)) should be (true)
         case _ =>
           fail()
       }

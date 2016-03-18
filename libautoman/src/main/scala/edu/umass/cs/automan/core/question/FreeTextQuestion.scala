@@ -1,14 +1,9 @@
 package edu.umass.cs.automan.core.question
 
-import edu.umass.cs.automan.core.AutomanAdapter
-import edu.umass.cs.automan.core.answer._
 import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.policy.aggregation.AdversarialPolicy
 import edu.umass.cs.automan.core.policy.price.MLEPricePolicy
 import edu.umass.cs.automan.core.policy.timeout.DoublingTimeoutPolicy
-import edu.umass.cs.automan.core.scheduler.Scheduler
-import scala.concurrent._
-import scala.concurrent.ExecutionContext.Implicits.global
 
 abstract class FreeTextQuestion extends DiscreteScalarQuestion {
   type A = String
@@ -60,4 +55,6 @@ abstract class FreeTextQuestion extends DiscreteScalarQuestion {
       case Some(policy) => policy.getConstructor(classOf[Question]).newInstance(this)
     }
   }
+
+  override protected[automan] def prettyPrintAnswer(answer: String): String = answer
 }

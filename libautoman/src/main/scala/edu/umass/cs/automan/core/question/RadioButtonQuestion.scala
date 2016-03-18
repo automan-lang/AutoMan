@@ -1,15 +1,9 @@
 package edu.umass.cs.automan.core.question
 
-import edu.umass.cs.automan.core.AutomanAdapter
-import edu.umass.cs.automan.core.answer._
 import edu.umass.cs.automan.core.info.QuestionType
-import edu.umass.cs.automan.core.logging.Memo
 import edu.umass.cs.automan.core.policy.aggregation.AdversarialPolicy
 import edu.umass.cs.automan.core.policy.price.MLEPricePolicy
 import edu.umass.cs.automan.core.policy.timeout.DoublingTimeoutPolicy
-import edu.umass.cs.automan.core.scheduler.Scheduler
-import scala.concurrent._
-import scala.concurrent.ExecutionContext.Implicits.global
 
 abstract class RadioButtonQuestion extends DiscreteScalarQuestion {
   type A = Symbol
@@ -45,5 +39,9 @@ abstract class RadioButtonQuestion extends DiscreteScalarQuestion {
       case None => new TP(this)
       case Some(policy) => policy.getConstructor(classOf[Question]).newInstance(this)
     }
+  }
+
+  override protected[automan] def prettyPrintAnswer(answer: Symbol): String = {
+    answer.toString().drop(1)
   }
 }

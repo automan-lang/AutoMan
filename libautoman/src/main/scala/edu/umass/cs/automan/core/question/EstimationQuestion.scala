@@ -90,4 +90,8 @@ abstract class EstimationQuestion extends Question {
       case Some(policy) => policy.getConstructor(classOf[Question]).newInstance(this)
     }
   }
+
+  override protected[automan] def prettyPrintAnswer(answer: Double): String = {
+    answer.toString
+  }
 }

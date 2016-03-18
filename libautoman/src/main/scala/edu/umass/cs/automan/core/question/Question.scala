@@ -101,6 +101,7 @@ abstract class Question {
   private[automan] def init_timeout_policy(): Unit
   protected[automan] def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID) : MockResponse
   private[automan] def validation_policy_instance = _validation_policy_instance
+  protected[automan] def prettyPrintAnswer(answer: A) : String
   private[automan] def price_policy_instance = _price_policy_instance
   private[automan] def timeout_policy_instance = _timeout_policy_instance
   protected[automan] def schedulerFuture(adapter: AutomanAdapter) : Future[AA] = {

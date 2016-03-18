@@ -1,12 +1,7 @@
 package edu.umass.cs.automan.core.question
 
-import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer._
 import edu.umass.cs.automan.core.info.QuestionType
-import edu.umass.cs.automan.core.logging.Memo
-import edu.umass.cs.automan.core.scheduler.Scheduler
-import scala.concurrent._
-import scala.concurrent.ExecutionContext.Implicits.global
 
 abstract class CheckboxVectorQuestion extends VectorQuestion {
   type A = Set[Symbol]
@@ -25,4 +20,8 @@ abstract class CheckboxVectorQuestion extends VectorQuestion {
   def randomized_options: List[QuestionOptionType]
 
   override protected[automan] def getQuestionType = QuestionType.CheckboxDistributionQuestion
+
+  override protected[automan] def prettyPrintAnswer(answer: Set[Symbol]): String = {
+    "(" + answer.map(_.toString().drop(1)).mkString(", ") + ")"
+  }
 }

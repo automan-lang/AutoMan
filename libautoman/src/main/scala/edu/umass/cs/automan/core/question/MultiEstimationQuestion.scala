@@ -23,9 +23,12 @@ abstract class MultiEstimationQuestion extends Question {
   protected var _dimensions: Array[Dimension] = Array()
   protected var _estimator: Seq[Array[Double]] => Array[Double] = {
     // use whatever default is set for each estimation question
-    dss => dss.zipWithIndex.map { case (ds,i) =>
-      _dimensions(i).estimator(ds)
-    }.toArray
+    arr =>
+      _dimensions.zipWithIndex.map { case (dim,i) =>
+        val estimator: Seq[Double] => Double = dim.estimator
+        val slice: Seq[Double] = arr.map { a => a(i) }
+        estimator(slice)
+      }
   }
 
   def cardinality: Int = dimensions.length
@@ -85,4 +88,8 @@ abstract class MultiEstimationQuestion extends Question {
   }
 
   override protected[automan] def getQuestionType: QuestionType = QuestionType.MultiEstimationQuestion
+
+  override protected[automan] def prettyPrintAnswer(answer: Array[Double]): String = {
+    "[" + answer.mkString(", ") + "]"
+  }
 }

@@ -8,12 +8,13 @@ import edu.umass.cs.automan.core.logging.{LogType, LogLevelDebug, DebugLog}
 import edu.umass.cs.automan.core.question.{Dimension, MultiEstimationQuestion}
 import org.apache.commons.codec.binary.Hex
 
+import scala.xml.NodeSeq
+
 class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestion with MTurkQuestion {
   override type A = Array[Double]
 
   _minimum_spawn_policy = MTurkMinimumSpawnPolicy
   private val _action = if (sandbox) { "sandbox" } else { "production" }
-  private val _MTQuestionIDs = _dimensions.map(_.id)
   private var _iframe_height = 450
   private var _layout: Option[scala.xml.Node] = None
 
@@ -34,7 +35,7 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
 
   // private API
   override def toMockResponse(question_id: UUID, response_time: Date, as: A, worker_id: UUID) : MultiEstimationMockResponse = {
-    MultiEstimationMockResponse(_MTQuestionIDs, response_time, as, worker_id)
+    MultiEstimationMockResponse(dimensions.map(_.id), response_time, as, worker_id)
   }
 
   def fromXML(x: scala.xml.Node) : A = {
@@ -43,9 +44,9 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
     val answer_map = identifiers
       .map { id =>
         val answer = (x \\ "Answer").filter(a => a.descendant.contains(id)).head
-        (Symbol(id.text), (answer \\ "FreeText").text)
+        (Symbol(id.text.drop(1)), (answer \\ "FreeText").text)
       }.toMap
-    _MTQuestionIDs.map ( id => answer_map(id).toDouble )
+    dimensions.map { dim => answer_map(dim.id).toDouble }
   }
 
   def renderQuestion(dimension: Dimension) : scala.xml.Node = {
@@ -64,7 +65,7 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
             {
               _layout match {
                 case Some(layout) => layout
-                case None => Unit
+                case None => NodeSeq.Empty
               }
             }
           </head>
@@ -77,16 +78,16 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
                 {
                   _image_url match {
                     case Some(url) => <p><img src={ url }/></p>
-                    case None => Unit
+                    case None => NodeSeq.Empty
                   }
                 }
                 {
                   _text match {
                     case Some(text) => <p>{ text }</p>
-                    case None => Unit
+                    case None => NodeSeq.Empty
                   }
                 }
-                <p>{ dimensions.map(renderQuestion) }</p>
+                { dimensions.map(renderQuestion) }
                 <p>
                   <input type="submit" id="submitButton" value="Submit"/>
                 </p>

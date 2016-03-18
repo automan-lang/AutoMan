@@ -111,7 +111,7 @@ class WorkerRunnable(tw: TurkWorker,
         internal_state.getAssignmentOption(t) match {
           case Some(assignment) =>
             DebugLog(
-              s"Accepting task ${t.task_id} with assignmentId ${assignment.getAssignmentId} and answer '${t.answer.getOrElse("n/a")}'.",
+              s"Accepting task ${t.task_id} with assignmentId ${assignment.getAssignmentId} and answer '${t.prettyPrintAnswer}'.",
               LogLevelDebug(),
               LogType.ADAPTER,
               t.question.id)

@@ -27,6 +27,14 @@ case class Task(task_id: UUID,
     DebugLog("New Task " + task_id.toString + "; with cost: $" + cost.toString() + "; will expire at: " + expires_at.toString, LogLevelInfo(), LogType.SCHEDULER, question.id)
   }
 
+  def prettyPrintAnswer: String = {
+    answer match {
+      case Some(a) => question.prettyPrintAnswer(a.asInstanceOf[Task.this.question.A])
+      case None => "n/a"
+    }
+
+  }
+
   def is_timedout(current_time: Date): Boolean = {
     expires_at.before(current_time)
   }
