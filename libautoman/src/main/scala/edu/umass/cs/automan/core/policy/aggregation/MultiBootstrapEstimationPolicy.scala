@@ -13,6 +13,10 @@ class MultiBootstrapEstimationPolicy(question: MultiEstimationQuestion)
 
   val NumBootstraps = 512 * question.cardinality
 
+  // cache to ensure that output matches test since the
+  // bootstrap is a randomized algorithm
+  var bootCache = Map[(Seq[Seq[Double]],Int,Double),(Array[Double],Array[Double],Array[Double])]()
+
   DebugLog("Policy: bootstrap estimation (" + question.cardinality + "-dimensional)",LogLevelInfo(),LogType.STRATEGY, question.id)
 
   /**
@@ -30,7 +34,7 @@ class MultiBootstrapEstimationPolicy(question: MultiEstimationQuestion)
 
     // extract responses & cast to Double
     // (EstimationQuestion#A is guaranteed to be Double)
-    val X = valid_tasks.flatMap(_.answer).asInstanceOf[List[Array[Double]]]
+    val X: List[Array[Double]] = valid_tasks.flatMap(_.answer).asInstanceOf[List[Array[Double]]]
 
     // calculate alpha, with Bonferroni correction
     val adj_conf = bonferroni_confidence(question.confidence, num_comparisons)
@@ -57,26 +61,38 @@ class MultiBootstrapEstimationPolicy(question: MultiEstimationQuestion)
                         X: Seq[Array[Double]],
                         B: Int,
                         alpha: Double) : (Array[Double],Array[Double],Array[Double]) = {
-    // compute statistics
-    val theta_hats = statistic(X)
+    // Convert Arrays to Seqs; equivalent arrays
+    // are not equal in the JVM so they do not
+    // work correctly as Map keys.
+    val X2 = X.map(_.toSeq)
 
-    // compute bootstrap replications
-    val replications = (1 to B).map { b => statistic(resampleWithReplacement(X)) }
+    if (bootCache.contains((X2,B,alpha))) {
+      bootCache(X2,B,alpha)
+    } else {
+      // compute statistics
+      val theta_hats = statistic(X)
 
-    val repSlice = slice(replications)
+      // compute bootstrap replications
+      val replications = (1 to B).map { b => statistic(resampleWithReplacement(X)) }
 
-    // compute lower bounds
-    val lows = repSlice.map { rep => cdfInverse(alpha / 2.0, rep) }.toArray
+      val repSlice = slice(replications)
 
-    // compute upper bounds
-    val highs = repSlice.map { rep => cdfInverse(1.0 - (alpha / 2.0), rep) }.toArray
+      // compute lower bounds
+      val lows = repSlice.map { rep => cdfInverse(alpha / 2.0, rep) }.toArray
 
-    assert(lows.length == question.cardinality)
-    assert(theta_hats.length == question.cardinality)
-    assert(highs.length == question.cardinality)
+      // compute upper bounds
+      val highs = repSlice.map { rep => cdfInverse(1.0 - (alpha / 2.0), rep) }.toArray
 
-    // return
-    (lows, theta_hats, highs)
+      assert(lows.length == question.cardinality)
+      assert(theta_hats.length == question.cardinality)
+      assert(highs.length == question.cardinality)
+
+      // put in cache
+      bootCache += ((X2,B,alpha) -> (lows, theta_hats, highs))
+
+      // return
+      (lows, theta_hats, highs)
+    }
   }
 
   def slice(replications: Seq[Array[Double]]) : Seq[Array[Double]] = {
