@@ -12,6 +12,15 @@ abstract class AggregationPolicy(question: Question) {
     extends Exception(methodname + " called prematurely in " + classname)
 
   /**
+    * Determines whether a policy allows for canceling running tasks.
+    * If true, is_done will be called more often, increasing the
+    * required confidence level to terminate.  Note that an early
+    * termination check is always conducted when timeouts occur
+    * regardless of this setting.
+    */
+  def allow_early_termination() : Boolean = false
+
+  /**
    * Returns a list of blacklisted worker_ids given a
    * set of tasks, completed or not.
    * @param tasks The complete list of tasks.
@@ -28,6 +37,8 @@ abstract class AggregationPolicy(question: Question) {
     * @return (true iff done, new num_comparisons)
     */
   def is_done(tasks: List[Task], num_comparisons: Int) : (Boolean,Int)
+
+  def is_final(task: Task) : Boolean = !not_final(task)
 
   def not_final(task: Task) : Boolean = {
     task.state != SchedulerState.ACCEPTED &&
