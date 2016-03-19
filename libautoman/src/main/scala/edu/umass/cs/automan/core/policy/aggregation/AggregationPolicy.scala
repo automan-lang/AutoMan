@@ -38,8 +38,6 @@ abstract class AggregationPolicy(question: Question) {
     */
   def is_done(tasks: List[Task], num_comparisons: Int) : (Boolean,Int)
 
-  def is_final(task: Task) : Boolean = !not_final(task)
-
   def not_final(task: Task) : Boolean = {
     task.state != SchedulerState.ACCEPTED &&
       task.state != SchedulerState.REJECTED &&

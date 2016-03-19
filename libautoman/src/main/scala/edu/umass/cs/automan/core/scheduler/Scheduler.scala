@@ -88,7 +88,7 @@ class Scheduler(val question: Question,
 
       val (running, unrunning) = (tasks ::: __new_tasks).partition(_.state == SchedulerState.RUNNING)
 
-      assert(running.nonEmpty)
+      assert(if (!sufferedTimeout) { running.nonEmpty } else { true })
 
       (running, unrunning, time2, num_comparisons2, done)
     }
@@ -188,10 +188,14 @@ class Scheduler(val question: Question,
         // 1. all the tasks are complete, or
         // 2. we allow early termination checks
         // check to see if we are done.
-        if (!_done && (tasks.forall(VP.is_final) || VP.allow_early_termination())) {
-          val (__done, __nc) = VP.is_done(_all_tasks, _num_comparisons)
-          _done = __done
-          _num_comparisons = __nc
+        if (!_done) {
+          val all_tasks_completed = VP.outstanding_tasks(_all_tasks).isEmpty
+          val early_termination_OK = VP.allow_early_termination()
+          if (all_tasks_completed || early_termination_OK) {
+            val (__done, __nc) = VP.is_done(_all_tasks, _num_comparisons)
+            _done = __done
+            _num_comparisons = __nc
+          }
         }
 
         // sleep if this loop iteration < update_frequency_ms
