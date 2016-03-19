@@ -59,7 +59,7 @@ class MTurkMultiEstimationTestSymmetricCI extends FlatSpec with Matchers {
       mt.log_verbosity = LogLevelDebug()
     }
 
-    automan(a, test_mode = true) {
+    automan(a, test_mode = true, in_mem_db = true) {
       def jellyBeanCount() = a.MultiEstimationQuestion { q =>
         q.confidence = confidence
         q.budget = 8.00
