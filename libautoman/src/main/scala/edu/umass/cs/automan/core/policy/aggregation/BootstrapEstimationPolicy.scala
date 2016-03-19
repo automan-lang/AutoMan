@@ -13,6 +13,10 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
 
   val NumBootstraps = 512
 
+  // cache to ensure that output matches test since the
+  // bootstrap is a randomized algorithm
+  var bootCache = Map[(Seq[Double],Int,Double),(Double,Double,Double)]()
+
   DebugLog("Policy: bootstrap estimation (1-dimensional)",LogLevelInfo(),LogType.STRATEGY, question.id)
 
   /**
@@ -54,20 +58,28 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
     * @return
     */
   private def bootstrap(statistic: Seq[Double] => Double, X: Seq[Double], B: Int, alpha: Double) : (Double,Double,Double) = {
-    // compute statistic
-    val theta_hat = statistic(X)
+    // check cache
+    if (bootCache.contains((X, B, alpha))) {
+      bootCache((X, B, alpha))
+    } else {
+      // compute statistic
+      val theta_hat = statistic(X)
 
-    // compute bootstrap replications
-    val replications = (1 to B).map { b => statistic(resampleWithReplacement(X)) }
+      // compute bootstrap replications
+      val replications = (1 to B).map { b => statistic(resampleWithReplacement(X)) }
 
-    // compute lower bound
-    val low = cdfInverse(alpha / 2.0, replications)
+      // compute lower bound
+      val low = cdfInverse(alpha / 2.0, replications)
 
-    // compute upper bound
-    val high = cdfInverse(1.0 - (alpha / 2.0), replications)
+      // compute upper bound
+      val high = cdfInverse(1.0 - (alpha / 2.0), replications)
 
-    // return
-    (low, theta_hat, high)
+      // cache result
+      bootCache += ((X, B, alpha) -> (low, theta_hat, high))
+
+      // return
+      (low, theta_hat, high)
+    }
   }
 
   /**
