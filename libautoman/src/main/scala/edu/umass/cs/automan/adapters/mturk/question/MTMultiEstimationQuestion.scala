@@ -54,10 +54,21 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
   }
 
   def renderQuestion(dimension: Dimension) : scala.xml.Node = {
+    val idname = s"dimension_${dimension.id.toString}"
     <p>
-      <span>{ dimension.id.toString }</span><br/>
-      <input type="text" name={ dimension.id.toString } />
+      <input type="text" class="dimension" id={ idname } name={ dimension.id.toString } />
     </p>
+  }
+
+  def jsDisableSubmitOnPreview : String = {
+    """
+      |function disableSubmitOnPreview() {
+      |  var aID = document.getElementById('assignmentId').value;
+      |  if (aID === "ASSIGNMENT_ID_NOT_AVAILABLE") {
+      |    document.getElementById('submitButton').setAttribute("disabled", "true");
+      |  }
+      |}
+    """.stripMargin
   }
 
   def html() = {
@@ -66,6 +77,7 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
         <html>
           <head>
             <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+            <script>{ jsDisableSubmitOnPreview }</script>
             {
               _layout match {
                 case Some(layout) => layout
@@ -74,14 +86,13 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
             }
           </head>
           <body>
-            <span id="computation_id" style="display: none">{ id.toString }</span>
             <div id="hit_content">
               <form name="mturk_form" method="post" id="mturk_form" action={_action}>
                 <input type="hidden" value={id.toString} name="question_id" id="question_id"/>
                 <input type="hidden" value="" name="assignmentId" id="assignmentId"/>
                 {
                   _image_url match {
-                    case Some(url) => <p><img src={ url }/></p>
+                    case Some(url) => <p><img id="question_image" src={ url }/></p>
                     case None => NodeSeq.Empty
                   }
                 }
