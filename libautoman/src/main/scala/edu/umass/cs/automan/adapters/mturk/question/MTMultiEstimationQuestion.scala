@@ -14,7 +14,11 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
   override type A = Array[Double]
 
   _minimum_spawn_policy = MTurkMinimumSpawnPolicy
-  private val _action = if (sandbox) { "sandbox" } else { "production" }
+  private val _action = if (sandbox) {
+    "https://workersandbox.mturk.com/mturk/externalSubmit"
+  } else {
+    "https://www.mturk.com/mturk/externalSubmit"
+  }
   private var _iframe_height = 450
   private var _layout: Option[scala.xml.Node] = None
 
