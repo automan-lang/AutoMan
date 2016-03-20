@@ -61,7 +61,7 @@ class ComplicatedTimeoutTest extends FlatSpec with Matchers {
         case Answer(ans, cost, conf, qid) =>
           println("question_id = " + qid + ", Answer: '" + ans + "', cost: '" + cost + "', confidence: " + conf)
           (ans == 'a) should be (true)
-          cost should be (BigDecimal(2.58))
+          (cost >= BigDecimal(2.34)) should be (true)
           (conf > 0.95) should be (true)
         case _ =>
           fail()
