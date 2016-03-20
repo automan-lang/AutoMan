@@ -9,11 +9,59 @@ import edu.umass.cs.automan.adapters.mturk.mock.MockRequesterService
 import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
 import edu.umass.cs.automan.adapters.mturk.util.Key
 import edu.umass.cs.automan.adapters.mturk.util.Key._
+import edu.umass.cs.automan.adapters.mturk.worker.WorkerRunnable.RetryState
 import edu.umass.cs.automan.core.logging.{LogLevelDebug, LogType, LogLevelInfo, DebugLog}
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 import edu.umass.cs.automan.core.util.{Utilities, Stopwatch}
 
 import scala.annotation.tailrec
+
+object WorkerRunnable {
+  val OK_THRESHOLD = 10
+
+  class RetryState(val sleep_ms: Int) {
+    var backoff_exponent: Int = 0
+    var successful_calls: Int = 0
+  }
+
+  def turkRetry[T](mtcall: () => T, timeoutState: RetryState) : T = {
+    var OK = false
+    var result: Option[T] = None
+    while(!OK) {
+      if (timeoutState.successful_calls >= WorkerRunnable.OK_THRESHOLD) {
+        if (timeoutState.backoff_exponent > 0) {
+          // go faster
+          timeoutState.backoff_exponent -= 1
+          // reset count
+          timeoutState.successful_calls = 0
+          val sleep_ms = timeoutState.sleep_ms << timeoutState.backoff_exponent
+          DebugLog("Last " + timeoutState.successful_calls + " successful, decreasing sleep interval to " + sleep_ms + " ms.", LogLevelInfo(), LogType.ADAPTER, null)
+        }
+      }
+
+      try {
+        val res = mtcall()
+        // count an OK result
+        timeoutState.successful_calls += 1
+        // set OK
+        OK = true
+        // set result
+        result = Some(res)
+      } catch {
+        case e: ServiceException =>
+          // go slower
+          timeoutState.backoff_exponent += 1
+          // reset count
+          timeoutState.successful_calls = 0
+          // sleep
+          val sleep_ms = timeoutState.sleep_ms << timeoutState.backoff_exponent
+          DebugLog("MTurk reports 'System Unavailable', increasing sleep interval to " + sleep_ms + " ms.", LogLevelInfo(), LogType.ADAPTER, null)
+          Thread.sleep(sleep_ms)
+      }
+    }
+    result.get
+  }
+}
 
 /**
   * This is a separate class to ensure that state changes are always managed
@@ -25,8 +73,7 @@ import scala.annotation.tailrec
 class WorkerRunnable(tw: TurkWorker,
                      requests: PriorityBlockingQueue[FIFOMessage],
                      responses: scala.collection.mutable.Map[Message, Any]) extends Runnable {
-  var _backoff_exponent = 0
-  var _successful_calls = 0
+  val timeoutState = new RetryState(tw.sleep_ms)
 
   // MTurk-related state
   private var _state = tw.memo_handle.restore_mt_state(tw.backend) match {
@@ -66,7 +113,7 @@ class WorkerRunnable(tw: TurkWorker,
       }
 
       // rate-limit
-      val duration = Math.max((tw.sleep_ms << _backoff_exponent) - time.duration_ms, 0)
+      val duration = Math.max((timeoutState.sleep_ms << timeoutState.backoff_exponent) - time.duration_ms, 0)
       if (duration > 0) {
         DebugLog("MTurk worker sleeping for " + duration.toString + " milliseconds.", LogLevelInfo(), LogType.ADAPTER, null)
         Thread.sleep(duration)
@@ -88,7 +135,7 @@ class WorkerRunnable(tw: TurkWorker,
       val hs = internal_state.getHITState(hit_key)
 
       // start by granting Qualifications, where appropriate
-      internal_state = timeout(() => MTurkMethods.mturk_grantQualifications(hs, internal_state, tw.backend))
+      internal_state = WorkerRunnable.turkRetry(() => MTurkMethods.mturk_grantQualifications(hs, internal_state, tw.backend), timeoutState)
 
       hts.map { t =>
         hs.getAssignmentOption(t) match {
@@ -105,13 +152,14 @@ class WorkerRunnable(tw: TurkWorker,
               if (!internal_state.worker_whitelist.contains(worker_id, group_id)) {
                 internal_state = internal_state.updateWorkerWhitelist(worker_id, group_id, hs.hittype.id)
                 val disqualification_id = hs.hittype.disqualification.getQualificationTypeId
-                // TODO ASSIGN QUAL
-                timeout(() => MTurkMethods.mturk_assignQualification(
-                                disqualification_id,
-                                worker_id,
-                                internal_state.getBatchNo(Key.BatchKey(t)).get,
-                                sendNotification = false,
-                                tw.backend)
+                WorkerRunnable.turkRetry(
+                  () => MTurkMethods.mturk_assignQualification(
+                          disqualification_id,
+                          worker_id,
+                          internal_state.getBatchNo(Key.BatchKey(t)).get,
+                          sendNotification = false,
+                          tw.backend),
+                  timeoutState
                 )
               }
 
@@ -136,7 +184,7 @@ class WorkerRunnable(tw: TurkWorker,
               if (disqual_2 != disqual_1) {
                 // immediately revoke the qualification in HITGroup 2;
                 // we'll deal with duplicates later
-                timeout(() =>
+                WorkerRunnable.turkRetry(() =>
                   MTurkMethods.mturk_revokeQualification(
                     disqual_2, worker_id,
                     "For quality control purposes, qualification " + disqual_2 +
@@ -146,7 +194,8 @@ class WorkerRunnable(tw: TurkWorker,
                     "We apologize for the inconvenience that this may cause and we encourage you to continue " +
                     "working on any of our available HITs.",
                     tw.backend
-                  )
+                  ),
+                  timeoutState
                 )
 
                 DebugLog("Revoking qualification type ID " + disqual_2 +
@@ -177,44 +226,6 @@ class WorkerRunnable(tw: TurkWorker,
     }.toList
 
     (answered, internal_state)
-  }
-
-  def timeout[T](mtcall: () => T) : T = {
-    var OK = false
-    var result: Option[T] = None
-    while(!OK) {
-      if (_successful_calls >= 10) {
-        if (_backoff_exponent > 0) {
-          // go faster
-          _backoff_exponent -= 1
-          // reset count
-          _successful_calls = 0
-          val sleep_ms = tw.sleep_ms << _backoff_exponent
-          DebugLog("Last " + _successful_calls + " successful, decreasing sleep interval to " + sleep_ms + " ms.", LogLevelInfo(), LogType.ADAPTER, null)
-        }
-      }
-
-      try {
-        val res = mtcall()
-        // count an OK result
-        _successful_calls += 1
-        // set OK
-        OK = true
-        // set result
-        result = Some(res)
-      } catch {
-        case e: ServiceException =>
-          // go slower
-          _backoff_exponent += 1
-          // reset count
-          _successful_calls = 0
-          // sleep
-          val sleep_ms = tw.sleep_ms << _backoff_exponent
-          DebugLog("MTurk reports 'System Unavailable', increasing sleep interval to " + sleep_ms + " ms.", LogLevelInfo(), LogType.ADAPTER, null)
-          Thread.sleep(sleep_ms)
-      }
-    }
-    result.get
   }
 
   private def failureCleanup(failed_request: Message, throwable: Throwable): Unit = {
@@ -264,7 +275,7 @@ class WorkerRunnable(tw: TurkWorker,
               LogLevelDebug(),
               LogType.ADAPTER,
               t.question.id)
-            timeout(() => MTurkMethods.mturk_approveAssignment(assignment, "Thanks!", tw.backend))
+            WorkerRunnable.turkRetry(() => MTurkMethods.mturk_approveAssignment(assignment, "Thanks!", tw.backend), timeoutState)
             t.copy_as_accepted()
           case None =>
             throw new Exception("Cannot accept non-existent assignment.")
@@ -305,7 +316,7 @@ class WorkerRunnable(tw: TurkWorker,
             LogLevelDebug(),
             LogType.ADAPTER,
             t.question.id)
-          timeout(() => MTurkMethods.mturk_forceExpireHIT(hit_state, tw.backend))
+          WorkerRunnable.turkRetry(() => MTurkMethods.mturk_forceExpireHIT(hit_state, tw.backend), timeoutState)
           internal_state = internal_state.updateHITStates(hit_id, hit_state.cancel())
         }
 
@@ -358,10 +369,10 @@ class WorkerRunnable(tw: TurkWorker,
         // have we already posted a HIT for these tasks?
         if (internal_state.hit_ids.contains(hit_key)) {
           // if so, get HITState and extend it
-          internal_state = timeout(() => MTurkMethods.mturk_extendHIT(tz, tz.head.timeout_in_s, hit_key, internal_state, tw.backend))
+          internal_state = WorkerRunnable.turkRetry(() => MTurkMethods.mturk_extendHIT(tz, tz.head.timeout_in_s, hit_key, internal_state, tw.backend), timeoutState)
         } else {
           // if not, post a new HIT on MTurk
-          internal_state = timeout(() => MTurkMethods.mturk_createHIT(tz, group_key, q, internal_state, tw.backend))
+          internal_state = WorkerRunnable.turkRetry(() => MTurkMethods.mturk_createHIT(tz, group_key, q, internal_state, tw.backend), timeoutState)
         }
 
         // mark as running
@@ -397,7 +408,7 @@ class WorkerRunnable(tw: TurkWorker,
               LogLevelDebug(),
               LogType.ADAPTER,
               t.question.id)
-            timeout(() => MTurkMethods.mturk_rejectAssignment(assignment, reason, tw.backend))
+            WorkerRunnable.turkRetry(() => MTurkMethods.mturk_rejectAssignment(assignment, reason, tw.backend), timeoutState)
             t.copy_as_rejected()
           case None =>
             throw new Exception("Cannot accept non-existent assignment.")
@@ -428,7 +439,7 @@ class WorkerRunnable(tw: TurkWorker,
         val hit_state = internal_state.getHITState(hit_id)
 
         // get all of the assignments for this HIT
-        val assns = timeout(() => MTurkMethods.mturk_getAllAssignmentsForHIT(hit_state, tw.backend))
+        val assns = WorkerRunnable.turkRetry(() => MTurkMethods.mturk_getAllAssignmentsForHIT(hit_state, tw.backend), timeoutState)
 
         // pair with the HIT's tasks and return new HITState
         hit_state.HITId -> hit_state.matchAssignments(assns, tw.mock_service)
@@ -466,12 +477,12 @@ class WorkerRunnable(tw: TurkWorker,
 
   private def scheduled_get_budget(): BigDecimal = {
     DebugLog("Getting budget.", LogLevelInfo(), LogType.ADAPTER, null)
-    timeout(() => MTurkMethods.mturk_getAccountBalance(tw.backend))
+    WorkerRunnable.turkRetry(() => MTurkMethods.mturk_getAccountBalance(tw.backend), timeoutState)
   }
 
   private def scheduled_cleanup_qualifications(q: MTurkQuestion) : Unit = {
     q.qualifications.foreach { (qual: QualificationRequirement) =>
-      timeout(() => MTurkMethods.mturk_disposeQualificationType(qual, tw.backend))
+      WorkerRunnable.turkRetry(() => MTurkMethods.mturk_disposeQualificationType(qual, tw.backend), timeoutState)
     }
   }
 }

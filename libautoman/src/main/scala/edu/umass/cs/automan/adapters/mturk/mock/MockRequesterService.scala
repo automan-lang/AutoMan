@@ -7,6 +7,7 @@ import com.amazonaws.mturk.service.axis.RequesterService
 import com.amazonaws.mturk.service.exception.ServiceException
 import com.amazonaws.mturk.util.ClientConfig
 import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
+import edu.umass.cs.automan.adapters.mturk.worker.WorkerRunnable
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.util._
 import java.util.{Calendar, Date, UUID}
@@ -23,7 +24,7 @@ import java.util.{Calendar, Date, UUID}
 private[mturk] class MockRequesterService(initial_state: MockServiceState, config: ClientConfig) extends RequesterService(config) {
   private var _state = initial_state
   private var _transaction_count = 0
-  private val TRANSACTION_THRESHOLD = 5
+  private val TRANSACTION_THRESHOLD = WorkerRunnable.OK_THRESHOLD + 1
 
   private def diePeriodically() : Unit = {
     _transaction_count += 1

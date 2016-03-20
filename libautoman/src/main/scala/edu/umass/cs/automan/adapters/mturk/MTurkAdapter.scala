@@ -4,7 +4,8 @@ import java.util.{Date, Locale}
 import com.amazonaws.mturk.requester.HIT
 import com.amazonaws.mturk.util.ClientConfig
 import com.amazonaws.mturk.service.axis.RequesterService
-import edu.umass.cs.automan.adapters.mturk.worker.TurkWorker
+import edu.umass.cs.automan.adapters.mturk.worker.WorkerRunnable.RetryState
+import edu.umass.cs.automan.adapters.mturk.worker.{MTurkMethods, WorkerRunnable, TurkWorker}
 import edu.umass.cs.automan.adapters.mturk.logging.MTMemo
 import edu.umass.cs.automan.adapters.mturk.mock.{MockSetup, MockServiceState, MockRequesterService}
 import edu.umass.cs.automan.adapters.mturk.question._
@@ -189,7 +190,9 @@ class MTurkAdapter extends AutomanAdapter {
   }
   protected[automan] def getAllHITs : Array[HIT] = {
     _service match {
-      case Some(rs) => rs.searchAllHITs()
+      case Some(rs) =>
+        val timeoutState = new RetryState(_backend_update_frequency_ms)
+        WorkerRunnable.turkRetry(() => MTurkMethods.mturk_searchAllHITs(rs), timeoutState)
       case None => Array[HIT]()
     }
   }

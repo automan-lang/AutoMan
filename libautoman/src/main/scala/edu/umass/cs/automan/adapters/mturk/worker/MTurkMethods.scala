@@ -2,7 +2,7 @@ package edu.umass.cs.automan.adapters.mturk.worker
 
 import java.text.SimpleDateFormat
 import java.util.{UUID, Date}
-import com.amazonaws.mturk.requester.{Assignment, Comparator, QualificationRequirement}
+import com.amazonaws.mturk.requester.{HIT, Assignment, Comparator, QualificationRequirement}
 import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.adapters.mturk.mock.MockRequesterService
 import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
@@ -289,5 +289,9 @@ object MTurkMethods {
       DebugLog(s"Reusing HITType with ID ${internal_state.hit_types(batch_key).id} for batch key ${batch_key}.", LogLevelInfo(), LogType.ADAPTER, null)
     }
     (internal_state.hit_types(batch_key), internal_state)
+  }
+
+  private[automan] def mturk_searchAllHITs(backend: RequesterService) : Array[HIT] = {
+    backend.searchAllHITs()
   }
 }
