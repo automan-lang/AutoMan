@@ -2,7 +2,7 @@ package edu.umass.cs.automan.adapters.mturk.worker
 
 import java.text.SimpleDateFormat
 import java.util.{UUID, Date}
-import com.amazonaws.mturk.requester.{Comparator, QualificationRequirement}
+import com.amazonaws.mturk.requester.{Assignment, Comparator, QualificationRequirement}
 import com.amazonaws.mturk.service.axis.RequesterService
 import edu.umass.cs.automan.adapters.mturk.mock.MockRequesterService
 import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
@@ -11,14 +11,14 @@ import edu.umass.cs.automan.adapters.mturk.util.Key._
 import edu.umass.cs.automan.core.logging.{LogLevelDebug, LogType, LogLevelInfo, DebugLog}
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
-import edu.umass.cs.automan.core.util.Utilities
+import edu.umass.cs.automan.core.util.{Stopwatch, Utilities}
 
 /**
   * A collection of stateless MTurk utility functions.
   */
 object MTurkMethods {
   // give workers a tiny amount of leeway since sometimes their computers are actually slow
-  val WORKER_TIMEOUT_EPSILON = 15
+  val WORKER_TIMEOUT_EPSILON_S = 15
 
   private[worker] def mtquestion_for_tasks(ts: List[Task]) : MTurkQuestion = {
     // determine which MT question we've been asked about
@@ -99,6 +99,10 @@ object MTurkMethods {
     val qualtxt = s"AutoMan automatically generated Disqualification (title: $title, date: $datestr, batchKey: $batchKey, batch_no: $batch_no)"
     val qual = backend.createQualificationType("AutoMan " + UUID.randomUUID(), "automan", qualtxt)
     new QualificationRequirement(qual.getQualificationTypeId, Comparator.EqualTo, batch_no, null, false)
+  }
+
+  private[worker] def mturk_getAllAssignmentsForHIT(hit_state: HITState, backend: RequesterService): Array[Assignment] = {
+    backend.getAllAssignmentsForHIT(hit_state.HITId)
   }
 
   private[worker] def answer_tasks(ts: List[Task], batch_key: BatchKey, current_time: Date, state: MTState, backend: RequesterService, mock_service: Option[MockRequesterService]) : (List[Task],MTState) = {
@@ -232,7 +236,7 @@ object MTurkMethods {
 
     val hit_type_id = backend.registerHITType(
       autoApprovalDelayInSeconds,
-      worker_timeout.toLong + WORKER_TIMEOUT_EPSILON,               // amount of time the worker has to complete the task
+      worker_timeout.toLong + WORKER_TIMEOUT_EPSILON_S,               // amount of time the worker has to complete the task
       cost.toDouble,                                                // cost in USD
       title,                                                        // title
       keywords.mkString(","),                                       // keywords

@@ -19,6 +19,12 @@ import edu.umass.cs.automan.core.util.Stopwatch
 class WorkerRunnable(tw: TurkWorker,
                      requests: PriorityBlockingQueue[FIFOMessage],
                      responses: scala.collection.mutable.Map[Message, Any]) extends Runnable {
+  var _backoff_exponent = 0
+  var _successful_calls = 0
+
+  // if a call takes longer than this, signal to the rate-limiter to back off
+  val UNACCEPTABLE_DURATION_S = 30
+
   // MTurk-related state
   private var _state = tw.memo_handle.restore_mt_state(tw.backend) match {
     case Some(state) => state
@@ -57,7 +63,7 @@ class WorkerRunnable(tw: TurkWorker,
       }
 
       // rate-limit
-      val duration = Math.max(tw.sleep_ms - time.duration_ms, 0)
+      val duration = Math.max((tw.sleep_ms << _backoff_exponent) - time.duration_ms, 0)
       if (duration > 0) {
         DebugLog("MTurk worker sleeping for " + duration.toString + " milliseconds.", LogLevelInfo(), LogType.ADAPTER, null)
         Thread.sleep(duration)
@@ -66,6 +72,33 @@ class WorkerRunnable(tw: TurkWorker,
         Thread.`yield`()
       }
     } // exit loop
+  }
+
+  private[worker] def timeout[T](mtcall: () => T) : T = {
+    if (_successful_calls >= 10) {
+      if (_backoff_exponent > 0) {
+        // go faster
+        _backoff_exponent -= 1
+        // reset count
+        _successful_calls = 0
+      }
+    }
+
+    val t = Stopwatch {
+      mtcall()
+    }
+
+    if (t.duration_ms >= (UNACCEPTABLE_DURATION_S * 1000)) {
+      // go slower
+      _backoff_exponent += 1
+      // reset count
+      _successful_calls = 0
+      t.result
+    } else {
+      // count an OK speed
+      _successful_calls += 1
+      t.result
+    }
   }
 
   private def failureCleanup(failed_request: Message, throwable: Throwable): Unit = {
@@ -209,10 +242,10 @@ class WorkerRunnable(tw: TurkWorker,
         // have we already posted a HIT for these tasks?
         if (internal_state.hit_ids.contains(hit_key)) {
           // if so, get HITState and extend it
-          internal_state = MTurkMethods.mturk_extendHIT(tz, tz.head.timeout_in_s, hit_key, internal_state, tw.backend)
+          internal_state = timeout(() => MTurkMethods.mturk_extendHIT(tz, tz.head.timeout_in_s, hit_key, internal_state, tw.backend))
         } else {
           // if not, post a new HIT on MTurk
-          internal_state = MTurkMethods.mturk_createHIT(tz, group_key, q, internal_state, tw.backend)
+          internal_state = timeout(() => MTurkMethods.mturk_createHIT(tz, group_key, q, internal_state, tw.backend))
         }
 
         // mark as running
@@ -279,7 +312,7 @@ class WorkerRunnable(tw: TurkWorker,
         val hit_state = internal_state.getHITState(hit_id)
 
         // get all of the assignments for this HIT
-        val assns = tw.backend.getAllAssignmentsForHIT(hit_state.HITId)
+        val assns = timeout(() => MTurkMethods.mturk_getAllAssignmentsForHIT(hit_state, tw.backend))
 
         // pair with the HIT's tasks and return new HITState
         hit_state.HITId -> hit_state.matchAssignments(assns, tw.mock_service)
@@ -291,14 +324,17 @@ class WorkerRunnable(tw: TurkWorker,
       // return answered tasks, updating tasks only
       // with those events that do not happen in the future
       val (answered, state2) =
-        MTurkMethods.answer_tasks(
-          bts,
-          batch_key,
-          current_time,
-          internal_state,
-          tw.backend,
-          tw.mock_service
+        timeout(() =>
+          MTurkMethods.answer_tasks(
+            bts,
+            batch_key,
+            current_time,
+            internal_state,
+            tw.backend,
+            tw.mock_service
+          )
         )
+
       internal_state = state2
 
       answered
