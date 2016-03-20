@@ -33,9 +33,9 @@ object WorkerRunnable {
           // go faster
           timeoutState.backoff_exponent -= 1
           // reset count
-          timeoutState.successful_calls = 0
           val sleep_ms = timeoutState.sleep_ms << timeoutState.backoff_exponent
           DebugLog("Last " + timeoutState.successful_calls + " successful, decreasing sleep interval to " + sleep_ms + " ms.", LogLevelInfo(), LogType.ADAPTER, null)
+          timeoutState.successful_calls = 0
         }
       }
 
