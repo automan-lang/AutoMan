@@ -165,7 +165,7 @@ class Scheduler(val question: Question,
     if (_all_tasks.nonEmpty) {
       val (done, nc) = question.validation_policy_instance.is_done(_all_tasks, _num_comparisons) // check for restored memo tasks
       _done = done
-      _num_comparisons = nc
+      _num_comparisons = if (!done) { nc } else { _num_comparisons }
     }
 
     // process until done
@@ -180,7 +180,7 @@ class Scheduler(val question: Question,
           // update state
           _all_tasks = __tasks
           _time = __time
-          _num_comparisons = __num_comparisons
+          _num_comparisons = if (!__done) { __num_comparisons } else { _num_comparisons }
           _done = __done
         }
 
@@ -194,7 +194,7 @@ class Scheduler(val question: Question,
           if (all_tasks_completed || early_termination_OK) {
             val (__done, __nc) = VP.is_done(_all_tasks, _num_comparisons)
             _done = __done
-            _num_comparisons = __nc
+            _num_comparisons = if (!__done) { __nc } else { _num_comparisons }
           }
         }
 

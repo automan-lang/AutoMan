@@ -218,12 +218,12 @@ class MultiBootstrapEstimationPolicy(question: MultiEstimationQuestion)
                   question.default_sample_size
               case SymmetricCI(err) =>
                 acc &&
-                  ests(i) - lows(i) < err &&
-                  highs(i) - ests(i) < err
+                  ((ests(i) - lows(i)) < err) &&
+                  ((highs(i) - ests(i)) < err)
               case AsymmetricCI(lerr, herr) =>
                 acc &&
-                  ests(i) - lows(i) < lerr &&
-                  highs(i) - ests(i) < herr
+                  ((ests(i) - lows(i)) < lerr) &&
+                  ((highs(i) - ests(i)) < herr)
             }
           }
 

@@ -194,11 +194,11 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
               completed_workerunique_tasks(tasks).size ==
               question.default_sample_size
             case SymmetricCI(err) =>
-              est - low < err &&
-              high - est < err
+              ((est - low) < err) &&
+              ((high - est) < err)
             case AsymmetricCI(lerr, herr) =>
-              est - low < lerr &&
-              high - est < herr
+              ((est - low) < lerr) &&
+              ((high - est) < herr)
            }
       }
       // bump comparisons
