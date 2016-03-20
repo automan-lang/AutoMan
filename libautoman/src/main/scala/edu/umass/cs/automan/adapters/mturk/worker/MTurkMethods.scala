@@ -105,96 +105,34 @@ object MTurkMethods {
     backend.getAllAssignmentsForHIT(hit_state.HITId)
   }
 
-  private[worker] def answer_tasks(ts: List[Task], batch_key: BatchKey, current_time: Date, state: MTState, backend: RequesterService, mock_service: Option[MockRequesterService]) : (List[Task],MTState) = {
-    val ct = Utilities.dateToCalendar(current_time)
-    var internal_state = state
-    val group_id = batch_key._1
-
-    // group by HIT
-    val answered = ts.groupBy(Key.HITKeyForBatch(batch_key,_)).flatMap { case (hit_key, hts) =>
-      // get HITState for this set of tasks
-      val hs = internal_state.getHITState(hit_key)
-
-      // start by granting Qualifications, where appropriate
-      internal_state = mturk_grantQualifications(hs, internal_state, backend)
-
-      hts.map { t =>
-        hs.getAssignmentOption(t) match {
-          // when a task is paired with an answer
-          case Some(assignment) =>
-            // only update task object if the task isn't already answered
-            // and if the answer actually happens in the past (ugly hack for mocks)
-            if (t.state == SchedulerState.RUNNING && !assignment.getSubmitTime.after(ct)) {
-              // get worker_id
-              val worker_id = assignment.getWorkerId
-
-              // update the worker whitelist and grant qualification (disqualifiaction)
-              // if this is the first time we've ever seen this worker
-              if (!internal_state.worker_whitelist.contains(worker_id, group_id)) {
-                internal_state = internal_state.updateWorkerWhitelist(worker_id, group_id, hs.hittype.id)
-                val disqualification_id = hs.hittype.disqualification.getQualificationTypeId
-                backend.assignQualification(disqualification_id, worker_id, internal_state.getBatchNo(Key.BatchKey(t)).get, false)
-              }
-
-              // process answer
-              val ans = assignment.getAnswer
-              val xml = scala.xml.XML.loadString(ans)
-              val prelim_answer = t.question.asInstanceOf[MTurkQuestion].fromXML(xml)
-              val answer = t.question.before_filter(prelim_answer.asInstanceOf[t.question.A])
-
-              // it is possible, although unlikely, that a worker could submit
-              // work twice for the same HIT, if the following scenario occurs:
-              // 1. HIT A in HITGroup #1 times-out, causing AutoMan to post HITGroup #2 containing a second round of HIT A
-              // 2. Worker w asks for and receives a Qualification for HITGroup #2
-              // 3. Worker w submits work to HITGroup #1 for HIT B (not HIT A).
-              // 4. HIT B times out, causing AutoMan to post a second round of HIT B to HITGroup #2.
-              // 5. Worker w submits work for HITGroup #2.
-              // Since this is unlikely, and violates the i.i.d. guarantee that
-              // the Scheduler requires, we consider this a duplicate
-              val hittype_2 = internal_state.getHITTypeForWhitelistedWorker(worker_id, group_id)
-              val disqual_2 = hittype_2.disqualification.getQualificationTypeId
-              val disqual_1 = hs.hittype.disqualification.getQualificationTypeId
-              if (disqual_2 != disqual_1) {
-                // immediately revoke the qualification in HITGroup 2;
-                // we'll deal with duplicates later
-                backend.revokeQualification(disqual_2, worker_id,
-                  "For quality control purposes, qualification " + disqual_2 +
-                    " was revoked because you submitted related work for HIT " + hs.HITId +
-                    " in HIT Group " + hittype_2.id + ".  This is for our own " +
-                    "bookkeeping purposes and is not a reflection on the quality of your work. " +
-                    "We apologize for the inconvenience that this may cause and we encourage you to continue " +
-                    "working on any of our available HITs."
-                )
-
-                DebugLog("Revoking qualification type ID " + disqual_2 +
-                         " for HITType ID " + hittype_2.id +
-                         " and marking task ID " + t.task_id + " as DUPLICATE " +
-                         " because worker " + worker_id +
-                         " also submitted a response for the HITType ID " + hs.hittype.id,
-                         LogLevelInfo(),
-                         LogType.ADAPTER,
-                         t.question.id
-                )
-              }
-
-              // mark assignment as ANSWERED if we're running in mock mode
-              mock_service match {
-                case Some(ms) => ms.takeAssignment(assignment.getAssignmentId)
-                case None => ()
-              }
-
-              t.copy_with_answer(answer.asInstanceOf[t.question.A], worker_id)
-            } else {
-              t
-            }
-          // when a task is not paired with an answer
-          case None => t
-        }
-      }
-    }.toList
-
-    (answered, internal_state)
+  private[worker] def mturk_approveAssignment(assignment: Assignment, text: String, backend: RequesterService) : Unit = {
+    backend.approveAssignment(assignment.getAssignmentId, text)
   }
+
+  private[worker] def mturk_rejectAssignment(assignment: Assignment, reason: String, backend: RequesterService) : Unit = {
+    backend.rejectAssignment(assignment.getAssignmentId, reason)
+  }
+
+  private[worker] def mturk_forceExpireHIT(hit_state: HITState, backend: RequesterService) : Unit = {
+    backend.forceExpireHIT(hit_state.HITId)
+  }
+
+  private[worker] def mturk_getAccountBalance(backend: RequesterService): BigDecimal = {
+    backend.getAccountBalance
+  }
+
+  private[worker] def mturk_disposeQualificationType(qual: QualificationRequirement, backend: RequesterService) : Unit = {
+    backend.disposeQualificationType(qual.getQualificationTypeId)
+  }
+
+  private[worker] def mturk_assignQualification(disqualification_id: String, worker_id: String, integerValue: Int, sendNotification: Boolean, backend: RequesterService): Unit = {
+    backend.assignQualification(disqualification_id, worker_id, integerValue, sendNotification)
+  }
+
+  private[worker] def mturk_revokeQualification(qualificationTypeId: String, worker_id: String, reason: String, backend: RequesterService) : Unit = {
+    backend.revokeQualification(qualificationTypeId, worker_id, reason)
+  }
+
 
   /**
     * Create a new HITType on MTurk, with a disqualification if applicable.

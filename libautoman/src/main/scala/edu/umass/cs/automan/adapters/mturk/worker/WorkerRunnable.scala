@@ -2,12 +2,18 @@ package edu.umass.cs.automan.adapters.mturk.worker
 
 import java.util.Date
 import java.util.concurrent.PriorityBlockingQueue
+import com.amazonaws.mturk.requester.QualificationRequirement
+import com.amazonaws.mturk.service.axis.RequesterService
+import com.amazonaws.mturk.service.exception.ServiceException
+import edu.umass.cs.automan.adapters.mturk.mock.MockRequesterService
 import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
 import edu.umass.cs.automan.adapters.mturk.util.Key
 import edu.umass.cs.automan.adapters.mturk.util.Key._
 import edu.umass.cs.automan.core.logging.{LogLevelDebug, LogType, LogLevelInfo, DebugLog}
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
-import edu.umass.cs.automan.core.util.Stopwatch
+import edu.umass.cs.automan.core.util.{Utilities, Stopwatch}
+
+import scala.annotation.tailrec
 
 /**
   * This is a separate class to ensure that state changes are always managed
@@ -21,9 +27,6 @@ class WorkerRunnable(tw: TurkWorker,
                      responses: scala.collection.mutable.Map[Message, Any]) extends Runnable {
   var _backoff_exponent = 0
   var _successful_calls = 0
-
-  // if a call takes longer than this, signal to the rate-limiter to back off
-  val UNACCEPTABLE_DURATION_S = 30
 
   // MTurk-related state
   private var _state = tw.memo_handle.restore_mt_state(tw.backend) match {
@@ -74,31 +77,144 @@ class WorkerRunnable(tw: TurkWorker,
     } // exit loop
   }
 
-  private[worker] def timeout[T](mtcall: () => T) : T = {
-    if (_successful_calls >= 10) {
-      if (_backoff_exponent > 0) {
-        // go faster
-        _backoff_exponent -= 1
-        // reset count
-        _successful_calls = 0
+  private[worker] def answer_tasks(ts: List[Task], batch_key: BatchKey, current_time: Date, state: MTState) : (List[Task],MTState) = {
+    val ct = Utilities.dateToCalendar(current_time)
+    var internal_state = state
+    val group_id = batch_key._1
+
+    // group by HIT
+    val answered = ts.groupBy(Key.HITKeyForBatch(batch_key,_)).flatMap { case (hit_key, hts) =>
+      // get HITState for this set of tasks
+      val hs = internal_state.getHITState(hit_key)
+
+      // start by granting Qualifications, where appropriate
+      internal_state = timeout(() => MTurkMethods.mturk_grantQualifications(hs, internal_state, tw.backend))
+
+      hts.map { t =>
+        hs.getAssignmentOption(t) match {
+          // when a task is paired with an answer
+          case Some(assignment) =>
+            // only update task object if the task isn't already answered
+            // and if the answer actually happens in the past (ugly hack for mocks)
+            if (t.state == SchedulerState.RUNNING && !assignment.getSubmitTime.after(ct)) {
+              // get worker_id
+              val worker_id = assignment.getWorkerId
+
+              // update the worker whitelist and grant qualification (disqualifiaction)
+              // if this is the first time we've ever seen this worker
+              if (!internal_state.worker_whitelist.contains(worker_id, group_id)) {
+                internal_state = internal_state.updateWorkerWhitelist(worker_id, group_id, hs.hittype.id)
+                val disqualification_id = hs.hittype.disqualification.getQualificationTypeId
+                // TODO ASSIGN QUAL
+                timeout(() => MTurkMethods.mturk_assignQualification(
+                                disqualification_id,
+                                worker_id,
+                                internal_state.getBatchNo(Key.BatchKey(t)).get,
+                                sendNotification = false,
+                                tw.backend)
+                )
+              }
+
+              // process answer
+              val ans = assignment.getAnswer
+              val xml = scala.xml.XML.loadString(ans)
+              val prelim_answer = t.question.asInstanceOf[MTurkQuestion].fromXML(xml)
+              val answer = t.question.before_filter(prelim_answer.asInstanceOf[t.question.A])
+
+              // it is possible, although unlikely, that a worker could submit
+              // work twice for the same HIT, if the following scenario occurs:
+              // 1. HIT A in HITGroup #1 times-out, causing AutoMan to post HITGroup #2 containing a second round of HIT A
+              // 2. Worker w asks for and receives a Qualification for HITGroup #2
+              // 3. Worker w submits work to HITGroup #1 for HIT B (not HIT A).
+              // 4. HIT B times out, causing AutoMan to post a second round of HIT B to HITGroup #2.
+              // 5. Worker w submits work for HITGroup #2.
+              // Since this is unlikely, and violates the i.i.d. guarantee that
+              // the Scheduler requires, we consider this a duplicate
+              val hittype_2 = internal_state.getHITTypeForWhitelistedWorker(worker_id, group_id)
+              val disqual_2 = hittype_2.disqualification.getQualificationTypeId
+              val disqual_1 = hs.hittype.disqualification.getQualificationTypeId
+              if (disqual_2 != disqual_1) {
+                // immediately revoke the qualification in HITGroup 2;
+                // we'll deal with duplicates later
+                timeout(() =>
+                  MTurkMethods.mturk_revokeQualification(
+                    disqual_2, worker_id,
+                    "For quality control purposes, qualification " + disqual_2 +
+                    " was revoked because you submitted related work for HIT " + hs.HITId +
+                    " in HIT Group " + hittype_2.id + ".  This is for our own " +
+                    "bookkeeping purposes and is not a reflection on the quality of your work. " +
+                    "We apologize for the inconvenience that this may cause and we encourage you to continue " +
+                    "working on any of our available HITs.",
+                    tw.backend
+                  )
+                )
+
+                DebugLog("Revoking qualification type ID " + disqual_2 +
+                  " for HITType ID " + hittype_2.id +
+                  " and marking task ID " + t.task_id + " as DUPLICATE " +
+                  " because worker " + worker_id +
+                  " also submitted a response for the HITType ID " + hs.hittype.id,
+                  LogLevelInfo(),
+                  LogType.ADAPTER,
+                  t.question.id
+                )
+              }
+
+              // mark assignment as ANSWERED if we're running in mock mode
+              tw.mock_service match {
+                case Some(ms) => ms.takeAssignment(assignment.getAssignmentId)
+                case None => ()
+              }
+
+              t.copy_with_answer(answer.asInstanceOf[t.question.A], worker_id)
+            } else {
+              t
+            }
+          // when a task is not paired with an answer
+          case None => t
+        }
+      }
+    }.toList
+
+    (answered, internal_state)
+  }
+
+  def timeout[T](mtcall: () => T) : T = {
+    var OK = false
+    var result: Option[T] = None
+    while(!OK) {
+      if (_successful_calls >= 10) {
+        if (_backoff_exponent > 0) {
+          // go faster
+          _backoff_exponent -= 1
+          // reset count
+          _successful_calls = 0
+          val sleep_ms = tw.sleep_ms << _backoff_exponent
+          DebugLog("Last " + _successful_calls + " successful, decreasing sleep interval to " + sleep_ms + " ms.", LogLevelInfo(), LogType.ADAPTER, null)
+        }
+      }
+
+      try {
+        val res = mtcall()
+        // count an OK result
+        _successful_calls += 1
+        // set OK
+        OK = true
+        // set result
+        result = Some(res)
+      } catch {
+        case e: ServiceException =>
+          // go slower
+          _backoff_exponent += 1
+          // reset count
+          _successful_calls = 0
+          // sleep
+          val sleep_ms = tw.sleep_ms << _backoff_exponent
+          DebugLog("MTurk reports 'System Unavailable', increasing sleep interval to " + sleep_ms + " ms.", LogLevelInfo(), LogType.ADAPTER, null)
+          Thread.sleep(sleep_ms)
       }
     }
-
-    val t = Stopwatch {
-      mtcall()
-    }
-
-    if (t.duration_ms >= (UNACCEPTABLE_DURATION_S * 1000)) {
-      // go slower
-      _backoff_exponent += 1
-      // reset count
-      _successful_calls = 0
-      t.result
-    } else {
-      // count an OK speed
-      _successful_calls += 1
-      t.result
-    }
+    result.get
   }
 
   private def failureCleanup(failed_request: Message, throwable: Throwable): Unit = {
@@ -148,7 +264,7 @@ class WorkerRunnable(tw: TurkWorker,
               LogLevelDebug(),
               LogType.ADAPTER,
               t.question.id)
-            tw.backend.approveAssignment(assignment.getAssignmentId, "Thanks!")
+            timeout(() => MTurkMethods.mturk_approveAssignment(assignment, "Thanks!", tw.backend))
             t.copy_as_accepted()
           case None =>
             throw new Exception("Cannot accept non-existent assignment.")
@@ -189,7 +305,7 @@ class WorkerRunnable(tw: TurkWorker,
             LogLevelDebug(),
             LogType.ADAPTER,
             t.question.id)
-          tw.backend.forceExpireHIT(hit_state.HITId)
+          timeout(() => MTurkMethods.mturk_forceExpireHIT(hit_state, tw.backend))
           internal_state = internal_state.updateHITStates(hit_id, hit_state.cancel())
         }
 
@@ -281,7 +397,7 @@ class WorkerRunnable(tw: TurkWorker,
               LogLevelDebug(),
               LogType.ADAPTER,
               t.question.id)
-            tw.backend.rejectAssignment(assignment.getAssignmentId, reason)
+            timeout(() => MTurkMethods.mturk_rejectAssignment(assignment, reason, tw.backend))
             t.copy_as_rejected()
           case None =>
             throw new Exception("Cannot accept non-existent assignment.")
@@ -324,15 +440,11 @@ class WorkerRunnable(tw: TurkWorker,
       // return answered tasks, updating tasks only
       // with those events that do not happen in the future
       val (answered, state2) =
-        timeout(() =>
-          MTurkMethods.answer_tasks(
-            bts,
-            batch_key,
-            current_time,
-            internal_state,
-            tw.backend,
-            tw.mock_service
-          )
+        answer_tasks(
+          bts,
+          batch_key,
+          current_time,
+          internal_state
         )
 
       internal_state = state2
@@ -354,12 +466,12 @@ class WorkerRunnable(tw: TurkWorker,
 
   private def scheduled_get_budget(): BigDecimal = {
     DebugLog("Getting budget.", LogLevelInfo(), LogType.ADAPTER, null)
-    tw.backend.getAccountBalance
+    timeout(() => MTurkMethods.mturk_getAccountBalance(tw.backend))
   }
 
   private def scheduled_cleanup_qualifications(q: MTurkQuestion) : Unit = {
-    q.qualifications.foreach { qual =>
-      tw.backend.disposeQualificationType(qual.getQualificationTypeId)
+    q.qualifications.foreach { (qual: QualificationRequirement) =>
+      timeout(() => MTurkMethods.mturk_disposeQualificationType(qual, tw.backend))
     }
   }
 }

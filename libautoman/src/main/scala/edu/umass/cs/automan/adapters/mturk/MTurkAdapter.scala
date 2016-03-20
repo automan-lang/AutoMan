@@ -41,9 +41,6 @@ class MTurkAdapter extends AutomanAdapter {
   private var _access_key_id: Option[String] = None
   private var _backend_update_frequency_ms : Int = 4500 // lower than 1 second is inadvisable
   private var _worker : Option[TurkWorker] = None
-  private var _retriable_errors = Set("Server.ServiceUnavailable")
-  private var _retry_attempts : Int = 10
-  private var _retry_delay_millis : Int = _backend_update_frequency_ms
   private var _secret_access_key: Option[String] = None
   private var _service_url : String = ClientConfig.SANDBOX_SERVICE_URL
   private var _service : Option[RequesterService] = None
@@ -58,12 +55,6 @@ class MTurkAdapter extends AutomanAdapter {
   def locale_=(l: Locale) { _locale = l }
   def use_mock: MockSetup = _use_mock match { case Some(ms) => ms; case None => ??? }
   def use_mock_=(mock_setup: MockSetup) { _use_mock = Some(mock_setup) }
-  def retriable_errors_=(re: Set[String]) { _retriable_errors = re }
-  def retriable_errors = _retriable_errors
-  def retry_attempts_=(ra: Int) { _retry_attempts = ra }
-  def retry_attempts = _retry_attempts
-  def retry_delay_millis_=(rdm: Int) { _retry_delay_millis = rdm }
-  def retry_delay_millis = _retry_delay_millis
   def sandbox_mode = {
     _service_url == ClientConfig.SANDBOX_SERVICE_URL
   }
@@ -182,9 +173,6 @@ class MTurkAdapter extends AutomanAdapter {
     _config.setAccessKeyId(_access_key_id match { case Some(k) => k; case None => throw InvalidKeyIDException("access_key_id must be defined")})
     _config.setSecretAccessKey(_secret_access_key match { case Some(k) => k; case None => throw InvalidSecretKeyException("secret_access_key must be defined")})
     _config.setServiceURL(_service_url)
-    _config.setRetriableErrors(JavaConversions.setAsJavaSet(_retriable_errors))
-    _config.setRetryAttempts(_retry_attempts)
-    _config.setRetryDelayMillis(_retry_delay_millis)
     _config
   }
 

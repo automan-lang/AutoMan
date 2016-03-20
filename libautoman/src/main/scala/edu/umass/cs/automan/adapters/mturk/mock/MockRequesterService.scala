@@ -4,6 +4,7 @@ import java.lang
 import java.lang.{Boolean, Double}
 import com.amazonaws.mturk.requester._
 import com.amazonaws.mturk.service.axis.RequesterService
+import com.amazonaws.mturk.service.exception.ServiceException
 import com.amazonaws.mturk.util.ClientConfig
 import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
 import edu.umass.cs.automan.core.question.Question
@@ -21,9 +22,20 @@ import java.util.{Calendar, Date, UUID}
  */
 private[mturk] class MockRequesterService(initial_state: MockServiceState, config: ClientConfig) extends RequesterService(config) {
   private var _state = initial_state
+  private var _transaction_count = 0
+  private val TRANSACTION_THRESHOLD = 5
+
+  private def diePeriodically() : Unit = {
+    _transaction_count += 1
+    if (_transaction_count > TRANSACTION_THRESHOLD) {
+      _transaction_count = 0
+      throw new ServiceException("The MTurk SDK throws exceptions on service unavailable failures.")
+    }
+  }
 
   override def forceExpireHIT(hitId: String): Unit = synchronized {
     // NOP
+    diePeriodically()
   }
 
   override def createHIT(hitTypeId: String,
@@ -39,6 +51,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
                          requesterAnnotation: String,
                          qualificationRequirements: Array[QualificationRequirement],
                          responseGroup: Array[String]): HIT = synchronized {
+    diePeriodically()
     val question_id = UUID.fromString(requesterAnnotation)
     val hit_id = UUID.randomUUID().toString
     val hit_type = _state.hit_type_by_hit_type_id(hitTypeId)
@@ -75,20 +88,24 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
   }
 
   override def getHIT(hitId: String): HIT = synchronized {
+    diePeriodically()
     _state.getHITforHITId(hitId)
   }
 
   override def extendHIT(hitId: String,
                          maxAssignmentsIncrement: Integer,
                          expirationIncrementInSeconds: lang.Long): Unit = synchronized {
+    diePeriodically()
     _state = _state.extendHIT(hitId, expirationIncrementInSeconds.toInt, maxAssignmentsIncrement)
   }
 
   override def rejectAssignment(assignmentId: String, requesterFeedback: String): Unit = synchronized {
+    diePeriodically()
     _state = _state.updateAssignmentStatus(UUID.fromString(assignmentId), AssignmentStatus.REJECTED)
   }
 
   override def getAllAssignmentsForHIT(hitId: String): Array[Assignment] = synchronized {
+    diePeriodically()
     val question_id = UUID.fromString(_state.getHITforHITId(hitId).getRequesterAnnotation)
 
     val question = _state.question_by_question_id(question_id).asInstanceOf[MTurkQuestion]
@@ -167,9 +184,11 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
   override def rejectQualificationRequest(qualificationRequestId: String,
                                           reason: String): Unit = synchronized {
     // NOP
+    diePeriodically()
   }
 
   override def getAccountBalance = synchronized {
+    diePeriodically()
     _state.budget.doubleValue()
   }
 
@@ -177,26 +196,31 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
                                    subjectId: String,
                                    reason: String): Unit = synchronized {
     // NOP
+    diePeriodically()
   }
 
   override def disposeQualificationType(qualificationTypeId: String): QualificationType = synchronized {
     // we can only get away with this because I know that AutoMan does not
     // do anything with the returned QualificationType
+    diePeriodically()
     null
   }
 
   override def getAllQualificationRequests(qualificationTypeId: String): Array[QualificationRequest] = synchronized {
+    diePeriodically()
     Array[QualificationRequest]()
   }
 
   override def grantQualification(qualificationRequestId: String,
                                   integerValue: Integer): Unit = synchronized {
+    diePeriodically()
     // NOP
   }
 
   override def createQualificationType(name: String,
                                        keywords: String,
                                        description: String): QualificationType = synchronized {
+    diePeriodically()
     val qt = new QualificationType()
     qt.setQualificationTypeId(UUID.randomUUID().toString)
     qt.setName(name)
@@ -211,6 +235,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
                                    integerValue: Integer,
                                    sendNotification: Boolean): Unit = synchronized {
     // NOP
+    diePeriodically()
   }
 
   /**
@@ -239,6 +264,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
                                keywords: String,
                                description: String,
                                qualRequirements: Array[QualificationRequirement]): String = synchronized {
+    diePeriodically()
     val hit_type = MockHITType(
       UUID.randomUUID(),
       autoApprovalDelayInSeconds,
@@ -254,10 +280,14 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
   }
 
   override def approveAssignment(assignmentId: String, requesterFeedback: String): Unit = synchronized {
+    diePeriodically()
     _state = _state.updateAssignmentStatus(UUID.fromString(assignmentId), AssignmentStatus.APPROVED)
   }
 
-  override def searchAllHITs(): Array[HIT] = synchronized { _state.hits_by_question_id.flatMap(_._2).toArray }
+  override def searchAllHITs(): Array[HIT] = synchronized {
+    diePeriodically()
+    _state.hits_by_question_id.flatMap(_._2).toArray
+  }
 
   def takeAssignment(assignmentId: String): Unit = synchronized {
     _state = _state.updateAssignmentStatus(UUID.fromString(assignmentId), AssignmentStatus.ANSWERED)
