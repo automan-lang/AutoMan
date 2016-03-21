@@ -54,9 +54,9 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
   }
 
   def renderQuestion(dimension: Dimension) : scala.xml.Node = {
-    val idname = s"dimension_${dimension.id.toString}"
+    val idname = s"dimension_${ dimension.id.toString.drop(1) }"
     <p>
-      <input type="text" class="dimension" id={ idname } name={ dimension.id.toString } />
+      <input type="text" class="dimension" id={ idname } name={ dimension.id.toString.drop(1) } />
     </p>
   }
 
