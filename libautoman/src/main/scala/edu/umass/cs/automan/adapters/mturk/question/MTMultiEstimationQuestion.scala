@@ -96,27 +96,29 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
             }
           </head>
           <body onload="startup()">
-            <div id="hit_content">
-              <form name="mturk_form" method="post" id="mturk_form" action={_action}>
-                <input type="hidden" value={id.toString} name="question_id" id="question_id"/>
-                <input type="hidden" value="" name="assignmentId" id="assignmentId"/>
-                {
+            <div id="wrapper">
+              <div id="hit_content">
+                <form name="mturk_form" method="post" id="mturk_form" action={_action}>
+                  <input type="hidden" value={id.toString} name="question_id" id="question_id"/>
+                  <input type="hidden" value="" name="assignmentId" id="assignmentId"/>
+                  {
                   _image_url match {
                     case Some(url) => <p><img id="question_image" src={ url }/></p>
                     case None => NodeSeq.Empty
                   }
-                }
-                {
+                  }
+                  {
                   _text match {
                     case Some(text) => <p>{ text }</p>
                     case None => NodeSeq.Empty
                   }
-                }
-                { dimensions.map(renderQuestion) }
-                <p>
-                  <input type="submit" id="submitButton" value="Submit"/>
-                </p>
-              </form>
+                  }
+                  { dimensions.map(renderQuestion) }
+                  <p>
+                    <input type="submit" id="submitButton" value="Submit"/>
+                  </p>
+                </form>
+              </div>
             </div>
           </body>
         </html>
