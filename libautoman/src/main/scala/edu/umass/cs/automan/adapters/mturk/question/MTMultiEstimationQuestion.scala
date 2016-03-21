@@ -60,13 +60,26 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
     </p>
   }
 
-  def jsDisableSubmitOnPreview : String = {
+  def jsFunctions : String = {
     """
+      |function getAssignmentID() {
+      |  return location.search.match(/assignmentId=(\w+)/)[1];
+      |}
+      |
+      |function previewMode() {
+      |  var assignment_id = getAssignmentID();
+      |  return assignment_id === 'ASSIGNMENT_ID_NOT_AVAILABLE';
+      |}
+      |
       |function disableSubmitOnPreview() {
-      |  var aID = document.getElementById('assignmentId').value;
-      |  if (aID === 'ASSIGNMENT_ID_NOT_AVAILABLE') {
+      |  if (previewMode()) {
       |    document.getElementById('submitButton').setAttribute('disabled', true);
       |  }
+      |}
+      |
+      |function startup() {
+      |  disableSubmitOnPreview();
+      |  document.getElementById('assignmentId').value = getAssignmentID();
       |}
     """.stripMargin
   }
@@ -77,7 +90,7 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
         <html>
           <head>
             <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-            <script>{ jsDisableSubmitOnPreview }</script>
+            <script>{ jsFunctions }</script>
             {
               _layout match {
                 case Some(layout) => layout
@@ -85,7 +98,7 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
               }
             }
           </head>
-          <body onload="disableSubmitOnPreview()">
+          <body onload="startup()">
             <div id="hit_content">
               <form name="mturk_form" method="post" id="mturk_form" action={_action}>
                 <input type="hidden" value={id.toString} name="question_id" id="question_id"/>
