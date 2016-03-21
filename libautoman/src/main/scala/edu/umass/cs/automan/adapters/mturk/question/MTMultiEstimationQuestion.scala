@@ -75,7 +75,7 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
     String.format("<!DOCTYPE html>%n") +
       {
         <html>
-          <head onload="disableSubmitOnPreview()">
+          <head>
             <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
             <script>{ jsDisableSubmitOnPreview }</script>
             {
@@ -85,7 +85,7 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
               }
             }
           </head>
-          <body>
+          <body onload="disableSubmitOnPreview()">
             <div id="hit_content">
               <form name="mturk_form" method="post" id="mturk_form" action={_action}>
                 <input type="hidden" value={id.toString} name="question_id" id="question_id"/>
