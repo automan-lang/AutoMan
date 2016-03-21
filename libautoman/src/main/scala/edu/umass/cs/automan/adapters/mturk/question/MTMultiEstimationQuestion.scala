@@ -44,13 +44,10 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
 
   def fromXML(x: scala.xml.Node) : A = {
     DebugLog("MTMultiEstimationQuestion: fromXML:\n" + x.toString,LogLevelDebug(),LogType.ADAPTER,id)
-    val identifiers = x \\ "Answer" \\ "QuestionIdentifier"
-    val answer_map = identifiers
-      .map { id =>
-        val answer = (x \\ "Answer").filter(a => a.descendant.contains(id)).head
-        (Symbol(id.text.drop(1)), (answer \\ "FreeText").text)
-      }.toMap
-    dimensions.map { dim => answer_map(dim.id).toDouble }
+    val answer_map = (x \\ "Answer").map { a =>
+      (a \ "QuestionIdentifier").text -> (a \ "FreeText").text
+    }.toMap
+    dimensions.map { dim => answer_map(dim.id.toString.drop(1)).toDouble }
   }
 
   def renderQuestion(dimension: Dimension) : scala.xml.Node = {
