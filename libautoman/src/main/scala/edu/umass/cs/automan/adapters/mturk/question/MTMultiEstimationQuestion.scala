@@ -64,8 +64,8 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
     """
       |function disableSubmitOnPreview() {
       |  var aID = document.getElementById('assignmentId').value;
-      |  if (aID === "ASSIGNMENT_ID_NOT_AVAILABLE") {
-      |    document.getElementById('submitButton').setAttribute("disabled", "true");
+      |  if (aID === 'ASSIGNMENT_ID_NOT_AVAILABLE') {
+      |    document.getElementById('submitButton').setAttribute('disabled', true);
       |  }
       |}
     """.stripMargin
@@ -75,7 +75,7 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
     String.format("<!DOCTYPE html>%n") +
       {
         <html>
-          <head>
+          <head onload="disableSubmitOnPreview()">
             <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
             <script>{ jsDisableSubmitOnPreview }</script>
             {
