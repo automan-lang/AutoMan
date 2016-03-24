@@ -13,7 +13,7 @@ case class MultiEstimationMockResponse(question_ids: Array[Symbol], response_tim
 
     val answer_fields = answers.zipWithIndex.map { case (answer,i) =>
       <Answer>
-        <QuestionIdentifier>{ question_ids(i).toString }</QuestionIdentifier>
+        <QuestionIdentifier>{ question_ids(i).toString.drop(1) }</QuestionIdentifier>
         <FreeText>{ answer }</FreeText>
       </Answer>
     }

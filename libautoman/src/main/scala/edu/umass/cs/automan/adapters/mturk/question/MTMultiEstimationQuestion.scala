@@ -44,7 +44,7 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
 
   def fromXML(x: scala.xml.Node) : A = {
     DebugLog("MTMultiEstimationQuestion: fromXML:\n" + x.toString,LogLevelDebug(),LogType.ADAPTER,id)
-    val answer_map = (x \\ "Answer").map { a =>
+    val answer_map: Map[String, String] = (x \\ "Answer").map { a =>
       (a \ "QuestionIdentifier").text -> (a \ "FreeText").text
     }.toMap
     dimensions.map { dim => answer_map(dim.id.toString.drop(1)).toDouble }
