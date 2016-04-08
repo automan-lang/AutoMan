@@ -4,7 +4,7 @@ import java.util.UUID
 
 import edu.umass.cs.automan.core.logging.{LogType, LogLevelInfo, DebugLog}
 import edu.umass.cs.automan.core.policy._
-import edu.umass.cs.automan.core.question.Question
+import edu.umass.cs.automan.core.question.{Response, Question}
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 
 abstract class AggregationPolicy(question: Question) {
@@ -206,6 +206,16 @@ abstract class AggregationPolicy(question: Question) {
       // if a worker completed more than one, take the first
       unique_by_date(completed)
     }
+  }
+
+  def getDistribution(tasks: List[Task]) : Array[Response[Question#A]] = {
+    // distribution
+    tasks.flatMap { t =>
+      (t.answer,t.worker_id) match {
+        case (Some(ans),Some(worker)) => Some(Response(ans,worker))
+        case _ => None
+      }
+    }.toArray
   }
 
   def outstanding_tasks(tasks: List[Task]) = {

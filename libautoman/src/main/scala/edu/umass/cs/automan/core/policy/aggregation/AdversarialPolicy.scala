@@ -2,7 +2,7 @@ package edu.umass.cs.automan.core.policy.aggregation
 
 import edu.umass.cs.automan.core.answer.{LowConfidenceAnswer, OverBudgetAnswer, Answer}
 import edu.umass.cs.automan.core.logging.{LogType, LogLevelInfo, DebugLog}
-import edu.umass.cs.automan.core.question.{Question, DiscreteScalarQuestion}
+import edu.umass.cs.automan.core.question.{Response, Question, DiscreteScalarQuestion}
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 
 /**
@@ -30,7 +30,7 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
     * @param num_comparisons The number of times we called is_done.
     * @return A tuple, (answer, cost, confidence)
     */
-  private def answer_selector(tasks: List[Task], num_comparisons: Int) : (Question#A,BigDecimal,Double) = {
+  private def answer_selector(tasks: List[Task], num_comparisons: Int) : (Question#A,BigDecimal,Double,Array[Response[Question#A]]) = {
     val valid_tasks = completed_workerunique_tasks(tasks)
 
     val bgrp = biggest_group(valid_tasks)
@@ -48,7 +48,10 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
     val cost = (bgrp match { case (_,ts) => ts.filterNot(_.from_memo) })
       .foldLeft(BigDecimal(0)){ case (acc,t) => acc + t.cost }
 
-    (value, cost, conf)
+    // distribution
+    val dist = getDistribution(tasks)
+
+    (value, cost, conf, dist)
   }
 
   /**
@@ -209,9 +212,9 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
   }
 
   def select_answer(tasks: List[Task], num_comparisons: Int) : Question#AA = {
-    answer_selector(tasks, num_comparisons) match { case (value,cost,conf) =>
+    answer_selector(tasks, num_comparisons) match { case (value,cost,conf,dist) =>
       DebugLog("Most popular answer is " + value.toString, LogLevelInfo(), LogType.STRATEGY, question.id)
-      Answer(value, cost, conf, question.id).asInstanceOf[Question#AA]
+      Answer(value, cost, conf, question.id, dist).asInstanceOf[Question#AA]
     }
   }
 
@@ -222,9 +225,9 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
       OverBudgetAnswer(need, have, question.id).asInstanceOf[Question#AA]
     } else {
       answer_selector(tasks, num_comparisons) match {
-        case (value, cost, conf) =>
+        case (value, cost, conf, dist) =>
           DebugLog("Over budget.  Best answer so far is " + value.toString, LogLevelInfo(), LogType.STRATEGY, question.id)
-          LowConfidenceAnswer(value, cost, conf, question.id).asInstanceOf[Question#AA]
+          LowConfidenceAnswer(value, cost, conf, question.id, dist).asInstanceOf[Question#AA]
       }
     }
   }

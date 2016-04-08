@@ -68,7 +68,7 @@ class DuplicateResponseTest extends FlatSpec with Matchers {
       }
 
       jellyBeanCount().answer match {
-        case Estimate(est, low, high, cost, conf, _) =>
+        case Estimate(est, low, high, cost, conf, _, _) =>
           println("Estimate: " + est + ", low: " + low + ", high: " + high + ", cost: $" + cost + ", confidence: " + conf)
           (est - low <= ci.error) should be (true)
           (high - est <= ci.error) should be (true)

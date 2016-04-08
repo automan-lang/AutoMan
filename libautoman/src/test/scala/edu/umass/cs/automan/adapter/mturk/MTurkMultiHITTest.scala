@@ -40,13 +40,13 @@ class MTurkMultiHITTest extends FlatSpec with Matchers {
 
     automan(a, test_mode = true) {
       which_one().answer match {
-        case Answer(value, cost, conf, _) =>
+        case Answer(value, cost, conf, _, _) =>
           println("Answer: '" + value + "', confidence: " + conf + ", cost: $" + cost + ", # HITs: " + a.getAllHITs.length)
           (value == 'spongebob) should be (true)
           (conf >= confidence) should be (true)
           (cost == BigDecimal(0.48)) should be (true)
           a.getAllHITs.length should be (2)
-        case LowConfidenceAnswer(value, cost, conf, _) =>
+        case LowConfidenceAnswer(value, cost, conf, _, _) =>
           fail()
       }
     }

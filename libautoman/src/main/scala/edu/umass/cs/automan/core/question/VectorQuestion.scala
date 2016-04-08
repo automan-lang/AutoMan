@@ -25,11 +25,12 @@ abstract class VectorQuestion extends Question {
   protected[automan] def composeOutcome(o: O, adapter: AutomanAdapter) : O = {
     // unwrap future from previous Outcome
     val f = o.f map {
-      case Answers(values, _, id) =>
+      case Answers(values, _, id, dist) =>
           Answers(
             values,
             BigDecimal(0.00).setScale(2, math.BigDecimal.RoundingMode.FLOOR),
-            id
+            id,
+            dist
           )
       case _ => startScheduler(adapter)
     }

@@ -61,7 +61,7 @@ class MemoPathTest extends FlatSpec with Matchers {
     // the user-defined DB name above
     automan(a, test_mode = false, in_mem_db = false) {
       which_one("Which characters are not Oscar, Kermit, or Cookie Monster?").answer match {
-        case Answer(ans, cost, conf, _) =>
+        case Answer(ans, cost, conf, _, _) =>
           println(s"Answer: $ans, cost: ${'$' + cost.toString}, confidence: $conf")
           (ans == Set('spongebob,'count)) should be (true)
           (conf >= confidence) should be (true)
@@ -72,7 +72,7 @@ class MemoPathTest extends FlatSpec with Matchers {
       }
 
       which_one2("Which characters are not Oscar, Kermit, or Cookie Monster?").answer match {
-        case Answer(ans, cost, conf, _) =>
+        case Answer(ans, cost, conf, _, _) =>
           println(s"Answer: $ans, cost: ${'$' + cost.toString}, confidence: $conf")
           (ans == Set('spongebob,'count)) should be (true)
           (conf >= confidence) should be (true)

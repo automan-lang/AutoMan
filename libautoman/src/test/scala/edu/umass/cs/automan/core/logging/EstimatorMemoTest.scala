@@ -75,7 +75,7 @@ class EstimatorMemoTest extends FlatSpec with Matchers {
 
     automan(a, test_mode = true, in_mem_db = true) {
       countJellies().answer match {
-        case Estimate(est, low, high, cost, conf, _) =>
+        case Estimate(est, low, high, cost, conf, _, _) =>
           println("Estimate: " + est + ", low: " + low + ", high: " + high + ", cost: $" + cost + ", confidence: " + conf)
           (est - low <= confidence_interval.error) should be (true)
           (high - est <= confidence_interval.error) should be (true)
@@ -87,7 +87,7 @@ class EstimatorMemoTest extends FlatSpec with Matchers {
       }
 
       countJellies2().answer match {
-        case Estimate(est, low, high, cost, conf, _) =>
+        case Estimate(est, low, high, cost, conf, _, _) =>
           println("Estimate: " + est + ", low: " + low + ", high: " + high + ", cost: $" + cost + ", confidence: " + conf)
           (est - low <= confidence_interval.error) should be (true)
           (high - est <= confidence_interval.error) should be (true)

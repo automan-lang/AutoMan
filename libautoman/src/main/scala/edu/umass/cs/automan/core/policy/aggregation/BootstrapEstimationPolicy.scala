@@ -4,7 +4,7 @@ import edu.umass.cs.automan.core.policy._
 import edu.umass.cs.automan.core.answer.{OverBudgetEstimate, LowConfidenceEstimate, Estimate}
 import edu.umass.cs.automan.core.logging.{LogType, LogLevelInfo, DebugLog}
 import edu.umass.cs.automan.core.question.confidence._
-import edu.umass.cs.automan.core.question.{EstimationQuestion, Question}
+import edu.umass.cs.automan.core.question.{Response, EstimationQuestion, Question}
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 import scala.util.Random
 
@@ -29,7 +29,7 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
     * @param num_comparisons The number of times is_done has been called, inclusive.
     * @return Tuple (estimate, low CI bound, high CI bound, cost, confidence)
     */
-  private def answer_selector(tasks: List[Task], num_comparisons: Int): (Double, Double, Double, BigDecimal, Double) = {
+  private def answer_selector(tasks: List[Task], num_comparisons: Int): (Double, Double, Double, BigDecimal, Double, Array[Response[Double]]) = {
     val valid_tasks = completed_workerunique_tasks(tasks)
 
     // extract responses & cast to Double
@@ -46,7 +46,10 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
     // cost
     val cost = valid_tasks.filter { t => t.answer.isDefined && !t.from_memo }.map(_.cost).sum
 
-    (est, low, high, cost, adj_conf)
+    // distribution
+    val dist = getDistribution(tasks)
+
+    (est, low, high, cost, adj_conf, dist.asInstanceOf[Array[Response[Double]]])
   }
 
   /**
@@ -188,7 +191,7 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
     if (completed_workerunique_tasks(tasks).nonEmpty &&
         completed_workerunique_tasks(tasks).size >= 12) {
       val done = answer_selector(tasks, num_comparisons) match {
-        case (est, low, high, cost, conf) =>
+        case (est, low, high, cost, conf, dist) =>
           question.confidence_interval match {
             case UnconstrainedCI() =>
               completed_workerunique_tasks(tasks).size ==
@@ -215,13 +218,13 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
       "We value your feedback, so if you think that we are in error, please contact us."
 
   override def select_answer(tasks: List[Task], num_comparisons: Int): Question#AA = {
-    answer_selector(tasks, num_comparisons) match { case (est, low, high, cost, conf) =>
+    answer_selector(tasks, num_comparisons) match { case (est, low, high, cost, conf, dist) =>
       DebugLog("Estimate is " + low + " ≤ " + est + " ≤ " + high,
         LogLevelInfo(),
         LogType.STRATEGY,
         question.id
       )
-      Estimate(est, low, high, cost, conf, question.id).asInstanceOf[Question#AA]
+      Estimate(est, low, high, cost, conf, question.id, dist).asInstanceOf[Question#AA]
     }
   }
 
@@ -235,12 +238,12 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
       OverBudgetEstimate(need, have, question.id).asInstanceOf[Question#AA]
     } else {
       answer_selector(tasks, num_comparisons) match {
-        case (est, low, high, cost, conf) =>
+        case (est, low, high, cost, conf, dist) =>
           DebugLog("Over budget.  Best estimate so far is " + low + " ≤ " + est + " ≤ " + high,
             LogLevelInfo(),
             LogType.STRATEGY,
             question.id)
-          LowConfidenceEstimate(est, low, high, cost, conf, question.id).asInstanceOf[Question#AA]
+          LowConfidenceEstimate(est, low, high, cost, conf, question.id, dist).asInstanceOf[Question#AA]
       }
     }
   }

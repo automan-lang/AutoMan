@@ -73,7 +73,7 @@ class MTurkMultiEstimationTestSymmetricCI extends FlatSpec with Matchers {
       }
 
       jellyBeanCount().answer match {
-        case MultiEstimate(ests, lows, highs, cost, conf, _) =>
+        case MultiEstimate(ests, lows, highs, cost, conf, _, _) =>
           println("cost: $" + cost + ", confidence: " + conf)
           ests.indices.foreach { i =>
             println("Estimate: " + ests(i) + ", low: " + lows(i) + ", high: " + highs(i) + ", width: " + (highs(i) - lows(i)))

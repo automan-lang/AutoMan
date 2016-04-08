@@ -58,7 +58,7 @@ class ComplicatedTimeoutTest extends FlatSpec with Matchers {
 
     automan(a, test_mode = true) {
       which_one().answer match {
-        case Answer(ans, cost, conf, qid) =>
+        case Answer(ans, cost, conf, qid, _) =>
           println("question_id = " + qid + ", Answer: '" + ans + "', cost: '" + cost + "', confidence: " + conf)
           (ans == 'a) should be (true)
           (cost >= BigDecimal(2.34)) should be (true)

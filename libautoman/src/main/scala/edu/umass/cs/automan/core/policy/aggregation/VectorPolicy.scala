@@ -18,9 +18,12 @@ abstract class VectorPolicy(question: VectorQuestion)
   }
   def select_answer(tasks: List[Task], num_comparisons: Int) : Question#AA = {
     val valid_tasks: List[Task] = completed_workerunique_tasks(tasks)
+    // TODO: remove; this is now unnecessary
     val distribution: Set[(String,Question#A)] = valid_tasks.map { t => (t.worker_id.get, t.answer.get) }.toSet
+    // distribution
+    val dist = getDistribution(tasks)
     val cost: BigDecimal = valid_tasks.filterNot(_.from_memo).foldLeft(BigDecimal(0)){ case (acc,t) => acc + t.cost }
-    Answers(distribution, cost, question.id).asInstanceOf[Question#AA]
+    Answers(distribution, cost, question.id, dist).asInstanceOf[Question#AA]
   }
   def select_over_budget_answer(tasks: List[Task], need: BigDecimal, have: BigDecimal, num_comparisons: Int) : Question#AA = {
     val valid_tasks: List[Task] = completed_workerunique_tasks(tasks)
@@ -29,7 +32,9 @@ abstract class VectorPolicy(question: VectorQuestion)
     } else {
       val distribution: Set[(String, Question#A)] = valid_tasks.map { t => (t.worker_id.get, t.answer.get) }.toSet
       val cost: BigDecimal = valid_tasks.map { t => t.cost }.foldLeft(BigDecimal(0)) { (acc, c) => acc + c }
-      IncompleteAnswers(distribution, cost, question.id).asInstanceOf[Question#AA]
+      // distribution
+      val dist = getDistribution(tasks)
+      IncompleteAnswers(distribution, cost, question.id, dist).asInstanceOf[Question#AA]
     }
   }
   override def tasks_to_accept(tasks: List[Task]): List[Task] = {

@@ -32,10 +32,10 @@ class OverBudgetTest extends FlatSpec with Matchers {
 
     automan(a, test_mode = true) {
       which_one().answer match {
-        case Answer(value, cost, conf, _) =>
+        case Answer(value, cost, conf, _, _) =>
           println("Answer: '" + value + "', cost: '" + cost + "', confidence: " + conf)
           fail()
-        case LowConfidenceAnswer(_, _, _, _) =>
+        case LowConfidenceAnswer(_, _, _, _, _) =>
           fail()
         case OverBudgetAnswer(need, have, _) =>
           (need > have) should be (true)

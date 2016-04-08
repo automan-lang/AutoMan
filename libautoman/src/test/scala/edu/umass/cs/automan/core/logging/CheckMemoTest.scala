@@ -49,7 +49,7 @@ class CheckMemoTest extends FlatSpec with Matchers {
 
     automan(a, test_mode = true, in_mem_db = true) {
       which_one("Which characters are not Oscar, Kermit, or Cookie Monster?").answer match {
-        case Answer(value, cost, conf, _) =>
+        case Answer(value, cost, conf, _, _) =>
           println("Answer: '" + value + "', confidence: " + conf)
           (value == Set('spongebob,'count)) should be (true)
           (conf >= confidence) should be (true)
@@ -60,7 +60,7 @@ class CheckMemoTest extends FlatSpec with Matchers {
       }
 
       which_one2("Which characters are not Oscar, Kermit, or Cookie Monster?").answer match {
-        case Answer(value, cost, conf, _) =>
+        case Answer(value, cost, conf, _, _) =>
           println("Answer: '" + value + "', confidence: " + conf)
           (value == Set('spongebob,'count)) should be (true)
           (conf >= confidence) should be (true)

@@ -43,7 +43,7 @@ class FreeTextDistribMemoTest extends FlatSpec with Matchers {
 
     automan(a, test_mode = true, in_mem_db = true) {
       which_one("Which one of these does not belong?").answer match {
-        case Answers(values, cost, _) =>
+        case Answers(values, cost, _, _) =>
           println("Answer: '" + value + "', cost: '" + cost + "'")
           compareDistributions(mock_answers, values) should be (true)
           cost should be (BigDecimal(0.06) * sample_size)
@@ -52,7 +52,7 @@ class FreeTextDistribMemoTest extends FlatSpec with Matchers {
       }
 
       which_one2("Which one of these does not belong?").answer match {
-        case Answers(values, cost, _) =>
+        case Answers(values, cost, _, _) =>
           println("Answer: '" + value + "', cost: '" + cost + "'")
           compareDistributions(mock_answers, values) should be (true)
           (cost == BigDecimal(0.00)) should be (true)

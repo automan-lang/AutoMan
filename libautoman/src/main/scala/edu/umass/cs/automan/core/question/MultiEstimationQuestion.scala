@@ -45,7 +45,7 @@ abstract class MultiEstimationQuestion extends Question {
   override protected[automan] def composeOutcome(o: MultiEstimationOutcome, adapter: AutomanAdapter): O = {
     // unwrap future from previous Outcome
     val f = o.f map {
-      case MultiEstimate(values, lows, highs, cost, conf, id) =>
+      case MultiEstimate(values, lows, highs, cost, conf, id, dist) =>
         if (this.confidence <= conf) {
           MultiEstimate(
             values,
@@ -53,7 +53,8 @@ abstract class MultiEstimationQuestion extends Question {
             highs,
             BigDecimal(0.00).setScale(2, math.BigDecimal.RoundingMode.FLOOR),
             conf,
-            id
+            id,
+            dist
           )
         } else {
           startScheduler(adapter)

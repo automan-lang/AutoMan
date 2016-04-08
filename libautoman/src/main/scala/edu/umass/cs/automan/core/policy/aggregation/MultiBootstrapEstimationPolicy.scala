@@ -4,7 +4,7 @@ import edu.umass.cs.automan.core.policy._
 import edu.umass.cs.automan.core.answer._
 import edu.umass.cs.automan.core.logging.{LogType, LogLevelInfo, DebugLog}
 import edu.umass.cs.automan.core.question.confidence._
-import edu.umass.cs.automan.core.question.{EstimationQuestion, MultiEstimationQuestion, Question}
+import edu.umass.cs.automan.core.question.{Response, EstimationQuestion, MultiEstimationQuestion, Question}
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 import scala.util.Random
 
@@ -29,7 +29,7 @@ class MultiBootstrapEstimationPolicy(question: MultiEstimationQuestion)
     * @param num_comparisons The number of times is_done has been called, inclusive.
     * @return Tuple (estimate, low CI bound, high CI bound, cost, confidence)
     */
-  private def answer_selector(tasks: List[Task], num_comparisons: Int): (Array[Double], Array[Double], Array[Double], BigDecimal, Double) = {
+  private def answer_selector(tasks: List[Task], num_comparisons: Int): (Array[Double], Array[Double], Array[Double], BigDecimal, Double, Array[Response[Array[Double]]]) = {
     val valid_tasks = completed_workerunique_tasks(tasks)
 
     // extract responses & cast to Double
@@ -46,7 +46,10 @@ class MultiBootstrapEstimationPolicy(question: MultiEstimationQuestion)
     // cost
     val cost = valid_tasks.filter { t => t.answer.isDefined && !t.from_memo }.map(_.cost).sum
 
-    (ests, lows, highs, cost, adj_conf)
+    // distribution
+    val dist = getDistribution(tasks)
+
+    (ests, lows, highs, cost, adj_conf, dist.asInstanceOf[Array[Response[Array[Double]]]])
   }
 
   /**
@@ -209,7 +212,7 @@ class MultiBootstrapEstimationPolicy(question: MultiEstimationQuestion)
     if (completed_workerunique_tasks(tasks).nonEmpty &&
       completed_workerunique_tasks(tasks).size >= 12) {
       val done = answer_selector(tasks, num_comparisons) match {
-        case (ests, lows, highs, cost, conf) =>
+        case (ests, lows, highs, cost, conf, dist) =>
           ests.indices.foldLeft(true) { case (acc,i) =>
             question.confidence_region(i) match {
               case UnconstrainedCI() =>
@@ -242,7 +245,7 @@ class MultiBootstrapEstimationPolicy(question: MultiEstimationQuestion)
       "We value your feedback, so if you think that we are in error, please contact us."
 
   override def select_answer(tasks: List[Task], num_comparisons: Int): Question#AA = {
-    answer_selector(tasks, num_comparisons) match { case (ests, lows, highs, cost, conf) =>
+    answer_selector(tasks, num_comparisons) match { case (ests, lows, highs, cost, conf, dist) =>
       ests.indices.foreach { i =>
         DebugLog("Estimate is " + lows(i) + " ≤ " + ests(i) + " ≤ " + highs(i),
           LogLevelInfo(),
@@ -250,7 +253,7 @@ class MultiBootstrapEstimationPolicy(question: MultiEstimationQuestion)
           question.id
         )
       }
-      MultiEstimate(ests, lows, highs, cost, conf, question.id).asInstanceOf[Question#AA]
+      MultiEstimate(ests, lows, highs, cost, conf, question.id, dist).asInstanceOf[Question#AA]
     }
   }
 
@@ -264,14 +267,14 @@ class MultiBootstrapEstimationPolicy(question: MultiEstimationQuestion)
       OverBudgetEstimate(need, have, question.id).asInstanceOf[Question#AA]
     } else {
       answer_selector(tasks, num_comparisons) match {
-        case (ests, lows, highs, cost, conf) =>
+        case (ests, lows, highs, cost, conf, dist) =>
           ests.indices.foreach { i =>
             DebugLog("Over budget.  Best estimate so far is " + lows(i) + " ≤ " + ests(i) + " ≤ " + highs(i),
               LogLevelInfo(),
               LogType.STRATEGY,
               question.id)
           }
-          LowConfidenceMultiEstimate(ests, lows, highs, cost, conf, question.id).asInstanceOf[Question#AA]
+          LowConfidenceMultiEstimate(ests, lows, highs, cost, conf, question.id, dist).asInstanceOf[Question#AA]
       }
     }
   }

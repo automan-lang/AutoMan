@@ -42,7 +42,7 @@ class MTurkEstimationTestUnconstrained extends FlatSpec with Matchers {
       }
 
       which_ones().answer match {
-        case Estimate(est, low, high, cost, conf, _) =>
+        case Estimate(est, low, high, cost, conf, _, _) =>
           println("Estimate: " + est + ", low: " + low + ", high: " + high + ", cost: $" + cost + ", confidence: " + conf)
           (est > low) should be (true)
           (est < high) should be (true)
