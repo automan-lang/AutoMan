@@ -172,7 +172,7 @@ abstract class AutomanAdapter {
   }
 
   // thread management
-  private def schedule[Q <: Question](q: Q, init: Q => Unit): Q#O = {
+  protected[automan] def schedule[Q <: Question](q: Q, init: Q => Unit): Q#O = {
     // initialize question with end-user lambda
     // memo hash cannot be calculated correctly until Question has been initialized
     init(q)

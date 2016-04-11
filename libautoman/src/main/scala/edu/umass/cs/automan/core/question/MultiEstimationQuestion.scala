@@ -61,11 +61,11 @@ abstract class MultiEstimationQuestion extends Question {
         }
       case _ => startScheduler(adapter)
     }
-    MultiEstimationOutcome(f)
+    MultiEstimationOutcome(this, f)
   }
 
   override protected[automan] def getOutcome(adapter: AutomanAdapter): O = {
-    MultiEstimationOutcome(schedulerFuture(adapter))
+    MultiEstimationOutcome(this, schedulerFuture(adapter))
   }
 
   // private methods

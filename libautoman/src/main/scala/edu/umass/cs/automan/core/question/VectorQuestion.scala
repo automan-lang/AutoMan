@@ -20,7 +20,7 @@ abstract class VectorQuestion extends Question {
   def sample_size : Int = _sample_size
 
   protected[automan] def getOutcome(adapter: AutomanAdapter) : O = {
-    VectorOutcome(schedulerFuture(adapter)).asInstanceOf[O]
+    VectorOutcome(this, schedulerFuture(adapter)).asInstanceOf[O]
   }
   protected[automan] def composeOutcome(o: O, adapter: AutomanAdapter) : O = {
     // unwrap future from previous Outcome
@@ -34,7 +34,7 @@ abstract class VectorQuestion extends Question {
           )
       case _ => startScheduler(adapter)
     }
-    VectorOutcome(f).asInstanceOf[O]
+    VectorOutcome(this, f).asInstanceOf[O]
   }
 
   override private[automan] def init_validation_policy(): Unit = {

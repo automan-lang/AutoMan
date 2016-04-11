@@ -83,4 +83,44 @@ class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
       case (None,None) => <IsNumeric />
     }
   }
+
+  override protected[automan] def cloneWithConfidence(conf: Double): EstimationQuestion = {
+    val mteq = new MTEstimationQuestion
+    mteq._before_filter = this._before_filter
+    mteq._blacklisted_workers = this._blacklisted_workers
+    mteq._budget = this._budget
+    mteq._confidence = conf
+    mteq._confidence_interval = this._confidence_interval
+    mteq._default_sample_size = this._default_sample_size
+    mteq._description = this._description
+    mteq._dont_randomize_options = this._dont_randomize_options
+    mteq._dont_reject = this._dont_reject
+    mteq._dry_run = this._dry_run
+    mteq._estimator = this._estimator
+    mteq._formatted_content = this._formatted_content
+    mteq._id = this._id
+    mteq._image = this._image
+    mteq._image_alt_text = this._image_alt_text
+    mteq._image_url = this._image_url
+    mteq._initial_worker_timeout_in_s = this._initial_worker_timeout_in_s
+    mteq._keywords = this._keywords
+    mteq._max_replicas = this._max_replicas
+    mteq._max_value = this._max_value
+    mteq._min_value = this._min_value
+    mteq._minimum_spawn_policy = this._minimum_spawn_policy
+    mteq._mock_answers = this._mock_answers
+    mteq._payOnFailure = this._payOnFailure
+    mteq._price_policy = this._price_policy
+    mteq._price_policy_instance = this._price_policy_instance
+    mteq._qualifications = this._qualifications
+    mteq._qualified_workers = this._qualified_workers
+    mteq._question_timeout_multiplier = this._question_timeout_multiplier
+    mteq._text = this._text
+    mteq._time_value_per_hour = this._time_value_per_hour
+    mteq._timeout_policy = this._timeout_policy
+    mteq._timeout_policy_instance = this._timeout_policy_instance
+    mteq._title = this._title
+    mteq._update_frequency_ms = this._update_frequency_ms
+    mteq
+  }
 }

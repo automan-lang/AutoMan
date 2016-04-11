@@ -13,7 +13,7 @@ import edu.umass.cs.automan.core.scheduler.Scheduler
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 
-abstract class Question {
+trait Question {
   type A <: Any
   type AA <: AbstractAnswer[A]
   type O <: Outcome[A]

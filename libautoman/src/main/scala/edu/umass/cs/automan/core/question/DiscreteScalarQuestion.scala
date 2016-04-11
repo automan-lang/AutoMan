@@ -16,7 +16,7 @@ abstract class DiscreteScalarQuestion extends Question {
   def num_possibilities: BigInt
 
   protected[automan] def getOutcome(adapter: AutomanAdapter) : O = {
-    ScalarOutcome(schedulerFuture(adapter))
+    ScalarOutcome(this, schedulerFuture(adapter))
   }
   protected[automan] def composeOutcome(o: O, adapter: AutomanAdapter) : O = {
     // unwrap future from previous Outcome
@@ -35,6 +35,6 @@ abstract class DiscreteScalarQuestion extends Question {
         }
       case _ => startScheduler(adapter)
     }
-    ScalarOutcome(f)
+    ScalarOutcome(this, f)
   }
 }

@@ -48,7 +48,7 @@ abstract class EstimationQuestion extends Question {
 
   protected[automan] def getQuestionType = QuestionType.EstimationQuestion
   protected[automan] def getOutcome(adapter: AutomanAdapter) : O = {
-    EstimationOutcome(schedulerFuture(adapter))
+    EstimationOutcome(this, schedulerFuture(adapter))
   }
   protected[automan] def composeOutcome(o: O, adapter: AutomanAdapter) : O = {
     // unwrap future from previous Outcome
@@ -69,7 +69,7 @@ abstract class EstimationQuestion extends Question {
         }
       case _ => startScheduler(adapter)
     }
-    EstimationOutcome(f)
+    EstimationOutcome(this, f)
   }
 
   // private methods
@@ -95,4 +95,6 @@ abstract class EstimationQuestion extends Question {
   override protected[automan] def prettyPrintAnswer(answer: Double): String = {
     answer.toString
   }
+
+  protected[automan] def cloneWithConfidence(conf: Double) : EstimationQuestion
 }
