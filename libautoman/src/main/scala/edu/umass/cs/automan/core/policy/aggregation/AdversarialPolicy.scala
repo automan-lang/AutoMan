@@ -214,7 +214,7 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
   def select_answer(tasks: List[Task], num_comparisons: Int) : Question#AA = {
     answer_selector(tasks, num_comparisons) match { case (value,cost,conf,dist) =>
       DebugLog("Most popular answer is " + value.toString, LogLevelInfo(), LogType.STRATEGY, question.id)
-      Answer(value, cost, conf, question.id, dist).asInstanceOf[Question#AA]
+      Answer(value, cost, conf, question, dist).asInstanceOf[Question#AA]
     }
   }
 
@@ -222,12 +222,12 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
     // if we've never scheduled anything,
     // there will be no largest group
     if(completed_workerunique_tasks(tasks).isEmpty) {
-      OverBudgetAnswer(need, have, question.id).asInstanceOf[Question#AA]
+      OverBudgetAnswer(need, have, question).asInstanceOf[Question#AA]
     } else {
       answer_selector(tasks, num_comparisons) match {
         case (value, cost, conf, dist) =>
           DebugLog("Over budget.  Best answer so far is " + value.toString, LogLevelInfo(), LogType.STRATEGY, question.id)
-          LowConfidenceAnswer(value, cost, conf, question.id, dist).asInstanceOf[Question#AA]
+          LowConfidenceAnswer(value, cost, conf, question, dist).asInstanceOf[Question#AA]
       }
     }
   }

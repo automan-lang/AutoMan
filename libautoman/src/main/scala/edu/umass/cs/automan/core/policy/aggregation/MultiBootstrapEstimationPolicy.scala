@@ -4,7 +4,7 @@ import edu.umass.cs.automan.core.policy._
 import edu.umass.cs.automan.core.answer._
 import edu.umass.cs.automan.core.logging.{LogType, LogLevelInfo, DebugLog}
 import edu.umass.cs.automan.core.question.confidence._
-import edu.umass.cs.automan.core.question.{Response, EstimationQuestion, MultiEstimationQuestion, Question}
+import edu.umass.cs.automan.core.question.{Response, MultiEstimationQuestion, Question}
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 import scala.util.Random
 
@@ -253,7 +253,7 @@ class MultiBootstrapEstimationPolicy(question: MultiEstimationQuestion)
           question.id
         )
       }
-      MultiEstimate(ests, lows, highs, cost, conf, question.id, dist).asInstanceOf[Question#AA]
+      MultiEstimate(ests, lows, highs, cost, conf, question, dist).asInstanceOf[Question#AA]
     }
   }
 
@@ -264,7 +264,7 @@ class MultiBootstrapEstimationPolicy(question: MultiEstimationQuestion)
     // if we've never scheduled anything,
     // there will be no largest group
     if(completed_workerunique_tasks(tasks).isEmpty) {
-      OverBudgetEstimate(need, have, question.id).asInstanceOf[Question#AA]
+      OverBudgetMultiEstimate(need, have, question).asInstanceOf[Question#AA]
     } else {
       answer_selector(tasks, num_comparisons) match {
         case (ests, lows, highs, cost, conf, dist) =>
@@ -274,7 +274,7 @@ class MultiBootstrapEstimationPolicy(question: MultiEstimationQuestion)
               LogType.STRATEGY,
               question.id)
           }
-          LowConfidenceMultiEstimate(ests, lows, highs, cost, conf, question.id, dist).asInstanceOf[Question#AA]
+          LowConfidenceMultiEstimate(ests, lows, highs, cost, conf, question, dist).asInstanceOf[Question#AA]
       }
     }
   }
