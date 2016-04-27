@@ -106,9 +106,7 @@ trait Question {
   private[automan] def timeout_policy_instance = _timeout_policy_instance
   protected[automan] def schedulerFuture(adapter: AutomanAdapter) : Future[AA] = {
     Future{
-      blocking {
-        startScheduler(adapter)
-      }
+      startScheduler(adapter)
     }
   }
   protected[automan] def startScheduler(adapter: AutomanAdapter) : AA = {

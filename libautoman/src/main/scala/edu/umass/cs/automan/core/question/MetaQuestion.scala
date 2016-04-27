@@ -1,5 +1,6 @@
 package edu.umass.cs.automan.core.question
 
+import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.AbstractAnswer
 import edu.umass.cs.automan.core.policy.aggregation.MetaAggregationPolicy
 import edu.umass.cs.automan.core.scheduler.MetaScheduler
@@ -11,14 +12,14 @@ trait MetaQuestion {
   type MAA <: AbstractAnswer[MA]
   type MAP <: MetaAggregationPolicy
 
-  def metaSchedulerFuture() : Future[MAA] = {
+  def metaSchedulerFuture(backend: AutomanAdapter) : Future[MAA] = {
     Future{
       blocking {
-        new MetaScheduler(this).run().asInstanceOf[MAA]
+        new MetaScheduler(this, backend).run().asInstanceOf[MAA]
       }
     }
   }
 
-  def computeAnswer(round: Int) : MAA
-  def done: Boolean
+  def metaAnswer(round: Int, backend: AutomanAdapter) : MAA
+  def done(round: Int, backend: AutomanAdapter) : Boolean
 }

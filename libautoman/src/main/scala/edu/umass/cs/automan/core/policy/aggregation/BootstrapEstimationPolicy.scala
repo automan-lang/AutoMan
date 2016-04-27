@@ -60,7 +60,7 @@ class BootstrapEstimationPolicy(question: EstimationQuestion)
     * @param alpha the margin of error
     * @return
     */
-  private def bootstrap(statistic: Seq[Double] => Double, X: Seq[Double], B: Int, alpha: Double) : (Double,Double,Double) = {
+  def bootstrap(statistic: Seq[Double] => Double, X: Seq[Double], B: Int, alpha: Double) : (Double,Double,Double) = {
     // check cache
     if (bootCache.contains((X, B, alpha))) {
       bootCache((X, B, alpha))
