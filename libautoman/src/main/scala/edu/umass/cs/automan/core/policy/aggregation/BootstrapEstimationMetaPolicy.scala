@@ -2,6 +2,7 @@ package edu.umass.cs.automan.core.policy.aggregation
 
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer._
+import edu.umass.cs.automan.core.logging.{LogType, LogLevelInfo, DebugLog}
 import edu.umass.cs.automan.core.question.EstimationMetaQuestion
 import edu.umass.cs.automan.core.question.confidence.{AsymmetricCI, UnconstrainedCI, SymmetricCI}
 import scala.util.Random
@@ -47,7 +48,15 @@ class BootstrapEstimationMetaPolicy(q: EstimationMetaQuestion, op: Double => Dou
         // cost
         val cost = e1.cost + e2.cost
 
-        Estimate(theta_hat, low, high, cost, adj_conf, null, Array.concat(e1.distribution, e2.distribution))
+        val e = Estimate(theta_hat, low, high, cost, adj_conf, null, Array.concat(e1.distribution, e2.distribution))
+
+        DebugLog("Combined estimate is " + e.low + " ≤ " + e.value + " ≤ " + e.high,
+          LogLevelInfo(),
+          LogType.STRATEGY,
+          q.id
+        )
+
+        e
       case (e1:OverBudgetEstimate,_) => e1
       case (_,e2:OverBudgetEstimate) => e2
       case (e1:LowConfidenceEstimate,_) => e1
@@ -157,7 +166,7 @@ class BootstrapEstimationMetaPolicy(q: EstimationMetaQuestion, op: Double => Dou
 
   override def done(round: Int, backend: AutomanAdapter): Boolean = {
     val outcome = metaAnswer(round, backend)
-    outcome match {
+    val o = outcome match {
       case e:Estimate =>
         q.confidence_interval match {
           case UnconstrainedCI() => true
@@ -170,5 +179,21 @@ class BootstrapEstimationMetaPolicy(q: EstimationMetaQuestion, op: Double => Dou
         }
       case _ => true
     }
+
+    if (o) {
+      DebugLog("Combined estimate meets tightness constraints.",
+        LogLevelInfo(),
+        LogType.STRATEGY,
+        q.id
+      )
+    } else {
+      DebugLog("Combined estimate is not sufficiently tight.",
+        LogLevelInfo(),
+        LogType.STRATEGY,
+        q.id
+      )
+    }
+
+    o
   }
 }
