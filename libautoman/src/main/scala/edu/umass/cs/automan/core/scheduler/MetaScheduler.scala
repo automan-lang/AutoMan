@@ -16,7 +16,10 @@ class MetaScheduler(val metaQ: MetaQuestion, backend: AutomanAdapter) {
       // joint constraints met?
       done = !metaQ.done(round, backend)
 
-      if (done) { outcome = Some(answer) }
+      if (done) {
+        outcome = Some(answer)
+        done = true
+      }
 
       round += 1
     }
