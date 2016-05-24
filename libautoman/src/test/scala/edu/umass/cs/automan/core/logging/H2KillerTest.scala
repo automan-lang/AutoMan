@@ -10,6 +10,7 @@ import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 import org.scalatest.{Matchers, FlatSpec}
 import org.scalatest.tagobjects.Slow
 
+@Ignore
 class H2KillerTest extends FlatSpec with Matchers {
   "An estimator program" should "not experience a database primary key error under load" taggedAs Slow in {
     val dollar_budget = BigDecimal(8.00)

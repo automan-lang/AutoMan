@@ -12,6 +12,7 @@ import org.scalatest.{FlatSpec, Matchers}
 
 import scala.util.Random
 
+@Ignore
 class MTurkManyThreadsTest extends FlatSpec with Matchers {
 
   "A freetext program with many threads" should "work" taggedAs Slow in {
