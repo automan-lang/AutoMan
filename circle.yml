@@ -7,3 +7,6 @@ dependencies:
   cache_directories:
     - "~/.ivy2"
     - "~/.sbt"
+machine:
+  java:
+    version: openjdk8
