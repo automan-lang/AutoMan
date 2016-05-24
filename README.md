@@ -106,9 +106,11 @@ directory.
 | `RadioButtonQuestion` | The user is asked to choose one of n options.|yes|1|
 | `CheckboxQuestion` | The user is asked to choose one of m of n options, where m <= n. |yes|1|
 | `FreeTextQuestion` | The user is asked to enter a textual response, such that the response conforms to a simple pattern (a "picture clause"). |yes|1|
+| `EstimationQuestion` | The user is asked to enter a numeric (real-valued) response. |yes|1|
 | `RadioButtonDistributionQuestion` | Same as `RadioButtonQuestion`. |no|user-defined|
 | `CheckboxDistributionQuestion` | Same as `CheckboxQuestion`. |no|user-defined|
 | `FreeTextDistributionQuestion` | Same as `FreeTextQuestion`. |no|user-defined|
+
 
 ### Using AutoMan with a Different Crowdsourcing Backend
 
