@@ -9,8 +9,8 @@ import edu.umass.cs.automan.core.logging.LogLevelDebug
 import org.scalatest.tagobjects.Slow
 import edu.umass.cs.automan.test._
 import org.scalatest.{FlatSpec, Matchers}
-
 import scala.util.Random
+import org.scalatest.Ignore
 
 @Ignore
 class MTurkManyThreadsTest extends FlatSpec with Matchers {

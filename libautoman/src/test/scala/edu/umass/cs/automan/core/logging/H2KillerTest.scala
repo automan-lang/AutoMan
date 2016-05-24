@@ -9,6 +9,7 @@ import edu.umass.cs.automan.adapters.mturk._
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 import org.scalatest.{Matchers, FlatSpec}
 import org.scalatest.tagobjects.Slow
+import org.scalatest.Ignore
 
 @Ignore
 class H2KillerTest extends FlatSpec with Matchers {
