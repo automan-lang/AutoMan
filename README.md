@@ -6,8 +6,7 @@ This is a major release of AutoMan.  Code written using earlier versions (< 1.0)
 
 ## What is AutoMan?
 
-AutoMan is the first fully automatic _crowdprogramming_ system. AutoMan integrates human-based ("crowdsourced") computations into a standard programming language as ordinary function calls that can be intermixed freely with traditional functions. This abstraction lets  programmers focus on their programming logic. An AutoMan program specifies a _confidence level_ for the overall computation and a _budget_. The AutoMan runtime system then transparently manages all details necessary for scheduling, pricing, and quality
-control. AutoMan automatically schedules human tasks for each computation until it achieves the desired confidence level; monitors, reprices, and restarts human tasks as necessary; and maximizes parallelism across human workers while staying under budget.
+AutoMan is the first fully automatic _crowdprogramming_ system. AutoMan integrates human-based ("crowdsourced") computations into a standard programming language as ordinary function calls that can be intermixed freely with traditional functions. This abstraction lets  programmers focus on their programming logic. An AutoMan program specifies a _confidence level_ for the overall computation and a _budget_. The AutoMan runtime system then transparently manages all details necessary for scheduling, pricing, and quality control. AutoMan automatically schedules human tasks for each computation until it achieves the desired confidence level; monitors, reprices, and restarts human tasks as necessary; and maximizes parallelism across human workers while staying under budget.
 
 AutoMan is available as a library for Scala.
 
@@ -15,30 +14,23 @@ AutoMan is available as a library for Scala.
 
 The easiest way to get AutoMan is via the Maven Central Repository.  If you're using SBT:
 
-    libraryDependencies += "edu.umass.cs" %% "automan" % "1.0.1"
+    libraryDependencies += "edu.umass.cs" %% "automan" % "1.1.6"
 
 _or_ if you're using Maven:
 
     <dependency>
       <groupId>edu.umass.cs</groupId>
-      <artifactId>automan_X.XX</artifactId>
-      <version>1.0.1</version>
+      <artifactId>automan_2.11</artifactId>
+      <version>1.1.6</version>
     </dependency>
 
-where `X.XX` is `2.10` or `2.11` depending on your Scala version.
+Sorry, we no longer support Scala 2.10 as AutoMan requires Java 8.
 
 ## Latest Updates
 
-Major changes include:
+Lastest changes include:
 
-* Support for non-quality-controlled question types in addition to the standard quality-controlled types.
-* Per-question budgets.
-* All Scala concurrency details are now hidden.  Instead of dealing with low-level Scala `Future` objects, instead you pattern-match on AutoMan `Outcome` objects.
-* A an important but subtle bias toward accepting low-confidence answers has been eliminated by modifying AutoMan's core algorithm.  The details are discussed in our upcoming CACM Research Highlights article (stay tuned!).
-* A much more capable record-and-replay engine. For example, if your program terminates abnormally, on restart AutoMan will continue as if nothing unusual happened.  Earlier versions of AutoMan only memoized answered MTurk HITs, which meant that restarts would schedule new work even if HITs had been completed during the interim. The new version records the complete state of a computation on MTurk.
-* The replay engine can also be used to provide mocks for your unit tests.  We will be expanding on these capabilities in the near future--stay tuned!
-* AutoMan now has a simple plugin architecture, designed to support a visual debugger [currently being developed](https://github.com/BartoszJanota/automan-debugger) for IntelliJ IDEA largely through the efforts of our excellent Google Summer of Code intern, Bartosz Janota.  This work was based on an [earlier web-based prototype](https://bitbucket.org/btamaskar/automan-debugger) from a talented undergrad working in our lab, Bianca Tamaskar.  If you would like to develop plugins for AutoMan, get in touch!
-* Many changes to enhance reliability.
+* Support for estimation queries and composed (i.e., "end-to-end") estimation queries.  Documentation coming soon!
 
 ## Bug Reports.
 
@@ -46,7 +38,7 @@ Please report bugs using this repository's issue tracker.
 
 ## License
 
-AutoMan is licensed under the GPLv2, Copyright (C) 2011-2015 The University of Massachusetts, Amherst.
+AutoMan is licensed under the GPLv2, Copyright (C) 2011-2016 The University of Massachusetts, Amherst.
 
 ## Using AutoMan in Your Project
 
@@ -154,15 +146,37 @@ Unix/DOS shell scripts for running the programs can then be found in `apps/[the 
 
 ## More Information
 
-More detailed information is available in the following paper,
-published at OOPSLA 2012, included in the repo as AutoMan-OOPSLA2012.pdf.
+More detailed information is available in our paper:
 
   AutoMan: A Platform for Integrating Human-Based and Digital Computation
   Daniel W. Barowy, Charlie Curtsinger, Emery D. Berger, and Andrew McGregor
 
   http://www.cs.umass.edu/~emery/pubs/res0007-barowy.pdf
 
-  The full citation is given below:
+  There are two versions, a shortened Research Highlight that appeared in the June 2016 issue of the Communications of the ACM and a longer version that appeared at OOPSLA '12.  You should probably start with the CACM version which has a bit more polish and some updated results.
+
+  The full citations are given below:
+
+```
+@article{Barowy:2016:API:2942427.2927928,
+ author = {Barowy, Daniel W. and Curtsinger, Charlie and Berger, Emery D. and McGregor, Andrew},
+ title = {AutoMan: A Platform for Integrating Human-based and Digital Computation},
+ journal = {Commun. ACM},
+ issue_date = {June 2016},
+ volume = {59},
+ number = {6},
+ month = may,
+ year = {2016},
+ issn = {0001-0782},
+ pages = {102--109},
+ numpages = {8},
+ url = {http://doi.acm.org/10.1145/2927928},
+ doi = {10.1145/2927928},
+ acmid = {2927928},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+}
+```
 
 ```
 @inproceedings{Barowy:2012:API:2384616.2384663,
@@ -193,6 +207,11 @@ Contact information:
 
 |Version|Notes|
 | --- | --- |
+|1.1.6|Major release.|
+|     |Now includes support for quality-controlled estimation queries!|
+|     |Preliminary estimation composition support.|
+|     |Exponential backoff to mitigate MTurk rate-limiting.|
+|     |Numerous bigfixes and performance improvements.|
 |1.0.1|Maintenance release.|
 |     |Bugfix for timeout policy calculation.|
 |     |Renamed misleading distribution answer type name.|
