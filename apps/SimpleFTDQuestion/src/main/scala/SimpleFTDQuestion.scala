@@ -1,4 +1,6 @@
 import edu.umass.cs.automan.adapters.mturk._
+import edu.umass.cs.automan.core.answer._
+import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
 
 object SimpleFTDQuestion extends App {
   val sample_size = 3
@@ -15,18 +17,24 @@ object SimpleFTDQuestion extends App {
     q.sample_size = sample_size
     q.title = question
     q.text = question
+    q.minimum_spawn_policy = UserDefinableSpawnPolicy(0)
   }
 
   automan(a) {
     val outcome = AskIt("How many licks does it take to get to the Tootsie Roll Center of a Tootsie Pop?")
 
     outcome.answer match {
-      case Answers(answers,_) =>
-        answers.map { case (worker_id, answer) => println("Worker ID: " + worker_id + ", Answer: " + answer.toString()) }
-      case IncompleteAnswers(answers,_) =>
-        println("Ran out of money!  Only have " + answers.size + " of " + sample_size + " responses.")
-        answers.map { case (worker_id, answer) => println("Worker ID: " + worker_id + ", Answer: " + answer.toString()) }
-      case OverBudgetAnswers(need,have) => println("Over budget.  Need: $" + need + ", have: $" + have)
+      case a:Answers[String] =>
+        a.values.foreach { case (worker_id, answer) =>
+          println("Worker ID: " + worker_id + ", Answer: " + answer)
+        }
+      case a:IncompleteAnswers[String] =>
+        println("Ran out of money!  Only have " + a.values.size + " of " + sample_size + " responses.")
+        a.values.foreach { case (worker_id, answer: String) =>
+          println("Worker ID: " + worker_id + ", Answer: " + answer)
+        }
+      case a:OverBudgetAnswers[String] =>
+        println("Over budget.  Need: $" + a.need + ", have: $" + a.have)
     }
   }
 }
