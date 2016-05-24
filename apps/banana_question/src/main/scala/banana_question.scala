@@ -3,7 +3,10 @@ import edu.umass.cs.automan.adapters.mturk.question.MTQuestionOption
 import java.util.UUID
 import java.net.URL
 import javax.imageio._
+
 import bananalib._
+import edu.umass.cs.automan.core.answer.Answer
+import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
 
 object banana_question extends App {
   val opts = my_optparse(args, "banana_question.jar")
@@ -20,6 +23,7 @@ object banana_question extends App {
     q.budget = 5.00
     q.text = text
     q.options = options
+    q.minimum_spawn_policy = UserDefinableSpawnPolicy(0)
   }
   
   // images:
@@ -44,7 +48,7 @@ object banana_question extends App {
   automan(a) {
     val outcome = which_one("Which one of these does not belong?", banana_opts)
     outcome.answer match {
-      case Answer(answer,_,_) => println("The answer is: " + answer)
+      case answer: Answer[Symbol] => println("The answer is: " + answer.value)
       case _ => println("An error occurred.")
     }
   }
