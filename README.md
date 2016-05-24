@@ -1,8 +1,8 @@
 [![Circle CI](https://circleci.com/gh/dbarowy/AutoMan.svg?style=shield)](https://circleci.com/gh/dbarowy/AutoMan)
 
-# WoCMan
+# AutoMan: Human-Computation Runtime v1.0 
 
-Parameter estimation flavor of AutoMan
+This is a major release of AutoMan.  Code written using earlier versions (< 1.0) will need to be rewritten as AutoMan's syntax has changed.  See below for details.
 
 ## What is AutoMan?
 
