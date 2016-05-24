@@ -1,4 +1,6 @@
 import edu.umass.cs.automan.adapters.mturk._
+import edu.umass.cs.automan.core.answer.Answer
+import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
 
 object simple_checkbox_program extends App {
   val opts = Utilities.unsafe_optparse(args, "simple_checkbox_program.jar")
@@ -19,14 +21,15 @@ object simple_checkbox_program extends App {
       a.Option('cookie, "Cookie Monster", "http://tinyurl.com/otb6thl"),
       a.Option('count, "The Count", "http://tinyurl.com/nfdbyxa")
     )
+    q.minimum_spawn_policy = UserDefinableSpawnPolicy(0)
   }
 
   automan(a) {
     val outcome = which_one("Which of these DO NOT BELONG? (check all that apply)")
   
     outcome.answer match {
-      case Answer(answers,_,_) => 
-        println("Answers are: " + answers.map(_.toString).mkString(","))
+      case a:Answer[Set[Symbol]] =>
+        println("Answers are: " + a.value.map(_.toString).mkString(","))
       case _ => println("Error occurred.")
     }
   }
