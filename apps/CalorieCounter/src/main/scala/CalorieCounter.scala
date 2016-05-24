@@ -23,17 +23,17 @@ object CalorieCounter extends App {
 
   automan(a) {
     howManyCals(foodImg).answer match {
-      case Estimate(est, low, high, cost, conf) =>
-        println("Estimate: " + est + ", low: " + low +
-                ", high: " + high + ", cost: $" + cost +
-                ", confidence: " + conf)
-      case LowConfidenceEstimate(est, low, high, cost, conf) =>
-        println("Low-Confidence Estimate: " + est +
-                ", low: " + low + ", high: " + high +
-                ", cost: $" + cost + ", confidence: " + conf)
-      case OverBudgetEstimate(need, have) =>
+      case e: Estimate =>
+        println("Estimate: " + e.value + ", low: " + e.low +
+                ", high: " + e.high + ", cost: $" + e.cost +
+                ", confidence: " + e.confidence)
+      case e: LowConfidenceEstimate =>
+        println("Low-Confidence Estimate: " + e.value +
+                ", low: " + e.low + ", high: " + e.high +
+                ", cost: $" + e.cost + ", confidence: " + e.confidence)
+      case e: OverBudgetEstimate =>
         println("Over budget; could not produce an estimate. Need $" +
-                need +"; have $" + have)
+                e.need +"; have $" + e.have)
     }
   }
 }
