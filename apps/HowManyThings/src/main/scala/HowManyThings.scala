@@ -1,6 +1,8 @@
 import edu.umass.cs.automan.adapters.mturk._
 import net.ettinsmoor.Bingerator
 import java.util.UUID
+import edu.umass.cs.automan.core.answer.Answer
+import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
 import hmtlib._
 
 // This application counts the number of items in a set of images
@@ -29,6 +31,7 @@ object HowManyThings extends App {
       a.Option('one, "One"),
       a.Option('more, "More than one")
     )
+    q.minimum_spawn_policy = UserDefinableSpawnPolicy(0)
   }
 
   // search for a bunch of images
@@ -47,13 +50,13 @@ object HowManyThings extends App {
   automan(a) {
 	// ask humans for answers
     val answers_urls = s3_urls.map { url =>
-      (how_many_things(getTinyURL(url.toString)) -> url)
+      how_many_things(getTinyURL(url.toString)) -> url
     }
 
     // print answers
     answers_urls.foreach { case(outcome,url) =>
       outcome.answer match {
-        case Answer(answer,_,_) => println("url: " + url + ", answer: " + answer)
+        case a:Answer[Symbol] => println("url: " + url + ", answer: " + a.value)
         case _ => ()
       }
     }
