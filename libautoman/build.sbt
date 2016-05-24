@@ -1,7 +1,7 @@
 // METADATA
 name := "automan"
 
-version := "1.1.5-SNAPSHOT"
+version := "1.1.6"
 
 organization := "edu.umass.cs"
 
