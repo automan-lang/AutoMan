@@ -1,4 +1,6 @@
 import edu.umass.cs.automan.adapters.mturk._
+import edu.umass.cs.automan.core.answer._
+import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
 
 object SimpleCBDQuestion extends App {
   val sample_size = 3
@@ -21,18 +23,20 @@ object SimpleCBDQuestion extends App {
       a.Option('cookie, "Cookie Monster", "http://tinyurl.com/otb6thl"),
       a.Option('count, "The Count", "http://tinyurl.com/nfdbyxa")
     )
+    q.minimum_spawn_policy = UserDefinableSpawnPolicy(0)
   }
 
   automan(a) {
     val outcome = AskIt("Which of these characters do you know?")
  
     outcome.answer match {
-      case Answers(answers,_) =>
-        answers.map { case (worker_id, answer) => println("Worker ID: " + worker_id + ", Answer: " + answer.mkString(", ")) }
-      case IncompleteAnswers(answers,_) =>
-        println("Ran out of money!  Only have " + answers.size + " of " + sample_size + " responses.")
-        answers.map { case (worker_id, answer) => println("Worker ID: " + worker_id + ", Answer: " + answer.mkString(", ")) }
-      case OverBudgetAnswers(need,have) => println("Over budget.  Need: $" + need + ", have: $" + have)
+      case a:Answers[Set[Symbol]] =>
+        a.values.foreach { case (worker_id, answers) => println("Worker ID: " + worker_id + ", Answer: " + answers.mkString(", ")) }
+      case a:IncompleteAnswers[Set[Symbol]] =>
+        println("Ran out of money!  Only have " + a.values.size + " of " + sample_size + " responses.")
+        a.values.foreach { case (worker_id, answers) => println("Worker ID: " + worker_id + ", Answer: " + answers.mkString(", ")) }
+      case a:OverBudgetAnswers[Set[Symbol]] =>
+        println("Over budget.  Need: $" + a.need + ", have: $" + a.have)
     }
   }
 }
