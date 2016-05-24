@@ -1,5 +1,6 @@
 import edu.umass.cs.automan.adapters.mturk._
 import anprlib._
+import edu.umass.cs.automan.core.answer._
 
 object anpr extends App {
   val opts = my_optparse(args, "anpr.jar")
@@ -20,8 +21,8 @@ object anpr extends App {
     // print out results
     plate_texts.foreach { case (url, outcome) =>
       outcome.answer match {
-        case Answer(ans, _, _) =>
-          println(url + ": " + ans)
+        case answer: Answer[String] =>
+          println(url + ": " + answer.value)
         case _ => ()
       }
     }

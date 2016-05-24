@@ -1,6 +1,8 @@
 import edu.umass.cs.automan.adapters.mturk._
+import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.util.Utilities
+
 import scala.io.Source
 
 package object anprlib {
@@ -13,7 +15,7 @@ package object anprlib {
     q.pattern_error_text = "Answers may only be letters or numeric digits, no more than 8 characters long, no spaces, or the special two-letter code: NA"
     q.dont_reject = true
     q.before_filter = normalize_chars
-    q.group_id = "anpr"
+    q.minimum_spawn_policy = UserDefinableSpawnPolicy(0)
   }
 
   def my_optparse(args: Array[String], invoked_as_name: String) : Utilities.OptionMap = {
