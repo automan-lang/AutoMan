@@ -2,14 +2,15 @@ package edu.umass.cs.automan.adapters.mturk
 
 import java.util.{Calendar, Date, UUID}
 
-import com.amazonaws.mturk.requester.AssignmentStatus
+import com.amazonaws.mturk.requester.{AssignmentStatus, QualificationType}
 import edu.umass.cs.automan.adapters.mturk.logging.MTMemo
 import edu.umass.cs.automan.adapters.mturk.logging.tables.DBAssignment
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
-import edu.umass.cs.automan.core.logging.tables.{DBTaskHistory, DBTask, DBQuestion}
+import edu.umass.cs.automan.core.logging.tables.{DBQuestion, DBTask, DBTaskHistory}
 import edu.umass.cs.automan.core.scheduler.SchedulerState
 import edu.umass.cs.automan.core.scheduler.SchedulerState.SchedulerState
 import edu.umass.cs.automan.core.scheduler.SchedulerState.SchedulerState
+
 import scala.slick.driver.H2Driver.simple._
 
 object DeleteAllQualifications extends App {
@@ -37,13 +38,31 @@ object DeleteAllQualifications extends App {
   }
 
   // get all of the qualifications
-  val quals = srv.getAllQualificationTypes
+  val quals: Array[QualificationType] = srv.getAllQualificationTypes
+
+  def delQual(qual: QualificationType) : Boolean = {
+    try {
+      val qtid = qual.getQualificationTypeId
+      println("Deleting qualification ID: " + qtid)
+      srv.disposeQualificationType(qtid)
+      true
+    } catch {
+      case e: com.amazonaws.mturk.service.exception.InternalServiceException =>
+        false
+    }
+  }
 
   // now delete them
+  var sleep_interval_ms = 500
   quals.foreach { q =>
-    val qtid = q.getQualificationTypeId
-    println("Deleting qualification ID: " + qtid)
-    srv.disposeQualificationType(qtid)
+    var success = false
+    while (!success) {
+      Thread.sleep(sleep_interval_ms)
+      success = delQual(q)
+      if (!success) {
+        sleep_interval_ms *= 2
+      }
+    }
   }
 
   println("done")

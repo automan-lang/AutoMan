@@ -14,7 +14,5 @@ exportJars := true
 
 libraryDependencies ++= Seq(
   "edu.umass.cs"        %% "automan" % "1.1.6",
-  "org.rogach"          %% "scallop" % "0.9.5",
-  "com.typesafe.slick"  %% "slick"   % "2.1.0",
-  "com.h2database"      %  "h2"      % "1.4.189"
+  "org.rogach"          %% "scallop" % "0.9.5"
 )

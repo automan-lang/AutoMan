@@ -14,6 +14,5 @@ For usage see below:
   val key = opt[String]("key", descr = "AWS key", required = true)
   val secret = opt[String]("secret", descr = "AWS secret key", required = true)
   val sandbox = toggle("sandbox", prefix = "no-", descrYes = "Use MTurk sandbox", descrNo = "Use real MTurk", default = Some(true))
-  val database_path = opt[String]("database", short = 'd', descr = "Path to H2 memo database", required = true)
   val help = opt[Boolean]("help", noshort = true, descr = "Show this message")
 }
