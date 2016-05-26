@@ -125,11 +125,6 @@ class MTurkAdapter extends AutomanAdapter {
       case _ => ()
     }
   }
-  override protected[automan] def question_shutdown_hook(q: Question): Unit = {
-    super.question_shutdown_hook(q)
-    // cleanup qualifications
-    run_if_initialized((p: TurkWorker) => p.cleanup_qualifications(q.asInstanceOf[MTurkQuestion]))
-  }
 
   // exception helper function
   private def run_if_initialized[U](f: TurkWorker => U) : U = {
@@ -152,7 +147,8 @@ class MTurkAdapter extends AutomanAdapter {
           Map.empty,
           Map.empty,
           Map.empty,
-          Map.empty
+          Map.empty,
+          List.empty
         )
         new MockRequesterService(mss, this.toClientConfig)
       case None => new RequesterService(this.toClientConfig)
@@ -180,7 +176,12 @@ class MTurkAdapter extends AutomanAdapter {
   override protected[automan] def close(): Unit = {
     super.close()
     _worker match {
-      case Some(p) => p.shutdown()
+      case Some(p) =>
+        // cleanup qualifications
+        p.cleanup_qualifications()
+
+        // shutdown backend
+        p.shutdown()
       case None => ()
     }
   }

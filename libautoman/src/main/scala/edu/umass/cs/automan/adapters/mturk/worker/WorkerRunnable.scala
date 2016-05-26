@@ -99,7 +99,7 @@ class WorkerRunnable(tw: TurkWorker,
             case req: AcceptReq => do_sync_action(req, () => scheduled_accept(req.ts))
             case req: BudgetReq => do_sync_action(req, () => scheduled_get_budget())
             case req: CancelReq => do_sync_action(req, () => scheduled_cancel(req.ts, req.toState))
-            case req: DisposeQualsReq => do_sync_action(req, () => scheduled_cleanup_qualifications(req.q))
+            case req: DisposeQualsReq => do_sync_action(req, () => scheduled_cleanup_qualifications())
             case req: CreateHITReq => do_sync_action(req, () => scheduled_post(req.ts, req.exclude_worker_ids))
             case req: RejectReq => do_sync_action(req, () => scheduled_reject(req.ts_reasons))
             case req: RetrieveReq => do_sync_action(req, () => scheduled_retrieve(req.ts, req.current_time))
@@ -480,9 +480,10 @@ class WorkerRunnable(tw: TurkWorker,
     WorkerRunnable.turkRetry(() => MTurkMethods.mturk_getAccountBalance(tw.backend), timeoutState)
   }
 
-  private def scheduled_cleanup_qualifications(q: MTurkQuestion) : Unit = {
-    q.qualifications.foreach { (qual: QualificationRequirement) =>
-      WorkerRunnable.turkRetry(() => MTurkMethods.mturk_disposeQualificationType(qual, tw.backend), timeoutState)
+  private def scheduled_cleanup_qualifications() : Unit = {
+    _state.disqualifications.foreach { case (qual_id: QualificationID, _) =>
+      WorkerRunnable.turkRetry(() => MTurkMethods.mturk_disposeQualificationType(qual_id, tw.backend), timeoutState)
     }
+    _state = _state.deleteDisqualifications()
   }
 }

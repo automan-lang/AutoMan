@@ -1,7 +1,8 @@
 package edu.umass.cs.automan.adapters.mturk.mock
 
 import java.util.UUID
-import com.amazonaws.mturk.requester.HIT
+
+import com.amazonaws.mturk.requester.{HIT, QualificationType}
 import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.util.Utilities
@@ -12,7 +13,9 @@ case class MockServiceState(budget: java.math.BigDecimal,
                             hits_by_question_id: Map[UUID, List[HIT]],
                             answers_by_assignment_id: Map[UUID,MockResponse],
                             assignment_status_by_assignment_id: Map[UUID,(AssignmentStatus.Value,Option[String])],
-                            assignment_ids_by_question_id: Map[UUID, List[UUID]]) {
+                            assignment_ids_by_question_id: Map[UUID, List[UUID]],
+                            qualification_types: List[QualificationType]
+                           ) {
   def addHIT(question_id: UUID, hit: HIT) : MockServiceState = {
     // update hit list
     val hitlist = hit :: (
@@ -30,7 +33,8 @@ case class MockServiceState(budget: java.math.BigDecimal,
       this.hits_by_question_id + (question_id -> hitlist),
       this.answers_by_assignment_id,
       this.assignment_status_by_assignment_id,
-      this.assignment_ids_by_question_id
+      this.assignment_ids_by_question_id,
+      qualification_types
     )
   }
   def addHITType(hit_type: MockHITType) : MockServiceState = {
@@ -41,7 +45,8 @@ case class MockServiceState(budget: java.math.BigDecimal,
       hits_by_question_id,
       answers_by_assignment_id,
       assignment_status_by_assignment_id,
-      assignment_ids_by_question_id
+      assignment_ids_by_question_id,
+      qualification_types
     )
   }
   def budgetDelta(delta: java.math.BigDecimal) : MockServiceState = {
@@ -53,7 +58,8 @@ case class MockServiceState(budget: java.math.BigDecimal,
       hits_by_question_id,
       answers_by_assignment_id,
       assignment_status_by_assignment_id,
-      assignment_ids_by_question_id
+      assignment_ids_by_question_id,
+      qualification_types
     )
   }
   private def cloneHIT(hit: HIT) : HIT = {
@@ -106,7 +112,8 @@ case class MockServiceState(budget: java.math.BigDecimal,
       this.hits_by_question_id + (question_id -> hitlist),
       this.answers_by_assignment_id,
       this.assignment_status_by_assignment_id,
-      this.assignment_ids_by_question_id
+      this.assignment_ids_by_question_id,
+      qualification_types
     )
   }
   def getHITforHITId(hitId: String) : HIT = {
@@ -121,7 +128,8 @@ case class MockServiceState(budget: java.math.BigDecimal,
       hits_by_question_id,
       answers_by_assignment_id,
       assignment_status_by_assignment_id,
-      assignment_ids_by_question_id
+      assignment_ids_by_question_id,
+      qualification_types
     )
   }
   def addAssignments(question_id: UUID, assignments: Map[UUID,MockResponse]) : MockServiceState = {
@@ -136,7 +144,8 @@ case class MockServiceState(budget: java.math.BigDecimal,
       hits_by_question_id,
       answers,
       status,
-      a_by_q
+      a_by_q,
+      qualification_types
     )
   }
   def updateAssignmentStatusMap(am: Map[UUID,(AssignmentStatus.Value,Option[String])]) : MockServiceState = {
@@ -147,7 +156,8 @@ case class MockServiceState(budget: java.math.BigDecimal,
       hits_by_question_id,
       answers_by_assignment_id,
       am,
-      assignment_ids_by_question_id
+      assignment_ids_by_question_id,
+      qualification_types
     )
   }
   def updateAssignmentStatus(assignmentId: UUID, new_status: AssignmentStatus.Value) : MockServiceState = {
@@ -161,9 +171,37 @@ case class MockServiceState(budget: java.math.BigDecimal,
       hits_by_question_id,
       answers_by_assignment_id,
       changeAssignmentStatus(assignmentId, hit_id_opt, new_status, assignment_status_by_assignment_id),
-      assignment_ids_by_question_id
+      assignment_ids_by_question_id,
+      qualification_types
     )
   }
+  def addQualificationType(qualType: QualificationType) : MockServiceState = {
+    MockServiceState(
+      budget,
+      question_by_question_id,
+      hit_type_by_hit_type_id,
+      hits_by_question_id,
+      answers_by_assignment_id,
+      assignment_status_by_assignment_id,
+      assignment_ids_by_question_id,
+      qualType :: qualification_types
+    )
+  }
+  def deleteQualificationById(qualID: String) : (MockServiceState,QualificationType) = {
+    val qt = qualification_types.filter(_.getQualificationTypeId == qualID).head
+    val mss = MockServiceState(
+      budget,
+      question_by_question_id,
+      hit_type_by_hit_type_id,
+      hits_by_question_id,
+      answers_by_assignment_id,
+      assignment_status_by_assignment_id,
+      assignment_ids_by_question_id,
+      qualification_types.filter(_.getQualificationTypeId != qualID)
+    )
+    (mss,qt)
+  }
+
   private def changeAssignmentStatus(assignmentId: UUID, hit_id_opt: Option[String], new_status: AssignmentStatus.Value, assn_map: Map[UUID,(AssignmentStatus.Value,Option[String])])
   : Map[UUID,(AssignmentStatus.Value,Option[String])] = {
     val current_status = assn_map(assignmentId)._1

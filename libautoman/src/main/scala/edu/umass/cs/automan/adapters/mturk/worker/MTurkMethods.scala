@@ -95,9 +95,10 @@ object MTurkMethods {
     val sdf = new SimpleDateFormat("yyyy-MM-dd:z")
     val datestr = sdf.format(new Date())
 
-    DebugLog("Creating disqualification.",LogLevelInfo(),LogType.ADAPTER,null)
     val qualtxt = s"AutoMan automatically generated Disqualification (title: $title, date: $datestr, batchKey: $batchKey, batch_no: $batch_no)"
     val qual = backend.createQualificationType("AutoMan " + UUID.randomUUID(), "automan", qualtxt)
+
+    DebugLog(s"Creating disqualification ID: ${qual.getQualificationTypeId}.",LogLevelInfo(),LogType.ADAPTER,null)
     new QualificationRequirement(qual.getQualificationTypeId, Comparator.EqualTo, batch_no, null, false)
   }
 
@@ -121,8 +122,9 @@ object MTurkMethods {
     backend.getAccountBalance
   }
 
-  private[worker] def mturk_disposeQualificationType(qual: QualificationRequirement, backend: RequesterService) : Unit = {
-    backend.disposeQualificationType(qual.getQualificationTypeId)
+  private[worker] def mturk_disposeQualificationType(qual_id: QualificationID, backend: RequesterService) : Unit = {
+    DebugLog(s"Deleting disqualification ID: ${qual_id}.",LogLevelInfo(),LogType.ADAPTER,null)
+    backend.disposeQualificationType(qual_id)
   }
 
   private[worker] def mturk_assignQualification(disqualification_id: String, worker_id: String, integerValue: Int, sendNotification: Boolean, backend: RequesterService): Unit = {
@@ -184,7 +186,7 @@ object MTurkMethods {
     val hittype = HITType(hit_type_id, disqualification, group_id)
 
     // update disqualification map
-    internal_state = internal_state.updateDisqualifications(disqualification.getQualificationTypeId, hittype.id)
+    internal_state = internal_state.addDisqualifications(disqualification.getQualificationTypeId, hittype.id)
 
     // update hittype map
     internal_state = internal_state.updateHITTypes(batch_key, hittype)

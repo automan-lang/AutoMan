@@ -36,8 +36,11 @@ case class MTState(hit_types: Map[BatchKey,HITType],
   def updateWorkerWhitelist(worker_id: WorkerID, group_id: GroupID, hit_type_id: HITTypeID) : MTState = {
     MTState(hit_types, hit_states, hit_ids, worker_whitelist + ((worker_id,group_id) -> hit_type_id), disqualifications, batch_no)
   }
-  def updateDisqualifications(qualificationID: QualificationID, hittypeid: HITTypeID) : MTState = {
+  def addDisqualifications(qualificationID: QualificationID, hittypeid: HITTypeID) : MTState = {
     MTState(hit_types, hit_states, hit_ids, worker_whitelist, disqualifications + (qualificationID -> hittypeid), batch_no)
+  }
+  def deleteDisqualifications() : MTState = {
+    MTState(hit_types, hit_states, hit_ids, worker_whitelist, Map.empty, batch_no)
   }
   def updateBatchNo(batchKey: BatchKey) : MTState = {
     val groupID = batchKey._1

@@ -150,6 +150,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
   /**
    * This method exists only because the SDK has meaningless
    * constructor parameter names and this one does not.
+ *
    * @return Assignment object.
    */
   private def newAssignment(request: Request,
@@ -201,10 +202,10 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
   }
 
   override def disposeQualificationType(qualificationTypeId: String): QualificationType = synchronized {
-    // we can only get away with this because I know that AutoMan does not
-    // do anything with the returned QualificationType
     diePeriodically()
-    null
+    val (mss,qt) = _state.deleteQualificationById(qualificationTypeId)
+    _state = mss
+    qt
   }
 
   override def getAllQualificationRequests(qualificationTypeId: String): Array[QualificationRequest] = synchronized {
@@ -228,6 +229,8 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
     qt.setKeywords(keywords)
     qt.setDescription(description)
 
+    _state = _state.addQualificationType(qt)
+
     qt
   }
 
@@ -242,6 +245,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
   /**
    * Register a question with the mock backend, and map assignment IDs
    * to the supplied mock answers.
+ *
    * @param q Question.
    * @param t Scheduler startup time.
    */
@@ -292,5 +296,9 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
 
   def takeAssignment(assignmentId: String): Unit = synchronized {
     _state = _state.updateAssignmentStatus(UUID.fromString(assignmentId), AssignmentStatus.ANSWERED)
+  }
+
+  override def getAllQualificationTypes: Array[QualificationType] = {
+    _state.qualification_types.toArray
   }
 }

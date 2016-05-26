@@ -36,8 +36,8 @@ class TurkWorker(val backend: RequesterService, val sleep_ms: Int, val mock_serv
   def cancel(ts: List[Task], toState: SchedulerState.Value) : Option[List[Task]] = {
     blocking_enqueue[List[Task]](CancelReq(ts, toState))
   }
-  def cleanup_qualifications(mtq: MTurkQuestion) : Unit = {
-    nonblocking_enqueue(DisposeQualsReq(mtq))
+  def cleanup_qualifications() : Unit = {
+    blocking_enqueue(DisposeQualsReq())
   }
   def post(ts: List[Task], exclude_worker_ids: List[String]) : Option[List[Task]] = {
     blocking_enqueue[List[Task]](CreateHITReq(ts, exclude_worker_ids))

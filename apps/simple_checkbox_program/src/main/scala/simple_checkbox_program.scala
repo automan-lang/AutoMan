@@ -1,5 +1,6 @@
 import edu.umass.cs.automan.adapters.mturk._
 import edu.umass.cs.automan.core.answer.Answer
+import edu.umass.cs.automan.core.logging.LogLevelDebug
 import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
 
 object simple_checkbox_program extends App {
@@ -9,6 +10,7 @@ object simple_checkbox_program extends App {
     mt.access_key_id = opts('key)
     mt.secret_access_key = opts('secret)
     mt.sandbox_mode = opts('sandbox).toBoolean
+    mt.log_verbosity = LogLevelDebug()
   }
 
   def which_one(text: String) = a.CheckboxQuestion { q =>
