@@ -11,6 +11,7 @@ object simple_checkbox_program extends App {
     mt.secret_access_key = opts('secret)
     mt.sandbox_mode = opts('sandbox).toBoolean
     mt.log_verbosity = LogLevelDebug()
+    mt.database_path = "AutoManMemoDB_c985fb38-c86e-4ef3-96cf-7432261785f5.mv.db"
   }
 
   def which_one(text: String) = a.CheckboxQuestion { q =>

@@ -2,17 +2,17 @@ package edu.umass.cs.automan.adapter.mturk
 
 import edu.umass.cs.automan.core.answer.Estimate
 import edu.umass.cs.automan.core.logging.LogLevelDebug
-import org.scalatest._
 import java.util.UUID
+import edu.umass.cs.automan.RetryOnceTest
 import edu.umass.cs.automan.test._
 import edu.umass.cs.automan.adapters.mturk._
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
-
 import scala.util.Random
+import org.scalatest.tagobjects.Retryable
 
-class MTurkEstimationMetaQuestion extends FlatSpec with Matchers {
+class MTurkEstimationMetaQuestion extends RetryOnceTest {
 
-  "An estimation program" should "work" in {
+  "An estimation program" should "work" taggedAs Retryable in {
     val confidence = 0.95
     val ci = SymmetricCI(50)
     val rng = new Random()
