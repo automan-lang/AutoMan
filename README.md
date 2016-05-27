@@ -14,14 +14,14 @@ AutoMan is available as a library for Scala.
 
 The easiest way to get AutoMan is via the Maven Central Repository.  If you're using SBT:
 
-    libraryDependencies += "edu.umass.cs" %% "automan" % "1.1.6"
+    libraryDependencies += "edu.umass.cs" %% "automan" % "1.1.7"
 
 _or_ if you're using Maven:
 
     <dependency>
       <groupId>edu.umass.cs</groupId>
       <artifactId>automan_2.11</artifactId>
-      <version>1.1.6</version>
+      <version>1.1.7</version>
     </dependency>
 
 Sorry, we no longer support Scala 2.10 as AutoMan requires Java 8.
@@ -31,6 +31,7 @@ Sorry, we no longer support Scala 2.10 as AutoMan requires Java 8.
 Lastest changes include:
 
 * Support for estimation queries and composed (i.e., "end-to-end") estimation queries.  Documentation coming soon!
+* Bug fixes.
 
 ## Bug Reports.
 
@@ -209,6 +210,8 @@ Contact information:
 
 |Version|Notes|
 | --- | --- |
+|1.1.7|Point release.|
+|     |Fix a bug in the qualification cleanup routine.  See [issue #28](https://github.com/dbarowy/AutoMan/issues/28).
 |1.1.6|Major release.|
 |     |Now includes support for quality-controlled estimation queries!|
 |     |Preliminary estimation composition support.|
