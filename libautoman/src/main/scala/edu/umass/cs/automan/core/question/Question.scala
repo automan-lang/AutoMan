@@ -37,7 +37,7 @@ trait Question {
   protected var _time_value_per_hour: Option[BigDecimal] = None
   protected var _update_frequency_ms: Int = 30000
   protected var _max_replicas: Option[Int] = None
-  protected var _mock_answers = List[MockAnswer[A]]()
+  protected var _mock_answers = Iterable[MockAnswer[A]]()
   protected var _wage: BigDecimal = 7.25  // per hour
   protected var _blacklisted_workers = List[String]()
   protected var _dry_run: Boolean = false
@@ -74,8 +74,8 @@ trait Question {
   def memo_hash: String
   def minimum_spawn_policy_=(p: MinimumSpawnPolicy) { _minimum_spawn_policy = p }
   def minimum_spawn_policy: MinimumSpawnPolicy = _minimum_spawn_policy
-  def mock_answers_=(answers: List[MockAnswer[A]]) { _mock_answers = answers }
-  def mock_answers: List[MockAnswer[A]] = _mock_answers
+  def mock_answers_=(answers: Iterable[MockAnswer[A]]) { _mock_answers = answers }
+  def mock_answers: Iterable[MockAnswer[A]] = _mock_answers
   def pay_all_on_failure_=(pay: Boolean) { _payOnFailure = pay }
   def pay_all_on_failure: Boolean = _payOnFailure
   def question_timeout_multiplier_=(t: Double) { _question_timeout_multiplier = t }

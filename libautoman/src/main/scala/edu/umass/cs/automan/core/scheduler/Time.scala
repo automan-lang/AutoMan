@@ -19,7 +19,7 @@ object Time {
       Time(new Date(), Nil, use_virt)
     }
   }
-  def initTickQueue[A](current_time: Date, ans: List[MockAnswer[A]]) : List[Date] = {
+  def initTickQueue[A](current_time: Date, ans: Iterable[MockAnswer[A]]) : List[Date] = {
     // convert time deltas into dates
     val dates = ans.map { ma => Utilities.xMillisecondsFromDate(ma.time_delta_in_ms, current_time) }
 
