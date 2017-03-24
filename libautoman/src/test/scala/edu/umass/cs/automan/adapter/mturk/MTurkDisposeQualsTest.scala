@@ -36,7 +36,7 @@ class MTurkDisposeQualsTest extends FlatSpec with Matchers {
     DebugLog.subscribeCallback(create_callback)
     DebugLog.subscribeCallback(dispose_callback)
 
-    val a = MTurkAdapter { mt =>
+    implicit val a = MTurkAdapter { mt =>
       mt.access_key_id = UUID.randomUUID().toString
       mt.secret_access_key = UUID.randomUUID().toString
       mt.use_mock = MockSetup(budget = 8.00)
@@ -45,19 +45,19 @@ class MTurkDisposeQualsTest extends FlatSpec with Matchers {
     }
 
     automan(a, test_mode = true) {
-      def which_ones() = a.CheckboxQuestion { q =>
-        q.confidence = confidence
-        q.budget = 8.00
-        q.text = "Which characters are not Oscar, Kermit, or Cookie Monster?"
-        q.options = List(
+      def which_ones() = checkbox(
+        confidence = confidence,
+        budget = 8.00,
+        text = "Which characters are not Oscar, Kermit, or Cookie Monster?",
+        options = List(
           a.Option('oscar, "Oscar the Grouch"),
           a.Option('kermit, "Kermit the Frog"),
           a.Option('spongebob, "Spongebob Squarepants"),
           a.Option('cookie, "Cookie Monster"),
           a.Option('count, "The Count")
-        )
+        ),
         // temporary hack to deal with MTurk spawn minimums
-        q.mock_answers = makeMocks(
+        mock_answers = makeMocks(
           List(
             Set('spongebob,'count),
             Set('spongebob),
@@ -71,7 +71,7 @@ class MTurkDisposeQualsTest extends FlatSpec with Matchers {
             Set('count,'spongebob)
           )
         )
-      }
+      )
 
       which_ones().answer match {
         case Answer(value, _, conf, _, _) =>
