@@ -4,7 +4,7 @@ import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
 import org.scalatest._
 import java.util.UUID
 import edu.umass.cs.automan.test._
-import edu.umass.cs.automan.adapters.mturk._
+import edu.umass.cs.automan.adapters.mturk.DSL._
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 
 class FreeTextMemoTest extends FlatSpec with Matchers {

@@ -5,7 +5,7 @@ import edu.umass.cs.automan.core.logging.LogLevelDebug
 import java.util.UUID
 import edu.umass.cs.automan.RetryOnceTest
 import edu.umass.cs.automan.test._
-import edu.umass.cs.automan.adapters.mturk._
+import edu.umass.cs.automan.adapters.mturk.DSL._
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 import scala.util.Random
 import org.scalatest.tagobjects.Retryable

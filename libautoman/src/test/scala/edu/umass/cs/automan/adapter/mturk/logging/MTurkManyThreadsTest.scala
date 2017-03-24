@@ -2,7 +2,7 @@ package edu.umass.cs.automan.adapter.mturk.logging
 
 import java.util.UUID
 
-import edu.umass.cs.automan.adapters.mturk._
+import edu.umass.cs.automan.adapters.mturk.DSL._
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 import edu.umass.cs.automan.core.answer.Answer
 import edu.umass.cs.automan.core.logging.LogLevelDebug
@@ -18,7 +18,7 @@ class MTurkManyThreadsTest extends FlatSpec with Matchers {
   "A freetext program with many threads" should "work" taggedAs Slow in {
     val urls = Random.alphanumeric.take(1000).mkString.grouped(10).toList
 
-    implicit val a = MTurkAdapter { mt =>
+    val a = MTurkAdapter { mt =>
       mt.access_key_id = UUID.randomUUID().toString
       mt.secret_access_key = UUID.randomUUID().toString
       mt.use_mock = MockSetup(budget = 8.00)
@@ -26,7 +26,7 @@ class MTurkManyThreadsTest extends FlatSpec with Matchers {
       mt.log_verbosity = LogLevelDebug()
     }
 
-    def plateTxt(url: String)(implicit a: MTurkAdapter) = a.FreeTextQuestion { q =>
+    def plateTxt(url: String) = a.FreeTextQuestion { q =>
       q.budget = 5.00
       q.title = "Transcribe these license plates."
       q.text = "Foobitty foobitty foo? http://" + url

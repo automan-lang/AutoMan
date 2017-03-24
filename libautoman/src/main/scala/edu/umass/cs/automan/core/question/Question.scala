@@ -2,14 +2,16 @@ package edu.umass.cs.automan.core.question
 
 import java.io.File
 import java.util.{Date, UUID}
-import edu.umass.cs.automan.core.AutomanAdapter
+
+import edu.umass.cs.automan.core.{AutomanAdapter, MagicNumbers}
 import edu.umass.cs.automan.core.answer._
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 import edu.umass.cs.automan.core.mock.{MockAnswer, MockResponse}
 import edu.umass.cs.automan.core.policy.price.PricePolicy
 import edu.umass.cs.automan.core.policy.timeout.TimeoutPolicy
-import edu.umass.cs.automan.core.policy.aggregation.{UserDefinableSpawnPolicy, MinimumSpawnPolicy, AggregationPolicy}
+import edu.umass.cs.automan.core.policy.aggregation.{AggregationPolicy, MinimumSpawnPolicy, UserDefinableSpawnPolicy}
 import edu.umass.cs.automan.core.scheduler.Scheduler
+
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -31,14 +33,14 @@ trait Question {
   protected var _image_url: Option[String] = None
   protected var _initial_worker_timeout_in_s: Int = 30
   protected var _payOnFailure: Boolean = true
-  protected var _question_timeout_multiplier: Double = 500
+  protected var _question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier
   protected var _text: Option[String] = None
   protected var _title: Option[String] = None
   protected var _time_value_per_hour: Option[BigDecimal] = None
-  protected var _update_frequency_ms: Int = 30000
+  protected var _update_frequency_ms: Int = MagicNumbers.UpdateFrequencyMs
   protected var _max_replicas: Option[Int] = None
   protected var _mock_answers = Iterable[MockAnswer[A]]()
-  protected var _wage: BigDecimal = 7.25  // per hour
+  protected var _wage: BigDecimal = MagicNumbers.USFederalMinimumWage
   protected var _blacklisted_workers = List[String]()
   protected var _dry_run: Boolean = false
   protected var _dont_reject: Boolean = false

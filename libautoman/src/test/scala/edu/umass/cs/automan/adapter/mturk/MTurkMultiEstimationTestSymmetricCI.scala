@@ -2,7 +2,7 @@ package edu.umass.cs.automan.adapter.mturk
 
 import java.util.UUID
 
-import edu.umass.cs.automan.adapters.mturk._
+import edu.umass.cs.automan.adapters.mturk.DSL._
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 import edu.umass.cs.automan.core.answer.MultiEstimate
 import edu.umass.cs.automan.core.logging.LogLevelDebug

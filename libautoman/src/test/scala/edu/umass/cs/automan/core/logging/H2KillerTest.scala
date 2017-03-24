@@ -5,7 +5,7 @@ import edu.umass.cs.automan.core.answer.LowConfidenceEstimate
 import edu.umass.cs.automan.core.mock.MockAnswer
 import scala.util.Random
 import edu.umass.cs.automan.test._
-import edu.umass.cs.automan.adapters.mturk._
+import edu.umass.cs.automan.adapters.mturk.DSL._
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 import org.scalatest.{Matchers, FlatSpec}
 import org.scalatest.tagobjects.Slow
