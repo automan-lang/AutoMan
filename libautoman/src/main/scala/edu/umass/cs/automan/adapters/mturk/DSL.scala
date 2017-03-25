@@ -8,6 +8,7 @@ object DSL extends edu.umass.cs.automan.core.DSL {
   def mturk(access_key_id: String,
             secret_access_key: String,
             sandbox_mode: Boolean = false,
+            database_path: String = null,
             use_mock: MockSetup = null,
             logging: LogConfig = LogConfig.TRACE_MEMOIZE,
             log_verbosity: LogLevel = LogLevelInfo()) : MTurkAdapter = {
@@ -22,6 +23,7 @@ object DSL extends edu.umass.cs.automan.core.DSL {
       mt.sandbox_mode = sandbox_mode
 
       // optional parameters
+      if (database_path != null) { mt.database_path = database_path }
       if (use_mock != null) { mt.use_mock = use_mock }
     }
 

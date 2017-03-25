@@ -75,6 +75,7 @@ trait DSL {
   }
 
   def freetext[A <: AutomanAdapter](
+                        allow_empty_pattern: Boolean = false,
                         confidence: Double = MagicNumbers.DefaultConfidence,
                         budget: BigDecimal = MagicNumbers.DefaultBudget,
                         dont_reject: Boolean = true,
@@ -99,6 +100,7 @@ trait DSL {
       q.pattern = pattern
 
       // mandatory parameters with sane defaults
+      q.allow_empty_pattern = allow_empty_pattern
       q.confidence = confidence
       q.budget = budget
       q.dont_reject = dont_reject
@@ -119,6 +121,7 @@ trait DSL {
   }
 
   def freetexts[A <: AutomanAdapter](
+                       allow_empty_pattern: Boolean = false,
                        sample_size: Int = MagicNumbers.DefaultSampleSizeForDistrib,
                        budget: BigDecimal = MagicNumbers.DefaultBudget,
                        dont_reject: Boolean = true,
@@ -129,7 +132,7 @@ trait DSL {
                        minimum_spawn_policy: MinimumSpawnPolicy = null,
                        mock_answers: Iterable[MockAnswer[String]] = null,
                        pay_all_on_failure: Boolean = true,
-                       pattern: String,
+                       pattern: String = null,
                        pattern_error_text: String = null,
                        question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
                        text: String,
@@ -140,9 +143,9 @@ trait DSL {
     def initf[Q <: FreeTextVectorQuestion](q: Q) = {
       // mandatory parameters
       q.text = text
-      q.pattern = pattern
 
       // mandatory parameters with sane defaults
+      q.allow_empty_pattern = allow_empty_pattern
       q.sample_size = sample_size
       q.budget = budget
       q.dont_reject = dont_reject
@@ -154,6 +157,7 @@ trait DSL {
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
       if (image_url != null) { q.image_url = image_url }
+      if (pattern != null) { q.pattern = pattern }
       if (pattern_error_text != null) { q.pattern_error_text = pattern_error_text }
       if (title != null) { q.title = title }
       if (mock_answers != null ) { q.mock_answers = mock_answers }

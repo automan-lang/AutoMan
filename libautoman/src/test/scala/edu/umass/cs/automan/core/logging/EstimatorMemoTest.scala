@@ -49,31 +49,31 @@ class EstimatorMemoTest extends FlatSpec with Matchers {
       669,512,562,487,635,783,740,659,671,559,639,764,668,684,512,587,
       603,696,610,727,788,611,582,636,650,761)
 
-    val a = MTurkAdapter { mt =>
-      mt.access_key_id = UUID.randomUUID().toString
-      mt.secret_access_key = UUID.randomUUID().toString
-      mt.use_mock = MockSetup(budget = 8.00)
-      mt.logging = LogConfig.TRACE_MEMOIZE_VERBOSE
-      mt.log_verbosity = LogLevelDebug()
-    }
+    implicit val mt = mturk (
+      access_key_id = UUID.randomUUID().toString,
+      secret_access_key = UUID.randomUUID().toString,
+      use_mock = MockSetup(budget = 8.00),
+      logging = LogConfig.TRACE_MEMOIZE_VERBOSE,
+      log_verbosity = LogLevelDebug()
+    )
 
-    def countJellies() = a.EstimationQuestion { q =>
-      q.confidence = confidence
-      q.budget = 8.00
-      q.text = "How many jelly beans are in this jar?"
-      q.confidence_interval = confidence_interval
-      q.mock_answers = mock_answers
-    }
+    def countJellies() = estimate (
+      confidence = confidence,
+      budget = 8.00,
+      text = "How many jelly beans are in this jar?",
+      confidence_interval = confidence_interval,
+      mock_answers = mock_answers
+    )
 
-    def countJellies2() = a.EstimationQuestion { q =>
-      q.confidence = confidence
-      q.budget = 8.00
-      q.text = "How many jelly beans are in this jar?"
-      q.confidence_interval = confidence_interval
-      q.mock_answers = List()
-    }
+    def countJellies2() = estimate (
+      confidence = confidence,
+      budget = 8.00,
+      text = "How many jelly beans are in this jar?",
+      confidence_interval = confidence_interval,
+      mock_answers = List()
+    )
 
-    automan(a, test_mode = true, in_mem_db = true) {
+    automan(mt, test_mode = true, in_mem_db = true) {
       countJellies().answer match {
         case Estimate(est, low, high, cost, conf, _, _) =>
           println("Estimate: " + est + ", low: " + low + ", high: " + high + ", cost: $" + cost + ", confidence: " + conf)

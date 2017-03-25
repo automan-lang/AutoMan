@@ -12,33 +12,33 @@ class FreeTextMemoTest extends FlatSpec with Matchers {
   "A freetext program" should "correctly recall answers at no cost" in {
     val confidence = 0.95
 
-    val a = MTurkAdapter { mt =>
-      mt.access_key_id = UUID.randomUUID().toString
-      mt.secret_access_key = UUID.randomUUID().toString
-      mt.use_mock = MockSetup(budget = 8.00)
-      mt.logging = LogConfig.TRACE_MEMOIZE_VERBOSE
-      mt.log_verbosity = LogLevelDebug()
-    }
+    implicit val mt = mturk (
+      access_key_id = UUID.randomUUID().toString,
+      secret_access_key = UUID.randomUUID().toString,
+      use_mock = MockSetup(budget = 8.00),
+      logging = LogConfig.TRACE_MEMOIZE_VERBOSE,
+      log_verbosity = LogLevelDebug()
+    )
 
-    def which_one(text: String) = a.FreeTextQuestion { q =>
-      q.confidence = 0.95
-      q.budget = 8.00
-      q.text = text
-      q.pattern = "AAAA"
-      q.mock_answers = makeMocksAt(List("quux","foo","bar","norf","quux","quux"), 0)
-      q.minimum_spawn_policy = UserDefinableSpawnPolicy(0)
-    }
+    def which_one(text: String) = freetext (
+      confidence = 0.95,
+      budget = 8.00,
+      text = text,
+      pattern = "AAAA",
+      mock_answers = makeMocksAt(List("quux","foo","bar","norf","quux","quux"), 0),
+      minimum_spawn_policy = UserDefinableSpawnPolicy(0)
+    )
 
-    def which_one2(text: String) = a.FreeTextQuestion { q =>
-      q.confidence = 0.95
-      q.budget = 8.00
-      q.text = text
-      q.pattern = "AAAA"
-      q.mock_answers = List()
-      q.minimum_spawn_policy = UserDefinableSpawnPolicy(0)
-    }
+    def which_one2(text: String) = freetext (
+      confidence = 0.95,
+      budget = 8.00,
+      text = text,
+      pattern = "AAAA",
+      mock_answers = List(),
+      minimum_spawn_policy = UserDefinableSpawnPolicy(0)
+    )
 
-    automan(a, test_mode = true, in_mem_db = true) {
+    automan(mt, test_mode = true, in_mem_db = true) {
       which_one("Which 4-letter metasyntactic variable starts with 'q'?").answer match {
         case Answer(value, cost, conf, _, _) =>
           println("Answer: '" + value + "', cost: '" + cost + "', confidence: " + conf)

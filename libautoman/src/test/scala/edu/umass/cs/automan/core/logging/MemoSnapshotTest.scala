@@ -12,45 +12,45 @@ class MemoSnapshotTest extends FlatSpec with Matchers {
   "The memoizer snapshot call" should "return all tasks" in {
     val confidence = 0.95
 
-    val a = MTurkAdapter { mt =>
-      mt.access_key_id = UUID.randomUUID().toString
-      mt.secret_access_key = UUID.randomUUID().toString
-      mt.use_mock = MockSetup(budget = 8.00)
-      mt.logging = LogConfig.TRACE_MEMOIZE_VERBOSE
-      mt.log_verbosity = LogLevelDebug()
-    }
+    implicit val mt = mturk (
+      access_key_id = UUID.randomUUID().toString,
+      secret_access_key = UUID.randomUUID().toString,
+      use_mock = MockSetup(budget = 8.00),
+      logging = LogConfig.TRACE_MEMOIZE_VERBOSE,
+      log_verbosity = LogLevelDebug()
+    )
 
-    def which_one() = a.RadioButtonQuestion { q =>
-      q.confidence = confidence
-      q.budget = 8.00
-      q.text = "Which one of these does not belong?"
-      q.options = List(
-        a.Option('oscar, "Oscar the Grouch"),
-        a.Option('kermit, "Kermit the Frog"),
-        a.Option('spongebob, "Spongebob Squarepants"),
-        a.Option('cookie, "Cookie Monster"),
-        a.Option('count, "The Count")
-      )
-      q.mock_answers = makeMocksAt(List('spongebob,'spongebob,'spongebob,'spongebob,'spongebob,'spongebob), 0)
-      q.minimum_spawn_policy = UserDefinableSpawnPolicy(0)
-    }
+    def which_one() = radio (
+      confidence = confidence,
+      budget = 8.00,
+      text = "Which one of these does not belong?",
+      options = List(
+        mt.Option('oscar, "Oscar the Grouch"),
+        mt.Option('kermit, "Kermit the Frog"),
+        mt.Option('spongebob, "Spongebob Squarepants"),
+        mt.Option('cookie, "Cookie Monster"),
+        mt.Option('count, "The Count")
+      ),
+      mock_answers = makeMocksAt(List('spongebob,'spongebob,'spongebob,'spongebob,'spongebob,'spongebob), 0),
+      minimum_spawn_policy = UserDefinableSpawnPolicy(0)
+    )
 
-    def which_one2(text: String) = a.CheckboxQuestion { q =>
-      q.confidence = confidence
-      q.budget = 8.00
-      q.text = text
-      q.options = List(
-        a.Option('oscar, "Oscar the Grouch"),
-        a.Option('kermit, "Kermit the Frog"),
-        a.Option('spongebob, "Spongebob Squarepants"),
-        a.Option('cookie, "Cookie Monster"),
-        a.Option('count, "The Count")
-      )
-      q.mock_answers = makeMocksAt(List(Set('spongebob,'count),Set('spongebob),Set('count,'spongebob),Set('count,'spongebob)), 0)
-      q.minimum_spawn_policy = UserDefinableSpawnPolicy(0)
-    }
+    def which_one2(text: String) = checkbox (
+      confidence = confidence,
+      budget = 8.00,
+      text = text,
+      options = List(
+        mt.Option('oscar, "Oscar the Grouch"),
+        mt.Option('kermit, "Kermit the Frog"),
+        mt.Option('spongebob, "Spongebob Squarepants"),
+        mt.Option('cookie, "Cookie Monster"),
+        mt.Option('count, "The Count")
+      ),
+      mock_answers = makeMocksAt(List(Set('spongebob,'count),Set('spongebob),Set('count,'spongebob),Set('count,'spongebob)), 0),
+      minimum_spawn_policy = UserDefinableSpawnPolicy(0)
+    )
 
-    automan(a, test_mode = true, in_mem_db = true) {
+    automan(mt, test_mode = true, in_mem_db = true) {
       which_one().answer match {
         case Answer(value, _, conf, _, _) =>
           println("Answer: '" + value + "', confidence: " + conf)
@@ -78,7 +78,7 @@ class MemoSnapshotTest extends FlatSpec with Matchers {
           fail()
       }
 
-      val snap = a.state_snapshot()
+      val snap = mt.state_snapshot()
       snap.size >= 5 && snap.size <= 7 should be (true)
     }
   }

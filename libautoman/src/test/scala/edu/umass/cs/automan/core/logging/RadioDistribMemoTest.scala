@@ -11,13 +11,13 @@ class RadioDistribMemoTest extends FlatSpec with Matchers {
   "A radio button distribution program" should "correctly recall answers at no cost" in {
     val confidence = 0.95
 
-    val a = MTurkAdapter { mt =>
-      mt.access_key_id = UUID.randomUUID().toString
-      mt.secret_access_key = UUID.randomUUID().toString
-      mt.use_mock = MockSetup(budget = 8.00)
-      mt.logging = LogConfig.TRACE_MEMOIZE_VERBOSE
-      mt.log_verbosity = LogLevelDebug()
-    }
+    implicit val mt = mturk (
+      access_key_id = UUID.randomUUID().toString,
+      secret_access_key = UUID.randomUUID().toString,
+      use_mock = MockSetup(budget = 8.00),
+      logging = LogConfig.TRACE_MEMOIZE_VERBOSE,
+      log_verbosity = LogLevelDebug()
+    )
 
     // test params
     val sample_size = 30
@@ -27,35 +27,35 @@ class RadioDistribMemoTest extends FlatSpec with Matchers {
       sample_size
     ).toList
 
-    def which_one(text: String) = a.RadioButtonDistributionQuestion { q =>
-      q.sample_size = sample_size
-      q.budget = 8.00
-      q.text = text
-      q.options = List(
-        a.Option('oscar, "Oscar the Grouch"),
-        a.Option('kermit, "Kermit the Frog"),
-        a.Option('spongebob, "Spongebob Squarepants"),
-        a.Option('cookie, "Cookie Monster"),
-        a.Option('count, "The Count")
-      )
-      q.mock_answers = makeMocksAt(mock_answers.toList, 0)
-    }
+    def which_one(text: String) = radios (
+      sample_size = sample_size,
+      budget = 8.00,
+      text = text,
+      options = List(
+        mt.Option('oscar, "Oscar the Grouch"),
+        mt.Option('kermit, "Kermit the Frog"),
+        mt.Option('spongebob, "Spongebob Squarepants"),
+        mt.Option('cookie, "Cookie Monster"),
+        mt.Option('count, "The Count")
+      ),
+      mock_answers = makeMocksAt(mock_answers.toList, 0)
+    )
 
-    def which_one2(text: String) = a.RadioButtonDistributionQuestion { q =>
-      q.sample_size = sample_size
-      q.budget = 8.00
-      q.text = text
-      q.options = List(
-        a.Option('oscar, "Oscar the Grouch"),
-        a.Option('kermit, "Kermit the Frog"),
-        a.Option('spongebob, "Spongebob Squarepants"),
-        a.Option('cookie, "Cookie Monster"),
-        a.Option('count, "The Count")
-      )
-      q.mock_answers = List()
-    }
+    def which_one2(text: String) = radios (
+      sample_size = sample_size,
+      budget = 8.00,
+      text = text,
+      options = List(
+        mt.Option('oscar, "Oscar the Grouch"),
+        mt.Option('kermit, "Kermit the Frog"),
+        mt.Option('spongebob, "Spongebob Squarepants"),
+        mt.Option('cookie, "Cookie Monster"),
+        mt.Option('count, "The Count")
+      ),
+      mock_answers = List()
+    )
 
-    automan(a, test_mode = true, in_mem_db = true) {
+    automan(mt, test_mode = true, in_mem_db = true) {
       which_one("Which one of these does not belong?").answer match {
         case Answers(values, cost, _, _) =>
           println("Answer: '" + value + "', cost: '" + cost + "'")

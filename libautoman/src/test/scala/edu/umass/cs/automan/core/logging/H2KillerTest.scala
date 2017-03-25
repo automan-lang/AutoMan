@@ -29,24 +29,24 @@ class H2KillerTest extends FlatSpec with Matchers {
 
     def getMockList: List[MockAnswer[Double]] = makeMocks[Double](rng.shuffle(mock_answers))
 
-    val a = MTurkAdapter { mt =>
-      mt.access_key_id = UUID.randomUUID().toString
-      mt.secret_access_key = UUID.randomUUID().toString
-      mt.use_mock = MockSetup(budget = 8.00)
-      mt.logging = LogConfig.TRACE_MEMOIZE_VERBOSE
-      mt.log_verbosity = LogLevelDebug()
-    }
+    implicit val mt = mturk (
+      access_key_id = UUID.randomUUID().toString,
+      secret_access_key = UUID.randomUUID().toString,
+      use_mock = MockSetup(budget = 8.00),
+      logging = LogConfig.TRACE_MEMOIZE_VERBOSE,
+      log_verbosity = LogLevelDebug()
+    )
 
-    def countJellies(i: Int) = a.EstimationQuestion { q =>
-      q.confidence = 0.95
-      q.budget = dollar_budget
-      q.wage = wage
-      q.text = s"${i}. How many jelly beans are in this jar?"
-      q.confidence_interval = SymmetricCI(50)
-      q.mock_answers = getMockList
-    }
+    def countJellies(i: Int) = estimate (
+      confidence = 0.95,
+      budget = dollar_budget,
+      wage = wage,
+      text = s"${i}. How many jelly beans are in this jar?",
+      confidence_interval = SymmetricCI(50),
+      mock_answers = getMockList
+    )
 
-    automan(a, test_mode = true, in_mem_db = true) {
+    automan(mt, test_mode = true, in_mem_db = true) {
       try {
         val answers = (0 until 15).map { i => countJellies(i) }.toArray
 

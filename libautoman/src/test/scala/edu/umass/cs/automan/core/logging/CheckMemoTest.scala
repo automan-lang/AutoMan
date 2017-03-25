@@ -11,43 +11,49 @@ class CheckMemoTest extends FlatSpec with Matchers {
   "A checkbox program" should "correctly recall answers at no cost" in {
     val confidence = 0.95
 
-    val a = MTurkAdapter { mt =>
-      mt.access_key_id = UUID.randomUUID().toString
-      mt.secret_access_key = UUID.randomUUID().toString
-      mt.use_mock = MockSetup(budget = 8.00)
-      mt.logging = LogConfig.TRACE_MEMOIZE_VERBOSE
-      mt.log_verbosity = LogLevelDebug()
-    }
+    implicit val mt = mturk (
+      access_key_id = UUID.randomUUID().toString,
+      secret_access_key = UUID.randomUUID().toString,
+      use_mock = MockSetup(budget = 8.00),
+      logging = LogConfig.TRACE_MEMOIZE_VERBOSE,
+      log_verbosity = LogLevelDebug()
+    )
 
-    def which_one(text: String) = a.CheckboxQuestion { q =>
-      q.confidence = confidence
-      q.budget = 8.00
-      q.text = text
-      q.options = List(
-        a.Option('oscar, "Oscar the Grouch"),
-        a.Option('kermit, "Kermit the Frog"),
-        a.Option('spongebob, "Spongebob Squarepants"),
-        a.Option('cookie, "Cookie Monster"),
-        a.Option('count, "The Count")
-      )
-      q.mock_answers = makeMocksAt(List(Set('spongebob,'count),Set('spongebob),Set('count,'spongebob),Set('count,'spongebob)), 0)
-    }
+    def which_one(text: String) = checkbox (
+      confidence = confidence,
+      budget = 8.00,
+      text = text,
+      options = List(
+        mt.Option('oscar, "Oscar the Grouch"),
+        mt.Option('kermit, "Kermit the Frog"),
+        mt.Option('spongebob, "Spongebob Squarepants"),
+        mt.Option('cookie, "Cookie Monster"),
+        mt.Option('count, "The Count")
+      ),
+      mock_answers = makeMocksAt(
+        List(
+          Set('spongebob,'count),
+          Set('spongebob),
+          Set('count,'spongebob),
+          Set('count,'spongebob)
+        ), 0)
+    )
 
-    def which_one2(text: String) = a.CheckboxQuestion { q =>
-      q.confidence = confidence
-      q.budget = 8.00
-      q.text = text
-      q.options = List(
-        a.Option('oscar, "Oscar the Grouch"),
-        a.Option('kermit, "Kermit the Frog"),
-        a.Option('spongebob, "Spongebob Squarepants"),
-        a.Option('cookie, "Cookie Monster"),
-        a.Option('count, "The Count")
-      )
-      q.mock_answers = List()
-    }
+    def which_one2(text: String) = checkbox (
+      confidence = confidence,
+      budget = 8.00,
+      text = text,
+      options = List(
+        mt.Option('oscar, "Oscar the Grouch"),
+        mt.Option('kermit, "Kermit the Frog"),
+        mt.Option('spongebob, "Spongebob Squarepants"),
+        mt.Option('cookie, "Cookie Monster"),
+        mt.Option('count, "The Count")
+      ),
+      mock_answers = List()
+    )
 
-    automan(a, test_mode = true, in_mem_db = true) {
+    automan(mt, test_mode = true, in_mem_db = true) {
       which_one("Which characters are not Oscar, Kermit, or Cookie Monster?").answer match {
         case Answer(value, cost, conf, _, _) =>
           println("Answer: '" + value + "', confidence: " + conf)

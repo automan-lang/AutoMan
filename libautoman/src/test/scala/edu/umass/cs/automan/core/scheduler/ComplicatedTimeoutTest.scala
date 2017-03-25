@@ -10,28 +10,28 @@ import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 
 class ComplicatedTimeoutTest extends FlatSpec with Matchers {
   "A radio button program" should "timeout and a bunch of stuff should happen" in {
-    val a = MTurkAdapter { mt =>
-      mt.access_key_id = UUID.randomUUID().toString
-      mt.secret_access_key = UUID.randomUUID().toString
-      mt.use_mock = MockSetup(budget = 8.00)
-      mt.logging = LogConfig.NO_LOGGING
-      mt.log_verbosity = LogLevelDebug()
-    }
+    implicit val a = mturk (
+      access_key_id = UUID.randomUUID().toString,
+      secret_access_key = UUID.randomUUID().toString,
+      use_mock = MockSetup(budget = 8.00),
+      logging = LogConfig.NO_LOGGING,
+      log_verbosity = LogLevelDebug()
+    )
 
-    def which_one() = a.RadioButtonQuestion { q =>
-      q.budget = 10.00
-      q.text = "ComplicatedTimeoutTest?"
+    def which_one() = radio (
+      budget = 10.00,
+      text = "ComplicatedTimeoutTest?",
       // make sure that this task times out after exactly 30s
-      q.initial_worker_timeout_in_s = 30
-      q.question_timeout_multiplier = 1
-      q.options = List(
+      initial_worker_timeout_in_s = 30,
+      question_timeout_multiplier = 1,
+      options = List(
         a.Option('z, "Z"),
         a.Option('zz, "ZZ"),
         a.Option('a, "A"),
         a.Option('zzz, "ZZZ"),
         a.Option('zzzz, "ZZZZ")
-      )
-      q.mock_answers = makeTimedMocks(
+      ),
+      mock_answers = makeTimedMocks(
         List(
           ('a,     0),
           ('z,     1),
@@ -52,9 +52,9 @@ class ComplicatedTimeoutTest extends FlatSpec with Matchers {
           ('a,    65),
           ('a,    65)
         )
-      )
-      q.minimum_spawn_policy = UserDefinableSpawnPolicy(0)
-    }
+      ),
+      minimum_spawn_policy = UserDefinableSpawnPolicy(0)
+    )
 
     automan(a, test_mode = true) {
       which_one().answer match {

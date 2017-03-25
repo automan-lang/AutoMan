@@ -20,46 +20,46 @@ class MemoPathTest extends FlatSpec with Matchers {
 
     val confidence = 0.95
 
-    val a = MTurkAdapter { mt =>
-      mt.access_key_id = UUID.randomUUID().toString
-      mt.secret_access_key = UUID.randomUUID().toString
-      mt.use_mock = MockSetup(budget = 8.00)
-      mt.logging = LogConfig.TRACE_MEMOIZE_VERBOSE
-      mt.database_path = db_path
-      mt.log_verbosity = LogLevelDebug()
-    }
+    implicit val mt = mturk (
+      access_key_id = UUID.randomUUID().toString,
+      secret_access_key = UUID.randomUUID().toString,
+      use_mock = MockSetup(budget = 8.00),
+      logging = LogConfig.TRACE_MEMOIZE_VERBOSE,
+      database_path = db_path,
+      log_verbosity = LogLevelDebug()
+    )
 
-    def which_one(text: String) = a.CheckboxQuestion { q =>
-      q.confidence = confidence
-      q.budget = 8.00
-      q.text = text
-      q.options = List(
-        a.Option('oscar, "Oscar the Grouch"),
-        a.Option('kermit, "Kermit the Frog"),
-        a.Option('spongebob, "Spongebob Squarepants"),
-        a.Option('cookie, "Cookie Monster"),
-        a.Option('count, "The Count")
-      )
-      q.mock_answers = makeMocksAt(List(Set('spongebob,'count),Set('spongebob),Set('count,'spongebob),Set('count,'spongebob)), 0)
-    }
+    def which_one(text: String) = checkbox (
+      confidence = confidence,
+      budget = 8.00,
+      text = text,
+      options = List(
+        mt.Option('oscar, "Oscar the Grouch"),
+        mt.Option('kermit, "Kermit the Frog"),
+        mt.Option('spongebob, "Spongebob Squarepants"),
+        mt.Option('cookie, "Cookie Monster"),
+        mt.Option('count, "The Count")
+      ),
+      mock_answers = makeMocksAt(List(Set('spongebob,'count),Set('spongebob),Set('count,'spongebob),Set('count,'spongebob)), 0)
+    )
 
-    def which_one2(text: String) = a.CheckboxQuestion { q =>
-      q.confidence = confidence
-      q.budget = 8.00
-      q.text = text
-      q.options = List(
-        a.Option('oscar, "Oscar the Grouch"),
-        a.Option('kermit, "Kermit the Frog"),
-        a.Option('spongebob, "Spongebob Squarepants"),
-        a.Option('cookie, "Cookie Monster"),
-        a.Option('count, "The Count")
-      )
-      q.mock_answers = List()
-    }
+    def which_one2(text: String) = checkbox (
+      confidence = confidence,
+      budget = 8.00,
+      text = text,
+      options = List(
+        mt.Option('oscar, "Oscar the Grouch"),
+        mt.Option('kermit, "Kermit the Frog"),
+        mt.Option('spongebob, "Spongebob Squarepants"),
+        mt.Option('cookie, "Cookie Monster"),
+        mt.Option('count, "The Count")
+      ),
+      mock_answers = List()
+    )
 
     // test_mode MUST be false here in order to preserve
     // the user-defined DB name above
-    automan(a, test_mode = false, in_mem_db = false) {
+    automan(mt, test_mode = false, in_mem_db = false) {
       which_one("Which characters are not Oscar, Kermit, or Cookie Monster?").answer match {
         case Answer(ans, cost, conf, _, _) =>
           println(s"Answer: $ans, cost: ${'$' + cost.toString}, confidence: $conf")
@@ -83,6 +83,6 @@ class MemoPathTest extends FlatSpec with Matchers {
     }
 
     // delete database
-    a.memo_delete()
+    mt.memo_delete()
   }
 }
