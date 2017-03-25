@@ -14,25 +14,25 @@ class MTurkEstimationTestSymmetricCI extends FlatSpec with Matchers {
     val confidence = 0.95
     val ci = SymmetricCI(50)
 
-    val a = MTurkAdapter { mt =>
-      mt.access_key_id = UUID.randomUUID().toString
-      mt.secret_access_key = UUID.randomUUID().toString
-      mt.use_mock = MockSetup(budget = 8.00)
-      mt.logging = LogConfig.NO_LOGGING
-      mt.log_verbosity = LogLevelDebug()
-    }
+    implicit val mt = mturk (
+      access_key_id = UUID.randomUUID().toString,
+      secret_access_key = UUID.randomUUID().toString,
+      use_mock = MockSetup(budget = 8.00),
+      logging = LogConfig.NO_LOGGING,
+      log_verbosity = LogLevelDebug()
+    )
 
-    automan(a, test_mode = true) {
-      def jellyBeanCount() = a.EstimationQuestion { q =>
-        q.confidence = confidence
-        q.budget = 8.00
-        q.text = "How many jelly beans are in this jar?"
-        q.confidence_interval = ci
+    automan(mt, test_mode = true) {
+      def jellyBeanCount() = estimate (
+        confidence = confidence,
+        budget = 8.00,
+        text = "How many jelly beans are in this jar?",
+        confidence_interval = ci,
         // from R using rnorm(500, mean = 633, sd = 100)
         // mean = 623.87
         // n = 500
         // sd = 99.1885
-        q.mock_answers = makeMocks(630,656,598,586,607,629,715,632,645,670,
+        mock_answers = makeMocks(630,656,598,586,607,629,715,632,645,670,
           444,511,568,582,634,690,733,502,623,447,688,650,728,560,529,679,
           829,607,436,524,583,727,571,719,747,655,660,642,519,534,530,743,
           712,764,703,658,660,598,521,533,609,547,742,696,796,489,471,593,
@@ -64,7 +64,7 @@ class MTurkEstimationTestSymmetricCI extends FlatSpec with Matchers {
           321,541,715,624,600,788,647,647,700,624,632,642,675,552,681,577,
           669,512,562,487,635,783,740,659,671,559,639,764,668,684,512,587,
           603,696,610,727,788,611,582,636,650,761)
-      }
+      )
 
       jellyBeanCount().answer match {
         case Estimate(est, low, high, cost, conf, _, _) =>

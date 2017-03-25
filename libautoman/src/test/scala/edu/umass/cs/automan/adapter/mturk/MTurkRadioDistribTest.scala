@@ -10,13 +10,13 @@ import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 class MTurkRadioDistribTest extends FlatSpec with Matchers {
 
   "A radio button distribution program" should "work" in {
-    val a = MTurkAdapter { mt =>
-      mt.access_key_id = UUID.randomUUID().toString
-      mt.secret_access_key = UUID.randomUUID().toString
-      mt.use_mock = MockSetup(budget = 8.00)
-      mt.logging = LogConfig.NO_LOGGING
-      mt.log_verbosity = LogLevelDebug()
-    }
+    implicit val mt = mturk (
+      access_key_id = UUID.randomUUID().toString,
+      secret_access_key = UUID.randomUUID().toString,
+      use_mock = MockSetup(budget = 8.00),
+      logging = LogConfig.NO_LOGGING,
+      log_verbosity = LogLevelDebug()
+    )
 
     val sample_size = 30
 
@@ -26,21 +26,21 @@ class MTurkRadioDistribTest extends FlatSpec with Matchers {
       sample_size
     ).toList
 
-    def which_one() = a.RadioButtonDistributionQuestion { q =>
-      q.sample_size = sample_size
-      q.budget = 8.00
-      q.text = "Which one of these does not belong?"
-      q.options = List(
-        a.Option('oscar, "Oscar the Grouch"),
-        a.Option('kermit, "Kermit the Frog"),
-        a.Option('spongebob, "Spongebob Squarepants"),
-        a.Option('cookie, "Cookie Monster"),
-        a.Option('count, "The Count")
-      )
-      q.mock_answers = makeMocks(mock_answers.toList)
-    }
+    def which_one() = radios (
+      sample_size = sample_size,
+      budget = 8.00,
+      text = "Which one of these does not belong?",
+      options = List(
+        mt.Option('oscar, "Oscar the Grouch"),
+        mt.Option('kermit, "Kermit the Frog"),
+        mt.Option('spongebob, "Spongebob Squarepants"),
+        mt.Option('cookie, "Cookie Monster"),
+        mt.Option('count, "The Count")
+      ),
+      mock_answers = makeMocks(mock_answers.toList)
+    )
 
-    automan(a, test_mode = true) {
+    automan(mt, test_mode = true) {
       which_one().answer match {
         case Answers(values, cost, _, _) =>
           compareDistributions(mock_answers, values) should be (true)

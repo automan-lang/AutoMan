@@ -12,22 +12,22 @@ class MTurkFreeTextTest extends FlatSpec with Matchers {
   "A freetext program" should "work" in {
     val confidence = 0.95
 
-    val a = MTurkAdapter { mt =>
-      mt.access_key_id = UUID.randomUUID().toString
-      mt.secret_access_key = UUID.randomUUID().toString
-      mt.use_mock = MockSetup(budget = 8.00)
-      mt.logging = LogConfig.NO_LOGGING
-      mt.log_verbosity = LogLevelDebug()
-    }
+    implicit val mt = mturk (
+      access_key_id = UUID.randomUUID().toString,
+      secret_access_key = UUID.randomUUID().toString,
+      use_mock = MockSetup(budget = 8.00),
+      logging = LogConfig.NO_LOGGING,
+      log_verbosity = LogLevelDebug()
+    )
 
-    automan(a, test_mode = true) {
-      def which_one() = a.FreeTextQuestion { q =>
-        q.confidence = 0.95
-        q.budget = 8.00
-        q.text = "Which 4-letter metasyntactic variable starts with 'q'?"
-        q.pattern = "AAAA"
-        q.mock_answers = makeMocks(List("quux","foo","bar","norf","quux","quux"))
-      }
+    automan(mt, test_mode = true) {
+      def which_one() = freetext (
+        confidence = 0.95,
+        budget = 8.00,
+        text = "Which 4-letter metasyntactic variable starts with 'q'?",
+        pattern = "AAAA",
+        mock_answers = makeMocks(List("quux","foo","bar","norf","quux","quux"))
+      )
 
       which_one().answer match {
         case Answer(value, _, conf, _, _) =>

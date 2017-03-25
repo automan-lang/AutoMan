@@ -51,16 +51,16 @@ class MTurkMultiEstimationTestSymmetricCI extends FlatSpec with Matchers {
       669,512,562,487,635,783,740,659,671,559,639,764,668,684,512,587,
       603,696,610,727,788,611,582,636,650,761)
 
-    val a = MTurkAdapter { mt =>
-      mt.access_key_id = UUID.randomUUID().toString
-      mt.secret_access_key = UUID.randomUUID().toString
-      mt.use_mock = MockSetup(budget = 8.00)
-      mt.logging = LogConfig.NO_LOGGING
-      mt.log_verbosity = LogLevelDebug()
-    }
+    implicit val mt = mturk (
+      access_key_id = UUID.randomUUID().toString,
+      secret_access_key = UUID.randomUUID().toString,
+      use_mock = MockSetup(budget = 8.00),
+      logging = LogConfig.NO_LOGGING,
+      log_verbosity = LogLevelDebug()
+    )
 
-    automan(a, test_mode = true, in_mem_db = true) {
-      def jellyBeanCount() = a.MultiEstimationQuestion { q =>
+    automan(mt, test_mode = true, in_mem_db = true) {
+      def jellyBeanCount() = mt.MultiEstimationQuestion { q =>
         q.confidence = confidence
         q.budget = 8.00
         q.text = "How many jelly beans are in each jar?"

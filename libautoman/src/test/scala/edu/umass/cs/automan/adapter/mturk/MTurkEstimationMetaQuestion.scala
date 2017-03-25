@@ -17,27 +17,28 @@ class MTurkEstimationMetaQuestion extends RetryOnceTest {
     val ci = SymmetricCI(50)
     val rng = new Random()
 
-    implicit val a = MTurkAdapter { mt =>
-      mt.access_key_id = UUID.randomUUID().toString
-      mt.secret_access_key = UUID.randomUUID().toString
-      mt.use_mock = MockSetup(budget = 8.00)
-      mt.logging = LogConfig.NO_LOGGING
-      mt.log_verbosity = LogLevelDebug()
-    }
+    implicit val mt = mturk (
+      access_key_id = UUID.randomUUID().toString,
+      secret_access_key = UUID.randomUUID().toString,
+      use_mock = MockSetup(budget = 8.00),
+      logging = LogConfig.NO_LOGGING,
+      log_verbosity = LogLevelDebug()
+    )
 
-    automan(a, test_mode = true) {
-      def candyCount(things: String) = a.EstimationQuestion { q =>
-        q.confidence = confidence
-        q.budget = 8.00
-        q.text = s"How many $things are in my belly?"
-        q.confidence_interval = ci
-        val n = 500
-        val sd = 100
-        val mean = 633
-        q.mock_answers = makeMocks((0 until n).map {
+    automan(mt, test_mode = true) {
+      val n = 500
+      val sd = 100
+      val mean = 633
+
+      def candyCount(things: String) = estimate (
+        confidence = confidence,
+        budget = 8.00,
+        text = s"How many $things are in my belly?",
+        confidence_interval = ci,
+        mock_answers = makeMocks((0 until n).map {
           i => rng.nextGaussian() * sd + mean
         }.toList)
-      }
+      )
 
       val combinedCount = candyCount("jelly beans").combineWith(candyCount("M&Ms"))(e1 => e2 => e1 + e2)
 
