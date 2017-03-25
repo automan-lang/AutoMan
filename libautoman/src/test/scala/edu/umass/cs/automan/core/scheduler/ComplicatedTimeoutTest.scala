@@ -10,7 +10,7 @@ import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 
 class ComplicatedTimeoutTest extends FlatSpec with Matchers {
   "A radio button program" should "timeout and a bunch of stuff should happen" in {
-    implicit val a = mturk (
+    implicit val mt = mturk (
       access_key_id = UUID.randomUUID().toString,
       secret_access_key = UUID.randomUUID().toString,
       use_mock = MockSetup(budget = 8.00),
@@ -25,11 +25,11 @@ class ComplicatedTimeoutTest extends FlatSpec with Matchers {
       initial_worker_timeout_in_s = 30,
       question_timeout_multiplier = 1,
       options = List(
-        a.Option('z, "Z"),
-        a.Option('zz, "ZZ"),
-        a.Option('a, "A"),
-        a.Option('zzz, "ZZZ"),
-        a.Option('zzzz, "ZZZZ")
+        choice('z, "Z"),
+        choice('zz, "ZZ"),
+        choice('a, "A"),
+        choice('zzz, "ZZZ"),
+        choice('zzzz, "ZZZZ")
       ),
       mock_answers = makeTimedMocks(
         List(
@@ -56,7 +56,7 @@ class ComplicatedTimeoutTest extends FlatSpec with Matchers {
       minimum_spawn_policy = UserDefinableSpawnPolicy(0)
     )
 
-    automan(a, test_mode = true) {
+    automan(mt, test_mode = true) {
       which_one().answer match {
         case Answer(ans, cost, conf, qid, _) =>
           println("question_id = " + qid + ", Answer: '" + ans + "', cost: '" + cost + "', confidence: " + conf)

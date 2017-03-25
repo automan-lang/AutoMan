@@ -1,6 +1,7 @@
 package edu.umass.cs.automan.adapters.mturk
 
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
+import edu.umass.cs.automan.adapters.mturk.question.MTQuestionOption
 import edu.umass.cs.automan.core.logging.LogConfig.LogConfig
 import edu.umass.cs.automan.core.logging.{LogLevel, LogLevelInfo}
 
@@ -28,5 +29,13 @@ object DSL extends edu.umass.cs.automan.core.DSL {
     }
 
     MTurkAdapter(initf)
+  }
+
+  def choice(key: Symbol, text: String)(mt: MTurkAdapter) : MTQuestionOption = {
+    mt.Option(key, text)
+  }
+
+  def choice(key: Symbol, text: String, image_url: String)(mt: MTurkAdapter) : MTQuestionOption = {
+    mt.Option(key, text, image_url)
   }
 }

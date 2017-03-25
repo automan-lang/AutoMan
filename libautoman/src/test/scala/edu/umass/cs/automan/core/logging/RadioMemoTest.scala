@@ -12,7 +12,7 @@ class RadioMemoTest extends FlatSpec with Matchers {
   "A radio button program" should "correctly recall answers at no cost" in {
     val confidence = 0.95
 
-    implicit val a = mturk (
+    implicit val mt = mturk (
       access_key_id = UUID.randomUUID().toString,
       secret_access_key = UUID.randomUUID().toString,
       use_mock = MockSetup(budget = 8.00),
@@ -25,11 +25,11 @@ class RadioMemoTest extends FlatSpec with Matchers {
       budget = 8.00,
       text = text,
       options = List(
-        a.Option('oscar, "Oscar the Grouch"),
-        a.Option('kermit, "Kermit the Frog"),
-        a.Option('spongebob, "Spongebob Squarepants"),
-        a.Option('cookie, "Cookie Monster"),
-        a.Option('count, "The Count")
+        choice('oscar, "Oscar the Grouch"),
+        choice('kermit, "Kermit the Frog"),
+        choice('spongebob, "Spongebob Squarepants"),
+        choice('cookie, "Cookie Monster"),
+        choice('count, "The Count")
       ),
       mock_answers = makeMocksAt(List('spongebob,'spongebob,'spongebob,'spongebob,'spongebob,'spongebob), 0),
       minimum_spawn_policy = UserDefinableSpawnPolicy(0)
@@ -40,17 +40,17 @@ class RadioMemoTest extends FlatSpec with Matchers {
       budget = 8.00,
       text = text,
       options = List(
-        a.Option('oscar, "Oscar the Grouch"),
-        a.Option('kermit, "Kermit the Frog"),
-        a.Option('spongebob, "Spongebob Squarepants"),
-        a.Option('cookie, "Cookie Monster"),
-        a.Option('count, "The Count")
+        choice('oscar, "Oscar the Grouch"),
+        choice('kermit, "Kermit the Frog"),
+        choice('spongebob, "Spongebob Squarepants"),
+        choice('cookie, "Cookie Monster"),
+        choice('count, "The Count")
       ),
       mock_answers = List(),
       minimum_spawn_policy = UserDefinableSpawnPolicy(0)
     )
 
-    automan(a, test_mode = true, in_mem_db = true) {
+    automan(mt, test_mode = true, in_mem_db = true) {
       which_one("Which one of these does not belong?").answer match {
         case Answer(value, cost, conf, _, _) =>
           println("Answer: '" + value + "', cost: '" + cost + "', confidence: " + conf)

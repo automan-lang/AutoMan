@@ -21,11 +21,11 @@ class OverBudgetTest extends FlatSpec with Matchers {
       budget = 0.00,
       text = "Which one of these does not belong?",
       options = List(
-        mt.Option('oscar, "Oscar the Grouch"),
-        mt.Option('kermit, "Kermit the Frog"),
-        mt.Option('spongebob, "Spongebob Squarepants"),
-        mt.Option('cookie, "Cookie Monster"),
-        mt.Option('count, "The Count")
+        choice('oscar, "Oscar the Grouch"),
+        choice('kermit, "Kermit the Frog"),
+        choice('spongebob, "Spongebob Squarepants"),
+        choice('cookie, "Cookie Monster"),
+        choice('count, "The Count")
       ),
       mock_answers = makeMocks(List('spongebob,'spongebob,'spongebob,'spongebob))
     )

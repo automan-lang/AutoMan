@@ -24,11 +24,11 @@ class CheckMemoTest extends FlatSpec with Matchers {
       budget = 8.00,
       text = text,
       options = List(
-        mt.Option('oscar, "Oscar the Grouch"),
-        mt.Option('kermit, "Kermit the Frog"),
-        mt.Option('spongebob, "Spongebob Squarepants"),
-        mt.Option('cookie, "Cookie Monster"),
-        mt.Option('count, "The Count")
+        choice('oscar, "Oscar the Grouch"),
+        choice('kermit, "Kermit the Frog"),
+        choice('spongebob, "Spongebob Squarepants"),
+        choice('cookie, "Cookie Monster"),
+        choice('count, "The Count")
       ),
       mock_answers = makeMocksAt(
         List(
@@ -44,11 +44,11 @@ class CheckMemoTest extends FlatSpec with Matchers {
       budget = 8.00,
       text = text,
       options = List(
-        mt.Option('oscar, "Oscar the Grouch"),
-        mt.Option('kermit, "Kermit the Frog"),
-        mt.Option('spongebob, "Spongebob Squarepants"),
-        mt.Option('cookie, "Cookie Monster"),
-        mt.Option('count, "The Count")
+        choice('oscar, "Oscar the Grouch"),
+        choice('kermit, "Kermit the Frog"),
+        choice('spongebob, "Spongebob Squarepants"),
+        choice('cookie, "Cookie Monster"),
+        choice('count, "The Count")
       ),
       mock_answers = List()
     )

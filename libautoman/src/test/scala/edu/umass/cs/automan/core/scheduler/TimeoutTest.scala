@@ -25,11 +25,11 @@ class TimeoutTest extends FlatSpec with Matchers {
       initial_worker_timeout_in_s = 30,
       question_timeout_multiplier = 1,
       options = List(
-        mt.Option('oscar, "Oscar the Grouch"),
-        mt.Option('kermit, "Kermit the Frog"),
-        mt.Option('spongebob, "Spongebob Squarepants"),
-        mt.Option('cookie, "Cookie Monster"),
-        mt.Option('count, "The Count")
+        choice('oscar, "Oscar the Grouch"),
+        choice('kermit, "Kermit the Frog"),
+        choice('spongebob, "Spongebob Squarepants"),
+        choice('cookie, "Cookie Monster"),
+        choice('count, "The Count")
       ),
       mock_answers = makeTimedMocks(
         List(
