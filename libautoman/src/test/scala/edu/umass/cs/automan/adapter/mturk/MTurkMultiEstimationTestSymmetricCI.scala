@@ -60,17 +60,17 @@ class MTurkMultiEstimationTestSymmetricCI extends FlatSpec with Matchers {
     )
 
     automan(mt, test_mode = true, in_mem_db = true) {
-      def jellyBeanCount() = mt.MultiEstimationQuestion { q =>
-        q.confidence = confidence
-        q.budget = 8.00
-        q.text = "How many jelly beans are in each jar?"
-        q.dimensions = Array(
+      def jellyBeanCount() = multiestimate (
+        confidence = confidence,
+        budget = 8.00,
+        text = "How many jelly beans are in each jar?",
+        dimensions = Array(
           Dim(id = 'jar1, confidence_interval = ci),
           Dim(id = 'jar2, confidence_interval = ci),
           Dim(id = 'jar3, confidence_interval = ci)
-        )
-        q.mock_answers = makeMultiMocks(responses, 3)
-      }
+        ),
+        mock_answers = makeMultiMocks(responses, 3)
+      )
 
       jellyBeanCount().answer match {
         case MultiEstimate(ests, lows, highs, cost, conf, _, _) =>

@@ -1,10 +1,10 @@
 package edu.umass.cs.automan.core
 
-import edu.umass.cs.automan.core.answer.{EstimationOutcome, ScalarOutcome, VectorOutcome}
-import edu.umass.cs.automan.core.mock.MockAnswer
-import edu.umass.cs.automan.core.policy.aggregation.MinimumSpawnPolicy
+import edu.umass.cs.automan.core.answer._
 import edu.umass.cs.automan.core.question._
-import edu.umass.cs.automan.core.question.confidence.ConfidenceInterval
+import edu.umass.cs.automan.core.question.confidence._
+import edu.umass.cs.automan.core.policy.aggregation._
+import edu.umass.cs.automan.core.mock._
 
 trait DSL {
   // to simplify imports
@@ -72,6 +72,50 @@ trait DSL {
       if (minimum_spawn_policy != null) { q.minimum_spawn_policy = minimum_spawn_policy }
     }
     a.EstimationQuestion(initf)
+  }
+
+  def multiestimate[A <: AutomanAdapter](
+                     dimensions: Array[Dimension],
+                     confidence: Double = MagicNumbers.DefaultConfidence,
+                     budget: BigDecimal = MagicNumbers.DefaultBudget,
+                     default_sample_size: Int = -1,
+                     dont_reject: Boolean = true,
+                     dry_run: Boolean = false,
+                     image_alt_text: String = null,
+                     image_url: String = null,
+                     initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
+                     minimum_spawn_policy: MinimumSpawnPolicy = null,
+                     mock_answers: Iterable[MockAnswer[Array[Double]]] = null,
+                     pay_all_on_failure: Boolean = true,
+                     question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
+                     text: String,
+                     title: String = null,
+                     wage: BigDecimal = MagicNumbers.USFederalMinimumWage
+                   )
+                   (implicit a: A) : MultiEstimationOutcome = {
+    def initf[Q <: MultiEstimationQuestion](q: Q) = {
+      // mandatory parameters
+      q.dimensions = dimensions
+      q.text = text
+
+      // mandatory parameters with sane defaults
+      q.confidence = confidence
+      q.budget = budget
+      q.dont_reject = dont_reject
+      q.dry_run = dry_run
+      q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
+      q.pay_all_on_failure = pay_all_on_failure
+      q.question_timeout_multiplier = question_timeout_multiplier
+
+      // optional parameters
+      if (default_sample_size != -1 && default_sample_size > 0) { q.default_sample_size = default_sample_size }
+      if (image_alt_text != null) { q.image_alt_text = image_alt_text }
+      if (image_url != null) { q.image_url = image_url }
+      if (title != null) { q.title = title }
+      if (mock_answers != null ) { q.mock_answers = mock_answers }
+      if (minimum_spawn_policy != null) { q.minimum_spawn_policy = minimum_spawn_policy }
+    }
+    a.MultiEstimationQuestion(initf)
   }
 
   def freetext[A <: AutomanAdapter](
