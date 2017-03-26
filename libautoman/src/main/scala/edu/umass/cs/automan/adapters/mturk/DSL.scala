@@ -31,11 +31,11 @@ object DSL extends edu.umass.cs.automan.core.DSL {
     MTurkAdapter(initf)
   }
 
-  def choice(key: Symbol, text: String)(mt: MTurkAdapter) : MTQuestionOption = {
+  def choice(key: Symbol, text: String)(implicit mt: MTurkAdapter) : MTQuestionOption = {
     mt.Option(key, text)
   }
 
-  def choice(key: Symbol, text: String, image_url: String)(mt: MTurkAdapter) : MTQuestionOption = {
+  def choice(key: Symbol, text: String, image_url: String)(implicit mt: MTurkAdapter) : MTQuestionOption = {
     mt.Option(key, text, image_url)
   }
 }
