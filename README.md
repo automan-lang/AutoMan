@@ -149,18 +149,36 @@ Unix/DOS shell scripts for running the programs can then be found in `apps/[the 
 
 ## More Information
 
-More detailed information is available in our paper:
+More detailed information is available in our papers:
 
-  AutoMan: A Platform for Integrating Human-Based and Digital Computation
-  Daniel W. Barowy, Charlie Curtsinger, Emery D. Berger, and Andrew McGregor
+  [AutoMan: A Platform for Integrating Human-Based and Digital Computation
+  Daniel W. Barowy, Charlie Curtsinger, Emery D. Berger, and Andrew McGregor](http://www.cs.umass.edu/~emery/pubs/res0007-barowy.pdf)
 
-  http://www.cs.umass.edu/~emery/pubs/res0007-barowy.pdf
+  [VoxPL: Programming with the Wisdom of the Crowd](http://barowy.net/papers/voxpl-chi.pdf)
 
-  There are two versions, a shortened Research Highlight that appeared in the June 2016 issue of the Communications of the ACM and a longer version that appeared at OOPSLA '12.  You should probably start with the CACM version which has a bit more polish and some updated results.
+  There are two versions of the original AutoMan paper, a shortened Research Highlight that appeared in the June 2016 issue of the Communications of the ACM and a longer version that appeared at OOPSLA '12.  You should probably start with the CACM version which has a bit more polish and some updated results.
 
   The full citations are given below:
 
 ```
+@inproceedings{Barowy:2017:VPW:3025453.3026025,
+ author = {Barowy, Daniel W. and Berger, Emery D. and Goldstein, Daniel G. and Suri, Siddharth},
+ title = {VoxPL: Programming with the Wisdom of the Crowd},
+ booktitle = {Proceedings of the 2017 CHI Conference on Human Factors in Computing Systems},
+ series = {CHI '17},
+ year = {2017},
+ isbn = {978-1-4503-4655-9},
+ location = {Denver, Colorado, USA},
+ pages = {2347--2358},
+ numpages = {12},
+ url = {http://doi.acm.org/10.1145/3025453.3026025},
+ doi = {10.1145/3025453.3026025},
+ acmid = {3026025},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {crowdprogramming, crowdsourcing, domain-specific languages, quality control, scalability, wisdom of the crowd},
+}
+
 @article{Barowy:2016:API:2942427.2927928,
  author = {Barowy, Daniel W. and Curtsinger, Charlie and Berger, Emery D. and McGregor, Andrew},
  title = {AutoMan: A Platform for Integrating Human-based and Digital Computation},
