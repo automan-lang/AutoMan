@@ -151,17 +151,15 @@ Unix/DOS shell scripts for running the programs can then be found in `apps/[the 
 
 More detailed information is available in our papers:
 
-  [AutoMan: A Platform for Integrating Human-Based and Digital Computation](http://www.cs.umass.edu/~emery/pubs/res0007-barowy.pdf)
-  
-  Daniel W. Barowy, Charlie Curtsinger, Emery D. Berger, and Andrew McGregor
-
-  [VoxPL: Programming with the Wisdom of the Crowd](http://barowy.net/papers/voxpl-chi.pdf)
-  
+  * [VoxPL: Programming with the Wisdom of the Crowd](http://barowy.net/papers/voxpl-chi.pdf)
   Daniel W. Barowy, Emery D. Berger, Daniel G. Goldstein, and Siddharth Suri
+  * [AutoMan: A Platform for Integrating Human-Based and Digital Computation (Research Highlight)](http://dl.acm.org/citation.cfm?id=2927928)
+  * [AutoMan: A Platform for Integrating Human-Based and Digital Computation](http://www.cs.umass.edu/~emery/pubs/res0007-barowy.pdf)
+  Daniel W. Barowy, Charlie Curtsinger, Emery D. Berger, and Andrew McGregor
 
   There are two versions of the original AutoMan paper, a shortened Research Highlight that appeared in the June 2016 issue of the Communications of the ACM and a longer version that appeared at OOPSLA '12.  You should probably start with the CACM version which has a bit more polish and some updated results.
 
-  The full citations are given below:
+  Full citations are given below:
 
 ```
 @inproceedings{Barowy:2017:VPW:3025453.3026025,
