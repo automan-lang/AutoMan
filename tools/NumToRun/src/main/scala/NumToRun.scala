@@ -18,5 +18,5 @@ object NumToRun extends App {
     }
   }
   
-  println(trials + " are needed to answer a " + choices + "-option question where " + agree + " people initially agree.")
+  println(trials + " are needed to answer a " + choices + "-option question where " + agree + " people initially agree for a confidence value of " + conf + ".")
 }
