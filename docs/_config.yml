@@ -20,7 +20,7 @@ download:
   url: https://mvnrepository.com/artifact/edu.umass.cs/automan_2.11
 
 # set this to true to replace the generated header navbar by _includes/navbar.html
-customNavBar: false
+customNavBar: true
 
 # list of additional links on the right of the top menu
 headerLinks:
@@ -46,9 +46,9 @@ analytics:
   domain:
 
 # github buttons
-githubButton:
-  user: dbarowy
-  repo: AutoMan
+#githubButton:
+#  user: dbarowy
+#  repo: AutoMan
 
 # twitter buttons
 twitter:
@@ -70,3 +70,7 @@ gems:
   - jemoji
   - jekyll-redirect-from
   - jekyll-sitemap
+
+collections:
+  pages:
+    output: true
