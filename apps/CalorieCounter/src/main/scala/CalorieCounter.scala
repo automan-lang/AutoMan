@@ -1,17 +1,15 @@
-//import edu.umass.cs.automan.adapters.mturk._
-import edu.umass.cs.automan.core.answer._
-import edu.umass.cs.automan.core.DSL._
+import edu.umass.cs.automan.adapters.mturk.DSL._
 
 object CalorieCounter extends App {
 
   val foodImg = "https://s3.amazonaws.com/edu-umass-cs-automan-2014-07-01-calorie/0715a58400d974009fa79368a05471ac.jpg"
   val opts = Utilities.unsafe_optparse(args, "CalorieCounter")
 
-  implicit val a = MTurkAdapter { mt =>
-    mt.access_key_id = opts('key)
-    mt.secret_access_key = opts('secret)
-    mt.sandbox_mode = opts('sandbox).toBoolean
-  }
+  implicit val mt = mturk (
+    access_key_id = opts('key),
+    secret_access_key = opts('secret),
+    sandbox_mode = opts('sandbox).toBoolean
+  )
 
   def howManyCals(imgUrl: String) = estimate (
     budget = 6.00,
@@ -22,7 +20,7 @@ object CalorieCounter extends App {
     min_value = 0
   )
 
-  automan(a) {
+  automan(mt) {
     howManyCals(foodImg).answer match {
       case e: Estimate =>
         println("Estimate: " + e.value + ", low: " + e.low +
