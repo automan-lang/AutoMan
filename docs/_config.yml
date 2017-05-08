@@ -1,0 +1,72 @@
+# username/repository
+id: dbarowy/AutoMan
+# name of the software
+name: AutoMan Documentation
+# current version of the software
+version: 1.2.0
+# licence of the software
+license: GPL v2.0
+licenseUrl: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
+# extension of the favicon, blank to disable
+favicon: png
+
+# download button
+# if download.popup is true, the download button will open a popup with several download options
+# otherwise it will simply open download.url and other options are ignored
+# if download.popup is true, any option is optional
+# download.cdn.img is optional
+download:
+  popup: false
+  url: https://mvnrepository.com/artifact/edu.umass.cs/automan_2.11
+
+# set this to true to replace the generated header navbar by _includes/navbar.html
+customNavBar: false
+
+# list of additional links on the right of the top menu
+headerLinks:
+  - title: GitHub
+    url: https://github.com/dbarowy/AutoMan
+
+# list if additional links on the footer
+footerLinks:
+  - title: GitHub
+    url: https://github.com/dbarowy/AutoMan
+  - title: Issues
+    url: https://github.com/dbarowy/AutoMan/issues
+
+# header
+header:
+  color1: "#080331"
+  color2: "#673051"
+  trianglify: true
+
+# google analytics
+analytics:
+  account:
+  domain:
+
+# github buttons
+githubButton:
+  user: dbarowy
+  repo: AutoMan
+
+# twitter buttons
+twitter:
+  enabled: false
+  via:
+  hash:
+  account:
+
+# facebook buttons
+facebook:
+  enabled: false
+  profileUrl:
+
+
+exclude: ['README.md', 'LICENSE', 'bower.json', 'Gemfile.lock', 'Gemfile']
+
+gems:
+  - jekyll-mentions
+  - jemoji
+  - jekyll-redirect-from
+  - jekyll-sitemap
