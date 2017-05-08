@@ -1,11 +1,14 @@
 package edu.umass.cs.automan.adapters.mturk
 
+import edu.umass.cs.automan.core.answer._
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 import edu.umass.cs.automan.adapters.mturk.question.MTQuestionOption
 import edu.umass.cs.automan.core.logging.LogConfig.LogConfig
 import edu.umass.cs.automan.core.logging.{LogLevel, LogLevelInfo}
 
-object DSL extends edu.umass.cs.automan.core.DSL {
+object DSL extends edu.umass.cs.automan.core.DSL {  
+  // type Estimate = edu.umass.cs.automan.core.answer.Estimate
+  
   def mturk(access_key_id: String,
             secret_access_key: String,
             sandbox_mode: Boolean = false,
