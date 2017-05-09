@@ -88,7 +88,7 @@ To access return values, you must pattern-match on the `Outcome`'s `answer` fiel
       case _ => throw new Exception("Oh no!")
     }
 
-Other possible `AbstractAnswer` types are `LowConfidenceAnswer` if you run out of money during a computation (which gives you access to lower-confidence results), or `OverBudgetAnswer` in case even low-confidence answers are not possible because you didn't have enough money in your budget to begin with.
+Other possible cases are `LowConfidenceAnswer` and `OverBudgetAnswer`.  If you run out of money during a computation, a `LowConfidenceAnswer` will let you access to lower-confidence results.  An `OverBudgetAnswer` signals that you didn't have enough money in your budget to begin with.
 
 ### Cleanup of AutoMan Resources
 
