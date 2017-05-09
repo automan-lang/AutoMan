@@ -1,5 +1,4 @@
-import edu.umass.cs.automan.adapters.mturk._
-import edu.umass.cs.automan.core.answer._
+import edu.umass.cs.automan.adapters.mturk.DSL._
 import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
 
 object SimpleCBDQuestion extends App {
@@ -7,24 +6,24 @@ object SimpleCBDQuestion extends App {
   
   val opts = Utilities.unsafe_optparse(args, "SimpleCBDQuestion.scala")
 
-  val a = MTurkAdapter { mt =>
-    mt.access_key_id = opts('key)
-    mt.secret_access_key = opts('secret)
-    mt.sandbox_mode = opts('sandbox).toBoolean
-  }
+  implicit val a = mturk (
+    access_key_id = opts('key),
+    secret_access_key = opts('secret),
+    sandbox_mode = opts('sandbox).toBoolean
+  )
 
-  def AskIt(question: String) = a.CheckboxDistributionQuestion { q =>
-    q.sample_size = sample_size
-    q.text = question
-    q.options = List(
-      a.Option('oscar, "Oscar the Grouch", "http://tinyurl.com/qfwlx56"),
-      a.Option('kermit, "Kermit the Frog", "http://tinyurl.com/nuwyz3u"),
-      a.Option('spongebob, "Spongebob Squarepants", "http://tinyurl.com/oj6wzx6"),
-      a.Option('cookie, "Cookie Monster", "http://tinyurl.com/otb6thl"),
-      a.Option('count, "The Count", "http://tinyurl.com/nfdbyxa")
-    )
-    q.minimum_spawn_policy = UserDefinableSpawnPolicy(0)
-  }
+  def AskIt(question: String) = checkboxes (
+    sample_size = sample_size,
+    text = question,
+    options = List(
+      "Oscar the Grouch" -> "http://tinyurl.com/qfwlx56",
+      "Kermit the Frog" -> "http://tinyurl.com/nuwyz3u",
+      "Spongebob Squarepants" -> "http://tinyurl.com/oj6wzx6",
+      "Cookie Monster" -> "http://tinyurl.com/otb6thl",
+      "The Count" -> "http://tinyurl.com/nfdbyxa"
+    ),
+    minimum_spawn_policy = UserDefinableSpawnPolicy(0)
+  )
 
   automan(a) {
     val outcome = AskIt("Which of these characters do you know?")
