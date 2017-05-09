@@ -21,7 +21,7 @@ _or_ if you're using Maven:
     <dependency>
       <groupId>edu.umass.cs</groupId>
       <artifactId>automan_2.11</artifactId>
-      <version>1.1.7</version>
+      <version>1.2.0</version>
     </dependency>
 
 Sorry, we no longer support Scala 2.10 as AutoMan requires Java 8.
