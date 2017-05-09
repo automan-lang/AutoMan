@@ -14,6 +14,10 @@ AutoMan is the first fully automatic _crowdprogramming_ system. AutoMan integrat
 
 AutoMan is available as a library for Scala.
 
+### Where did it all come from?
+
+AutoMan is actively being developed by researchers at the [PLASMA Laboratory](http://plasma.cs.umass.edu/) at the [University of Massachusetts Amherst](https://www.cics.umass.edu/), chiefly [Daniel Barowy](http://people.cs.umass.edu/~dbarowy/) and Professor [Emery Berger](https://emeryberger.com/).  VoxPL, a research project that extends AutoMan's expressiveness for estimates, was a collaboration with [Microsoft Research NYC](https://www.microsoft.com/en-us/research/lab/microsoft-research-new-york/).
+
 <section class="bs-docs-section">
   <h1 id="downloading" class="page-header">Getting AutoMan</h1>
 </section>
@@ -154,90 +158,7 @@ Sample applications can be found in the `apps` directory.  Apps can also be buil
 Unix/DOS shell scripts for running the programs can then be found in `apps/[the app]/target/pack/bin/`.
 
 <section class="bs-docs-section">
-  <h1 id="more_info" class="page-header">Research and More Information</h1>
-</section>
-
-More detailed information is available in our papers:
-
-  * [VoxPL: Programming with the Wisdom of the Crowd](http://barowy.net/papers/voxpl-chi.pdf)  
-  Daniel W. Barowy, Emery D. Berger, Daniel G. Goldstein, and Siddharth Suri
-  * [AutoMan: A Platform for Integrating Human-Based and Digital Computation (Research Highlight)](http://dl.acm.org/citation.cfm?id=2927928)  
-  Daniel W. Barowy, Charlie Curtsinger, Emery D. Berger, and Andrew McGregor
-  * [AutoMan: A Platform for Integrating Human-Based and Digital Computation](http://www.cs.umass.edu/~emery/pubs/res0007-barowy.pdf)  
-  Daniel W. Barowy, Charlie Curtsinger, Emery D. Berger, and Andrew McGregor
-
-  There are two versions of the original AutoMan paper, a shortened Research Highlight that appeared in the June 2016 issue of the Communications of the ACM and a longer version that appeared at OOPSLA '12.  You should probably start with the CACM version which has a bit more polish and some updated results.
-
-  Full citations are given below:
-
-```
-@inproceedings{Barowy:2017:VPW:3025453.3026025,
- author = {Barowy, Daniel W. and Berger, Emery D. and Goldstein, Daniel G. and Suri, Siddharth},
- title = {VoxPL: Programming with the Wisdom of the Crowd},
- booktitle = {Proceedings of the 2017 CHI Conference on Human Factors in Computing Systems},
- series = {CHI '17},
- year = {2017},
- isbn = {978-1-4503-4655-9},
- location = {Denver, Colorado, USA},
- pages = {2347--2358},
- numpages = {12},
- url = {http://doi.acm.org/10.1145/3025453.3026025},
- doi = {10.1145/3025453.3026025},
- acmid = {3026025},
- publisher = {ACM},
- address = {New York, NY, USA},
- keywords = {crowdprogramming, crowdsourcing, domain-specific languages, quality control, scalability, wisdom of the crowd},
-}
-```
-
-```
-@article{Barowy:2016:API:2942427.2927928,
- author = {Barowy, Daniel W. and Curtsinger, Charlie and Berger, Emery D. and McGregor, Andrew},
- title = {AutoMan: A Platform for Integrating Human-based and Digital Computation},
- journal = {Commun. ACM},
- issue_date = {June 2016},
- volume = {59},
- number = {6},
- month = may,
- year = {2016},
- issn = {0001-0782},
- pages = {102--109},
- numpages = {8},
- url = {http://doi.acm.org/10.1145/2927928},
- doi = {10.1145/2927928},
- acmid = {2927928},
- publisher = {ACM},
- address = {New York, NY, USA},
-}
-```
-
-```
-@inproceedings{Barowy:2012:API:2384616.2384663,
- author = {Barowy, Daniel W. and Curtsinger, Charlie and Berger, Emery D. and McGregor, Andrew},
- title = {% raw %} {{AutoMan} {% endraw %}: a platform for integrating human-based and digital computation},
- booktitle = {Proceedings of the ACM International Conference on Object-Oriented Programming Systems Languages and Applications},
- series = {OOPSLA '12},
- year = {2012},
- isbn = {978-1-4503-1561-6},
- location = {Tucson, Arizona, USA},
- pages = {639--654},
- numpages = {16},
- url = {http://doi.acm.org/10.1145/2384616.2384663},
- doi = {10.1145/2384616.2384663},
- acmid = {2384663},
- publisher = {ACM},
- address = {New York, NY, USA},
- keywords = {crowdsourcing, programming languages, quality control},
-}
-```
-
-Contact information:
-
-  Dan Barowy, dbarowy@cs.umass.edu
-  Emery Berger, emery@cs.umass.edu
-
-<section class="bs-docs-section">
   <h1 id="acknowledgements" class="page-header">Acknowledgements</h1>
 </section>
 
-This material is based on work supported by National Science Foundation Grant Nos. CCF-1144520 and CCF-0953754 and DARPA Award N10AP2026.
+This material is based on work supported by National Science Foundation Grant Nos. CCF-1144520 and CCF-0953754 and DARPA Award N10AP2026.  Microsoft Research also generously supported research and development by funding experiments on Mechanical Turk.
