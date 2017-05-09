@@ -1,7 +1,6 @@
-import edu.umass.cs.automan.adapters.mturk._
+import edu.umass.cs.automan.adapters.mturk.DSL._
 import net.ettinsmoor.Bingerator
 import java.util.UUID
-import edu.umass.cs.automan.core.answer.Answer
 import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
 import hmtlib._
 
@@ -17,22 +16,22 @@ object HowManyThings extends App {
   // read configuration
   val opts = config(args)
 
-  val a = MTurkAdapter { mt =>
-    mt.access_key_id = opts('key)
-    mt.secret_access_key = opts('secret)
-    mt.sandbox_mode = opts('sandbox).toBoolean
-  }
+  implicit val mt = mturk (
+    access_key_id = opts('key),
+    secret_access_key = opts('secret),
+    sandbox_mode = opts('sandbox).toBoolean
+  )
 
-  def how_many_things(photo_url: String) = a.RadioButtonQuestion { q =>
-    q.text = "How many " + args(0) + " are in this picture?"
-    q.image_url = photo_url
-    q.options = List(
-      a.Option('zero, "None"),
-      a.Option('one, "One"),
-      a.Option('more, "More than one")
-    )
-    q.minimum_spawn_policy = UserDefinableSpawnPolicy(0)
-  }
+  def how_many_things(photo_url: String) = radio (
+    text = "How many " + args(0) + " are in this picture?",
+    image_url = photo_url,
+    options = (
+      "None",
+      "One",
+      "More than one"
+    ),
+    minimum_spawn_policy = UserDefinableSpawnPolicy(0)
+  )
 
   // search for a bunch of images
   val results = new Bingerator(opts('bingkey)).SearchImages(args(0)).take(10).toList
@@ -45,10 +44,10 @@ object HowManyThings extends App {
 
   // store each image in S3
   val s3client = init_s3(opts('key), opts('secret), bucketname)
-  val s3_urls = scaled.map{ i => store_in_s3(i, s3client, bucketname) }
+  val s3_urls = scaled.map { i => store_in_s3(i, s3client, bucketname) }
 
-  automan(a) {
-	// ask humans for answers
+  automan(mt) {
+	  // ask humans for answers
     val answers_urls = s3_urls.map { url =>
       how_many_things(getTinyURL(url.toString)) -> url
     }
