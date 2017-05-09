@@ -1,13 +1,14 @@
 package edu.umass.cs.automan.adapters.mturk
 
+import scala.language.implicitConversions
 import edu.umass.cs.automan.core.answer._
 import edu.umass.cs.automan.adapters.mturk.mock.MockSetup
 import edu.umass.cs.automan.adapters.mturk.question.MTQuestionOption
 import edu.umass.cs.automan.core.logging.LogConfig.LogConfig
 import edu.umass.cs.automan.core.logging.{LogLevel, LogLevelInfo}
 
-object DSL extends edu.umass.cs.automan.core.DSL {  
-  // type Estimate = edu.umass.cs.automan.core.answer.Estimate
+object DSL extends edu.umass.cs.automan.core.DSL {
+  type MTQuestionOption = edu.umass.cs.automan.adapters.mturk.question.MTQuestionOption
   
   def mturk(access_key_id: String,
             secret_access_key: String,
@@ -41,4 +42,11 @@ object DSL extends edu.umass.cs.automan.core.DSL {
   def choice(key: Symbol, text: String, image_url: String)(implicit mt: MTurkAdapter) : MTQuestionOption = {
     mt.Option(key, text, image_url)
   }
+  
+  // Instead of writing a list, let the user supply a "big tuple"
+  implicit def product2OptionList(p: Product) : List[MTQuestionOption] = p.productIterator.toList.asInstanceOf[List[MTQuestionOption]]
+  implicit def tupSymbString2MTQuestionOption(opt: (Symbol, String))(implicit mt: MTurkAdapter) : MTQuestionOption = choice(opt._1, opt._2)
+  implicit def tupStrURL2MTQuestionOption(opt: (String, String))(implicit mt: MTurkAdapter) : MTQuestionOption = choice(Symbol(opt._1), opt._1, opt._2)
+  implicit def tupWithURL2MTQuestionOption(opt: (Symbol, String, String))(implicit mt: MTurkAdapter) : MTQuestionOption = choice(opt._1, opt._2, opt._3)
+  implicit def str2MTQuestionOption(s: String)(implicit mt: MTurkAdapter) : MTQuestionOption = choice(Symbol(s), s)
 }
