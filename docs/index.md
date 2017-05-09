@@ -54,43 +54,51 @@ AutoMan is licensed under the GPLv2, Copyright (C) 2011-2016 The University of M
 
 In your source file, import the Mechanical Turk adapter (Scala syntax):
 
-    import edu.umass.cs.automan.adapters.mturk._
+``` scala
+import edu.umass.cs.automan.adapters.mturk._
+```
 
 After that, initialize the AutoMan runtime with an MTurk config:
 
-    implicit val mt = mturk (
-      access_key_id = "my key",         // your MTurk "access key"
-      secret_access_key = "my secret",  // your MTurk "secret key" 
-      sandbox_mode = true               // if true, run on MTurk sandbox
-    )
+``` scala
+implicit val mt = mturk (
+  access_key_id = "my key",         // your MTurk "access key"
+  secret_access_key = "my secret",  // your MTurk "secret key" 
+  sandbox_mode = true               // if true, run on MTurk sandbox
+)
+```
 
 and then define your task:
 
-    def which_one() = radio(
-      budget = 8.00,
-      text = "Which one of these does not belong?",
-      options = (
-        "Oscar the Grouch",
-        "Kermit the Frog",
-        "Spongebob Squarepants",
-        "Cookie Monster",
-        "The Count"
-      )
-    )
+``` scala
+def which_one() = radio(
+  budget = 8.00,
+  text = "Which one of these does not belong?",
+  options = (
+    "Oscar the Grouch",
+    "Kermit the Frog",
+    "Spongebob Squarepants",
+    "Cookie Monster",
+    "The Count"
+  )
+)
+```
 
 You may then call `which_one` just like an ordinary function (which it is).  Note that AutoMan functions immediately return an `Outcome`, but continue to execute asynchronously in the background.
 
 To access return values, you must pattern-match on the `Outcome`'s `answer` field, e.g.,
 
-    val outcome = which_one()
-    
-    // ... do some other stuff ...
-    
-    // then, when you want answers ...
-    val answer = outcome.answer match {
-      case Answer(value, _, _) => value
-      case _ => throw new Exception("Oh no!")
-    }
+``` scala
+val outcome = which_one()
+
+// ... do some other stuff ...
+
+// then, when you want answers ...
+val answer = outcome.answer match {
+  case Answer(value, _, _) => value
+  case _ => throw new Exception("Oh no!")
+}
+```
 
 Other possible cases are `LowConfidenceAnswer` and `OverBudgetAnswer`.  If you run out of money during a computation, a `LowConfidenceAnswer` will let you access to lower-confidence results.  An `OverBudgetAnswer` signals that you didn't have enough money in your budget to begin with.
 
@@ -98,13 +106,17 @@ Other possible cases are `LowConfidenceAnswer` and `OverBudgetAnswer`.  If you r
 
 Note that, due to AutoMan's design, you must inform it when to shut down, otherwise it will continue to execute indefinitely and your program will hang:
 
-    a.close()
+``` scala
+a.close()
+```
 
 Alternately, you may wrap your program in an `automan` statement, and cleanup will happen automatically.  This feature was [inspired](https://msdn.microsoft.com/en-us/library/vstudio/yh598w02%28v=vs.100%29.aspx) by the C# `using` statement:
 
-    automan(a) {
-      ... your program ...
-    }
+``` scala
+automan(a) {
+  ... your program ...
+}
+```
 
 We will add more documentation to this site in the near future.  In the interim, please see the collection of sample programs in the `apps`
 directory.
@@ -139,8 +151,10 @@ You do not need to build AutoMan yourself, as it is available via Maven as a JAR
 
 You can build the AutoMan JAR using the following commands:
 
-    cd libautoman
-    sbt pack
+``` bash
+$ cd libautoman
+$ sbt pack
+```
 
 The AutoMan JAR plus all of its dependencies will then be found in the
 `libautoman/target/pack/lib/` folder.
@@ -151,8 +165,10 @@ The AutoMan JAR plus all of its dependencies will then be found in the
 
 Sample applications can be found in the `apps` directory.  Apps can also be built using `pack`.  E.g.,
 
-    cd apps/simple_program
-    sbt pack
+``` bash
+$ cd apps/simple_program
+$ sbt pack
+```
 
 Unix/DOS shell scripts for running the programs can then be found in `apps/[the app]/target/pack/bin/`.
 

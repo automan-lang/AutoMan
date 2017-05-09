@@ -10,6 +10,12 @@ licenseUrl: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 # extension of the favicon, blank to disable
 favicon: ico
 
+markdown: kramdown
+
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
 # download button
 # if download.popup is true, the download button will open a popup with several download options
 # otherwise it will simply open download.url and other options are ignored
