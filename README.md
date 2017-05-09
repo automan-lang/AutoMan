@@ -2,6 +2,8 @@
 
 # AutoMan: Human-Computation Runtime
 
+AutoMan [documentation is here](http://dbarowy.github.io/AutoMan/).
+
 ## What is AutoMan?
 
 AutoMan is the first fully automatic _crowdprogramming_ system. AutoMan integrates human-based ("crowdsourced") computations into a standard programming language as ordinary function calls that can be intermixed freely with traditional functions. This abstraction lets  programmers focus on their programming logic. An AutoMan program specifies a _confidence level_ for the overall computation and a _budget_. The AutoMan runtime system then transparently manages all details necessary for scheduling, pricing, and quality control. AutoMan automatically schedules human tasks for each computation until it achieves the desired confidence level; monitors, reprices, and restarts human tasks as necessary; and maximizes parallelism across human workers while staying under budget.
@@ -38,7 +40,3 @@ Please report bugs using this repository's issue tracker.
 ## License
 
 AutoMan is licensed under the GPLv2, Copyright (C) 2011-2016 The University of Massachusetts, Amherst.
-
-## Documentation
-
-Please see our [AutoMan documentation page](http://dbarowy.github.io/AutoMan/)
