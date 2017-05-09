@@ -54,29 +54,29 @@ In your source file, import the Mechanical Turk adapter (Scala syntax):
 
 After that, initialize the AutoMan runtime with an MTurk config:
 
-    val a = MTurkAdapter { mt =>
-      mt.access_key_id = "my key"
-      mt.secret_access_key = "my secret"
-      mt.sandbox_mode = true
-    }
+    implicit val mt = mturk (
+      access_key_id = "my key",         // your MTurk "access key"
+      secret_access_key = "my secret",  // your MTurk "secret key" 
+      sandbox_mode = true               // if true, run on MTurk sandbox
+    )
 
-and then define your tasks:
+and then define your task:
 
-    def which_one() = a.RadioButtonQuestion { q =>
-      q.budget = 8.00
-      q.text = "Which one of these does not belong?"
-      q.options = List(
-        a.Option('oscar, "Oscar the Grouch"),
-        a.Option('kermit, "Kermit the Frog"),
-        a.Option('spongebob, "Spongebob Squarepants"),
-        a.Option('cookie, "Cookie Monster"),
-        a.Option('count, "The Count")
+    def which_one() = radio(
+      budget = 8.00,
+      text = "Which one of these does not belong?",
+      options = (
+        "Oscar the Grouch",
+        "Kermit the Frog",
+        "Spongebob Squarepants",
+        "Cookie Monster",
+        "The Count"
       )
-    }
+    )
 
 You may then call `which_one` just like an ordinary function (which it is).  Note that AutoMan functions immediately return an `Outcome`, but continue to execute asynchronously in the background.
 
-To access return values, you must pattern-match on the `Outcome`, e.g.,
+To access return values, you must pattern-match on the `Outcome`'s `answer` field, e.g.,
 
     val outcome = which_one()
     
