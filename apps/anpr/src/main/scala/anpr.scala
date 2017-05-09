@@ -1,15 +1,14 @@
-import edu.umass.cs.automan.adapters.mturk._
+import edu.umass.cs.automan.adapters.mturk.DSL._
 import anprlib._
-import edu.umass.cs.automan.core.answer._
 
 object anpr extends App {
   val opts = my_optparse(args, "anpr.jar")
 
-  implicit val a = MTurkAdapter { mt =>
-    mt.access_key_id = opts('key)
-    mt.secret_access_key = opts('secret)
-    mt.sandbox_mode = opts('sandbox).toBoolean
-  }
+  implicit val a = mturk (
+    access_key_id = opts('key),
+    secret_access_key = opts('secret),
+    sandbox_mode = opts('sandbox).toBoolean
+  )
 
   automan(a) {
     // get plate texts from image URLs

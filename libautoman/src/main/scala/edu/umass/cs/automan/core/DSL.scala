@@ -24,6 +24,7 @@ trait DSL {
   type OverBudgetAnswers[T] = edu.umass.cs.automan.core.answer.OverBudgetAnswers[T]
   type OverBudgetEstimate = edu.umass.cs.automan.core.answer.OverBudgetEstimate
   type ScalarOutcome[T] = edu.umass.cs.automan.core.answer.ScalarOutcome[T]
+  type Outcome[T] = edu.umass.cs.automan.core.answer.Outcome[T]
   
   // to simplify pattern matching
   val Answer = edu.umass.cs.automan.core.answer.Answer
@@ -136,6 +137,7 @@ trait DSL {
   def freetext[A <: AutomanAdapter](
                         allow_empty_pattern: Boolean = false,
                         confidence: Double = MagicNumbers.DefaultConfidence,
+                        before_filter: String => String = (a: String) => a,
                         budget: BigDecimal = MagicNumbers.DefaultBudget,
                         dont_reject: Boolean = true,
                         dry_run: Boolean = false,
@@ -182,6 +184,7 @@ trait DSL {
   def freetexts[A <: AutomanAdapter](
                        allow_empty_pattern: Boolean = false,
                        sample_size: Int = MagicNumbers.DefaultSampleSizeForDistrib,
+                       before_filter: String => String = (a: String) => a,
                        budget: BigDecimal = MagicNumbers.DefaultBudget,
                        dont_reject: Boolean = true,
                        dry_run: Boolean = false,
