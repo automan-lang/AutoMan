@@ -5,9 +5,9 @@ title: Research Publications
 
 More detailed information is available in our papers:
 
-  * [CHI '17]((http://barowy.net/papers/voxpl-chi.pdf)): __VoxPL: Programming with the Wisdom of the Crowd__  
+  * [CHI '17](http://barowy.net/papers/voxpl-chi.pdf): __VoxPL: Programming with the Wisdom of the Crowd__  
   Daniel W. Barowy, Emery D. Berger, Daniel G. Goldstein, and Siddharth Suri
-  * [CACM RH '16]((http://dl.acm.org/citation.cfm?id=2927928) ): __AutoMan: A Platform for Integrating Human-Based and Digital Computation (Research Highlight)__  
+  * [CACM RH '16](http://dl.acm.org/citation.cfm?id=2927928): __AutoMan: A Platform for Integrating Human-Based and Digital Computation (Research Highlight)__  
   Daniel W. Barowy, Charlie Curtsinger, Emery D. Berger, and Andrew McGregor
   * [OOPSLA '12](http://www.cs.umass.edu/~emery/pubs/res0007-barowy.pdf): __AutoMan: A Platform for Integrating Human-Based and Digital Computation__  
   Daniel W. Barowy, Charlie Curtsinger, Emery D. Berger, and Andrew McGregor
