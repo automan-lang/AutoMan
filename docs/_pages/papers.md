@@ -7,6 +7,7 @@ More detailed information is available in our papers:
 
   * [CHI '17](http://barowy.net/papers/voxpl-chi.pdf): __VoxPL: Programming with the Wisdom of the Crowd__  
   Daniel W. Barowy, Emery D. Berger, Daniel G. Goldstein, and Siddharth Suri
+    - [talk slides](https://s3.amazonaws.com/dbarowy-cics-assets/VoxPL-CHI-2017.key)
   * [CACM RH '16](http://dl.acm.org/citation.cfm?id=2927928): __AutoMan: A Platform for Integrating Human-Based and Digital Computation (Research Highlight)__  
   Daniel W. Barowy, Charlie Curtsinger, Emery D. Berger, and Andrew McGregor
   * [OOPSLA '12](http://www.cs.umass.edu/~emery/pubs/res0007-barowy.pdf): __AutoMan: A Platform for Integrating Human-Based and Digital Computation__  
@@ -14,8 +15,8 @@ More detailed information is available in our papers:
     - [talk slides](https://s3.amazonaws.com/dbarowy-cics-assets/automan_oopsla_2012.ppt)
   * [Tech report UMass CS TR 2011-44](http://www.cs.umass.edu/~emery/pubs/AutoMan-UMass-CS-TR2011-44.pdf)
   * Second Workshop on Computational Social Science and the Wisdom of Crowds, '11
-    - [NIPS poster](http://www.cs.umass.edu/~dbarowy/automan_nips_poster.jpg)
-    - [NIPS workshop paper](http://www.cs.umass.edu/~wallach/workshops/nips2011css/papers/Barowy.pdf)
+    - [NIPS poster](https://s3.amazonaws.com/dbarowy-cics-assets/automan_nips_poster.jpg)
+    - [NIPS workshop paper](http://web.archive.org/web/20160808010421id_/https://people.cs.umass.edu/~wallach/workshops/nips2011css/papers/Barowy.pdf)
 
   There are two versions of the original AutoMan paper, a shortened Research Highlight that appeared in the June 2016 issue of the Communications of the ACM and a longer version that appeared at OOPSLA 2012.  You should probably start with the CACM version which has a bit more polish and some updated results.
   
