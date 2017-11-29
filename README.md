@@ -1,5 +1,9 @@
 [![Circle CI](https://circleci.com/gh/dbarowy/AutoMan.svg?style=shield)](https://circleci.com/gh/dbarowy/AutoMan)
 
+# We've moved!
+
+Please go to [automan-lang/AutoMan](https://github.com/automan-lang/AutoMan) instead.
+
 # AutoMan: Human-Computation Runtime
 
 AutoMan [documentation is here](http://dbarowy.github.io/AutoMan/).
