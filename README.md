@@ -2,7 +2,7 @@
 
 # AutoMan: Human-Computation Runtime
 
-AutoMan [documentation is here](http://dbarowy.github.io/AutoMan/).
+AutoMan [documentation is here](https://automan-lang.github.io/AutoMan/).
 
 ## What is AutoMan?
 

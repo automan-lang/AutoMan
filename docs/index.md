@@ -16,7 +16,7 @@ AutoMan is available as a library for Scala.
 
 ### Where did it all come from?
 
-AutoMan is actively being developed by researchers at the [PLASMA Laboratory](http://plasma.cs.umass.edu/) at the [University of Massachusetts Amherst](https://www.cics.umass.edu/), chiefly [Daniel Barowy](http://people.cs.umass.edu/~dbarowy/) and Professor [Emery Berger](https://emeryberger.com/).  VoxPL, a research project that extends AutoMan's expressiveness for estimates, was a collaboration with [Microsoft Research NYC](https://www.microsoft.com/en-us/research/lab/microsoft-research-new-york/).
+AutoMan is being actively developed by [Daniel Barowy](http://www.cs.williams.edu/~dbarowy/) at [Williams College](https://csci.williams.edu/) and [Emery Berger](https://emeryberger.com/) at the [PLASMA Laboratory](http://plasma.cs.umass.edu/) at the [University of Massachusetts Amherst](https://www.cics.umass.edu/). Portions of AutoMan were developed as a collaboration with researchers at [Microsoft Research NYC](https://www.microsoft.com/en-us/research/lab/microsoft-research-new-york/).
 
 <section class="bs-docs-section">
   <h1 id="downloading" class="page-header">Getting AutoMan</h1>
@@ -46,7 +46,7 @@ Please report bugs using this repository's [issue tracker](https://github.com/db
   <h1 id="license" class="page-header">License</h1>
 </section>
 
-AutoMan is licensed under the GPLv2, Copyright (C) 2011-2016 The University of Massachusetts, Amherst.
+AutoMan is licensed under the GPLv2, Copyright (C) 2011-2017 The University of Massachusetts, Amherst.
 
 <section class="bs-docs-section">
   <h1 id="using_automan" class="page-header">Using AutoMan</h1>
