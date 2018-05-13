@@ -1,6 +1,4 @@
-packSettings
-
-packMain := Map("simple_checkbox_program" -> "simple_checkbox_program")
+enablePlugins(PackPlugin)
 
 name := "SimpleCheckboxProgram"
 

@@ -1,6 +1,4 @@
-packSettings
-
-packMain := Map("simple_program" -> "simple_program")
+enablePlugins(PackPlugin)
 
 name := "simple_program"
 

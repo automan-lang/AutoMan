@@ -1,6 +1,4 @@
-packSettings
-
-packMain := Map("HowManyThings" -> "HowManyThings")
+enablePlugins(PackPlugin)
 
 name := "HowManyThings"
 

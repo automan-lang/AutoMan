@@ -1,3 +1,5 @@
+enablePlugins(PackPlugin)
+
 name := "SimpleCBDQuestion"
 
 version := "1.0"

@@ -1,6 +1,4 @@
-packSettings
-
-packMain := Map("CalorieCounter" -> "CalorieCounter")
+enablePlugins(PackPlugin)
 
 name := "CalorieCounter"
 

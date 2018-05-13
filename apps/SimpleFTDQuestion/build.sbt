@@ -1,3 +1,5 @@
+enablePlugins(PackPlugin)
+
 name := "SimpleFTDQuestion"
 
 version := "1.0"

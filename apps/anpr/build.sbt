@@ -1,6 +1,4 @@
-packSettings
-
-packMain := Map("anprlib" -> "anprlib")
+enablePlugins(PackPlugin)
 
 name := "ANPR"
 
