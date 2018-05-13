@@ -1,6 +1,7 @@
 import edu.umass.cs.automan.adapters.mturk.DSL._
 import java.util.UUID
 import java.net.URL
+
 import javax.imageio._
 import bananalib._
 import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
@@ -25,22 +26,26 @@ object banana_question extends App {
   
   // images:
   val images = Map(
-    "banana" -> "http://tinyurl.com/qej5zad",
-    "apple" -> "http://tinyurl.com/qxn58kn",
-    "celery" -> "http://tinyurl.com/q38566j",
-    "cucumber" -> "http://tinyurl.com/ps6bgg3",
-    "orange" -> "http://tinyurl.com/ntxzjjt"
+    "banana" -> "https://s3.amazonaws.com/automan-demo-images/bananas.jpg",
+    "apple" -> "https://s3.amazonaws.com/automan-demo-images/apple.jpg",
+    "celery" -> "https://s3.amazonaws.com/automan-demo-images/celery.jpg",
+    "cucumber" -> "https://s3.amazonaws.com/automan-demo-images/cucumbers.jpg",
+    "orange" -> "https://s3.amazonaws.com/automan-demo-images/oranges.jpg"
   )
   
   // download and resize each image
-  val scaled = images.map { case (name,url) => name -> resize(ImageIO.read(new URL(url)), 150) }
+  val scaled = images.map { case (name,url) =>
+    val img = ImageIO.read(new URL(url))
+    name -> resize(img, 150)
+  }
 
   // store each image in S3
   val s3client = init_s3(opts('key), opts('secret), bucketname)
   val s3_urls = scaled.map{ case (name,img) => name -> getTinyURL(store_in_s3(img, s3client, bucketname)) }
+  val options = s3_urls.map { case (name,url) => choice(Symbol(name), name, url) }.toList
   
   automan(a) {
-    val outcome = which_one("Which one of these does not belong?", s3_urls.toList)
+    val outcome = which_one("Which one of these does not belong?", options)
     outcome.answer match {
       case answer: Answer[Symbol] => println("The answer is: " + answer.value)
       case _ => println("An error occurred.")
