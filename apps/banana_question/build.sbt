@@ -1,6 +1,4 @@
-packSettings
-
-packMain := Map("banana_question" -> "banana_question")
+enablePlugins(PackPlugin)
 
 name := "BananaQuestion"
 
