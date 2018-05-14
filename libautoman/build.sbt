@@ -105,10 +105,10 @@ hashAsConstant := {
 parallelExecution in Test := false
 
 // MODIFY BUILD
-compile <<= (compile in Compile) dependsOn hashAsConstant
+compile := ((compile in Compile) dependsOn hashAsConstant).value
 
 // GENERATING JAR
-packSettings
+enablePlugins(PackPlugin)
 
 // MAVEN
 
