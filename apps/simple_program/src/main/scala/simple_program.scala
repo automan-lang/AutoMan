@@ -14,11 +14,11 @@ object simple_program extends App {
     budget = 8.00,
     text = "Which one of these does not belong?",
     options = (
-      "Oscar the Grouch" -> "http://tinyurl.com/qfwlx56",
-      "Kermit the Frog" -> "http://tinyurl.com/nuwyz3u",
-      "Spongebob Squarepants" -> "http://tinyurl.com/oj6wzx6",
-      "Cookie Monster" -> "http://tinyurl.com/otb6thl",
-      "The Count" -> "http://tinyurl.com/nfdbyxa"
+      choice('oscar, "Oscar the Grouch", "http://tinyurl.com/qfwlx56"),
+      choice('kermit, "Kermit the Frog", "http://tinyurl.com/nuwyz3u"),
+      choice('spongebob, "Spongebob Squarepants", "http://tinyurl.com/oj6wzx6"),
+      choice('cookiemonster, "Cookie Monster", "http://tinyurl.com/otb6thl"),
+      choice('thecount, "The Count", "http://tinyurl.com/nfdbyxa")
     ),
     minimum_spawn_policy = UserDefinableSpawnPolicy(0)
   )
