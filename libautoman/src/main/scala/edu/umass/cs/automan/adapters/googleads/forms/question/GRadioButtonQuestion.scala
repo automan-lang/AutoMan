@@ -2,6 +2,7 @@ package edu.umass.cs.automan.adapters.googleads.forms.question
 
 import java.util.{Date, UUID}
 
+import edu.umass.cs.automan.adapters.googleads.policy.aggregation.GMinimumSpawnPolicy
 import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.question.RadioButtonQuestion
 
@@ -27,14 +28,14 @@ object GRadioButtonQuestion {
 }
 
 class GRadioButtonQuestion extends RadioButtonQuestion with GQuestion {
-  type QuestionOptionType = GQuestionOption
-//  override type A = RadioButtonQuestion#A
+  override type QuestionOptionType = GQuestionOption
 
   // public API
-  def memo_hash: String = ???
-
   override def randomized_options: List[QuestionOptionType] = ???
 
+  override def memo_hash: String = ???
+
   // private API
-  override def toMockResponse(question_id: UUID, response_time: Date, a: Symbol, worker_id: UUID): MockResponse = ???
+  _minimum_spawn_policy = GMinimumSpawnPolicy
+  override protected def toMockResponse(question_id: UUID, response_time: Date, a: Symbol, worker_id: UUID): MockResponse = ???
 }

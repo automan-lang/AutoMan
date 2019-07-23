@@ -2,6 +2,7 @@ package edu.umass.cs.automan.adapters.googleads.forms.question
 
 import java.util.{Date, UUID}
 
+import edu.umass.cs.automan.adapters.googleads.policy.aggregation.GMinimumSpawnPolicy
 import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.question.EstimationQuestion
 
@@ -23,7 +24,6 @@ object GEstimationQuestion {
 
 class GEstimationQuestion extends EstimationQuestion with GQuestion {
   type QuestionOptionType = GQuestionOption
-  //  override type A = RadioButtonQuestion#A
 
   // public API
   def memo_hash: String = ???
@@ -31,5 +31,6 @@ class GEstimationQuestion extends EstimationQuestion with GQuestion {
   override def cloneWithConfidence(conf: Double): EstimationQuestion = ???
 
   // private API
+  _minimum_spawn_policy = GMinimumSpawnPolicy
   override def toMockResponse(question_id: UUID, response_time: Date, a: Double, worker_id: UUID): MockResponse = ???
 }
