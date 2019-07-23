@@ -2,7 +2,7 @@ package edu.umass.cs.automan.adapters.googleads
 
 import java.util.Date
 
-import edu.umass.cs.automan.adapters.googleads.forms.question._
+import forms.question.{GQuestionOption, _}
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.question.QuestionOption
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
@@ -20,8 +20,8 @@ class GoogleAdsAdapter extends AutomanAdapter {
   override type FTQ = GFreeTextQuestion
   override type FTDQ = GFreeTextVectorQuestion
   override type RBQ = GRadioButtonQuestion
-  override type RBDQ = GCheckboxQuestion
-  //override type MemoDB
+  override type RBDQ = GRadioButtonVectorQuestion
+//  override type MemoDB =
 
   /**
     * Tell the backend to accept the answer associated with this ANSWERED task.
@@ -78,23 +78,16 @@ class GoogleAdsAdapter extends AutomanAdapter {
     */
   override protected def retrieve(ts: List[Task], current_time: Date): Option[List[Task]] = ???
 
-  override def Option(id: Symbol, text: String): QuestionOption = ???
+  def Option(id: Symbol, text: String) = new GQuestionOption(id, text, "")
+  def Option(id: Symbol, text: String, image_url: String) = new GQuestionOption(id, text, image_url)
 
-  override protected def CBQFactory(): GoogleAdsAdapter.this.type = ???
-
-  override protected def CBDQFactory(): GoogleAdsAdapter.this.type = ???
-
-  override protected def MEQFactory(): GoogleAdsAdapter.this.type = ???
-
-  override protected def EQFactory(): GoogleAdsAdapter.this.type = ???
-
-  override protected def FTQFactory(): GoogleAdsAdapter.this.type = ???
-
-  override protected def FTDQFactory(): GoogleAdsAdapter.this.type = ???
-
-  override protected def RBQFactory(): GoogleAdsAdapter.this.type = ???
-
-  override protected def RBDQFactory(): GoogleAdsAdapter.this.type = ???
-
-  override protected def MemoDBFactory(): GoogleAdsAdapter.this.type = ???
+  protected def CBQFactory()  = new GCheckboxQuestion
+  protected def CBDQFactory() = new GCheckboxVectorQuestion
+  protected def MEQFactory()  = new GMultiEstimationQuestion
+  protected def EQFactory()   = new GEstimationQuestion
+  protected def FTQFactory()  = new GFreeTextQuestion
+  protected def FTDQFactory() = new GFreeTextVectorQuestion
+  protected def RBQFactory()  = new GRadioButtonQuestion
+  protected def RBDQFactory() = new GRadioButtonVectorQuestion
+  override protected def MemoDBFactory(): MemoDB = ???
 }
