@@ -12,6 +12,7 @@ import com.google.ads.googleads.v2.services._
 import com.google.ads.googleads.v2.utils.ResourceNames
 import com.google.common.collect.ImmutableList
 import com.google.protobuf.{Int64Value, StringValue}
+import scala.collection.JavaConverters._
 
 import edu.umass.cs.automan.adapters.googleads.util.Service._
 
@@ -24,7 +25,7 @@ object AdGroup {
       * @return A new AdGroup wrapper class representing a newly created ad group
       */
     def apply(accountId : Long, campaignId: Long, name: String) : AdGroup = {
-        val googleAdsClient = googleClient()
+        val googleAdsClient = googleClient
         val ag = new AdGroup(googleAdsClient, accountId)
         ag.build(campaignId, name)
         ag
@@ -37,7 +38,7 @@ object AdGroup {
       * @return A new AdGroup wrapper class representing an existing ad group
       */
     def apply(accountId: Long, campaignId : Long, adGroupId : Long) : AdGroup = {
-        val googleAdsClient = googleClient()
+        val googleAdsClient = googleClient
         val ag = new AdGroup(googleAdsClient, accountId)
         ag.load(campaignId, adGroupId)
         ag

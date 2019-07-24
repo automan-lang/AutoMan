@@ -5,7 +5,7 @@ import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
 object simple_test extends App {
   val opts = Utilities.unsafe_optparse(args, "simple_program")
 
-  implicit val a = GoogleAdsAdapter(initf)
+  implicit val a = ???
 
   def which_one() = radio (
     budget = 8.00,

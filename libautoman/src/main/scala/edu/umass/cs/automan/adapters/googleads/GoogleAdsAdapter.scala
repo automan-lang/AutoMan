@@ -112,9 +112,7 @@ class GoogleAdsAdapter extends AutomanAdapter {
     * @param exclude_worker_ids Worker IDs to exclude, if any.
     * @return Some list of the posted tasks if successful.
     */
-  override protected def post(ts: List[Task], exclude_worker_ids: List[String]): Option[List[Task]] = {
-
-  }
+  override protected def post(ts: List[Task], exclude_worker_ids: List[String]): Option[List[Task]] = ???
 
   /**
     * Tell the backend to reject the answer associated with this ANSWERED task.
@@ -153,6 +151,7 @@ class GoogleAdsAdapter extends AutomanAdapter {
       val answer = question.retrieve
       t.copy_with_answer(answer.asInstanceOf[t.question.A],UUID.randomUUID().toString)
     }
+    ???
   }
 
   def Option(id: Symbol, text: String) = new GQuestionOption(id, text, "")

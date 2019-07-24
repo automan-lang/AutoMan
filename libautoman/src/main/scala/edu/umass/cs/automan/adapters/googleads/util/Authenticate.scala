@@ -12,7 +12,7 @@ import com.google.api.services.script.model.{File=>gFile,Content, CreateProjectR
 import com.google.auth.oauth2.{ClientId, UserAuthorizer}
 import com.google.common.collect.ImmutableList
 import edu.umass.cs.automan.adapters.googleads.ads.Account
-import edu.umass.cs.automan.adapters.googleads.util.Service.{config, getCredentials, json_factory, properties_path}
+import edu.umass.cs.automan.adapters.googleads.util.Service._
 
 import scala.io.Source
 import scala.io.StdIn.readLine
@@ -142,7 +142,7 @@ object Authenticate {
     val content: Content = new Content().setFiles(List(setup_file, config).asJava)
     project_service.updateContent(Service.script_id, content).execute()
 
-    println(s"Finish setting up the project here: https://script.google.com/d/${Service.script_id()}/edit\n" +
+    println(s"Finish setting up the project here: https://script.google.com/d/$script_id/edit\n" +
       "1) Run any function and authorize the app in the following dialog\n" +
       s"2) Add your Cloud Project Number '$gcpNum' to Resources > Cloud Platform project\n" +
       "3) Publish > Deploy as API executable")

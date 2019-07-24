@@ -12,7 +12,7 @@ object Account {
     * @return A new Account class representing a newly created account
     */
   def apply(name: String) : Account = {
-    val googleAdsClient = googleClient()
+    val googleAdsClient = googleClient
     val acc = new Account(googleAdsClient: GoogleAdsClient)
     acc.build(name, googleAdsClient.getLoginCustomerId.longValue)
     acc
@@ -23,7 +23,7 @@ object Account {
     * @return A new Account wrapper class representing an existing Google Ads account
     */
   def apply(accountId: Long) : Account = {
-    val googleAdsClient = googleClient()
+    val googleAdsClient = googleClient
     val acc = new Account(googleAdsClient)
     acc.load(accountId)
     acc

@@ -1,5 +1,7 @@
 package edu.umass.cs.automan.adapters.googleads.ads
 
+import java.util.concurrent.TimeUnit
+
 import com.google.ads.googleads.lib.GoogleAdsClient
 import com.google.ads.googleads.lib.utils.FieldMasks
 import com.google.ads.googleads.v2.services.CampaignCriterionOperation
@@ -17,6 +19,7 @@ import com.google.ads.googleads.v2.utils.ResourceNames
 import com.google.common.collect.ImmutableList
 import com.google.protobuf.{BoolValue, Int64Value, StringValue}
 
+import scala.collection.JavaConverters._
 import edu.umass.cs.automan.adapters.googleads.util.Service._
 
 
@@ -29,7 +32,7 @@ object Campaign {
     * @return A new AdCampaign wrapper class representing a newly created campaign
     */
   def apply(accountId: Long, dailyBudget: BigDecimal, name: String): Campaign = {
-    val googleAdsClient = googleClient()
+    val googleAdsClient = googleClient
     val camp: Campaign = new Campaign(googleAdsClient, accountId)
     camp.build(dailyBudget, name)
     camp
@@ -41,7 +44,7 @@ object Campaign {
     * @return A new AdCampaign wrapper class representing an existing campaign
     */
   def apply(accountId: Long, campId: Long): Campaign = {
-    val googleAdsClient = googleClient()
+    val googleAdsClient = googleClient
     val camp: Campaign = new Campaign(googleAdsClient, accountId)
     camp.load(accountId,campId)
     camp
