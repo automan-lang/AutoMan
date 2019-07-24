@@ -4,6 +4,8 @@ import java.io.{BufferedReader, File, FileWriter, InputStreamReader}
 import java.net.URI
 import java.util.Properties
 
+import edu.umass.cs.automan.adapters.googleads.ads.Account
+
 import scala.io.StdIn.readLine
 
 object Authenticate {
@@ -95,8 +97,8 @@ object Authenticate {
       "   Click Download JSON and save the file as credentials.json in your working directory\n")
     do print("Ready to continue? (y/n): ") while (readLine().toLowerCase() != "y")
 
-    forms.Project.setup(project_name = "Form Sandbox", gcpNum = gcp_Num)
-
+    forms.Project.setup(project_name = "AutoMan", gcpNum = gcp_Num)
+    println("Your production account ID is: " + Account("AutoMan").account_id)
   }
 
 }

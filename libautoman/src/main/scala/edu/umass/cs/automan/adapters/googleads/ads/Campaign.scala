@@ -44,7 +44,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long) {
   def budget_amount : BigDecimal = {
     val client = googleAdsClient.getLatestVersion.createCampaignBudgetServiceClient()
     val b = client.getCampaignBudget(ResourceNames.campaignBudget(accountID,budget_id))
-      .getAmountMicros.getValue * 1000000
+      .getAmountMicros.getValue * (1000000/2)
     client.shutdown()
     b
   }
@@ -82,7 +82,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long) {
 
     val b = CampaignBudget.newBuilder.setName(StringValue.of(name)) //builds a new budget (not yet created)
       .setDeliveryMethod(BudgetDeliveryMethod.ACCELERATED)
-      .setAmountMicros(Int64Value.of((dailyBudget * 1000000).toLong))
+      .setAmountMicros(Int64Value.of((dailyBudget * (1000000/2)).toLong))
       .build()
 
     val bOp =
@@ -173,7 +173,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long) {
 
     val b = CampaignBudget.newBuilder
       .setResourceName(ResourceNames.campaignBudget(accountID, budget_id))
-      .setAmountMicros(Int64Value.of((newBudget * 1000000).toLong))
+      .setAmountMicros(Int64Value.of((newBudget * (1000000/2)).toLong))
       .build()
 
     val bOp = CampaignBudgetOperation.newBuilder //builds budget update operation

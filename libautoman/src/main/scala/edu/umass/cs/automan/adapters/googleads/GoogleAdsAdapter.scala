@@ -2,14 +2,21 @@ package edu.umass.cs.automan.adapters.googleads
 
 import java.util.Date
 
+import edu.umass.cs.automan.adapters.googleads.ads.{Account, Campaign}
+import edu.umass.cs.automan.adapters.googleads.forms.Form
 import forms.question.{GQuestionOption, _}
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.question.QuestionOption
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 
-
 object GoogleAdsAdapter {
-  def apply(init: GoogleAdsAdapter => Unit): GoogleAdsAdapter = ???
+  def apply(init: GoogleAdsAdapter => Unit): GoogleAdsAdapter = {
+    val gaa : GoogleAdsAdapter = new GoogleAdsAdapter
+    init(gaa)
+    gaa.init()
+    gaa.setup()
+    gaa
+  }
 }
 
 class GoogleAdsAdapter extends AutomanAdapter {
@@ -23,6 +30,35 @@ class GoogleAdsAdapter extends AutomanAdapter {
   override type RBDQ = GRadioButtonVectorQuestion
 //  override type MemoDB =
 
+  private var _production_account_id: Option[Long] = None
+  private var _budget: Option[BigDecimal] = None
+  private var _cpc : Option[BigDecimal] = None
+  private var _english_only : Boolean = false
+  private var _title : Option[String] = None
+
+
+  private var _production_account: Option[Account] = None
+  private var _campaign: Option[Campaign] = None
+  private var _form : Option[Form] = None
+
+
+  def production_account_id: Long = _production_account_id match {case Some(id) => id; case None => throw new Exception("googleadsadapter account id")}
+  def production_account_id_=(id: Long) {_production_account_id = Some(id)}
+  def budget : BigDecimal = _budget match {case Some(id) => id; case None => throw new Exception("googleadsadapter budget")}
+  def budget_=(b: BigDecimal) {_budget = Some(b)}
+  def title : String = _title match {case Some(t) => t; case None => throw new Exception("googleadsadapter title")}
+  def title_=(t: String) {_title = Some(t)}
+
+  def production_account: Account = _production_account_id match {case Some(c) => c; case None => throw new Exception("googleadsadapter production account")}
+  def campaign: Campaign = _campaign match {case Some(c) => c; case None => throw new Exception("googleadsadapter campaign")}
+  def form : Form = _form match {case Some(f) => f; case None => throw new Exception("googleadsadapter form")}
+
+  private def setup(): Unit = {
+        _production_account = try {Some(Account(production_account_id))} catch {case _ : Throwable => None}
+        _campaign = try {Some(production_account.createCampaign(budget,title))} catch {case _ : Throwable => None}
+        if(_english_only) campaign.restrictEnglish()
+        _form = try {Some(Form(title))} catch {case _ : Throwable => None}
+    }
   /**
     * Tell the backend to accept the answer associated with this ANSWERED task.
     *
@@ -36,7 +72,7 @@ class GoogleAdsAdapter extends AutomanAdapter {
     *
     * @return Some budget if successful.
     */
-  override protected def backend_budget(): Option[BigDecimal] = ???
+  override protected def backend_budget(): Option[BigDecimal] = Some(campaign.budget_amount)
 
   /**
     * Cancel the given tasks.
@@ -45,7 +81,16 @@ class GoogleAdsAdapter extends AutomanAdapter {
     * @param toState Which scheduler state tasks should become after cancellation.
     * @return Some list of cancelled tasks if successful.
     */
-  override protected def cancel(ts: List[Task], toState: SchedulerState.Value): Option[List[Task]] = ???
+  override protected def cancel(ts: List[Task], toState: SchedulerState.Value): Option[List[Task]] = {
+    val stateChanger = toState match {
+      case SchedulerState.CANCELLED => (t : Task) => t.copy_as_cancelled()
+      case SchedulerState.TIMEOUT => (t : Task) => t.copy_as_timeout()
+      case SchedulerState.DUPLICATE => (t : Task) => t.copy_as_duplicate()
+      case _ => throw new Exception(s"Invalid target state ${toState} for cancellation request.")
+    }
+    ts.foreach(t => t.question.)
+    ts.map(stateChanger)
+  }
 
   /**
     * Post tasks on the backend, one task for each task.  All tasks given should

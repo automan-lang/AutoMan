@@ -5,7 +5,7 @@ import java.io.File
 object Account {
   /**
     * Construct a new Google Ads account and wrapper class
-    * @param name A new name for this ad group
+    * @param name A new name for this account
     * @return A new Account class representing a newly created account
     */
   def apply(name: String) : Account = {

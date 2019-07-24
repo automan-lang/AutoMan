@@ -48,7 +48,12 @@ libraryDependencies := {
     "org.specs2"                 %%  "specs2-core"          % "2.3.11" % "test",
     "com.typesafe.slick"         %% "slick"                 % "2.1.0",
     "com.h2database"             % "h2"                     % "1.4.189",
-    "org.slf4j"                  % "slf4j-nop"              % "1.6.4"
+    "org.slf4j"                  % "slf4j-nop"              % "1.6.4",
+    "com.google.api-ads"         % "google-ads"             % "4.0.0",
+    "com.google.api-client"      % "google-api-client"      % "1.30.2",
+    "com.google.oauth-client"    % "google-oauth-client-jetty" % "1.30.1",
+    "com.google.apis"            % "google-api-services-script" % "v1-rev379-1.25.0",
+    "com.beust"                  % "jcommander"             % "1.7"
   )
 }
 
