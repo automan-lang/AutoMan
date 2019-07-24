@@ -4,7 +4,7 @@ import java.util.Date
 
 import edu.umass.cs.automan.adapters.googleads.ads.{Account, Campaign}
 import edu.umass.cs.automan.adapters.googleads.forms.Form
-import forms.question.{GQuestionOption, _}
+import edu.umass.cs.automan.adapters.googleads.question._
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.question.QuestionOption
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}

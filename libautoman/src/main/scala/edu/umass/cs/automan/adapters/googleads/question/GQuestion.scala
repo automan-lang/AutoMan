@@ -1,4 +1,9 @@
-package edu.umass.cs.automan.adapters.googleads.forms.question
+package edu.umass.cs.automan.adapters.googleads.question
+
+import com.google.api.services.script.model.ExecutionRequest
+import scala.collection.JavaConverters._
+import edu.umass.cs.automan.adapters.googleads.ads._
+import edu.umass.cs.automan.adapters.googleads.forms._
 
 trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   protected var _question: String = ""
@@ -8,6 +13,9 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   protected var _required: Boolean = false
   protected var _limit: Boolean = false
   protected var _form_id: String = ""
+  protected var _ad: Option[Ad] = None
+  protected var _campaign: Option[Campaign] = None
+  protected var _form: Option[Form] = None
 
   // public API
   def question_=(q: String) { _question = q }
@@ -22,6 +30,12 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   def limit: Boolean = _limit
   def form_id: String = _form_id
   def form_id_=(id: String) { _form_id = id }
+  def ad: Ad = _ad match { case Some(ad) => ad case None => throw new Exception("Ad not initialized") }
+  def ad_=(a: Ad) { _ad = Some(a) }
+  def campaign: Campaign = _campaign match { case Some(camp) => camp case None => throw new Exception("Campaign not initialized") }
+  def campaign_=(c: Campaign) { _campaign = Some(c) }
+  def form: Form = _form match { case Some(f) => f case None => throw new Exception("Form not initialized") }
+  def form_=(f: Form) { _form = Some(f) }
 
   // returns the item (question) id
   def create(form_id: String, question_type: String): String = {

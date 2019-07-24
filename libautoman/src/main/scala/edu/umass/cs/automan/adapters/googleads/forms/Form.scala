@@ -1,8 +1,10 @@
 package edu.umass.cs.automan.adapters.googleads.forms
 
 import java.util.ArrayList
-
+import scala.collection.JavaConverters._
+import com.google.api.services.script.model.ExecutionRequest
 import edu.umass.cs.automan.adapters.googleads.forms.Project._
+import com.google.api.services.script.model._
 
 object Form {
   /**

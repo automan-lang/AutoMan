@@ -3,7 +3,10 @@ package edu.umass.cs.automan.adapters.googleads
 import java.io.{BufferedReader, File, FileWriter, InputStreamReader}
 import java.net.URI
 import java.util.Properties
-
+import com.google.ads.googleads.lib.GoogleAdsClient
+import com.google.ads.googleads.lib.GoogleAdsClient.Builder.ConfigPropertyKey
+import com.google.auth.oauth2.{ClientId, UserAuthorizer}
+import com.google.common.collect.ImmutableList
 import edu.umass.cs.automan.adapters.googleads.ads.Account
 
 import scala.io.StdIn.readLine

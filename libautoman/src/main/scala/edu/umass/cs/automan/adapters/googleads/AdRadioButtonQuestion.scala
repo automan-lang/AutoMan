@@ -2,8 +2,8 @@ package edu.umass.cs.automan.adapters.googleads
 
 import edu.umass.cs.automan.adapters.googleads.ads._
 import edu.umass.cs.automan.adapters.googleads.forms._
-import edu.umass.cs.automan.adapters.googleads.forms.question.Choice._
-import edu.umass.cs.automan.adapters.googleads.forms.question._
+import edu.umass.cs.automan.adapters.googleads.question.Choice._
+import edu.umass.cs.automan.adapters.googleads.question._
 
 import scala.io.StdIn._
 
@@ -36,7 +36,7 @@ object AdRadioButtonQuestion extends App {
     val radiobutton = GRadioButtonQuestion(
       form.id,
       question,
-      choices,
+      choices
     )
     val form_url = form.getPublishedUrl
     println("Form is published: " + form_url)
@@ -91,7 +91,7 @@ object AdRadioButtonQuestion extends App {
     camp.pause()
     println("Final responses:")
     form.getResponses.foreach((x : String) => println(x))
-  }
+    }
 
   //------------------Test--------------------------
   radio(1,
@@ -100,7 +100,7 @@ object AdRadioButtonQuestion extends App {
     List(choice('venus,"Venus"),
          choice('mars,"Mars"),
          choice('saturn,"Saturn"),
-         choice('neptune,"Neptune"),
+         choice('neptune,"Neptune")
 
     ),
     5,

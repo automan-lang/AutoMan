@@ -1,4 +1,4 @@
-package edu.umass.cs.automan.adapters.googleads.forms.question
+package edu.umass.cs.automan.adapters.googleads.question
 
 // old; remove when integrated with AutoMan and use GQuestionOption
 object Choice {

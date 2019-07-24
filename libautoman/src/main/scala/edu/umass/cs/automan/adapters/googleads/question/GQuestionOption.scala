@@ -1,4 +1,4 @@
-package edu.umass.cs.automan.adapters.googleads.forms.question
+package edu.umass.cs.automan.adapters.googleads.question
 
 import edu.umass.cs.automan.core.question.QuestionOption
 

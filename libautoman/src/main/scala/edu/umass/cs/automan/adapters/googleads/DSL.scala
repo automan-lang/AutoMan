@@ -1,7 +1,7 @@
 package edu.umass.cs.automan.adapters.googleads
 
 object DSL extends edu.umass.cs.automan.core.DSL {
-  type GQuestionOption = forms.question.GQuestionOption
+  type GQuestionOption = edu.umass.cs.automan.adapters.googleads.question.GQuestionOption
 
   def gads(): GoogleAdsAdapter = ???
 
