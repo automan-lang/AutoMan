@@ -1,19 +1,24 @@
-package edu.umass.cs.automan.adapters.googleads
+package edu.umass.cs.automan.adapters.googleads.util
 
-import java.io.{BufferedReader, File, FileWriter, InputStreamReader}
+import java.io._
 import java.net.URI
 import java.util.Properties
+
 import com.google.ads.googleads.lib.GoogleAdsClient
 import com.google.ads.googleads.lib.GoogleAdsClient.Builder.ConfigPropertyKey
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
+import com.google.api.services.script.Script
+import com.google.api.services.script.model.{File=>gFile,Content, CreateProjectRequest}
 import com.google.auth.oauth2.{ClientId, UserAuthorizer}
 import com.google.common.collect.ImmutableList
 import edu.umass.cs.automan.adapters.googleads.ads.Account
+import edu.umass.cs.automan.adapters.googleads.util.Service.{config, getCredentials, json_factory, properties_path}
 
+import scala.io.Source
 import scala.io.StdIn.readLine
+import scala.collection.JavaConverters._
 
 object Authenticate {
-
-  val ads_properties_path = "credentials/ads.properties"
 
   private def buildAdsProperties(path: String): Unit = { // Generates the client ID and client secret from the Google Cloud Console:
     // https://console.cloud.google.com
@@ -84,11 +89,11 @@ object Authenticate {
       "   This will give you a Test Account developer token. Apply for basic access in the API Center\n")
     do print("Ready to continue? (y/n): ") while (readLine().toLowerCase() != "y")
 
-    try { buildAdsProperties(ads_properties_path) }
+    try { buildAdsProperties(properties_path) }
     catch {
       case _ : com.google.api.client.http.HttpResponseException => {
         println("Some information was not correct. Try again")
-        buildAdsProperties(ads_properties_path)
+        buildAdsProperties(properties_path)
       }
       case _ : Throwable => println("Properties build failed")
     }
@@ -100,8 +105,49 @@ object Authenticate {
       "   Click Download JSON and save the file as credentials.json in your working directory\n")
     do print("Ready to continue? (y/n): ") while (readLine().toLowerCase() != "y")
 
-    forms.Project.setup(project_name = "AutoMan", gcpNum = gcp_Num)
+    setup(project_name = "AutoMan", gcpNum = gcp_Num)
     println("Your production account ID is: " + Account("AutoMan").account_id)
+  }
+
+  /**
+    * Set up a project that contains a library of Google Form functions
+    * @param project_name The name of the project
+    * @return nothing
+    */
+  def setup(project_name: String = "Form Library", gcpNum: String): Unit = {
+    val http_transport = GoogleNetHttpTransport.newTrustedTransport()
+    val service = new Script.Builder(
+      http_transport, json_factory, getCredentials(http_transport))
+      .setApplicationName("Forms Test")
+      .build()
+    val project_service = service.projects()
+
+    val project = project_service.create(new CreateProjectRequest()
+      .setTitle(project_name))
+      .execute()
+
+    //Write script id to properties file
+    val properties = new Properties
+    properties.load(new FileInputStream(new File(properties_path)))
+    properties.put("script.id",project.getScriptId)
+    properties.store(new FileWriter(new File(properties_path)), null)
+
+    println("Project has been added.")
+
+    val setup_file = new gFile()
+      .setName("Library")
+      .setType("SERVER_JS")
+      .setSource(Source.fromFile("library.txt").mkString)
+
+    val content: Content = new Content().setFiles(List(setup_file, config).asJava)
+    project_service.updateContent(Service.script_id, content).execute()
+
+    println(s"Finish setting up the project here: https://script.google.com/d/${Service.script_id()}/edit\n" +
+      "1) Run any function and authorize the app in the following dialog\n" +
+      s"2) Add your Cloud Project Number '$gcpNum' to Resources > Cloud Platform project\n" +
+      "3) Publish > Deploy as API executable")
+    // STALL PROGRAM: go to project, authorize, add GCP project number, and deploy as API executable
+    do print("Ready to continue? (y/n): ") while (readLine().toLowerCase() != "y")
   }
 
 }

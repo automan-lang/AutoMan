@@ -1,9 +1,10 @@
 package edu.umass.cs.automan.adapters.googleads.question
 
-import com.google.api.services.script.model.ExecutionRequest
+import com.google.api.services.script.model.{ExecutionRequest, Operation}
+
 import scala.collection.JavaConverters._
-import edu.umass.cs.automan.adapters.googleads.ads._
 import edu.umass.cs.automan.adapters.googleads.forms._
+import edu.umass.cs.automan.adapters.googleads.util.Service._
 
 trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   protected var _question: String = ""
@@ -12,10 +13,9 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   protected var _other: Boolean = false
   protected var _required: Boolean = false
   protected var _limit: Boolean = false
+
   protected var _form_id: String = ""
-  protected var _ad: Option[Ad] = None
-  protected var _campaign: Option[Campaign] = None
-  protected var _form: Option[Form] = None
+  protected var _item_id: String = ""
 
   // public API
   def question_=(q: String) { _question = q }
@@ -28,14 +28,12 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   def required: Boolean = _required
   def limit_=(l: Boolean) { _limit = l }
   def limit: Boolean = _limit
+
   def form_id: String = _form_id
   def form_id_=(id: String) { _form_id = id }
-  def ad: Ad = _ad match { case Some(ad) => ad case None => throw new Exception("Ad not initialized") }
-  def ad_=(a: Ad) { _ad = Some(a) }
-  def campaign: Campaign = _campaign match { case Some(camp) => camp case None => throw new Exception("Campaign not initialized") }
-  def campaign_=(c: Campaign) { _campaign = Some(c) }
-  def form: Form = _form match { case Some(f) => f case None => throw new Exception("Form not initialized") }
-  def form_=(f: Form) { _form = Some(f) }
+
+  def item_id: String = _item_id
+  def item_id_=(id: String) { _item_id = id }
 
   // returns the item (question) id
   def create(form_id: String, question_type: String): String = {
@@ -59,5 +57,28 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
     println(s"$question_type question '$question' created")
 
     q_op.getResponse.get("result").toString
+  }
+
+    def retrieve[T]: List[A] = {
+    val request: ExecutionRequest = new ExecutionRequest()
+      .setFunction("getItemResponses")
+      .setParameters(List(id.asInstanceOf[AnyRef],item_id.asInstanceOf[AnyRef]).asJava)
+
+    val op: Operation = service.scripts()
+      .run(script_id, request)
+      .execute()
+
+      val err = op.getError
+      val ret = err match {
+        case null => op.getResponse.get("result").asInstanceOf[java.util.ArrayList[T]].asScala.toList
+        case _ => throw ScriptError(err.getMessage)
+      }
+
+      //TODO: make work
+      //only cases for radiobutton and estimate
+      ret match {
+        case _ : List[java.util.ArrayList[_]] => ret.map(_.asInstanceOf[A])
+        case _ : List[T] => ret.asInstanceOf[List[A]]
+      }
   }
 }

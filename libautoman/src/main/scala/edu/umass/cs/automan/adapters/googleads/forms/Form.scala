@@ -3,8 +3,8 @@ package edu.umass.cs.automan.adapters.googleads.forms
 import java.util.ArrayList
 import scala.collection.JavaConverters._
 import com.google.api.services.script.model.ExecutionRequest
-import edu.umass.cs.automan.adapters.googleads.forms.Project._
 import com.google.api.services.script.model._
+import edu.umass.cs.automan.adapters.googleads.util.Service._
 
 object Form {
   /**
@@ -56,11 +56,15 @@ class Form() {
     val request = new ExecutionRequest()
       .setFunction(func)
       .setParameters(params)
-    val response = service.scripts()
+    val op: Operation= service.scripts()
       .run(script_id, request)
       .execute()
 
-    try{throw new ScriptError(response.getError.getMessage)} catch {case _ : NullPointerException => }
+    val err = op.getError
+    err match {
+      case null => op.getResponse.get("result").toString
+      case _ => throw ScriptError(err.getMessage)
+    }
   }
 
   // performs an execution request that returns a String
@@ -72,7 +76,11 @@ class Form() {
       .run(script_id, request)
       .execute()
 
-    op.getResponse.get("result").toString
+    val err = op.getError
+    err match {
+      case null => op.getResponse.get("result").toString
+      case _ => throw ScriptError(err.getMessage)
+    }
   }
 
   // returns a List of all responses to the form
@@ -85,15 +93,13 @@ class Form() {
       .run(script_id, request)
       .execute()
 
-    try
-    {
-      try{throw new ScriptError(op.getError.getMessage)}
-      catch { case _ : NullPointerException =>
-        op.getResponse.get("result").asInstanceOf[ArrayList[T]].asScala.toList
-      }
+    val err = op.getError
+    err match {
+      case null => op.getResponse.get("result").asInstanceOf[java.util.ArrayList[T]].asScala.toList
+      case _ => throw ScriptError(err.getMessage)
     }
-    catch { case _ : NullPointerException => List.empty[T] }
   }
+
 
   // get the url of the published form
   def getPublishedUrl: String = {

@@ -17,6 +17,8 @@ import com.google.ads.googleads.v2.utils.ResourceNames
 import com.google.common.collect.ImmutableList
 import com.google.protobuf.{BoolValue, Int64Value, StringValue}
 
+import edu.umass.cs.automan.adapters.googleads.util.Service._
+
 
 object Campaign {
   /**
@@ -27,7 +29,7 @@ object Campaign {
     * @return A new AdCampaign wrapper class representing a newly created campaign
     */
   def apply(accountId: Long, dailyBudget: BigDecimal, name: String): Campaign = {
-    val googleAdsClient = Account.client()
+    val googleAdsClient = googleClient()
     val camp: Campaign = new Campaign(googleAdsClient, accountId)
     camp.build(dailyBudget, name)
     camp
@@ -39,7 +41,7 @@ object Campaign {
     * @return A new AdCampaign wrapper class representing an existing campaign
     */
   def apply(accountId: Long, campId: Long): Campaign = {
-    val googleAdsClient = client()
+    val googleAdsClient = googleClient()
     val camp: Campaign = new Campaign(googleAdsClient, accountId)
     camp.load(accountId,campId)
     camp

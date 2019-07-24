@@ -3,7 +3,7 @@ package edu.umass.cs.automan.adapters.googleads.ads
 import com.google.ads.googleads.lib.GoogleAdsClient
 import com.google.ads.googleads.v2.resources.Customer
 import com.google.protobuf.{BoolValue, StringValue}
-import java.io.File
+import edu.umass.cs.automan.adapters.googleads.util.Service._
 
 object Account {
   /**
@@ -12,7 +12,7 @@ object Account {
     * @return A new Account class representing a newly created account
     */
   def apply(name: String) : Account = {
-    val googleAdsClient = client()
+    val googleAdsClient = googleClient()
     val acc = new Account(googleAdsClient: GoogleAdsClient)
     acc.build(name, googleAdsClient.getLoginCustomerId.longValue)
     acc
@@ -23,21 +23,11 @@ object Account {
     * @return A new Account wrapper class representing an existing Google Ads account
     */
   def apply(accountId: Long) : Account = {
-    val googleAdsClient = client()
+    val googleAdsClient = googleClient()
     val acc = new Account(googleAdsClient)
     acc.load(accountId)
     acc
   }
-
-  /**
-    * Build a Google Ads Client to access the manager account
-    * @param path Path to the properties file directory
-    * @return A Google Ads Client built from properties file
-    */
-  def client(path : String = "credentials/ads.properties") : GoogleAdsClient =  {
-    val propertiesFile = new File(path)
-    GoogleAdsClient.newBuilder.fromPropertiesFile(propertiesFile).build()
-  } //Build a google client
 }
 
 class Account(googleAdsClient: GoogleAdsClient){
