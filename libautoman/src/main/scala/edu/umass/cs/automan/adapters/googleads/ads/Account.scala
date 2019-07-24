@@ -1,5 +1,8 @@
 package edu.umass.cs.automan.adapters.googleads.ads
 
+import com.google.ads.googleads.lib.GoogleAdsClient
+import com.google.ads.googleads.v2.resources.Customer
+import com.google.protobuf.{BoolValue, StringValue}
 import java.io.File
 
 object Account {

@@ -1,5 +1,15 @@
 package edu.umass.cs.automan.adapters.googleads.ads
 
+import com.google.ads.googleads.lib.GoogleAdsClient
+import com.google.ads.googleads.v2.enums.AdGroupAdStatusEnum.AdGroupAdStatus
+import com.google.ads.googleads.v2.common.ExpandedTextAdInfo
+import com.google.ads.googleads.v2.enums.PolicyApprovalStatusEnum.PolicyApprovalStatus
+import com.google.ads.googleads.v2.resources.{AdGroupAd, Ad => GoogleAd}
+import com.google.ads.googleads.v2.services.AdGroupAdOperation
+import com.google.ads.googleads.v2.utils.ResourceNames
+import com.google.common.collect.ImmutableList
+import com.google.protobuf.StringValue
+
 class Ad(googleAdsClient: GoogleAdsClient, accountId: Long, adGroupId: Long, title: String, subtitle: String, description: String, url: String) {
   assert(title.length < 30, "Title too long: " + title)
   assert(subtitle.length < 30, "Subtitle too long: " + subtitle)

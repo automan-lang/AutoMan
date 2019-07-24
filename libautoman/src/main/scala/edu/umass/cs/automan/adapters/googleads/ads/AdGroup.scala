@@ -1,5 +1,18 @@
 package edu.umass.cs.automan.adapters.googleads.ads
 
+import com.google.ads.googleads.lib.GoogleAdsClient
+import com.google.ads.googleads.lib.utils.FieldMasks
+import com.google.ads.googleads.v2.common.KeywordInfo
+import com.google.ads.googleads.v2.enums.AdGroupCriterionStatusEnum.AdGroupCriterionStatus
+import com.google.ads.googleads.v2.enums.AdGroupStatusEnum.AdGroupStatus
+import com.google.ads.googleads.v2.enums.AdGroupTypeEnum.AdGroupType
+import com.google.ads.googleads.v2.enums.KeywordMatchTypeEnum.KeywordMatchType
+import com.google.ads.googleads.v2.resources.{AdGroupCriterion, AdGroup => Group}
+import com.google.ads.googleads.v2.services._
+import com.google.ads.googleads.v2.utils.ResourceNames
+import com.google.common.collect.ImmutableList
+import com.google.protobuf.{Int64Value, StringValue}
+
 object AdGroup {
     /**
       * Construct a new ad group and wrapper class
@@ -9,7 +22,7 @@ object AdGroup {
       * @return A new AdGroup wrapper class representing a newly created ad group
       */
     def apply(accountId : Long, campaignId: Long, name: String) : AdGroup = {
-        val googleAdsClient = client()
+        val googleAdsClient = Account.client()
         val ag = new AdGroup(googleAdsClient, accountId)
         ag.build(campaignId, name)
         ag

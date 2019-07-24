@@ -1,6 +1,22 @@
 package edu.umass.cs.automan.adapters.googleads.ads
 
-import java.util.concurrent.TimeUnit
+import com.google.ads.googleads.lib.GoogleAdsClient
+import com.google.ads.googleads.lib.utils.FieldMasks
+import com.google.ads.googleads.v2.services.CampaignCriterionOperation
+import com.google.ads.googleads.v2.common.LanguageInfo
+import com.google.ads.googleads.v2.resources.{CampaignBudget, CampaignCriterion, LanguageConstantName, Campaign => GoogleCampaign}
+import com.google.ads.googleads.v2.common.ManualCpc
+import com.google.ads.googleads.v2.enums.AdvertisingChannelTypeEnum.AdvertisingChannelType
+import com.google.ads.googleads.v2.enums.BiddingStrategyTypeEnum.BiddingStrategyType
+import com.google.ads.googleads.v2.enums.BudgetDeliveryMethodEnum.BudgetDeliveryMethod
+import com.google.ads.googleads.v2.enums.CampaignCriterionStatusEnum.CampaignCriterionStatus
+import com.google.ads.googleads.v2.enums.CampaignStatusEnum.CampaignStatus
+import com.google.ads.googleads.v2.resources.Campaign.NetworkSettings
+import com.google.ads.googleads.v2.services.{CampaignBudgetOperation, CampaignOperation, GoogleAdsRow, SearchGoogleAdsRequest}
+import com.google.ads.googleads.v2.utils.ResourceNames
+import com.google.common.collect.ImmutableList
+import com.google.protobuf.{BoolValue, Int64Value, StringValue}
+
 
 object Campaign {
   /**
@@ -11,7 +27,7 @@ object Campaign {
     * @return A new AdCampaign wrapper class representing a newly created campaign
     */
   def apply(accountId: Long, dailyBudget: BigDecimal, name: String): Campaign = {
-    val googleAdsClient = client()
+    val googleAdsClient = Account.client()
     val camp: Campaign = new Campaign(googleAdsClient, accountId)
     camp.build(dailyBudget, name)
     camp
