@@ -1,6 +1,5 @@
 package edu.umass.cs.automan.adapters.googleads.forms
 
-import java.util.ArrayList
 import scala.collection.JavaConverters._
 import com.google.api.services.script.model.ExecutionRequest
 import com.google.api.services.script.model._
@@ -19,7 +18,7 @@ object Form {
   }
   /**
     * Construct a new wrapper class for an existing form
-    * @param id The ID of the campaign to be loaded
+    * @param id The ID of the form to be loaded
     * @return A new Form wrapper class representing an existing form
     */
   def apply(id: Symbol): Form = {
@@ -50,6 +49,7 @@ class Form() {
   }
 
   //----------- FORM UTILITIES --------------------------------------------------------------------
+
 
   // performs an execution request with no returned response
   def formRequest(func: String, params: java.util.List[AnyRef]): Unit = {
@@ -83,6 +83,12 @@ class Form() {
     }
   }
 
+  // return item (question) id
+  def addQuestion(question_type: String, params: java.util.List[AnyRef]): String = {
+    formResponse(question_type, params)
+    //    println(s"$question_type question '$text' created")
+  }
+
   // returns a List of all responses to the form
   def getResponses[T]: List[T] = {
     val request: ExecutionRequest = new ExecutionRequest()
@@ -100,6 +106,22 @@ class Form() {
     }
   }
 
+  // returns List of responses to a question
+  def getItemResponses[T](item_id: String): List[T] = {
+    val request: ExecutionRequest = new ExecutionRequest()
+      .setFunction("getItemResponses")
+      .setParameters(List(id.asInstanceOf[AnyRef],item_id.asInstanceOf[AnyRef]).asJava)
+
+    val op: Operation = service.scripts()
+      .run(script_id, request)
+      .execute()
+
+    val err = op.getError
+    err match {
+      case null => op.getResponse.get("result").asInstanceOf[java.util.ArrayList[T]].asScala.toList
+      case _ => throw ScriptError(err.getMessage)
+    }
+  }
 
   // get the url of the published form
   def getPublishedUrl: String = {

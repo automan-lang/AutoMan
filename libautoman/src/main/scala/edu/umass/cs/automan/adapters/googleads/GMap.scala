@@ -1,15 +1,15 @@
 package edu.umass.cs.automan.adapters.googleads
 
-import edu.umass.cs.automan.adapters.googleads.ads.Ad
+import edu.umass.cs.automan.adapters.googleads.ads.{Ad, Campaign}
 import edu.umass.cs.automan.adapters.googleads.question.GQuestion
 
 import scala.collection.mutable
 
 class GMap {
-  var map = new mutable.HashMap[String, (GQuestion,Ad)]
+  var map = new mutable.HashMap[String, (GQuestion, Campaign, Ad)]
 
-  protected[googleads] def add(id: String, question: GQuestion, ad: Ad) = {
-    map.put(id, (question,ad))
+  protected[googleads] def add(id: String, question: GQuestion, camp: Campaign, ad: Ad) = {
+    map.put(id, (question, camp, ad))
   }
 
   protected[googleads] def get(id: String) = {
