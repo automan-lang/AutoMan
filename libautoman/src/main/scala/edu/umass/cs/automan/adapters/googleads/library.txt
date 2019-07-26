@@ -179,7 +179,7 @@ function getResponses(id) {
   return responseArr
 }
 
-function getItemResponses(id, item_id) {
+function getItemResponses(id, item_id, index) {
   var form = FormApp.openById(id)
   var formResponses = form.getResponses()
   var responseArr = new Array(formResponses.length)
@@ -187,7 +187,7 @@ function getItemResponses(id, item_id) {
 
   if (formResponses.length == 0) return "No responses"
   var length = formResponses.length
-  for (var i = 0; i < formResponses.length; i++) {
+  for (var i = index; i < formResponses.length; i++) {
     var itemResponses = formResponses[i].getItemResponses()
     var itemResponse = itemResponses[0]
     if (item_id == itemResponse.getItem().getId()) {

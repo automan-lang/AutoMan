@@ -7,6 +7,8 @@ import edu.umass.cs.automan.adapters.googleads.policy.aggregation.GMinimumSpawnP
 import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.question.RadioButtonQuestion
 
+import scala.collection.mutable
+
 //object GRadioButtonQuestion {
 //  def apply(id: String,
 //            question: String,
@@ -46,9 +48,11 @@ class GRadioButtonQuestion extends RadioButtonQuestion with GQuestion {
     form.addQuestion("radioButton", params)
   }
 
-  def answer(): List[A] = {
-    form.getItemResponses(item_id).map { s =>
+  def answer() = {
+    val s = form.getItemResponses(item_id, read_so_far).map { s =>
       options.find(o => o.question_text == s).get.question_id
     }
+    read_so_far += s.length
+    answers_enqueue(s)
   }
 }

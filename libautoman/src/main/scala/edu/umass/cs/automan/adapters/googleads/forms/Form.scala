@@ -107,10 +107,10 @@ class Form() {
   }
 
   // returns List of responses to a question
-  def getItemResponses[T](item_id: String): List[T] = {
+  def getItemResponses[T](item_id: String, read_so_far: Int = 0): List[T] = {
     val request: ExecutionRequest = new ExecutionRequest()
       .setFunction("getItemResponses")
-      .setParameters(List(id.asInstanceOf[AnyRef],item_id.asInstanceOf[AnyRef]).asJava)
+      .setParameters(List(id,item_id, read_so_far).map(_.asInstanceOf[AnyRef]).asJava)
 
     val op: Operation = service.scripts()
       .run(script_id, request)
