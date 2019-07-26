@@ -20,15 +20,15 @@ object GoogleAdsAdapter {
 }
 
 class GoogleAdsAdapter extends AutomanAdapter {
-  override type CBQ = GCheckboxQuestion
-  override type CBDQ = GCheckboxVectorQuestion
-  override type MEQ = GMultiEstimationQuestion
-  override type EQ = GEstimationQuestion
-  override type FTQ = GFreeTextQuestion
-  override type FTDQ = GFreeTextVectorQuestion
-  override type RBQ = GRadioButtonQuestion
-  override type RBDQ = GRadioButtonVectorQuestion
-//  override type MemoDB =
+  override type CBQ       = GRadioButtonQuestion
+  override type CBDQ      = GRadioButtonQuestion
+  override type MEQ       = GRadioButtonQuestion
+  override type EQ        = GRadioButtonQuestion
+  override type FTQ       = GRadioButtonQuestion
+  override type FTDQ      = GRadioButtonQuestion
+  override type RBQ       = GRadioButtonQuestion // correct
+  override type RBDQ      = GRadioButtonQuestion
+//  override type MemoDB  =
 
   private var _production_account_id: Option[Long] = None
   private var _budget: Option[BigDecimal] = None
@@ -36,12 +36,9 @@ class GoogleAdsAdapter extends AutomanAdapter {
   private var _english_only : Boolean = false
   private var _title : Option[String] = None
 
-
   private var _production_account: Option[Account] = None
   private var _campaign: Option[Campaign] = None
   private var _form : Option[Form] = None
-  private var _question_map : Option[GMap] = None
-
 
   def production_account_id: Long = _production_account_id match {case Some(id) => id; case None => throw new Exception("googleadsadapter account id")}
   def production_account_id_=(id: Long) {_production_account_id = Some(id)}
@@ -53,7 +50,6 @@ class GoogleAdsAdapter extends AutomanAdapter {
   def production_account: Account = _production_account match {case Some(c) => c; case None => throw new Exception("googleadsadapter production account")}
   def campaign: Campaign = _campaign match {case Some(c) => c; case None => throw new Exception("googleadsadapter campaign")}
   def form : Form = _form match {case Some(f) => f; case None => throw new Exception("googleadsadapter form")}
-  def question_map : GMap = _question_map match {case Some(qm) => qm; case None => throw new Exception("googleadsadapter q map")}
 
   private def setup(): Unit = {
         _production_account = try {Some(Account(production_account_id))} catch {case _ : Throwable => None}
@@ -157,13 +153,13 @@ class GoogleAdsAdapter extends AutomanAdapter {
   def Option(id: Symbol, text: String) = new GQuestionOption(id, text, "")
   def Option(id: Symbol, text: String, image_url: String) = new GQuestionOption(id, text, image_url)
 
-  protected def CBQFactory()  = new GCheckboxQuestion
-  protected def CBDQFactory() = new GCheckboxVectorQuestion
-  protected def MEQFactory()  = new GMultiEstimationQuestion
-  protected def EQFactory()   = new GEstimationQuestion
-  protected def FTQFactory()  = new GFreeTextQuestion
-  protected def FTDQFactory() = new GFreeTextVectorQuestion
+  protected def CBQFactory()  = ??? // new GCheckboxQuestion
+  protected def CBDQFactory() = ??? // new GCheckboxVectorQuestion
+  protected def MEQFactory()  = ??? // new GMultiEstimationQuestion
+  protected def EQFactory()   = ??? // new GEstimationQuestion
+  protected def FTQFactory()  = ??? // new GFreeTextQuestion
+  protected def FTDQFactory() = ??? //new GFreeTextVectorQuestion
   protected def RBQFactory()  = new GRadioButtonQuestion
-  protected def RBDQFactory() = new GRadioButtonVectorQuestion
+  protected def RBDQFactory() = ??? // new GRadioButtonVectorQuestion
   override protected def MemoDBFactory(): MemoDB = ???
 }
