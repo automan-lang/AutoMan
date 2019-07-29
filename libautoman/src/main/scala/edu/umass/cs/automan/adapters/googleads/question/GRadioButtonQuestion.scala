@@ -37,7 +37,10 @@ class GRadioButtonQuestion extends RadioButtonQuestion with GQuestion {
   override type A = RadioButtonQuestion#A
 
   // public API
-  override def randomized_options: List[QuestionOptionType] = ???
+  override def randomized_options: List[QuestionOptionType] = {
+    form.shuffle()
+    options
+  }
 
   // don't know how this works
   override def memo_hash: String = {
