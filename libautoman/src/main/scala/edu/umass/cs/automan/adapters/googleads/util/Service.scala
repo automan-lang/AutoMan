@@ -55,6 +55,18 @@ object Service {
     properties.getProperty("script.id")
   }
 
+  def client_id: String = {
+      val properties = new Properties
+      properties.load(new FileInputStream(new File(properties_path)))
+      properties.getProperty("api.googleads.clientId")
+  }
+
+  def client_secret: String = {
+      val properties = new Properties
+      properties.load(new FileInputStream(new File(properties_path)))
+      properties.getProperty("api.googleads.clientSecret")
+  }
+
   def service: Script = {
     val http_transport = GoogleNetHttpTransport.newTrustedTransport()
     new Script.Builder(
@@ -67,17 +79,18 @@ object Service {
   /**
     * Run the specified script function
     * @param HTTP_TRANSPORT Automatically created
-    * @param CREDENTIALS_PATH A directory path to the credentials.json file
     * @return A Credential object
     */
-  protected[util] def getCredentials(HTTP_TRANSPORT: NetHttpTransport,
-                     CREDENTIALS_PATH: String = credentials_json_path): Credential = {
+  protected[util] def getCredentials(HTTP_TRANSPORT: NetHttpTransport): Credential = {
     // Load client secrets
-    val in: InputStream = new FileInputStream(new File(credentials_json_path))
-    if (in == null) {
-      throw new FileNotFoundException("Resource not found: credentials.json")
-    }
-    val clientSecrets = GoogleClientSecrets.load(json_factory, new InputStreamReader(in))
+
+    val details = new GoogleClientSecrets.Details()
+      .setAuthUri("https://accounts.google.com/o/oauth2/auth")
+      .setClientId(client_id)
+      .setClientSecret(client_secret)
+      .setRedirectUris(java.util.Arrays.asList("urn:ietf:wg:oauth:2.0:oob","http://localhost"))
+      .setTokenUri("https://oauth2.googleapis.com/token")
+    val clientSecrets = new GoogleClientSecrets().setInstalled(details)
 
     // Build flow and trigger user authorization request
     val flow = new GoogleAuthorizationCodeFlow.Builder(HTTP_TRANSPORT, json_factory, clientSecrets, scopes)
