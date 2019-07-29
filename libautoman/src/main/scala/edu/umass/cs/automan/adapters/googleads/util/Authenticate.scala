@@ -4,14 +4,12 @@ import java.io._
 import java.net.URI
 import java.util.Properties
 
-import com.google.ads.googleads.lib.GoogleAdsClient
 import com.google.ads.googleads.lib.GoogleAdsClient.Builder.ConfigPropertyKey
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
-import com.google.api.services.script.Script
-import com.google.api.services.script.model.{File=>gFile,Content, CreateProjectRequest}
+import com.google.api.services.script.model.{Content, CreateProjectRequest, File => gFile}
 import com.google.auth.oauth2.{ClientId, UserAuthorizer}
 import com.google.common.collect.ImmutableList
 import edu.umass.cs.automan.adapters.googleads.ads.Account
+import edu.umass.cs.automan.adapters.googleads.forms.Form
 import edu.umass.cs.automan.adapters.googleads.util.Service._
 
 import scala.io.Source
@@ -19,9 +17,9 @@ import scala.io.StdIn.readLine
 import scala.collection.JavaConverters._
 
 object Authenticate {
-
   // initialization routines
   def setup(): Unit = {
+
     println("Getting started with AdForm:\n" +
       "   Set up a Google Cloud Platform project at https://console.cloud.google.com/\n" +
       "   Go to Select a Project > New Project and fill out 'Project name' and 'Location'")
@@ -53,6 +51,7 @@ object Authenticate {
       }
       case _ : Throwable => println("Properties build failed")
     }
+
     val project_service = service.projects()
 
     val project = project_service.create(new CreateProjectRequest()
@@ -80,7 +79,8 @@ object Authenticate {
       "3) Publish > Deploy as API executable")
     do print("Ready to continue? (y/n): ") while (readLine().toLowerCase() != "y")
 
-    println(s"\nAll done. Your production account ID is: ${Account("AutoMan").account_id}")
+    println("Test form: " + Form("authenticate-test").getPublishedUrl)
+    println(s"\nAll done. Your ad production account ID is: ${Account("AutoMan").account_id}")
   }
 
   private def buildAdsProperties(path: String, managerId: String, developerToken: String): Unit = { // Generates the client ID and client secret from the Google Cloud Console:

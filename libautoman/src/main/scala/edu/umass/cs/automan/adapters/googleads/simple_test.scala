@@ -1,11 +1,12 @@
+import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets
 import edu.umass.cs.automan.adapters.googleads.DSL._
 import edu.umass.cs.automan.adapters.googleads.GoogleAdsAdapter
+import edu.umass.cs.automan.adapters.googleads.util.Authenticate
 import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
 
 object simple_test extends App {
-  val opts = Utilities.unsafe_optparse(args, "simple_program")
-
-  implicit val a = ???
+  //val opts = Utilities.unsafe_optparse(args, "simple_program")
+  implicit val a = GoogleAdsAdapter(g => g.production_account_id_=(1373958703))
 
   def which_one() = radio (
     budget = 8.00,

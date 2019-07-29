@@ -6,6 +6,7 @@ import edu.umass.cs.automan.adapters.googleads.ads.Account
 import edu.umass.cs.automan.adapters.googleads.forms.Form
 import edu.umass.cs.automan.adapters.googleads.question._
 import edu.umass.cs.automan.adapters.googleads.util.KeywordList._
+import edu.umass.cs.automan.adapters.mturk.question._
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
@@ -21,14 +22,14 @@ object GoogleAdsAdapter {
 }
 
 class GoogleAdsAdapter extends AutomanAdapter {
-  override type CBQ       = GRadioButtonQuestion
-  override type CBDQ      = GRadioButtonQuestion
-  override type MEQ       = GRadioButtonQuestion
-  override type EQ        = GRadioButtonQuestion
-  override type FTQ       = GRadioButtonQuestion
-  override type FTDQ      = GRadioButtonQuestion
+  override type CBQ       = MTCheckboxQuestion //???
+  override type CBDQ      = MTCheckboxVectorQuestion //???
+  override type MEQ       = MTMultiEstimationQuestion //???
+  override type EQ        = MTEstimationQuestion //???
+  override type FTQ       = MTFreeTextQuestion //???
+  override type FTDQ      = MTFreeTextVectorQuestion //???
   override type RBQ       = GRadioButtonQuestion // correct
-  override type RBDQ      = GRadioButtonQuestion
+  override type RBDQ      = MTRadioButtonVectorQuestion //???
 //  override type MemoDB  =
 
   private var _production_account_id: Option[Long] = None
@@ -49,14 +50,14 @@ class GoogleAdsAdapter extends AutomanAdapter {
     * @param ts ANSWERED tasks.
     * @return Some ACCEPTED tasks if successful.
     */
-  override protected def accept(ts: List[Task]): Option[List[Task]] = Some(ts.map(_.copy_as_accepted()))
+  protected[automan] def accept(ts: List[Task]): Option[List[Task]] = Some(ts.map(_.copy_as_accepted()))
 
   /**
     * Get the budget from the backend.
     *
     * @return Some budget if successful.
     */
-  override protected def backend_budget(): Option[BigDecimal] = Some(Int.MaxValue)
+  protected[automan] def backend_budget(): Option[BigDecimal] = Some(Int.MaxValue)
 
   /**
     * Cancel the given tasks.
@@ -65,7 +66,7 @@ class GoogleAdsAdapter extends AutomanAdapter {
     * @param toState Which scheduler state tasks should become after cancellation.
     * @return Some list of cancelled tasks if successful.
     */
-  override protected def cancel(ts: List[Task], toState: SchedulerState.Value): Option[List[Task]] = {
+  protected[automan] def cancel(ts: List[Task], toState: SchedulerState.Value): Option[List[Task]] = {
     val stateChanger = toState match {
       case SchedulerState.CANCELLED => (t : Task) => t.copy_as_cancelled()
       case SchedulerState.TIMEOUT => (t : Task) => t.copy_as_timeout()
@@ -86,14 +87,7 @@ class GoogleAdsAdapter extends AutomanAdapter {
     * @param exclude_worker_ids Worker IDs to exclude, if any. Not used here.
     * @return Some list of the posted tasks if successful.
     */
-  override protected def post(ts: List[Task], exclude_worker_ids: List[String]): Option[List[Task]] = {
-    Some(ts.map( t =>
-      t.state match {
-        case SchedulerState.READY => taskPost(t)
-        case _ => throw new Exception(s"Invalid target state ${t.state} for post request.")
-      }
-    ))
-
+  protected[automan] def post(ts: List[Task], exclude_worker_ids: List[String]): Option[List[Task]] = {
     // create campaign, ad, form
     def taskPost(t: Task): Task = {
       val q = t.question.asInstanceOf[GQuestion]
@@ -112,6 +106,13 @@ class GoogleAdsAdapter extends AutomanAdapter {
       }
       t.copy_as_running()
     }
+
+    Some(ts.map( t =>
+      t.state match {
+        case SchedulerState.READY => taskPost(t)
+        case _ => throw new Exception(s"Invalid target state ${t.state} for post request.")
+      }
+    ))
   }
 
   /**
@@ -120,7 +121,7 @@ class GoogleAdsAdapter extends AutomanAdapter {
     * @param ts_reasons A list of pairs of ANSWERED tasks and their rejection reasons.
     * @return Some REJECTED tasks if succesful.
     */
-  override protected def reject(ts_reasons: List[(Task, String)]): Option[List[Task]] =
+  protected[automan] def reject(ts_reasons: List[(Task, String)]): Option[List[Task]] =
     Some(
       ts_reasons.map(
         {case (t: Task,s : String) => t.copy_as_rejected()}
@@ -136,10 +137,20 @@ class GoogleAdsAdapter extends AutomanAdapter {
     * @param current_time The current virtual time.
     * @return Some list of RUNNING, RETRIEVED, or TIMEOUT tasks if successful.
     */
-  override protected def retrieve(ts: List[Task], current_time: Date): Option[List[Task]] = {
+  protected[automan] def retrieve(ts: List[Task], current_time: Date): Option[List[Task]] = {
     // get unique questions, update answer queue for each
     val qSet: Set[Question] = Set(ts.map(_.question): _*)
     qSet.foreach(_.asInstanceOf[GQuestion].answer())
+
+    def answer(t : Task): Task = {
+      val q = t.question.asInstanceOf[GQuestion]
+      val updatedT = q.answers_dequeue() match {
+        case Some(a) => t.copy_with_answer(a, UUID.randomUUID().toString)
+        case None => t
+      }
+      updatedT
+    }
+
 
     Some(ts.map(t =>
       t.state match {
@@ -147,12 +158,6 @@ class GoogleAdsAdapter extends AutomanAdapter {
         case _ => throw new Exception(s"Invalid target state ${t.state} for retrieve request.")
       }
     ))
-
-    def answer(t : Task): Task = {
-      val q = t.question.asInstanceOf[GQuestion]
-      val a = q.answers_dequeue()
-      t.copy_with_answer(a, UUID.randomUUID().toString)
-    }
   }
 
   def Option(id: Symbol, text: String) = new GQuestionOption(id, text, "")
