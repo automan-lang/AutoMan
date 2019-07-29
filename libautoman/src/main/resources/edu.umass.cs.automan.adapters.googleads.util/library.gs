@@ -1,8 +1,7 @@
 // FORM TYPES -------------------------------------------------------
 
-function checkbox(form_id, question, other, required, limit, choices) {
+function checkbox(form_id, question, other, required, choices) {
   var form = FormApp.openById(form_id)
-  form.setLimitOneResponsePerUser(limit)
   var item = form.addCheckboxItem()
     .setTitle(question)
     .showOtherOption(other)
@@ -11,33 +10,41 @@ function checkbox(form_id, question, other, required, limit, choices) {
   return item.getId()
 }
 
-function checkboxImgs(form_id, question, other, required, limit, choices, urls) {
-  var item_id = checkbox(form_id,question,other,required,limit, choices)
+function checkboxImgs(form_id, question, other, required, choices, urls) {
+  var item_id = checkbox(form_id, question, other, required, choices)
   choiceImgs(FormApp.openById(form_id), choices, urls)
   return item_id
 }
 
-function estimation(form_id, question, required, limit) {
+function estimation(form_id, question, required) {
   var form = FormApp.openById(form_id)
-  form.setLimitOneResponsePerUser(limit)
   var item = form.addTextItem()
     .setTitle(question)
     .setRequired(required)
+  validateNum(form_id, item.getId(), "Please enter a number")
   return item.getId()
 }
 
-function freeText(form_id, question, required, limit) {
+// TODO: generalize to n-dimensions
+function multiestimation(form_id, question, required) {
+  var item1 = estimation(form_id, question, required)
+  // second dimension
+  var item2 = FormApp.openById(form_id).addTextItem()
+    .setRequired(required)
+  validateNum(form_id, item2.getId(), "Please enter a number")
+  return item1
+}
+
+function freeText(form_id, question, required) {
   var form = FormApp.openById(form_id)
-  form.setLimitOneResponsePerUser(limit)
   var item = form.addParagraphTextItem()
     .setTitle(question)
     .setRequired(required)
   return item.getId()
 }
 
-function radioButton(form_id, question, other, required, limit, choices) {
+function radioButton(form_id, question, other, required, choices) {
   var form = FormApp.openById(form_id)
-  form.setLimitOneResponsePerUser(limit)
   var item = form.addMultipleChoiceItem()
     .setTitle(question)
     .showOtherOption(other)
@@ -46,8 +53,8 @@ function radioButton(form_id, question, other, required, limit, choices) {
   return item.getId()
 }
 
-function radioButtonImgs(form_id, question, other, required, limit, choices, urls) {
-  var item_id = radioButton(form_id, question, other, required, limit, choices)
+function radioButtonImgs(form_id, question, other, required, choices, urls) {
+  var item_id = radioButton(form_id, question, other, required, choices)
   choiceImgs(FormApp.openById(form_id), choices, urls)
   return item_id
 }
@@ -150,8 +157,9 @@ function shuffleQuestion(item) {
 
 // UTILITIES ----------------------------------------------------------
 
-function addForm(title) {
+function addForm(title, limit) {
   var form = FormApp.create(title)
+  form.setLimitOneResponsePerUser(limit)
   return form.getId()
 }
 
@@ -167,16 +175,62 @@ function getPublishedUrl(id) {
 
 function getResponses(id) {
   var form = FormApp.openById(id)
-  var responses = form.getResponses()
-  var responseArr = new Array(responses.length)
-  for(var i = 0; i < responses.length; i++) {
-    var formResponse = responses[i]
-    var itemResponses = formResponse.getItemResponses()
+  var formResponses = form.getResponses()
+  var responseArr = new Array(formResponses.length)
+  var idx = 0
+
+  for(var i = 0; i < formResponses.length; i++) {
+    var itemResponses = formResponses[i].getItemResponses()
     for (var j = 0; j < itemResponses.length; j++) {
-      responseArr[i] = itemResponses[j].getResponse()
+      responseArr[idx++] = itemResponses[j].getResponse()
     }
  }
   return responseArr
+}
+
+function getItemResponses(id, item_id, index) {
+  var form = FormApp.openById(id)
+  var formResponses = form.getResponses()
+  var responseArr = new Array(formResponses.length)
+  var found = false
+  var idx = 0
+
+  if (formResponses.length == index) return [] // no new responses yet
+  for (var i = index; i < formResponses.length; i++) {
+    var itemResponses = formResponses[i].getItemResponses()
+    for (var j = 0; j < itemResponses.length; j++) {
+      if (item_id == itemResponses[j].getItem().getId()) {
+        found = true
+        responseArr[idx++] = itemResponses[j].getResponse()
+      }
+    }
+  }
+  if (found) return responseArr
+  else return ["Question not found"]
+}
+
+// TODO: generalize for n-dimensions
+function getMultiResponses(form_id, item_id, index) {
+  var form = FormApp.openById(form_id)
+  var formResponses = form.getResponses()
+  var responseArr = new Array(formResponses.length)
+  var found = false
+  var idx = 0
+
+  if (formResponses.length == index) return [] // no new responses yet
+  for (var i = index; i < formResponses.length; i++) {
+    var itemResponses = formResponses[i].getItemResponses()
+    for (var j = 0; j < itemResponses.length; j++) {
+      if (item_id == itemResponses[j].getItem().getId()) {
+        found = true
+        // assume that the second part of the multiestimation response is next
+        var response = [itemResponses[j].getResponse(), itemResponses[++j].getResponse()]
+        responseArr[idx++] = response
+      }
+    }
+  }
+  if (found) return responseArr
+  else return ["Question not found"]
 }
 
 function getTextItem(form_id, item_id) {

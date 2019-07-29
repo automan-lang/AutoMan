@@ -4,16 +4,19 @@ import scala.collection.JavaConverters._
 import com.google.api.services.script.model.ExecutionRequest
 import com.google.api.services.script.model._
 import edu.umass.cs.automan.adapters.googleads.util.Service._
+import edu.umass.cs.automan.adapters.googleads.ScriptError
 
 object Form {
   /**
     * Construct a new form and wrapper class
     * @param title A new title for this form
+    * @param limit Sets whether the form allows only one response per respondent.
+    *              If true, requires respondent to sign in to their Google account.
     * @return A new Form wrapper class representing a newly created form
     */
-  def apply(title: String): Form = {
+  def apply(title: String, limit: Boolean = false): Form = {
     val f: Form = new Form()
-    f.build(title)
+    f.build(title, limit)
     f
   }
   /**
@@ -34,10 +37,10 @@ class Form() {
   def id: String = _id match {case Some(s) => s; case None => throw new Exception("Form not initialized")}
 
   // creates a new form, saving the id
-  private def build(title : String) : Unit = {
+  private def build(title : String, limit: Boolean) : Unit = {
     val form_request = new ExecutionRequest()
       .setFunction("addForm")
-      .setParameters(List(title.asInstanceOf[AnyRef]).asJava)
+      .setParameters(List(title, limit).map(_.asInstanceOf[AnyRef]).asJava)
     val form_op = service.scripts()
       .run(script_id, form_request)
       .execute()
@@ -86,7 +89,6 @@ class Form() {
   // return item (question) id
   def addQuestion(question_type: String, params: java.util.List[AnyRef]): String = {
     formResponse(question_type, params)
-    //    println(s"$question_type question '$text' created")
   }
 
   // returns a List of all responses to the form
@@ -106,7 +108,8 @@ class Form() {
     }
   }
 
-  // returns List of responses to a question
+  // returns List of responses to a question,
+  // starting from the point we last left off
   def getItemResponses[T](item_id: String, read_so_far: Int = 0): List[T] = {
     val request: ExecutionRequest = new ExecutionRequest()
       .setFunction("getItemResponses")
@@ -161,8 +164,8 @@ class Form() {
     formRequest("shuffleForm", List(id.asInstanceOf[AnyRef]).asJava)
   }
 
+  // TODO: only allow these to be called with estimation questions
   // data validation for estimation questions only
-  //TODO: only allow these to be called with estimation questions
   def requireNum(item_id: String, help: String = ""): Unit = {
     formRequest("validateNum", List(id, item_id, help).map(_.asInstanceOf[AnyRef]).asJava)
   }
