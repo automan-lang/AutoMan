@@ -2,15 +2,10 @@ package edu.umass.cs.automan.adapters.googleads.question
 
 import edu.umass.cs.automan.adapters.googleads.ads.{Ad, Campaign}
 import edu.umass.cs.automan.adapters.googleads.forms._
-
 import scala.collection.mutable
 
 trait GQuestion extends edu.umass.cs.automan.core.question.Question {
 
-  protected var _other: Boolean = false
-  protected var _required: Boolean = true
-  protected var _limit: Boolean = false
-  protected var _item_id: String = ""
   protected[googleads] var _campaign: Option[Campaign] = None
   protected[googleads] var _ad: Option[Ad] = None
   // defaults for now, will need to change core.DSL
@@ -24,6 +19,10 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
     "All answers are fully anonymous and we will not collect any personal information.\n" +
     "Please answer only once.\n" +
     "To find out more about Williams Computer Science visit https://csci.williams.edu/"
+  protected var _other: Boolean = false
+  protected var _required: Boolean = true
+  protected var _item_id: String = ""
+
   protected var _answers: Option[mutable.Queue[A]] = None
   // number of answers retrieved from backend so far
   protected[question] var read_so_far: Int = 0
@@ -32,8 +31,6 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   def other: Boolean = _other
   def required_=(r: Boolean) { _required = r }
   def required: Boolean = _required
-  def limit_=(l: Boolean) { _limit = l }
-  def limit: Boolean = _limit
   def item_id: String = _item_id
   def item_id_=(id: String) { _item_id = id }
   def campaign: Campaign = _campaign match { case Some(c) => c case None => throw new UninitializedError }
@@ -48,7 +45,6 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   def ad_descript_=(des: String) { _ad_descript = des }
   def english: Boolean = _english
   def english_=(e: Boolean) { _english = e }
-
   def form: Form = _form match { case Some(f) => f case None => throw new UninitializedError }
   def form_=(f: Form) { _form = Some(f) }
   def form_descript: String = _form_descript
@@ -59,6 +55,7 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   def answers_enqueue(l: List[A]): Unit = l.foreach(answers.enqueue(_))
   def answers_dequeue(): A = answers.dequeue()
 
+  // to be implemented by each question type
   def create(): String
   def answer(): Unit
 

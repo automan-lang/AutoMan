@@ -2,14 +2,11 @@ package edu.umass.cs.automan.adapters.googleads.question
 
 import java.security.MessageDigest
 import java.util.{Date, UUID}
-
+import org.apache.commons.codec.binary.Hex
 import scala.collection.JavaConverters._
 import edu.umass.cs.automan.adapters.googleads.policy.aggregation.GMinimumSpawnPolicy
 import edu.umass.cs.automan.adapters.googleads.mock.RadioButtonMockResponse
 import edu.umass.cs.automan.core.question.RadioButtonQuestion
-import org.apache.commons.codec.binary.Hex
-
-import scala.collection.mutable
 
 //object GRadioButtonQuestion {
 //  def apply(id: String,
@@ -55,8 +52,17 @@ class GRadioButtonQuestion extends RadioButtonQuestion with GQuestion {
   }
 
   def create(): String = {
-    val params = List(form.id, text, other, required, limit, options.toArray).map(_.asInstanceOf[AnyRef]).asJava
-    form.addQuestion("radioButton", params)
+    val choices = options.map(_.question_text).toArray
+    val images = options.map(_.image_url).toArray
+    // if there are urls, add images to question
+    if (!images.contains("")) {
+      val params = List(form.id, text, other, required, choices, images).map(_.asInstanceOf[AnyRef]).asJava
+      form.addQuestion("radioButtonImgs", params)
+    }
+    else {
+      val params = List(form.id, text, other, required, choices).map(_.asInstanceOf[AnyRef]).asJava
+      form.addQuestion("radioButton", params)
+    }
   }
 
   def answer(): Unit = {
