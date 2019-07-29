@@ -1,26 +1,72 @@
 package edu.umass.cs.automan.adapters.googleads.forms
 
+import java.util
+
+import edu.umass.cs.automan.adapters.googleads.DSL.choice
+import edu.umass.cs.automan.adapters.googleads.GoogleAdsAdapter
+import edu.umass.cs.automan.adapters.googleads.question.{GQuestionOption, GRadioButtonQuestion}
+import edu.umass.cs.automan.adapters.googleads.util.Authenticate
+
+import scala.collection.mutable
+
 object FormTesting extends App{
+  //Authenticate.setup()
 
-  val form = Form(Symbol("10oJbexfqJi9Az5oEZn3ViVLWSprrt4RlPyvlgW8DDdQ"))
-  go()
+  val form = Form(Symbol("1KuqpqGaC7dAIcrb689f3q8I0wajvfh11EN7Q6Pvxi4o"))
+  println(form.getPublishedUrl)
 
-  def go() {
-    try {
-      form.getResponses.foreach((x : String) => println("Response: " + x)); go()
+  val gRBQ = new GRadioButtonQuestion()
+
+  gRBQ.answers_=(mutable.Queue.empty)
+  gRBQ.form_=(form)
+  gRBQ.text_=("q1")
+  gRBQ.options_=(List(
+    GQuestionOption('oscar, "Oscar the Grouch"),
+    GQuestionOption('kermit, "Kermit the Frog"),
+    GQuestionOption('spongebob, "Spongebob Squarepants"),
+    GQuestionOption('cookiemonster, "Cookie Monster"),
+    GQuestionOption('thecount, "The Count")
+  ))
+  gRBQ.create()
+
+  println(gRBQ.item_id)
+  gRBQ.answer()
+
+  val gRBQ2 = new GRadioButtonQuestion()
+
+  gRBQ2.answers_=(mutable.Queue.empty)
+  gRBQ2.form_=(form)
+  gRBQ2.text_=("q2")
+  gRBQ2.options_=(List(
+    GQuestionOption('oscar, "Oscar the Grouch"),
+    GQuestionOption('kermit, "Kermit the Frog"),
+    GQuestionOption('spongebob, "Spongebob Squarepants"),
+    GQuestionOption('cookiemonster, "Cookie Monster"),
+    GQuestionOption('thecount, "The Count")
+  ))
+  gRBQ2.create()
+
+  println(gRBQ2.item_id)
+  gRBQ2.answer()
+  go(Nil,Nil)
+
+  def go(l : List[Symbol], l3 : List[Symbol]) {
+    gRBQ.answer()
+    gRBQ2.answer()
+    val l2 : List[Symbol] = gRBQ.answers_dequeue() match
+    {
+        case Some(s) => s :: l
+        case None => l
     }
-    catch {
-      case _: ScriptError => println("Could not get responses"); go()
-      case x : Throwable => println("in responses:" + x.toString); go()
+    val l4 : List[Symbol] = gRBQ2.answers_dequeue() match
+    {
+      case Some(s) => s :: l3
+      case None => l3
     }
-    try {
-      form.shuffle(); go()
-    }
-    catch {
-      case _: ScriptError => println("Could not shuffle"); go()
-      case x : Throwable => println("in shuffle:" + x.toString); go()
-    }
-    println("exited")
+    println(l2)
+    println(l4)
+    Thread.sleep(1000)
+    go(l2,l4)
   }
 
   //form.setDescription("This question is part of ongoing computer science research at Williams College.\n" +

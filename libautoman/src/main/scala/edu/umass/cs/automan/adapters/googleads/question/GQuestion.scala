@@ -53,7 +53,7 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   def answers_=(a: mutable.Queue[A]) { _answers = Some(a) }
 
   def answers_enqueue(l: List[A]): Unit = l.foreach(answers.enqueue(_))
-  def answers_dequeue(): A = answers.dequeue()
+  def answers_dequeue(): Option[A] = if(answers.isEmpty) {None} else {Some(answers.dequeue())}
 
   // to be implemented by each question type
   def create(): String
