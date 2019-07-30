@@ -25,13 +25,13 @@ function estimation(form_id, question, required) {
   return item.getId()
 }
 
-// TODO: generalize to n-dimensions
-function multiestimation(form_id, question, required) {
-  var item1 = estimation(form_id, question, required)
-  // second dimension
-  var item2 = FormApp.openById(form_id).addTextItem()
-    .setRequired(required)
-  validateNum(form_id, item2.getId(), "Please enter a number")
+function multiEstimation(form_id, question, fields, required, dim) {
+  FormApp.openById(form_id).addSectionHeaderItem()
+    .setTitle(question)
+  var item1 = estimation(form_id, fields[0], required)
+  for (var i = 1; i < dim; i++) {
+    estimation(form_id, fields[i], required)
+  }
   return item1
 }
 
@@ -209,8 +209,7 @@ function getItemResponses(id, item_id, index) {
   else return ["Question not found"]
 }
 
-// TODO: generalize for n-dimensions
-function getMultiResponses(form_id, item_id, index) {
+function getMultiResponses(form_id, item_id, index, dim) {
   var form = FormApp.openById(form_id)
   var formResponses = form.getResponses()
   var responseArr = new Array(formResponses.length)
@@ -223,8 +222,10 @@ function getMultiResponses(form_id, item_id, index) {
     for (var j = 0; j < itemResponses.length; j++) {
       if (item_id == itemResponses[j].getItem().getId()) {
         found = true
-        // assume that the second part of the multiestimation response is next
-        var response = [itemResponses[j].getResponse(), itemResponses[++j].getResponse()]
+        var response = new Array(dim)
+        for (var k = 0; k < dim; k++) {
+          response[k] = itemResponses[j++].getResponse()
+        }
         responseArr[idx++] = response
       }
     }

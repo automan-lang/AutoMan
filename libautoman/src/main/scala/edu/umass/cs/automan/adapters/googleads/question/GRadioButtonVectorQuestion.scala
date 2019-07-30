@@ -2,15 +2,16 @@ package edu.umass.cs.automan.adapters.googleads.question
 
 import java.security.MessageDigest
 import java.util.{Date, UUID}
+
+import edu.umass.cs.automan.adapters.googleads.policy.aggregation.GMinimumSpawnPolicy
+import edu.umass.cs.automan.core.mock.MockResponse
+import edu.umass.cs.automan.core.question.RadioButtonVectorQuestion
 import org.apache.commons.codec.binary.Hex
 import scala.collection.JavaConverters._
-import edu.umass.cs.automan.adapters.googleads.policy.aggregation.GMinimumSpawnPolicy
-import edu.umass.cs.automan.adapters.googleads.mock.RadioButtonMockResponse
-import edu.umass.cs.automan.core.question.RadioButtonQuestion
 
-class GRadioButtonQuestion extends RadioButtonQuestion with GQuestion {
-  override type QuestionOptionType = GQuestionOption
-  override type A = RadioButtonQuestion#A
+class GRadioButtonVectorQuestion extends RadioButtonVectorQuestion with GQuestion {
+  type QuestionOptionType = GQuestionOption
+  override type A = RadioButtonVectorQuestion#A // Symbol
 
   // public API
   override def randomized_options: List[QuestionOptionType] = {
@@ -23,11 +24,10 @@ class GRadioButtonQuestion extends RadioButtonQuestion with GQuestion {
     new String(Hex.encodeHex(md.digest(item_id.getBytes())))
   }
 
+
   // private API
   _minimum_spawn_policy = GMinimumSpawnPolicy
-  override def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID): RadioButtonMockResponse = {
-    RadioButtonMockResponse(question_id, response_time, a, worker_id)
-  }
+  override def toMockResponse(question_id: UUID, response_time: Date, a: Symbol, worker_id: UUID): MockResponse = ???
 
   def create(): String = {
     val choices = options.map(_.question_text).toArray
