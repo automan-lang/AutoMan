@@ -117,19 +117,14 @@ object Authenticate {
   }
 
   def scriptRevamp(): Unit = {
-    val project_service = service.projects()
-    val project = project_service.create(new CreateProjectRequest()
-      .setTitle("AutoMan"))
-      .execute()
-
-    val libPath = "/edu.umass.cs.automan.adapters.googleads.util/library.gs"
-    val setup_file = new gFile()
-      .setName("Library")
-      .setType("SERVER_JS")
-      .setSource(Source.fromFile(getClass.getResource(libPath).getFile).mkString)
-
-    val content: Content = new Content().setFiles(List(setup_file, config).asJava)
-    project_service.updateContent(Service.script_id, content).execute()
-  }
-
+    try {
+      val tokens = new File(tokens_path)
+      tokens.listFiles().foreach(_.delete())
+      tokens.delete()
+    }
+    catch {
+      case  _ : Throwable =>
+    }
+      service
+    }
 }

@@ -1,12 +1,16 @@
 package edu.umass.cs.automan.adapters.googleads.util
 
+import java.awt.Desktop
+import java.awt.Desktop.Action
 import java.io._
+import java.net.URI
 import java.util.Properties
+import java.util.logging.Level
 
 import scala.collection.JavaConverters._
 import com.google.ads.googleads.lib.GoogleAdsClient
 import com.google.api.client.auth.oauth2.Credential
-import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp
+import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp.DefaultBrowser
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver
 import com.google.api.client.googleapis.auth.oauth2.{GoogleAuthorizationCodeFlow, GoogleClientSecrets}
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
@@ -16,7 +20,7 @@ import com.google.api.client.util.store.FileDataStoreFactory
 import com.google.api.services.script.Script
 import com.google.api.services.script.model.{File => gFile}
 import edu.umass.cs.automan.adapters.googleads.ScriptError
-import edu.umass.cs.automan.core.logging.{DebugLog, LogLevelInfo, LogType}
+import edu.umass.cs.automan.core.logging.{DebugLog, LogLevelInfo, LogLevelWarn, LogType}
 
 object Service {
   protected[util] val credentials_json_path = "credentials/credentials.json"
@@ -77,25 +81,26 @@ object Service {
       .build()
   }
 
-  def formRetry[T](call: () => T) : T = {
-    var OK = false
-    var result: Option[T] = None
-    while(!OK) {
-      try {
-        val res = call()
-        // set OK
-        OK = true
-        // set result
-        result = Some(res)
-      } catch {
-        case e: ScriptError =>
-          DebugLog("Script execution failed with message " + e.err + ". Retrying now.", LogLevelInfo(), LogType.ADAPTER, null)
-        case a: Throwable =>
-          DebugLog("Unknown error in form call: " + a.toString + ".", LogLevelInfo(), LogType.ADAPTER, null)
-          throw a
-      }
+  def formRetry[T](call: () => T, tries: Int = 0) : T = {
+    try {
+      call()
+    } catch {
+      case e: ScriptError =>
+        tries match {
+          case 0 =>
+            DebugLog(e.err + ": Script execution failed with message '" + e.details + "' Retrying now.", LogLevelWarn(), LogType.ADAPTER, null)
+          case 1 =>
+            DebugLog(e.err + ": Script execution failed again with message '" + e.details + "' Attempting to reset credentials.", LogLevelWarn(), LogType.ADAPTER, null)
+            Authenticate.scriptRevamp()
+          case 2 =>
+            DebugLog(e.err + ": Unfixable script failure: '" + e.details + "' Giving up.", LogLevelWarn(), LogType.ADAPTER, null)
+            sys.exit(1)
+        }
+        formRetry(call, tries + 1)
+      case a: Throwable =>
+        DebugLog("Unknown error in form call: " + a.toString + ".", LogLevelInfo(), LogType.ADAPTER, null)
+        throw a
     }
-    result.get
   }
 
 
@@ -121,6 +126,47 @@ object Service {
       .setAccessType("offline")
       .build()
     val receiver = new LocalServerReceiver.Builder().setPort(8888).build
-    new AuthorizationCodeInstalledApp(flow, receiver).authorize("user")
+
+    try {
+      val credential = flow.loadCredential("user")
+      if (credential != null
+        && (credential.getRefreshToken != null ||
+        credential.getExpiresInSeconds == null ||
+        credential.getExpiresInSeconds > 60)) {
+        return credential
+      }
+      // open in browser
+      val redirectUri = receiver.getRedirectUri
+      val url = flow.newAuthorizationUrl.setRedirectUri(redirectUri).build()
+      browse(url)
+
+      // receive authorization code and exchange it for an access token
+      val code = receiver.waitForCode
+      val response = flow.newTokenRequest(code).setRedirectUri(redirectUri).execute
+      // store credential and return it
+      return flow.createAndStoreCredential(response, "user")
+    }
+    finally receiver.stop()
+  }
+
+  def browse(url: String): Unit = {
+    // Attempt to open it in the browser
+    try
+        if (Desktop.isDesktopSupported) {
+          val desktop = Desktop.getDesktop
+          if (desktop.isSupported(Action.BROWSE)) {
+            desktop.browse(URI.create(url))
+          }
+        }
+    catch {
+      case e: IOException =>
+        DebugLog("Unable to open browser. Please go to " + url, LogLevelWarn(), LogType.ADAPTER, null)
+      case e: InternalError =>
+        // A bug in a JRE can cause Desktop.isDesktopSupported() to throw an
+        // InternalError rather than returning false. The error reads,
+        // "Can't connect to X11 window server using ':0.0' as the value of the
+        // DISPLAY variable." The exact error message may vary slightly.
+        DebugLog("Unable to open browser. Please go to " + url, LogLevelWarn(), LogType.ADAPTER, null)
+    }
   }
 }
