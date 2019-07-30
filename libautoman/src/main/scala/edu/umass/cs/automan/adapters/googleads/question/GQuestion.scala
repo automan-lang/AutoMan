@@ -1,7 +1,9 @@
 package edu.umass.cs.automan.adapters.googleads.question
 
-import edu.umass.cs.automan.adapters.googleads.ads.{Ad, Campaign}
+import edu.umass.cs.automan.adapters.googleads.ads.{Account, Ad, Campaign}
 import edu.umass.cs.automan.adapters.googleads.forms._
+import edu.umass.cs.automan.adapters.googleads.util.KeywordList
+
 import scala.collection.mutable
 
 trait GQuestion extends edu.umass.cs.automan.core.question.Question {
@@ -27,37 +29,131 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   // number of answers retrieved from backend so far
   protected[question] var read_so_far: Int = 0
 
-  def other_=(o: Boolean) { _other = o }
+  def other_=(o: Boolean) {
+    _other = o
+  }
+
   def other: Boolean = _other
-  def required_=(r: Boolean) { _required = r }
+
+  def required_=(r: Boolean) {
+    _required = r
+  }
+
   def required: Boolean = _required
+
   def item_id: String = _item_id
-  def item_id_=(id: String) { _item_id = id }
-  def campaign: Campaign = _campaign match { case Some(c) => c case None => throw new UninitializedError }
-  def campaign_=(c: Campaign) { _campaign = Some(c) }
-  def ad: Ad = _ad match { case Some(a) => a case None => throw new UninitializedError }
-  def ad_=(a: Ad) { _ad = Some(a) }
+
+  def item_id_=(id: String) {
+    _item_id = id
+  }
+
+  def campaign: Campaign = _campaign match {
+    case Some(c) => c
+    case None => throw new UninitializedError
+  }
+
+  def campaign_=(c: Campaign) {
+    _campaign = Some(c)
+  }
+
+  def ad: Ad = _ad match {
+    case Some(a) => a
+    case None => throw new UninitializedError
+  }
+
+  def ad_=(a: Ad) {
+    _ad = Some(a)
+  }
+
   def ad_title: String = _ad_title
-  def ad_title_=(at: String) { _ad_title = at }
+
+  def ad_title_=(at: String) {
+    _ad_title = at
+  }
+
   def ad_subtitle: String = _ad_subtitle
-  def ad_subtitle_=(as: String) { _ad_subtitle = as }
+
+  def ad_subtitle_=(as: String) {
+    _ad_subtitle = as
+  }
+
   def ad_descript: String = _ad_descript
-  def ad_descript_=(des: String) { _ad_descript = des }
+
+  def ad_descript_=(des: String) {
+    _ad_descript = des
+  }
+
   def english: Boolean = _english
-  def english_=(e: Boolean) { _english = e }
-  def form: Form = _form match { case Some(f) => f case None => throw new UninitializedError }
-  def form_=(f: Form) { _form = Some(f) }
+
+  def english_=(e: Boolean) {
+    _english = e
+  }
+
+  def form: Form = _form match {
+    case Some(f) => f
+    case None => throw new UninitializedError
+  }
+
+  def form_=(f: Form) {
+    _form = Some(f)
+  }
+
   def form_descript: String = _form_descript
-  def form_descript_=(fd: String) { _form_descript = fd }
+
+  def form_descript_=(fd: String) {
+    _form_descript = fd
+  }
+
   def answers: mutable.Queue[A] = _answers
-  def answers_=(a: mutable.Queue[A]) { _answers = a }
+
+  def answers_=(a: mutable.Queue[A]) {
+    _answers = a
+  }
 
   def answers_enqueue(l: List[A]): Unit = l.foreach(answers.enqueue(_))
-  def answers_dequeue(): Option[A] = if(answers.isEmpty) {None} else {Some(answers.dequeue())}
+
+  def answers_dequeue(): Option[A] = if (answers.isEmpty) {
+    None
+  } else {
+    Some(answers.dequeue())
+  }
 
   // to be implemented by each question type
   def create(): String
+
   // queue up new responses from the backend to be processed
   def answer(): Unit
 
+  def post(acc: Account): Unit = {
+    _form match {
+      case Some(f) =>
+      case None => {
+        val form = Form(title)
+        form.setDescription(form_descript)
+        form_=(form)
+        create()
+      }
+    }
+
+    val camp = _campaign match {
+      case Some(c) => c
+      case None => {
+        acc.createCampaign(budget, title, id) // from core.Question
+      }
+    }
+
+    campaign_=(camp)
+
+    val ad = _ad match {
+      case Some(a) => a
+      case None => {
+        val a = camp.createAd(ad_title, ad_subtitle, ad_descript, form.getPublishedUrl, KeywordList.keywords())
+        camp.setCPC(wage)
+        if (english) camp.restrictEnglish()
+        a
+      }
+    }
+    ad_=(ad)
+
+  }
 }

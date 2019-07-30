@@ -5,18 +5,22 @@ import java.util
 import edu.umass.cs.automan.adapters.googleads.DSL.choice
 import edu.umass.cs.automan.adapters.googleads.GoogleAdsAdapter
 import edu.umass.cs.automan.adapters.googleads.question.{GQuestionOption, GRadioButtonQuestion}
-import edu.umass.cs.automan.adapters.googleads.util.Authenticate
+import edu.umass.cs.automan.adapters.googleads.util.{Authenticate, Service}
 
 import scala.collection.mutable
 
 object FormTesting extends App{
   //Authenticate.setup()
+  //Authenticate.scriptRevamp()
 
   val form = Form(Symbol("1KuqpqGaC7dAIcrb689f3q8I0wajvfh11EN7Q6Pvxi4o"))
-  println(form.getPublishedUrl)
+  //val form2 = Service.formRetry(() => Form(Symbol("1KuqpqGaC7dAIcrb689f3q8I0wajvfh11EN7Q6Pvxi4")))
+  Service.formRetry(() => println(form.getPublishedUrl))
+  //Service.formRetry(() => println(form2.getPublishedUrl))
 
-  val gRBQ = new GRadioButtonQuestion()
+  //val gRBQ = new GRadioButtonQuestion()
 
+  /*
   gRBQ.answers_=(mutable.Queue.empty)
   gRBQ.form_=(form)
   gRBQ.text_=("q1")
@@ -77,4 +81,5 @@ object FormTesting extends App{
   //camp.setCPC(0.2)
 
   //Project.setup("New Form Library", "198608039773")
+  */
 }

@@ -85,6 +85,14 @@ object Service {
     try {
       call()
     } catch {
+      case t: com.google.api.client.auth.oauth2.TokenResponseException =>
+        DebugLog(t.getDetails.getErrorDescription + ": Script execution failed to authorize. Attempting to reset credentials.", LogLevelWarn(), LogType.ADAPTER, null)
+        Authenticate.scriptRevamp()
+        formRetry(call)
+      case j: com.google.api.client.googleapis.json.GoogleJsonResponseException =>
+        DebugLog(j.getDetails.getMessage + ": Script execution failed to authorize. Attempting to reset credentials.", LogLevelWarn(), LogType.ADAPTER, null)
+        Authenticate.scriptRevamp()
+        formRetry(call)
       case e: ScriptError =>
         tries match {
           case 0 =>
@@ -98,8 +106,17 @@ object Service {
         }
         formRetry(call, tries + 1)
       case a: Throwable =>
-        DebugLog("Unknown error in form call: " + a.toString + ".", LogLevelInfo(), LogType.ADAPTER, null)
-        throw a
+        tries match {
+          case 0 =>
+            DebugLog(a.toString + ": Script execution failed. Retrying now.", LogLevelWarn(), LogType.ADAPTER, null)
+          case 1 =>
+            DebugLog(a.toString + ": Execution failed again. Attempting to reset credentials.", LogLevelWarn(), LogType.ADAPTER, null)
+            Authenticate.scriptRevamp()
+          case 2 =>
+            DebugLog(a.toString + ": Unfixable script failure. Giving up.", LogLevelWarn(), LogType.ADAPTER, null)
+            sys.exit(1)
+        }
+        formRetry(call, tries + 1)
     }
   }
 

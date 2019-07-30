@@ -3,11 +3,8 @@ package edu.umass.cs.automan.adapters.googleads
 import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.adapters.googleads.ads.Account
-import edu.umass.cs.automan.adapters.googleads.forms.Form
 import edu.umass.cs.automan.adapters.googleads.question._
-import edu.umass.cs.automan.adapters.googleads.util.KeywordList._
 import edu.umass.cs.automan.adapters.mturk.logging.MTMemo
-import edu.umass.cs.automan.adapters.mturk.question._
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
@@ -98,22 +95,7 @@ class GoogleAdsAdapter extends AutomanAdapter {
     // create campaign, ad, form
     def taskPost(t: Task): Task = {
       val q = t.question.asInstanceOf[GQuestion]
-      val gForm = q._form match { case Some(f) => case None =>
-        val form = Form(q.title)
-        form.setDescription(q.form_descript)
-        q.form_=(form)
-        q.create()
-
-      }
-      q._campaign match { case Some(c) => case None =>
-        val camp = production_account.createCampaign(q.budget, q.title,q.id) // from core.Question
-        q._ad match { case Some(a) => case None =>
-          camp.createAd(q.ad_title, q.ad_subtitle, q.ad_descript, q.form.getPublishedUrl, keywords())
-        }
-        camp.setCPC(q.wage)
-        if(q.english) camp.restrictEnglish()
-        q.campaign_=(camp)
-      }
+      q.post(production_account)
       t.copy_as_running()
     }
 
