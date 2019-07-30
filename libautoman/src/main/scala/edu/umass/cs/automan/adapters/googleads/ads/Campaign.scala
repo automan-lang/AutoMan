@@ -1,26 +1,30 @@
 package edu.umass.cs.automan.adapters.googleads.ads
 
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 import com.google.ads.googleads.lib.GoogleAdsClient
 import com.google.ads.googleads.lib.utils.FieldMasks
-import com.google.ads.googleads.v2.services.CampaignCriterionOperation
-import com.google.ads.googleads.v2.common.LanguageInfo
-import com.google.ads.googleads.v2.resources.{CampaignBudget, CampaignCriterion, LanguageConstantName, Campaign => GoogleCampaign}
-import com.google.ads.googleads.v2.common.ManualCpc
-import com.google.ads.googleads.v2.enums.AdvertisingChannelTypeEnum.AdvertisingChannelType
-import com.google.ads.googleads.v2.enums.BiddingStrategyTypeEnum.BiddingStrategyType
-import com.google.ads.googleads.v2.enums.BudgetDeliveryMethodEnum.BudgetDeliveryMethod
-import com.google.ads.googleads.v2.enums.CampaignCriterionStatusEnum.CampaignCriterionStatus
-import com.google.ads.googleads.v2.enums.CampaignStatusEnum.CampaignStatus
-import com.google.ads.googleads.v2.resources.Campaign.NetworkSettings
-import com.google.ads.googleads.v2.services.{CampaignBudgetOperation, CampaignOperation, GoogleAdsRow, SearchGoogleAdsRequest}
-import com.google.ads.googleads.v2.utils.ResourceNames
+import com.google.ads.googleads.v2._
+import services.CampaignCriterionOperation
+import common.LanguageInfo
+import resources.{CampaignBudget, CampaignCriterion, LanguageConstantName, Campaign => GoogleCampaign}
+import common.ManualCpc
+import enums.AdvertisingChannelTypeEnum.AdvertisingChannelType
+import enums.BiddingStrategyTypeEnum.BiddingStrategyType
+import enums.BudgetDeliveryMethodEnum.BudgetDeliveryMethod
+import enums.CampaignCriterionStatusEnum.CampaignCriterionStatus
+import enums.CampaignStatusEnum.CampaignStatus
+import errors.GoogleAdsError
+import resources.Campaign.NetworkSettings
+import services.{CampaignBudgetOperation, CampaignOperation, GoogleAdsRow, SearchGoogleAdsRequest}
+import utils.ResourceNames
 import com.google.common.collect.ImmutableList
 import com.google.protobuf.{BoolValue, Int64Value, StringValue}
 
 import scala.collection.JavaConverters._
 import edu.umass.cs.automan.adapters.googleads.util.Service._
+import edu.umass.cs.automan.core.logging._
 
 
 object Campaign {
@@ -31,9 +35,9 @@ object Campaign {
     * @param name A new name for this campaign
     * @return A new AdCampaign wrapper class representing a newly created campaign
     */
-  def apply(accountId: Long, dailyBudget: BigDecimal, name: String): Campaign = {
+  def apply(accountId: Long, dailyBudget: BigDecimal, name: String, qID: UUID): Campaign = {
     val googleAdsClient = googleClient
-    val camp: Campaign = new Campaign(googleAdsClient, accountId)
+    val camp: Campaign = new Campaign(googleAdsClient, accountId, qID)
     camp.build(dailyBudget, name)
     camp
   }
@@ -43,15 +47,15 @@ object Campaign {
     * @param campId The ID of the campaign to be loaded
     * @return A new AdCampaign wrapper class representing an existing campaign
     */
-  def apply(accountId: Long, campId: Long): Campaign = {
+  def apply(accountId: Long, campId: Long, qID: UUID): Campaign = {
     val googleAdsClient = googleClient
-    val camp: Campaign = new Campaign(googleAdsClient, accountId)
+    val camp: Campaign = new Campaign(googleAdsClient, accountId, qID)
     camp.load(accountId,campId)
     camp
   }
 }
 
-class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long) {
+class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
 
   private var _campaign_id : Option[Long] = None
   private var _budget_id : Option[Long] = None
@@ -94,32 +98,50 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long) {
     budgetServiceClient.shutdown()
     campaignServiceClient.shutdown()
 
-    println("Loaded campaign: " + name) //End of campaign creation
+    DebugLog(
+      "Created campaign " + name + " in account " + accountID, LogLevelInfo(), LogType.ADAPTER, qID
+    )
   }
 
   private def build(dailyBudget : BigDecimal, name : String) : Unit = {
     assert(name.length < 30, "Budget name too long")
-    assert(dailyBudget > 0.01F, "Budget cannot be less than $0.01")
+    assert(dailyBudget > 0.01, "Budget cannot be less than $0.01")
+    _budget_id= newBudget(name)
 
-    val b = CampaignBudget.newBuilder.setName(StringValue.of(name)) //builds a new budget (not yet created)
-      .setDeliveryMethod(BudgetDeliveryMethod.ACCELERATED)
-      .setAmountMicros(Int64Value.of((dailyBudget * (1000000/2)).toLong))
-      .build()
+    def newBudget(bName : String): Option[Long] = {
+      val b = CampaignBudget.newBuilder.setName(StringValue.of(bName)) //builds a new budget (not yet created)
+        .setDeliveryMethod(BudgetDeliveryMethod.ACCELERATED)
+        .setAmountMicros(Int64Value.of((dailyBudget * (1000000 / 2)).toLong))
+        .build()
 
-    val bOp =
-    CampaignBudgetOperation.newBuilder //builds budget create operation
-      .setCreate(b)
-      .build()
+      val bOp =
+        CampaignBudgetOperation.newBuilder //builds budget create operation
+          .setCreate(b)
+          .build()
 
-    val campaignBudgetServiceClient = googleAdsClient.getLatestVersion.createCampaignBudgetServiceClient //opens budgets client
+      val campaignBudgetServiceClient = googleAdsClient.getLatestVersion.createCampaignBudgetServiceClient //opens budgets client
 
-    val budgetResponse = campaignBudgetServiceClient.mutateCampaignBudgets(accountID.toString, ImmutableList.of(bOp)) //creates budget through mutate
+      //create budget, catching for duplicate name (such a pain)
+      try {
+        val budgetResponse = campaignBudgetServiceClient.mutateCampaignBudgets(accountID.toString, ImmutableList.of(bOp))
+        val budget: CampaignBudget = campaignBudgetServiceClient.getCampaignBudget(budgetResponse.getResults(0).getResourceName)
 
+        campaignBudgetServiceClient.shutdown()
+        Some(budget.getId.getValue)
+      }
+      catch {
+        case e: com.google.ads.googleads.v2.errors.GoogleAdsException =>
+          e.getGoogleAdsFailure.getErrorsList.asScala.find({
+            error: GoogleAdsError =>
+              error.getErrorCode.getCampaignBudgetError == errors.CampaignBudgetErrorEnum.CampaignBudgetError.DUPLICATE_NAME
+          }) match {
+            case Some(s) => newBudget(name + System.currentTimeMillis().toByte.toInt) //Add some random numbers to the end
+            case None => None
+          }
+        case err: Throwable => None
+      }
+    }
 
-    val budget: CampaignBudget = campaignBudgetServiceClient.getCampaignBudget(budgetResponse.getResults(0).getResourceName)
-    _budget_id = Some(budget.getId.getValue)
-
-    println("Added budget: " + name)
 
     val networkSettings = NetworkSettings.newBuilder //builds campaign networks options (where you want ad to be published)
       .setTargetGoogleSearch(BoolValue.of(true))
@@ -128,38 +150,56 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long) {
       .setTargetPartnerSearchNetwork(BoolValue.of(false))
       .build()
 
+    newCampaign(name) match {
+      case Some((i,n)) => _campaign_id = Some(i); _name = Some(n)
+      case None => (None,None)
+    }
+    def newCampaign(cName: String) : Option[(Long,String)] = {
+      // Builds the campaign.
+      val c = GoogleCampaign.newBuilder
+        .setName(StringValue.of(cName))
+        .setAdvertisingChannelType(AdvertisingChannelType.SEARCH)
+        .setBiddingStrategyType(BiddingStrategyType.MANUAL_CPC)
+        .setStatus(CampaignStatus.ENABLED)
+        .setManualCpc(ManualCpc.newBuilder.build())
+        .setCampaignBudget(StringValue.of(ResourceNames.campaignBudget(accountID, budget_id)))
+        .setNetworkSettings(networkSettings)
+        .build()
 
-    // Builds the campaign.
-    val c = GoogleCampaign.newBuilder
-      .setName(StringValue.of(name))
-      .setAdvertisingChannelType(AdvertisingChannelType.SEARCH)
-      .setBiddingStrategyType(BiddingStrategyType.MANUAL_CPC)
-      .setStatus(CampaignStatus.ENABLED)
-      .setManualCpc(ManualCpc.newBuilder.build())
-      .setCampaignBudget(StringValue.of(ResourceNames.campaignBudget(accountID,budget_id)))
-      .setNetworkSettings(networkSettings)
-      .build()
+      // Create campaign op
+      val cOp =
+        CampaignOperation.newBuilder
+          .setCreate(c)
+          .build()
+      try {
+        val campaignServiceClient =
+          googleAdsClient.getLatestVersion.createCampaignServiceClient //opens campaign create client
+        val response =
+          campaignServiceClient.mutateCampaigns(accountID.toString, ImmutableList.of(cOp)) //creates campaign through mutate
 
-    // Create campaign op
-    val cOp =
-    CampaignOperation.newBuilder
-      .setCreate(c)
-      .build()
+        DebugLog(
+          "Created campaign " + cName + " in account " + accountID, LogLevelInfo(), LogType.ADAPTER, qID
+        )
 
-    val campaignServiceClient =
-    googleAdsClient.getLatestVersion.createCampaignServiceClient //opens campaign create client
-    val response =
-    campaignServiceClient.mutateCampaigns(accountID.toString, ImmutableList.of(cOp)) //creates campaign through mutate
-
-    println("Added campaign: " + name) //End of campaign creation
-
-    //Save useful info
-    val campaign = campaignServiceClient.getCampaign(response.getResultsList.get(0).getResourceName)
-    _campaign_id = Some(campaign.getId.getValue)
-    _name = Some(campaign.getName.getValue)
-
-    campaignBudgetServiceClient.shutdown()
-    campaignServiceClient.shutdown()
+        //Save useful info
+        val campaign = campaignServiceClient.getCampaign(response.getResultsList.get(0).getResourceName)
+        _campaign_id = Some(campaign.getId.getValue)
+        _name = Some(campaign.getName.getValue)
+        campaignServiceClient.shutdown()
+        Some((campaign.getId.getValue,campaign.getName.getValue))
+      }
+      catch {
+        case e: com.google.ads.googleads.v2.errors.GoogleAdsException =>
+          e.getGoogleAdsFailure.getErrorsList.asScala.find({
+            error: GoogleAdsError =>
+              error.getErrorCode.getCampaignError == com.google.ads.googleads.v2.errors.CampaignErrorEnum.CampaignError.DUPLICATE_CAMPAIGN_NAME
+          }) match {
+            case Some(s) => newCampaign(name + System.currentTimeMillis().toByte.toInt) //Add some random numbers to the end
+            case None => None
+          }
+        case err: Throwable => None
+      }
+    }
   }
 
   /**
@@ -169,7 +209,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long) {
     */
   //Creates an ad group
   def createAdGroup (name: String) : AdGroup = {
-    AdGroup(accountID, campaign_id, name: String)
+    AdGroup(accountID, campaign_id, name, qID)
   }
 
   /**
@@ -182,7 +222,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long) {
     * @return A new Ad wrapper class representing a newly created ad
     */
   def createAd (title: String, subtitle: String, description: String, url: String, keywords: List[String]) : Ad = {
-    createAdGroup(title).createAd(title,subtitle,description,url,keywords)
+    createAdGroup(title).createAd(title, subtitle, description, url, keywords, qID)
   }
 
   /**
@@ -204,7 +244,9 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long) {
 
     bClient.mutateCampaignBudgets(accountID.toString,ImmutableList.of(bOp))
 
-    println("Set Budget to $" + newBudget)
+    DebugLog(
+      "Set budget of campaign " + name + " to $" + newBudget, LogLevelInfo(), LogType.ADAPTER, qID
+    )
     bClient.shutdown()
   }
 
@@ -227,7 +269,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long) {
     }
 
     gasc.shutdown()
-    l.map(AdGroup(accountID,campaign_id,_))
+    l.map(AdGroup(accountID,campaign_id,_,qID))
   }
 
   /**
@@ -244,7 +286,9 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long) {
     */
   def setCPC (costPerClick : BigDecimal) : Unit = {
     getAdGroups.foreach(_.setCPC(costPerClick))
-    println("Set " + name + " CPC to " + costPerClick)
+    DebugLog(
+      "Set CPC of campaign " + name + " to $" + costPerClick, LogLevelInfo(), LogType.ADAPTER, qID
+    )
   }
 
 
@@ -272,7 +316,9 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long) {
     */
   def pause () : Unit = {
     setStatus(CampaignStatus.PAUSED)
-    println("Paused campaign " + name)
+    DebugLog(
+      "Paused campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID
+    )
   }
 
   /**
@@ -280,7 +326,9 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long) {
     */
   def resume () : Unit = {
     setStatus(CampaignStatus.ENABLED)
-    println("Resumed campaign " + name)
+    DebugLog(
+      "Resumed campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID
+    )
   }
 
   /**
@@ -295,7 +343,9 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long) {
       .build()
 
     csc.mutateCampaigns(accountID.toString,ImmutableList.of(cOp)) // remove campaign mutate
-    println("Deleted campaign " + name)
+    DebugLog(
+      "Deleted campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID
+    )
 
     csc.shutdown()
 
@@ -307,7 +357,9 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long) {
 
     bsc.mutateCampaignBudgets(accountID.toString,ImmutableList.of(bOp))
     bsc.shutdown()
-    println("Deleted budget " + name)
+    DebugLog(
+      "Deleted budget " + budget_id, LogLevelInfo(), LogType.ADAPTER, qID
+    )
 
     bsc.awaitTermination(1,TimeUnit.SECONDS)
   }
@@ -385,7 +437,9 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long) {
     agcsc.mutateCampaignCriteria(accountID.toString, ImmutableList.of(op))
 
     agcsc.shutdown()
-    println("Added english language restriction to: " + name)
+    DebugLog(
+      "Added English language restriction to campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID
+    )
   }
 
 }

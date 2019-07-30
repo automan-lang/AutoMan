@@ -1,24 +1,27 @@
-import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets
+
 import edu.umass.cs.automan.adapters.googleads.DSL._
-import edu.umass.cs.automan.adapters.googleads.GoogleAdsAdapter
 import edu.umass.cs.automan.adapters.googleads.util.Authenticate
 import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
 
 object simple_test extends App {
+  //Authenticate.scriptRevamp()
+
   //val opts = Utilities.unsafe_optparse(args, "simple_program")
-  implicit val a = GoogleAdsAdapter(g => g.production_account_id_=(1373958703))
+  implicit val a = gads(1373958703)
 
   def which_one() = radio (
-    budget = 8.00,
+    budget = 5.00,
+    wage = 0.75,
     text = "Which one of these does not belong?",
     options = (
-      choice('oscar, "Oscar the Grouch", "http://tinyurl.com/qfwlx56"),
-      choice('kermit, "Kermit the Frog", "http://tinyurl.com/nuwyz3u"),
-      choice('spongebob, "Spongebob Squarepants", "http://tinyurl.com/oj6wzx6"),
-      choice('cookiemonster, "Cookie Monster", "http://tinyurl.com/otb6thl"),
-      choice('thecount, "The Count", "http://tinyurl.com/nfdbyxa")
+      choice('oscar, "Oscar the Grouch"),// "http://tinyurl.com/qfwlx56"),
+      choice('kermit, "Kermit the Frog"),// "http://tinyurl.com/nuwyz3u"),
+      choice('spongebob, "Spongebob Squarepants"),// "http://tinyurl.com/oj6wzx6"),
+      choice('cookiemonster, "Cookie Monster"),// "http://tinyurl.com/otb6thl"),
+      choice('thecount, "The Count")//, "http://tinyurl.com/nfdbyxa")
     ),
-    minimum_spawn_policy = UserDefinableSpawnPolicy(0)
+    minimum_spawn_policy = UserDefinableSpawnPolicy(0),
+    title = "Question 104"
   )
 
   automan(a) {

@@ -3,7 +3,13 @@ package edu.umass.cs.automan.adapters.googleads
 object DSL extends edu.umass.cs.automan.core.DSL {
   type GQuestionOption = edu.umass.cs.automan.adapters.googleads.question.GQuestionOption
 
-  def gads(): GoogleAdsAdapter = ???
+  def gads(production_account_id: Long) : GoogleAdsAdapter = {
+    val initf = (g: GoogleAdsAdapter) => {
+      // mandatory parameters
+      g.production_account_id_=(1373958703)
+    }
+      GoogleAdsAdapter(initf)
+  }
 
   def choice(key: Symbol, text: String)(implicit ga: GoogleAdsAdapter): GQuestionOption = {
     ga.Option(key, text)

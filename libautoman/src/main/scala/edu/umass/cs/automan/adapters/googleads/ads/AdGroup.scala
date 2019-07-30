@@ -1,5 +1,7 @@
 package edu.umass.cs.automan.adapters.googleads.ads
 
+import java.util.UUID
+
 import com.google.ads.googleads.lib.GoogleAdsClient
 import com.google.ads.googleads.lib.utils.FieldMasks
 import com.google.ads.googleads.v2.common.KeywordInfo
@@ -12,9 +14,10 @@ import com.google.ads.googleads.v2.services._
 import com.google.ads.googleads.v2.utils.ResourceNames
 import com.google.common.collect.ImmutableList
 import com.google.protobuf.{Int64Value, StringValue}
-import scala.collection.JavaConverters._
 
+import scala.collection.JavaConverters._
 import edu.umass.cs.automan.adapters.googleads.util.Service._
+import edu.umass.cs.automan.core.logging.{DebugLog, LogLevelInfo, LogType}
 
 object AdGroup {
     /**
@@ -24,9 +27,9 @@ object AdGroup {
       * @param name A new name for this ad group
       * @return A new AdGroup wrapper class representing a newly created ad group
       */
-    def apply(accountId : Long, campaignId: Long, name: String) : AdGroup = {
+    def apply(accountId : Long, campaignId: Long, name: String, qID: UUID) : AdGroup = {
         val googleAdsClient = googleClient
-        val ag = new AdGroup(googleAdsClient, accountId)
+        val ag = new AdGroup(googleAdsClient, accountId, qID)
         ag.build(campaignId, name)
         ag
     }
@@ -37,15 +40,15 @@ object AdGroup {
       * @param adGroupId The ID of the ad group to be loaded
       * @return A new AdGroup wrapper class representing an existing ad group
       */
-    def apply(accountId: Long, campaignId : Long, adGroupId : Long) : AdGroup = {
+    def apply(accountId: Long, campaignId : Long, adGroupId : Long, qID: UUID) : AdGroup = {
         val googleAdsClient = googleClient
-        val ag = new AdGroup(googleAdsClient, accountId)
+        val ag = new AdGroup(googleAdsClient, accountId, qID)
         ag.load(campaignId, adGroupId)
         ag
     }
 }
 
-class AdGroup (googleAdsClient: GoogleAdsClient, accountId: Long) {
+class AdGroup (googleAdsClient: GoogleAdsClient, accountId: Long, qID: UUID) {
 
     private var _adgroup_id : Option[Long] = None
 
@@ -85,7 +88,9 @@ class AdGroup (googleAdsClient: GoogleAdsClient, accountId: Long) {
         val response =
         adGroupServiceClient.mutateAdGroups(accountId.toString, ImmutableList.of(op)) //Request to create adGroup
 
-        println("Added ad group: " + name) //Finished creating ad group
+        DebugLog(
+            "Added adgroup " + name + " to campaign with ID " + campaignId, LogLevelInfo(), LogType.ADAPTER, qID
+        )
 
         //Save resource name
         _adgroup_id = Some(adGroupServiceClient.getAdGroup(response.getResultsList.get(0).getResourceName).getId.getValue)
@@ -101,10 +106,10 @@ class AdGroup (googleAdsClient: GoogleAdsClient, accountId: Long) {
       * @param keywords A list of keywords to associate with the new ad (and this ad group) with broad match setting
       * @return A new Ad wrapper class representing a newly created ad
       */
-    def createAd (title: String, subtitle: String, description: String, url: String, keywords: List[String]) : Ad = {
+    def createAd (title: String, subtitle: String, description: String, url: String, keywords: List[String],qID: UUID) : Ad = {
         if (keywords.nonEmpty) addKeyWords(keywords)
         else addKeyWords(title.split(" ").toList)
-        new Ad(googleAdsClient, accountId, adgroup_id, title, subtitle, description, url)
+        new Ad(googleAdsClient, accountId, adgroup_id, title, subtitle, description, url,qID)
     }
 
     //Method to return an operation to add one keyword
@@ -136,7 +141,12 @@ class AdGroup (googleAdsClient: GoogleAdsClient, accountId: Long) {
         agcsc.mutateAdGroupCriteria(accountId.toString, l.asJava)
 
         agcsc.shutdown()
-        println("Added keywords '" + words + "' to ad group: " + adgroup_id)
+        DebugLog(
+            "Added keywords " +
+              (if (words.length > 5) {words.take(5) + "..."} else words) +
+              " to ad group with ID " + adgroup_id,
+            LogLevelInfo(), LogType.ADAPTER, qID
+        )
     }
 
     /**
@@ -149,7 +159,9 @@ class AdGroup (googleAdsClient: GoogleAdsClient, accountId: Long) {
         agsc.mutateAdGroups(accountId.toString, ImmutableList.of(rmOp))
 
         agsc.shutdown()
-        println("Deleted ad group: " + adgroup_id)
+        DebugLog(
+            "Deleted ad group with ID " + adgroup_id, LogLevelInfo(), LogType.ADAPTER, qID
+        )
     }
 
     protected[ads] def setCPC (costPerClick : BigDecimal) : Unit = {
@@ -168,6 +180,8 @@ class AdGroup (googleAdsClient: GoogleAdsClient, accountId: Long) {
         agsc.mutateAdGroups(accountId.toString,ImmutableList.of(op))
 
         agsc.shutdown()
-        println("Set CPC of ad group " + adgroup_id + " to " + costPerClick)
+        DebugLog(
+            "Set CPC of ad group with ID " + adgroup_id + " to $" + costPerClick, LogLevelInfo(), LogType.ADAPTER, qID
+        )
     }
 }

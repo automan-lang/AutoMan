@@ -15,6 +15,8 @@ import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.client.util.store.FileDataStoreFactory
 import com.google.api.services.script.Script
 import com.google.api.services.script.model.{File => gFile}
+import edu.umass.cs.automan.adapters.googleads.ScriptError
+import edu.umass.cs.automan.core.logging.{DebugLog, LogLevelInfo, LogType}
 
 object Service {
   protected[util] val credentials_json_path = "credentials/credentials.json"
@@ -73,6 +75,27 @@ object Service {
       http_transport, json_factory, getCredentials(http_transport))
       .setApplicationName("appscript")
       .build()
+  }
+
+  def formRetry[T](call: () => T) : T = {
+    var OK = false
+    var result: Option[T] = None
+    while(!OK) {
+      try {
+        val res = call()
+        // set OK
+        OK = true
+        // set result
+        result = Some(res)
+      } catch {
+        case e: ScriptError =>
+          DebugLog("Script execution failed with message " + e.err + ". Retrying now.", LogLevelInfo(), LogType.ADAPTER, null)
+        case a: Throwable =>
+          DebugLog("Unknown error in form call: " + a.toString + ".", LogLevelInfo(), LogType.ADAPTER, null)
+          throw a
+      }
+    }
+    result.get
   }
 
 

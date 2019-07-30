@@ -6,6 +6,7 @@ import edu.umass.cs.automan.adapters.googleads.ads.Account
 import edu.umass.cs.automan.adapters.googleads.forms.Form
 import edu.umass.cs.automan.adapters.googleads.question._
 import edu.umass.cs.automan.adapters.googleads.util.KeywordList._
+import edu.umass.cs.automan.adapters.mturk.logging.MTMemo
 import edu.umass.cs.automan.adapters.mturk.question._
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.question.Question
@@ -30,7 +31,7 @@ class GoogleAdsAdapter extends AutomanAdapter {
   override type FTDQ      = MTFreeTextVectorQuestion //???
   override type RBQ       = GRadioButtonQuestion // correct
   override type RBDQ      = MTRadioButtonVectorQuestion //???
-//  override type MemoDB  =
+  override type MemoDB    = MTMemo //???
 
   private var _production_account_id: Option[Long] = None
   private var _production_account: Option[Account] = None
@@ -50,7 +51,13 @@ class GoogleAdsAdapter extends AutomanAdapter {
     * @param ts ANSWERED tasks.
     * @return Some ACCEPTED tasks if successful.
     */
-  protected[automan] def accept(ts: List[Task]): Option[List[Task]] = Some(ts.map(_.copy_as_accepted()))
+  protected[automan] def accept(ts: List[Task]): Option[List[Task]] =
+    Some(
+    ts.map(t => {
+      t.question.asInstanceOf[GQuestion].campaign.pause()
+      t.copy_as_accepted()
+    })
+  )
 
   /**
     * Get the budget from the backend.
@@ -94,15 +101,18 @@ class GoogleAdsAdapter extends AutomanAdapter {
       val gForm = q._form match { case Some(f) => case None =>
         val form = Form(q.title)
         form.setDescription(q.form_descript)
+        q.form_=(form)
         q.create()
+
       }
       val gCamp = q._campaign match { case Some(c) => case None =>
-        val camp = production_account.createCampaign(q.budget, q.title) // from core.Question
+        val camp = production_account.createCampaign(q.budget, q.title,q.id) // from core.Question
         q._ad match { case Some(a) => case None =>
           camp.createAd(q.ad_title, q.ad_subtitle, q.ad_descript, q.form.getPublishedUrl, keywords())
         }
         camp.setCPC(q.wage)
         if(q.english) camp.restrictEnglish()
+        q.campaign_=(camp)
       }
       t.copy_as_running()
     }
@@ -124,7 +134,11 @@ class GoogleAdsAdapter extends AutomanAdapter {
   protected[automan] def reject(ts_reasons: List[(Task, String)]): Option[List[Task]] =
     Some(
       ts_reasons.map(
-        {case (t: Task,s : String) => t.copy_as_rejected()}
+        {case (t: Task,s : String) => {
+            t.question.asInstanceOf[GQuestion].campaign.pause()
+            t.copy_as_rejected()
+          }
+        }
       )
     )
 
@@ -171,5 +185,5 @@ class GoogleAdsAdapter extends AutomanAdapter {
   protected def FTDQFactory() = ??? //new GFreeTextVectorQuestion
   protected def RBQFactory()  = new GRadioButtonQuestion
   protected def RBDQFactory() = ??? // new GRadioButtonVectorQuestion
-  override protected def MemoDBFactory(): MemoDB = ???
+  override protected def MemoDBFactory(): MemoDB = new MTMemo(_log_config, _database_path, _in_mem_db)
 }

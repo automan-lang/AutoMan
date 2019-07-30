@@ -23,7 +23,7 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   protected var _required: Boolean = true
   protected var _item_id: String = ""
 
-  protected var _answers: Option[mutable.Queue[A]] = None
+  protected var _answers: mutable.Queue[A] = mutable.Queue.empty
   // number of answers retrieved from backend so far
   protected[question] var read_so_far: Int = 0
 
@@ -49,8 +49,8 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   def form_=(f: Form) { _form = Some(f) }
   def form_descript: String = _form_descript
   def form_descript_=(fd: String) { _form_descript = fd }
-  def answers: mutable.Queue[A] = _answers match { case Some(a) => a case None => throw new UninitializedError }
-  def answers_=(a: mutable.Queue[A]) { _answers = Some(a) }
+  def answers: mutable.Queue[A] = _answers
+  def answers_=(a: mutable.Queue[A]) { _answers = a }
 
   def answers_enqueue(l: List[A]): Unit = l.foreach(answers.enqueue(_))
   def answers_dequeue(): Option[A] = if(answers.isEmpty) {None} else {Some(answers.dequeue())}

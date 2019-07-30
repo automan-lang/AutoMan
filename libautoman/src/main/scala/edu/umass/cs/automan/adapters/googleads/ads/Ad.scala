@@ -1,5 +1,7 @@
 package edu.umass.cs.automan.adapters.googleads.ads
 
+import java.util.UUID
+
 import com.google.ads.googleads.lib.GoogleAdsClient
 import com.google.ads.googleads.v2.enums.AdGroupAdStatusEnum.AdGroupAdStatus
 import com.google.ads.googleads.v2.common.ExpandedTextAdInfo
@@ -9,8 +11,9 @@ import com.google.ads.googleads.v2.services.AdGroupAdOperation
 import com.google.ads.googleads.v2.utils.ResourceNames
 import com.google.common.collect.ImmutableList
 import com.google.protobuf.StringValue
+import edu.umass.cs.automan.core.logging._
 
-class Ad(googleAdsClient: GoogleAdsClient, accountId: Long, adGroupId: Long, title: String, subtitle: String, description: String, url: String) {
+class Ad(googleAdsClient: GoogleAdsClient, accountId: Long, adGroupId: Long, title: String, subtitle: String, description: String, url: String, qID: UUID) {
   assert(title.length < 30, "Title too long: " + title)
   assert(subtitle.length < 30, "Subtitle too long: " + subtitle)
   assert(description.length < 90, "Description too long: " + description)
@@ -40,7 +43,9 @@ class Ad(googleAdsClient: GoogleAdsClient, accountId: Long, adGroupId: Long, tit
   private val response = client.mutateAdGroupAds(accountId.toString, ImmutableList.of(operations))
   private val id = client.getAdGroupAd(response.getResults(0).getResourceName).getAd.getId.getValue
 
-  println("Added ad: " + title)
+  DebugLog(
+    "Created ad " + title + " to ad group with ID " + adGroupId, LogLevelInfo(), LogType.ADAPTER, qID
+  )
 
   //Saves resource name
   private val adResourceName = response.getResults(0).getResourceName
@@ -56,7 +61,9 @@ class Ad(googleAdsClient: GoogleAdsClient, accountId: Long, adGroupId: Long, tit
     sc.mutateAdGroupAds(accountId.toString, ImmutableList.of(rmOp))
 
     sc.shutdown()
-    println("Deleted ad: " + title)
+    DebugLog(
+      "Deleted ad " + title, LogLevelInfo(), LogType.ADAPTER, qID
+    )
   }
 
   /**

@@ -44,7 +44,12 @@ class Form() {
     val form_op = service.scripts()
       .run(script_id, form_request)
       .execute()
-    _id = Some(form_op.getResponse.get("result").toString)
+
+    val err = Option(form_op.getError)
+    _id = err match {
+      case None => Some(form_op.getResponse.get("result").toString)
+      case Some(e) => throw ScriptError(e.getMessage + e.getDetails)
+    }
   }
 
   private def load(id : String) : Unit = {
@@ -63,10 +68,10 @@ class Form() {
       .run(script_id, request)
       .execute()
 
-    val err = op.getError
+    val err = Option(op.getError)
     err match {
-      case null => op.getResponse.get("result").toString
-      case _ => throw ScriptError(err.getMessage)
+      case None =>
+      case Some(e) => throw ScriptError(e.getMessage)
     }
   }
 
@@ -79,10 +84,10 @@ class Form() {
       .run(script_id, request)
       .execute()
 
-    val err = op.getError
+    val err = Option(op.getError)
     err match {
-      case null => op.getResponse.get("result").toString
-      case _ => throw ScriptError(err.getMessage)
+      case None => op.getResponse.get("result").toString
+      case Some(e) => throw ScriptError(e.getMessage)
     }
   }
 
@@ -101,10 +106,10 @@ class Form() {
       .run(script_id, request)
       .execute()
 
-    val err = op.getError
+    val err = Option(op.getError)
     err match {
-      case null => op.getResponse.get("result").asInstanceOf[java.util.ArrayList[T]].asScala.toList
-      case _ => throw ScriptError(err.getMessage)
+      case None => op.getResponse.get("result").asInstanceOf[java.util.ArrayList[T]].asScala.toList
+      case Some(e) => throw ScriptError(e.getMessage)
     }
   }
 
@@ -119,10 +124,10 @@ class Form() {
       .run(script_id, request)
       .execute()
 
-    val err = op.getError
+    val err = Option(op.getError)
     err match {
-      case null => op.getResponse.get("result").asInstanceOf[java.util.ArrayList[T]].asScala.toList
-      case _ => throw ScriptError(err.getMessage)
+      case None => op.getResponse.get("result").asInstanceOf[java.util.ArrayList[T]].asScala.toList
+      case Some(e) => throw ScriptError(e.getMessage)
     }
   }
 

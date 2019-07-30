@@ -1,9 +1,12 @@
 package edu.umass.cs.automan.adapters.googleads.ads
 
+import java.util.UUID
+
 import com.google.ads.googleads.lib.GoogleAdsClient
 import com.google.ads.googleads.v2.resources.Customer
 import com.google.protobuf.{BoolValue, StringValue}
 import edu.umass.cs.automan.adapters.googleads.util.Service._
+import edu.umass.cs.automan.core.logging.{DebugLog, LogLevelInfo, LogType}
 
 object Account {
   /**
@@ -52,7 +55,9 @@ class Account(googleAdsClient: GoogleAdsClient){
       .setTimeZone(StringValue.of("America/New_York"))
       .build())
 
-    println("Created account: " + name)
+    DebugLog(
+      "Created account " + name, LogLevelInfo(), LogType.ADAPTER, UUID.fromString(managerId.toString)
+    )
 
     //Save fields
     _account_id = Some(customerServiceClient.getCustomer(response.getResourceName).getId.getValue)
@@ -66,8 +71,8 @@ class Account(googleAdsClient: GoogleAdsClient){
     * @return An AdCampaign wrapper class with a newly created campaign.
     */
   //Create new campaign under this account
-  def createCampaign(dailyBudget: BigDecimal, name: String): Campaign = {
-    val camp = Campaign(account_id, dailyBudget, name)
+  def createCampaign(dailyBudget: BigDecimal, name: String, qID: UUID): Campaign = {
+    val camp = Campaign(account_id, dailyBudget, name, qID)
     camp
   }
   //TODO maybe make create methods return an option?
