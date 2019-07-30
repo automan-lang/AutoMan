@@ -1,6 +1,7 @@
 package edu.umass.cs.automan.adapters.googleads.question
 
 import java.security.MessageDigest
+import java.util
 import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.adapters.googleads.mock.GCheckboxMockResponse
@@ -40,6 +41,18 @@ class GCheckboxVectorQuestion extends CheckboxVectorQuestion with GQuestion {
   }
 
   def answer(): Unit = {
+    // look for corresponding symbol
+    def lookup (str: String): Symbol = {
+      options.find(_.question_text == str)
+        .get
+        .question_id
+    }
 
+    val newResponses : List[A] = {
+      form.getItemResponses(item_id, read_so_far)
+        .map((s: util.ArrayList[String]) => s.asScala.toList.map(lookup).toSet)
+    }
+    read_so_far += newResponses.length
+    answers_enqueue(newResponses)
   }
 }
