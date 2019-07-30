@@ -3,10 +3,11 @@ package edu.umass.cs.automan.adapters.googleads.question
 import java.security.MessageDigest
 import java.util.{Date, UUID}
 
+import edu.umass.cs.automan.adapters.googleads.mock.GFreeTextMockResponse
 import edu.umass.cs.automan.adapters.googleads.policy.aggregation.GMinimumSpawnPolicy
-import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.question.FreeTextQuestion
 import org.apache.commons.codec.binary.Hex
+
 import scala.collection.JavaConverters._
 
 class GFreeTextQuestion extends FreeTextQuestion with GQuestion {
@@ -21,11 +22,14 @@ class GFreeTextQuestion extends FreeTextQuestion with GQuestion {
 
   // private API
   _minimum_spawn_policy = GMinimumSpawnPolicy
-  override def toMockResponse(question_id: UUID, response_time: Date, a: String, worker_id: UUID): MockResponse = ???
+  override def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID): GFreeTextMockResponse = {
+    GFreeTextMockResponse(question_id, response_time, a, worker_id)
+  }
 
   def create(): String = {
     val params = List(form.id, text, required).map(_.asInstanceOf[AnyRef]).asJava
-    form.addQuestion("freeText", params)
+    item_id_=(form.addQuestion("freeText", params))
+    item_id
   }
 
   def answer(): Unit = {
