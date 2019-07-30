@@ -1,6 +1,7 @@
 package edu.umass.cs.automan.adapters.googleads.question
 
 import java.security.MessageDigest
+import java.util
 import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.adapters.googleads.mock.GMultiEstimationMockResponse
@@ -26,16 +27,21 @@ class GMultiEstimationQuestion extends MultiEstimationQuestion with GQuestion {
   override def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID): GMultiEstimationMockResponse = ???
 
   def create(): String = {
-    val fields = dimensions.map(_.id)
+    val fields = dimensions.map(_.id.toString.drop(1))
     // default required so that all fields must be filled in to be considered one response
     // possible workaround if !required: only consider answers that are all filled in
-    val params = List(form.id, text, fields, required = true, fields.length).map(_.asInstanceOf[AnyRef]).asJava
+    val params = List(form.id, text, fields, true, cardinality).map(_.asInstanceOf[AnyRef]).asJava
     item_id_=(form.addQuestion("multiEstimation", params))
     item_id
   }
 
   def answer(): Unit = {
-
+    val newResponses : List[A] = {
+      form.getMultiResponses(item_id, read_so_far, cardinality)
+        .map((s: util.ArrayList[String]) => s.asScala.toArray.map(_.toDouble))
+    }
+    read_so_far += newResponses.length
+    answers_enqueue(newResponses)
   }
 }
 

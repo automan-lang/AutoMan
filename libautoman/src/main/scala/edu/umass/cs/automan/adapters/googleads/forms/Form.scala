@@ -48,7 +48,7 @@ class Form() {
     val err = Option(form_op.getError)
     _id = err match {
       case None => Some(form_op.getResponse.get("result").toString)
-      case Some(e) => throw ScriptError(e.getMessage + e.getDetails)
+      case Some(e) => throw ScriptError(e.getMessage, e.getDetails.get(0).get("errorMessage").toString)
     }
   }
 
@@ -71,7 +71,7 @@ class Form() {
     val err = Option(op.getError)
     err match {
       case None =>
-      case Some(e) => throw ScriptError(e.getMessage)
+      case Some(e) => throw ScriptError(e.getMessage, e.getDetails.get(0).get("errorMessage").toString)
     }
   }
 
@@ -87,7 +87,7 @@ class Form() {
     val err = Option(op.getError)
     err match {
       case None => op.getResponse.get("result").toString
-      case Some(e) => throw ScriptError(e.getMessage)
+      case Some(e) => throw ScriptError(e.getMessage, e.getDetails.get(0).get("errorMessage").toString)
     }
   }
 
@@ -97,6 +97,7 @@ class Form() {
   }
 
   // returns a List of all responses to the form
+  // TODO: rewrite the three get responses to refer to one function
   def getResponses[T]: List[T] = {
     val request: ExecutionRequest = new ExecutionRequest()
       .setFunction("getResponses")
@@ -109,7 +110,7 @@ class Form() {
     val err = Option(op.getError)
     err match {
       case None => op.getResponse.get("result").asInstanceOf[java.util.ArrayList[T]].asScala.toList
-      case Some(e) => throw ScriptError(e.getMessage)
+      case Some(e) => throw ScriptError(e.getMessage, e.getDetails.get(0).get("errorMessage").toString)
     }
   }
 
@@ -127,7 +128,23 @@ class Form() {
     val err = Option(op.getError)
     err match {
       case None => op.getResponse.get("result").asInstanceOf[java.util.ArrayList[T]].asScala.toList
-      case Some(e) => throw ScriptError(e.getMessage)
+      case Some(e) => throw ScriptError(e.getMessage, e.getDetails.get(0).get("errorMessage").toString)
+    }
+  }
+
+  def getMultiResponses[T] (item_id: String, read_so_far: Int = 0, dim: Int): List[T] = {
+    val request: ExecutionRequest = new ExecutionRequest()
+      .setFunction("getMultiResponses")
+      .setParameters(List(id, item_id, read_so_far, dim).map(_.asInstanceOf[AnyRef]).asJava)
+
+    val op: Operation = service.scripts()
+      .run(script_id, request)
+      .execute()
+
+    val err = Option(op.getError)
+    err match {
+      case None => op.getResponse.get("result").asInstanceOf[java.util.ArrayList[T]].asScala.toList
+      case Some(e) => throw ScriptError(e.getMessage, e.getDetails.get(0).get("errorMessage").toString)
     }
   }
 

@@ -1,6 +1,7 @@
 package edu.umass.cs.automan.adapters.googleads.question
 
 import java.security.MessageDigest
+import java.util
 import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.adapters.googleads.mock.GEstimationMockResponse
@@ -35,7 +36,8 @@ class GEstimationQuestion extends EstimationQuestion with GQuestion {
   }
 
   def answer(): Unit = {
-    val newResponses : List[A] = form.getItemResponses[A](item_id, read_so_far)
+    val newResponses : List[A] = form.getItemResponses(item_id, read_so_far)
+        .map((s: String) => s.toDouble)
     read_so_far += newResponses.length
     answers_enqueue(newResponses)
   }
