@@ -57,6 +57,7 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
 
   // to be implemented by each question type
   def create(): String
+  // queue up new responses from the backend to be processed
   def answer(): Unit
 
 }

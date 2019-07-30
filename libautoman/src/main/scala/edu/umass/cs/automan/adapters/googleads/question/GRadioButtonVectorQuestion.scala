@@ -3,10 +3,12 @@ package edu.umass.cs.automan.adapters.googleads.question
 import java.security.MessageDigest
 import java.util.{Date, UUID}
 
+import edu.umass.cs.automan.adapters.googleads.mock.GRadioButtonMockResponse
 import edu.umass.cs.automan.adapters.googleads.policy.aggregation.GMinimumSpawnPolicy
 import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.question.RadioButtonVectorQuestion
 import org.apache.commons.codec.binary.Hex
+
 import scala.collection.JavaConverters._
 
 class GRadioButtonVectorQuestion extends RadioButtonVectorQuestion with GQuestion {
@@ -27,7 +29,9 @@ class GRadioButtonVectorQuestion extends RadioButtonVectorQuestion with GQuestio
 
   // private API
   _minimum_spawn_policy = GMinimumSpawnPolicy
-  override def toMockResponse(question_id: UUID, response_time: Date, a: Symbol, worker_id: UUID): MockResponse = ???
+  override def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID): GRadioButtonMockResponse = {
+    GRadioButtonMockResponse(question_id, response_time, a, worker_id)
+  }
 
   def create(): String = {
     val choices = options.map(_.question_text).toArray

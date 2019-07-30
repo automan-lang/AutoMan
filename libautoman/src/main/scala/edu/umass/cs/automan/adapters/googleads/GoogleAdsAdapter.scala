@@ -23,14 +23,14 @@ object GoogleAdsAdapter {
 }
 
 class GoogleAdsAdapter extends AutomanAdapter {
-  override type CBQ       = MTCheckboxQuestion //???
-  override type CBDQ      = MTCheckboxVectorQuestion //???
-  override type MEQ       = MTMultiEstimationQuestion //???
-  override type EQ        = MTEstimationQuestion //???
-  override type FTQ       = MTFreeTextQuestion //???
-  override type FTDQ      = MTFreeTextVectorQuestion //???
-  override type RBQ       = GRadioButtonQuestion // correct
-  override type RBDQ      = MTRadioButtonVectorQuestion //???
+  override type CBQ       = GCheckboxQuestion
+  override type CBDQ      = GCheckboxVectorQuestion
+  override type MEQ       = GMultiEstimationQuestion
+  override type EQ        = GEstimationQuestion
+  override type FTQ       = GFreeTextQuestion
+  override type FTDQ      = GFreeTextVectorQuestion
+  override type RBQ       = GRadioButtonQuestion
+  override type RBDQ      = GRadioButtonVectorQuestion
   override type MemoDB    = MTMemo //???
 
   private var _production_account_id: Option[Long] = None
@@ -105,7 +105,7 @@ class GoogleAdsAdapter extends AutomanAdapter {
         q.create()
 
       }
-      val gCamp = q._campaign match { case Some(c) => case None =>
+      q._campaign match { case Some(c) => case None =>
         val camp = production_account.createCampaign(q.budget, q.title,q.id) // from core.Question
         q._ad match { case Some(a) => case None =>
           camp.createAd(q.ad_title, q.ad_subtitle, q.ad_descript, q.form.getPublishedUrl, keywords())
@@ -134,10 +134,9 @@ class GoogleAdsAdapter extends AutomanAdapter {
   protected[automan] def reject(ts_reasons: List[(Task, String)]): Option[List[Task]] =
     Some(
       ts_reasons.map(
-        {case (t: Task,s : String) => {
+        {case (t: Task,s : String) =>
             t.question.asInstanceOf[GQuestion].campaign.pause()
             t.copy_as_rejected()
-          }
         }
       )
     )
@@ -177,13 +176,14 @@ class GoogleAdsAdapter extends AutomanAdapter {
   def Option(id: Symbol, text: String) = new GQuestionOption(id, text, "")
   def Option(id: Symbol, text: String, image_url: String) = new GQuestionOption(id, text, image_url)
 
-  protected def CBQFactory()  = ??? // new GCheckboxQuestion
-  protected def CBDQFactory() = ??? // new GCheckboxVectorQuestion
-  protected def MEQFactory()  = ??? // new GMultiEstimationQuestion
-  protected def EQFactory()   = ??? // new GEstimationQuestion
-  protected def FTQFactory()  = ??? // new GFreeTextQuestion
-  protected def FTDQFactory() = ??? //new GFreeTextVectorQuestion
+  protected def CBQFactory()  = new GCheckboxQuestion
+  protected def CBDQFactory() = new GCheckboxVectorQuestion
+  protected def MEQFactory()  = new GMultiEstimationQuestion
+  protected def EQFactory()   = new GEstimationQuestion
+  protected def FTQFactory()  = new GFreeTextQuestion
+  protected def FTDQFactory() = new GFreeTextVectorQuestion
   protected def RBQFactory()  = new GRadioButtonQuestion
-  protected def RBDQFactory() = ??? // new GRadioButtonVectorQuestion
+  protected def RBDQFactory() = new GRadioButtonVectorQuestion
+  // TODO: change to GMemo
   override protected def MemoDBFactory(): MemoDB = new MTMemo(_log_config, _database_path, _in_mem_db)
 }

@@ -3,10 +3,11 @@ package edu.umass.cs.automan.adapters.googleads.question
 import java.security.MessageDigest
 import java.util.{Date, UUID}
 
+import edu.umass.cs.automan.adapters.googleads.mock.GEstimationMockResponse
 import edu.umass.cs.automan.adapters.googleads.policy.aggregation.GMinimumSpawnPolicy
-import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.question.EstimationQuestion
 import org.apache.commons.codec.binary.Hex
+
 import scala.collection.JavaConverters._
 
 class GEstimationQuestion extends EstimationQuestion with GQuestion {
@@ -23,11 +24,14 @@ class GEstimationQuestion extends EstimationQuestion with GQuestion {
 
   // private API
   _minimum_spawn_policy = GMinimumSpawnPolicy
-  override def toMockResponse(question_id: UUID, response_time: Date, a: Double, worker_id: UUID): MockResponse = ???
+  override def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID): GEstimationMockResponse = {
+    GEstimationMockResponse(question_id, response_time, a, worker_id)
+  }
 
   def create(): String = {
     val params = List(form.id, text, required).map(_.asInstanceOf[AnyRef]).asJava
-    form.addQuestion("estimation", params)
+    item_id_=(form.addQuestion("estimation", params))
+    item_id
   }
 
   def answer(): Unit = {

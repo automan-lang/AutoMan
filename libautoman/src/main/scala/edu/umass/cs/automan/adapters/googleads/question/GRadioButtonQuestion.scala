@@ -5,7 +5,7 @@ import java.util.{Date, UUID}
 import org.apache.commons.codec.binary.Hex
 import scala.collection.JavaConverters._
 import edu.umass.cs.automan.adapters.googleads.policy.aggregation.GMinimumSpawnPolicy
-import edu.umass.cs.automan.adapters.googleads.mock.RadioButtonMockResponse
+import edu.umass.cs.automan.adapters.googleads.mock.GRadioButtonMockResponse
 import edu.umass.cs.automan.core.question.RadioButtonQuestion
 
 class GRadioButtonQuestion extends RadioButtonQuestion with GQuestion {
@@ -25,8 +25,8 @@ class GRadioButtonQuestion extends RadioButtonQuestion with GQuestion {
 
   // private API
   _minimum_spawn_policy = GMinimumSpawnPolicy
-  override def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID): RadioButtonMockResponse = {
-    RadioButtonMockResponse(question_id, response_time, a, worker_id)
+  override def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID): GRadioButtonMockResponse = {
+    GRadioButtonMockResponse(question_id, response_time, a, worker_id)
   }
 
   def create(): String = {
@@ -46,6 +46,7 @@ class GRadioButtonQuestion extends RadioButtonQuestion with GQuestion {
   }
 
   def answer(): Unit = {
+    // look for corresponding symbol
     def lookup (str: String): Symbol = {
       options.find(_.question_text == str)
         .get

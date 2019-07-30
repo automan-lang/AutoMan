@@ -3,10 +3,11 @@ package edu.umass.cs.automan.adapters.googleads.question
 import java.security.MessageDigest
 import java.util.{Date, UUID}
 
+import edu.umass.cs.automan.adapters.googleads.mock.GCheckboxMockResponse
 import edu.umass.cs.automan.adapters.googleads.policy.aggregation.GMinimumSpawnPolicy
-import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.question.CheckboxVectorQuestion
 import org.apache.commons.codec.binary.Hex
+
 import scala.collection.JavaConverters._
 
 class GCheckboxVectorQuestion extends CheckboxVectorQuestion with GQuestion {
@@ -27,12 +28,18 @@ class GCheckboxVectorQuestion extends CheckboxVectorQuestion with GQuestion {
 
   // private API
   _minimum_spawn_policy = GMinimumSpawnPolicy
-  override def toMockResponse(question_id: UUID, response_time: Date, a: Set[Symbol], worker_id: UUID): MockResponse = ???
-
-  def create(): String = {
-    val params = List(form.id, text, other, required, options.toArray).map(_.asInstanceOf[AnyRef]).asJava
-    form.addQuestion("checkbox", params)
+  override def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID): GCheckboxMockResponse = {
+    GCheckboxMockResponse(question_id, response_time, a, worker_id)
   }
 
-  def answer(): Unit = ???
+  def create(): String = {
+    val choices = options.map(_.question_text).toArray
+    val params = List(form.id, text, other, required, choices).map(_.asInstanceOf[AnyRef]).asJava
+    item_id_=(form.addQuestion("checkbox", params))
+    item_id
+  }
+
+  def answer(): Unit = {
+
+  }
 }
