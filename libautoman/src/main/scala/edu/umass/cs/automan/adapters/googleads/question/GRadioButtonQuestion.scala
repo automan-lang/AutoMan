@@ -31,11 +31,10 @@ class GRadioButtonQuestion extends RadioButtonQuestion with GQuestion {
 
   def create(): String = {
     val choices = options.map(_.question_text).toArray
-    val images = options.map(_.image_url).toArray
-    // if there are urls, add images to question
-    // TODO: images not working correctly
-    if (!images.contains("")) {
-      val params = List(form.id, text, other, required, choices, images).map(_.asInstanceOf[AnyRef]).asJava
+    val urls = options.map(_.image_url).toArray
+    // if every choice contains a url, add images to the question
+    if (!urls.contains("")) {
+      val params = List(form.id, text, other, required, choices, urls).map(_.asInstanceOf[AnyRef]).asJava
       item_id_=(form.addQuestion("radioButtonImgs", params))
     }
     else {

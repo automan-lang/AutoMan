@@ -173,7 +173,7 @@ function getPublishedUrl(id) {
   return form.getPublishedUrl()
 }
 
-function getResponses(id) {
+function getFormResponses(id) {
   var form = FormApp.openById(id)
   var formResponses = form.getResponses()
   var responseArr = new Array(formResponses.length)
