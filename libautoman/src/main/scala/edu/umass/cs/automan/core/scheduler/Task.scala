@@ -32,7 +32,6 @@ case class Task(task_id: UUID,
       case Some(a) => question.prettyPrintAnswer(a.asInstanceOf[Task.this.question.A])
       case None => "n/a"
     }
-
   }
 
   def is_timedout(current_time: Date): Boolean = {
@@ -43,7 +42,7 @@ case class Task(task_id: UUID,
     new Task(task_id, question, round, timeout_in_s, worker_timeout, cost, created_at, SchedulerState.RUNNING, from_memo, worker_id, answer, new Date())
   }
   def copy_with_answer(ans: Question#A, wrk_id: String) = {
-    DebugLog("Task " + task_id.toString +  " changed to ANSWERED state with answer \"" + prettyPrintAnswer + "\"", LogLevelInfo(), LogType.SCHEDULER, question.id)
+    DebugLog("Task " + task_id.toString +  " changed to ANSWERED state with answer \"" + question.prettyPrintAnswer(ans.asInstanceOf[Task.this.question.A]) + "\"", LogLevelInfo(), LogType.SCHEDULER, question.id)
     new Task(task_id, question, round, timeout_in_s, worker_timeout, cost, created_at, SchedulerState.ANSWERED, from_memo, Some(wrk_id), Some(ans), new Date())
   }
   def copy_as_duplicate() = {

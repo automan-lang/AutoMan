@@ -104,8 +104,14 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
   }
 
   private def build(dailyBudget : BigDecimal, name : String) : Unit = {
-    assert(name.length < 30, "Budget name too long")
-    assert(dailyBudget > 0.01, "Budget cannot be less than $0.01")
+    if(name.length > 30) {
+      DebugLog("Budget '" + name + "' too long. Renamed to " + name.substring(29), LogLevelWarn(), LogType.ADAPTER, qID)
+      return build(dailyBudget, name.substring(29))
+    }
+    if(dailyBudget < 0.02) {
+      DebugLog("Budget less than $0.02 set to $0.02 in account " + accountID, LogLevelWarn(), LogType.ADAPTER, qID)
+      return build(0.02,name)
+    }
     _budget_id= newBudget(name)
 
     def newBudget(bName : String): Option[Long] = {
@@ -135,7 +141,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
             error: GoogleAdsError =>
               error.getErrorCode.getCampaignBudgetError == errors.CampaignBudgetErrorEnum.CampaignBudgetError.DUPLICATE_NAME
           }) match {
-            case Some(s) => newBudget(name + System.currentTimeMillis().toByte.toInt) //Add some random numbers to the end
+            case Some(s) => newBudget(name + "-" + System.currentTimeMillis().toString.substring(3)) //Add some random numbers to the end
             case None => None
           }
         case err: Throwable => None
@@ -194,7 +200,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
             error: GoogleAdsError =>
               error.getErrorCode.getCampaignError == com.google.ads.googleads.v2.errors.CampaignErrorEnum.CampaignError.DUPLICATE_CAMPAIGN_NAME
           }) match {
-            case Some(s) => newCampaign(name + System.currentTimeMillis().toByte.toInt) //Add some random numbers to the end
+            case Some(s) => newCampaign(name + "-" + System.currentTimeMillis().toString.substring(3)) //Add some random numbers to the end
             case None => None
           }
         case err: Throwable => None

@@ -1,17 +1,16 @@
 
 import edu.umass.cs.automan.adapters.googleads.DSL._
-import edu.umass.cs.automan.adapters.googleads.util.Authenticate
 import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
 
 object simple_test extends App {
-  //Authenticate.scriptRevamp()
 
   //val opts = Utilities.unsafe_optparse(args, "simple_program")
   implicit val a = gads(1373958703)
 
   def which_one() = radio (
-    budget = 5.00,
+    budget = 0,
     wage = 0.75,
+    confidence = 0.95,
     text = "Which one of these does not belong?",
     options = (
       choice('oscar, "Oscar the Grouch"),// "http://tinyurl.com/qfwlx56"),
