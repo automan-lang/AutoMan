@@ -343,6 +343,7 @@ trait DSL {
       q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
       q.pay_all_on_failure = pay_all_on_failure
       q.question_timeout_multiplier = question_timeout_multiplier
+      q.wage = wage
 
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
