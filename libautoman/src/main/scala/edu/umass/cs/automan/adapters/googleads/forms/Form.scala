@@ -49,9 +49,7 @@ class Form() {
     val err = Option(form_op.getError)
     _id = err match {
       case None => {
-        DebugLog(
-          "Posted form with title: '" + title + "'", LogLevelInfo(), LogType.ADAPTER, null
-        )
+        DebugLog("Posted form with title: '" + title + "'", LogLevelInfo(), LogType.ADAPTER, null)
         Some(form_op.getResponse.get("result").toString)
       }
       case Some(e) => throw ScriptError(e.getMessage, e.getDetails.get(0).get("errorMessage").toString)
@@ -63,7 +61,6 @@ class Form() {
   }
 
   //----------- FORM UTILITIES --------------------------------------------------------------------
-
 
   // performs an execution request with no returned response
   def formRequest(func: String, params: java.util.List[AnyRef]): Unit = {
@@ -102,13 +99,11 @@ class Form() {
     formResponse(question_type, params)
   }
 
-  // returns a List of all responses to the form
-  // TODO: rewrite the three get responses to refer to one function
-  def getResponses[T]: List[T] = {
+  // performs an execution request that returns List of responses
+  def getResponses[T](func: String, params: java.util.List[AnyRef]): List[T] = {
     val request: ExecutionRequest = new ExecutionRequest()
-      .setFunction("getResponses")
-      .setParameters(List(id.asInstanceOf[AnyRef]).asJava)
-
+      .setFunction(func)
+      .setParameters(params)
     val op: Operation = service.scripts()
       .run(script_id, request)
       .execute()
@@ -120,38 +115,19 @@ class Form() {
     }
   }
 
-  // returns List of responses to a question,
-  // starting from the point we last left off
+  def getFormResponses[T]: List[T] = {
+    val params = List(id.asInstanceOf[AnyRef]).asJava
+    getResponses("getFormResponses", params)
+  }
+
   def getItemResponses[T](item_id: String, read_so_far: Int = 0): List[T] = {
-    val request: ExecutionRequest = new ExecutionRequest()
-      .setFunction("getItemResponses")
-      .setParameters(List(id,item_id, read_so_far).map(_.asInstanceOf[AnyRef]).asJava)
-
-    val op: Operation = service.scripts()
-      .run(script_id, request)
-      .execute()
-
-    val err = Option(op.getError)
-    err match {
-      case None => op.getResponse.get("result").asInstanceOf[java.util.ArrayList[T]].asScala.toList
-      case Some(e) => throw ScriptError(e.getMessage, e.getDetails.get(0).get("errorMessage").toString)
-    }
+    val params = List(id, item_id, read_so_far).map(_.asInstanceOf[AnyRef]).asJava
+     getResponses("getItemResponses", params)
   }
 
   def getMultiResponses[T] (item_id: String, read_so_far: Int = 0, dim: Int): List[T] = {
-    val request: ExecutionRequest = new ExecutionRequest()
-      .setFunction("getMultiResponses")
-      .setParameters(List(id, item_id, read_so_far, dim).map(_.asInstanceOf[AnyRef]).asJava)
-
-    val op: Operation = service.scripts()
-      .run(script_id, request)
-      .execute()
-
-    val err = Option(op.getError)
-    err match {
-      case None => op.getResponse.get("result").asInstanceOf[java.util.ArrayList[T]].asScala.toList
-      case Some(e) => throw ScriptError(e.getMessage, e.getDetails.get(0).get("errorMessage").toString)
-    }
+    val params = List(id, item_id, read_so_far, dim).map(_.asInstanceOf[AnyRef]).asJava
+     getResponses("getMultiResponses", params)
   }
 
   // get the url of the published form
