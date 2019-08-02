@@ -96,7 +96,13 @@ class Form() {
 
   // return item (question) id
   def addQuestion(question_type: String, params: java.util.List[AnyRef]): String = {
-    formResponse(question_type, params)
+    try { formResponse(question_type, params) }
+    catch { case e: ScriptError =>
+      if (question_type == "checkboxImgs" || question_type == "radioButtonImgs")
+        DebugLog(e.err + ": " + "Incorrect image formatting in choices. Make sure image URLs contain jpg or png formats.",
+          LogLevelFatal(), LogType.ADAPTER, null)
+      ""
+    }
   }
 
   // performs an execution request that returns List of responses
