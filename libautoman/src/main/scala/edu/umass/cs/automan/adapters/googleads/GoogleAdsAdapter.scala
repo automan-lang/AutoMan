@@ -51,7 +51,7 @@ class GoogleAdsAdapter extends AutomanAdapter {
   protected[automan] def accept(ts: List[Task]): Option[List[Task]] =
     Some(
     ts.map(t => {
-      t.question.asInstanceOf[GQuestion].campaign.pause()
+      t.question.asInstanceOf[GQuestion].campaign.delete()
       t.copy_as_accepted()
     })
   )
@@ -117,7 +117,7 @@ class GoogleAdsAdapter extends AutomanAdapter {
     Some(
       ts_reasons.map(
         {case (t: Task,s : String) =>
-            t.question.asInstanceOf[GQuestion].campaign.pause()
+            t.question.asInstanceOf[GQuestion].campaign.delete()
             t.copy_as_rejected()
         }
       )

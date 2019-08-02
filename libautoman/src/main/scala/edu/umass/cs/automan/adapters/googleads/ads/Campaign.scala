@@ -26,6 +26,8 @@ import scala.collection.JavaConverters._
 import edu.umass.cs.automan.adapters.googleads.util.Service._
 import edu.umass.cs.automan.core.logging._
 
+import scala.util.Random
+
 
 object Campaign {
   /**
@@ -105,8 +107,8 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
 
   private def build(dailyBudget : BigDecimal, name : String) : Unit = {
     if(name.length > 30) {
-      DebugLog("Budget '" + name + "' too long. Renamed to " + name.substring(29), LogLevelWarn(), LogType.ADAPTER, qID)
-      return build(dailyBudget, name.substring(29))
+      DebugLog("Budget '" + name + "' too long. Renamed to " + name.substring(0,29), LogLevelWarn(), LogType.ADAPTER, qID)
+      return build(dailyBudget, name.substring(0,29))
     }
     if(dailyBudget < 0.02) {
       DebugLog("Budget less than $0.02 set to $0.02 in account " + accountID, LogLevelWarn(), LogType.ADAPTER, qID)
@@ -137,14 +139,15 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
       }
       catch {
         case e: com.google.ads.googleads.v2.errors.GoogleAdsException =>
+          campaignBudgetServiceClient.shutdown()
           e.getGoogleAdsFailure.getErrorsList.asScala.find({
             error: GoogleAdsError =>
               error.getErrorCode.getCampaignBudgetError == errors.CampaignBudgetErrorEnum.CampaignBudgetError.DUPLICATE_NAME
           }) match {
-            case Some(s) => newBudget(name + "-" + System.currentTimeMillis().toString.substring(3)) //Add some random numbers to the end
+            case Some(s) => newBudget(name + "-" + Random.nextInt(1000)) //Add some random numbers to the end
             case None => None
           }
-        case err: Throwable => None
+        case err: Throwable => campaignBudgetServiceClient.shutdown(); None
       }
     }
 
@@ -177,10 +180,12 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
         CampaignOperation.newBuilder
           .setCreate(c)
           .build()
-      try {
+
         val campaignServiceClient =
           googleAdsClient.getLatestVersion.createCampaignServiceClient //opens campaign create client
-        val response =
+
+      try {
+      val response =
           campaignServiceClient.mutateCampaigns(accountID.toString, ImmutableList.of(cOp)) //creates campaign through mutate
 
         DebugLog(
@@ -191,19 +196,21 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
         val campaign = campaignServiceClient.getCampaign(response.getResultsList.get(0).getResourceName)
         _campaign_id = Some(campaign.getId.getValue)
         _name = Some(campaign.getName.getValue)
+
         campaignServiceClient.shutdown()
         Some((campaign.getId.getValue,campaign.getName.getValue))
       }
       catch {
         case e: com.google.ads.googleads.v2.errors.GoogleAdsException =>
+          campaignServiceClient.shutdown()
           e.getGoogleAdsFailure.getErrorsList.asScala.find({
             error: GoogleAdsError =>
               error.getErrorCode.getCampaignError == com.google.ads.googleads.v2.errors.CampaignErrorEnum.CampaignError.DUPLICATE_CAMPAIGN_NAME
           }) match {
-            case Some(s) => newCampaign(name + "-" + System.currentTimeMillis().toString.substring(3)) //Add some random numbers to the end
-            case None => None
+            case Some(s) => newCampaign(name + "-" + Random.nextInt(1000)) //Add some random numbers to the end
+            case None => campaignServiceClient.shutdown(); None
           }
-        case err: Throwable => None
+        case err: Throwable => campaignServiceClient.shutdown(); None
       }
     }
   }
@@ -298,43 +305,51 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
   }
 
 
-  //Generic method for pausing or resuming campaigns
-  private def setStatus (s : CampaignStatus) : Unit = {
+  //Generic method for pausing or resuming campaigns: true if status changed
+  private def setStatus (s : CampaignStatus) : Boolean = {
     val cClient = googleAdsClient.getLatestVersion.createCampaignServiceClient()//opens campaign client
 
-    val c = GoogleCampaign.newBuilder
-      .setResourceName(ResourceNames.campaign(accountID,campaign_id))
-      .setStatus(s)
-      .build()
+    if (cClient.getCampaign(ResourceNames.campaign(accountID, campaign_id)).getStatus == s) {
+      false
+    } else {
+      val c = GoogleCampaign.newBuilder
+        .setResourceName(ResourceNames.campaign(accountID, campaign_id))
+        .setStatus(s)
+        .build()
 
-    val op = CampaignOperation.newBuilder //builds campaign update operation
-      .setUpdate(c)
-      .setUpdateMask(FieldMasks.allSetFieldsOf(c))
-      .build()
+      val op = CampaignOperation.newBuilder //builds campaign update operation
+        .setUpdate(c)
+        .setUpdateMask(FieldMasks.allSetFieldsOf(c))
+        .build()
 
-    cClient.mutateCampaigns(accountID.toString,ImmutableList.of(op))
+      cClient.mutateCampaigns(accountID.toString, ImmutableList.of(op))
 
-    cClient.shutdown()
+      cClient.shutdown()
+      cClient.awaitTermination(1, TimeUnit.SECONDS)
+      true
+    }
   }
 
   /**
     * Set the status of this campaign to paused
     */
   def pause () : Unit = {
-    setStatus(CampaignStatus.PAUSED)
-    DebugLog(
-      "Paused campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID
-    )
+    if (setStatus(CampaignStatus.PAUSED)) {
+      DebugLog(
+        "Paused campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID
+      )
+    }
   }
 
   /**
     * Set the status of this campaign to enabled.
     */
   def resume () : Unit = {
-    setStatus(CampaignStatus.ENABLED)
-    DebugLog(
-      "Resumed campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID
-    )
+    if (setStatus(CampaignStatus.ENABLED)) {
+      DebugLog(
+        "Paused campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID
+      )
+    }
   }
 
   /**
