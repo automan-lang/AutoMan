@@ -5,7 +5,6 @@ import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.adapters.googleads.mock.GRadioButtonMockResponse
 import edu.umass.cs.automan.adapters.googleads.policy.aggregation.GMinimumSpawnPolicy
-import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.question.RadioButtonVectorQuestion
 import org.apache.commons.codec.binary.Hex
 
@@ -36,8 +35,7 @@ class GRadioButtonVectorQuestion extends RadioButtonVectorQuestion with GQuestio
   def create(): String = {
     val choices = options.map(_.question_text).toArray
     val images = options.map(_.image_url).toArray
-    // if there are urls, add images to question
-    // TODO: images not working correctly
+    // if every choice contains a url, add images to the question
     if (!images.contains("")) {
       val params = List(form.id, text, other, required, choices, images).map(_.asInstanceOf[AnyRef]).asJava
       item_id_=(form.addQuestion("radioButtonImgs", params))

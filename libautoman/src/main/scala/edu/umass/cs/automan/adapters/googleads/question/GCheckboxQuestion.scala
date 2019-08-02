@@ -34,8 +34,16 @@ class GCheckboxQuestion extends CheckboxQuestion with GQuestion {
 
   def create(): String = {
     val choices = options.map(_.question_text).toArray
-    val params = List(form.id, text, other, required, choices).map(_.asInstanceOf[AnyRef]).asJava
-    item_id_=(form.addQuestion("checkbox", params))
+    val urls = options.map(_.image_url).toArray
+    // if every choice contains a url, add images to the question
+    if (!urls.contains("")) {
+      val params = List(form.id, text, other, required, choices, urls).map(_.asInstanceOf[AnyRef]).asJava
+      item_id_=(form.addQuestion("checkboxImgs", params))
+    }
+    else {
+      val params = List(form.id, text, other, required, choices).map(_.asInstanceOf[AnyRef]).asJava
+      item_id_=(form.addQuestion("checkbox", params))
+    }
     item_id
   }
 
