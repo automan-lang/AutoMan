@@ -11,12 +11,19 @@ import com.google.ads.googleads.v2.services.AdGroupAdOperation
 import com.google.ads.googleads.v2.utils.ResourceNames
 import com.google.common.collect.ImmutableList
 import com.google.protobuf.StringValue
+import scala.io.StdIn.readLine
 import edu.umass.cs.automan.core.logging._
 
 class Ad(googleAdsClient: GoogleAdsClient, accountId: Long, adGroupId: Long, title: String, subtitle: String, description: String, url: String, qID: UUID) {
-  assert(title.length < 30, "Title too long: " + title)
-  assert(subtitle.length < 30, "Subtitle too long: " + subtitle)
-  assert(description.length < 90, "Description too long: " + description)
+  if(title.length > 30) {
+    do {println("Ad title too long. Enter a new ad title (30 chars or less): ")} while (readLine().length() > 30)
+  }
+  if(subtitle.length > 30) {
+    do {println("Ad subtitle too long. Enter a new ad subtitle (30 chars or less): ")} while (readLine().length() > 30)
+  }
+  if(title.length > 90) {
+    do {println("Ad description too long. Enter a new ad description (90 chars or less): ")} while (readLine().length() > 90)
+  }
 
   private val client = googleAdsClient.getLatestVersion.createAdGroupAdServiceClient()
 

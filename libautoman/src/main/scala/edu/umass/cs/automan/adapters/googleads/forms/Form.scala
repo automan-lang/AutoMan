@@ -5,6 +5,7 @@ import com.google.api.services.script.model.ExecutionRequest
 import com.google.api.services.script.model._
 import edu.umass.cs.automan.adapters.googleads.util.Service._
 import edu.umass.cs.automan.adapters.googleads.ScriptError
+import edu.umass.cs.automan.core.logging._
 
 object Form {
   /**
@@ -47,7 +48,12 @@ class Form() {
 
     val err = Option(form_op.getError)
     _id = err match {
-      case None => Some(form_op.getResponse.get("result").toString)
+      case None => {
+        DebugLog(
+          "Posted form with title: '" + title + "'", LogLevelInfo(), LogType.ADAPTER, null
+        )
+        Some(form_op.getResponse.get("result").toString)
+      }
       case Some(e) => throw ScriptError(e.getMessage, e.getDetails.get(0).get("errorMessage").toString)
     }
   }
