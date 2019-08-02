@@ -10,7 +10,6 @@ object simple_test extends App {
   def which_one() = radio (
     budget = 0,
     wage = 0.75,
-    confidence = 0.95,
     text = "Which one of these does not belong?",
     options = (
       choice('oscar, "Oscar the Grouch"),// "http://tinyurl.com/qfwlx56"),

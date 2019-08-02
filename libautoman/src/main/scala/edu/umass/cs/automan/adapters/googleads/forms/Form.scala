@@ -39,6 +39,7 @@ class Form() {
 
   // creates a new form, saving the id
   private def build(title : String, limit: Boolean) : Unit = {
+    formRetry(() => {
     val form_request = new ExecutionRequest()
       .setFunction("addForm")
       .setParameters(List(title, limit).map(_.asInstanceOf[AnyRef]).asJava)
@@ -54,6 +55,7 @@ class Form() {
       }
       case Some(e) => throw ScriptError(e.getMessage, e.getDetails.get(0).get("errorMessage").toString)
     }
+    })
   }
 
   private def load(id : String) : Unit = {
@@ -64,34 +66,38 @@ class Form() {
 
   // performs an execution request with no returned response
   def formRequest(func: String, params: java.util.List[AnyRef]): Unit = {
-    val request = new ExecutionRequest()
-      .setFunction(func)
-      .setParameters(params)
-    val op: Operation= service.scripts()
-      .run(script_id, request)
-      .execute()
+    formRetry(() => {
+      val request = new ExecutionRequest()
+        .setFunction(func)
+        .setParameters(params)
+      val op: Operation = service.scripts()
+        .run(script_id, request)
+        .execute()
 
-    val err = Option(op.getError)
-    err match {
-      case None =>
-      case Some(e) => throw ScriptError(e.getMessage, e.getDetails.get(0).get("errorMessage").toString)
-    }
+      val err = Option(op.getError)
+      err match {
+        case None =>
+        case Some(e) => throw ScriptError(e.getMessage, e.getDetails.get(0).get("errorMessage").toString)
+      }
+    })
   }
 
   // performs an execution request that returns a String
   def formResponse(func: String, params: java.util.List[AnyRef]): String = {
-    val request = new ExecutionRequest()
-      .setFunction(func)
-      .setParameters(params)
-    val op: Operation = service.scripts()
-      .run(script_id, request)
-      .execute()
+    formRetry(() => {
+      val request = new ExecutionRequest()
+        .setFunction(func)
+        .setParameters(params)
+      val op: Operation = service.scripts()
+        .run(script_id, request)
+        .execute()
 
-    val err = Option(op.getError)
-    err match {
-      case None => op.getResponse.get("result").toString
-      case Some(e) => throw ScriptError(e.getMessage, e.getDetails.get(0).get("errorMessage").toString)
-    }
+      val err = Option(op.getError)
+      err match {
+        case None => op.getResponse.get("result").toString
+        case Some(e) => throw ScriptError(e.getMessage, e.getDetails.get(0).get("errorMessage").toString)
+      }
+    })
   }
 
   // return item (question) id
@@ -107,18 +113,20 @@ class Form() {
 
   // performs an execution request that returns List of responses
   def getResponses[T](func: String, params: java.util.List[AnyRef]): List[T] = {
-    val request: ExecutionRequest = new ExecutionRequest()
-      .setFunction(func)
-      .setParameters(params)
-    val op: Operation = service.scripts()
-      .run(script_id, request)
-      .execute()
+    formRetry(() => {
+      val request: ExecutionRequest = new ExecutionRequest()
+        .setFunction(func)
+        .setParameters(params)
+      val op: Operation = service.scripts()
+        .run(script_id, request)
+        .execute()
 
-    val err = Option(op.getError)
-    err match {
-      case None => op.getResponse.get("result").asInstanceOf[java.util.ArrayList[T]].asScala.toList
-      case Some(e) => throw ScriptError(e.getMessage, e.getDetails.get(0).get("errorMessage").toString)
-    }
+      val err = Option(op.getError)
+      err match {
+        case None => op.getResponse.get("result").asInstanceOf[java.util.ArrayList[T]].asScala.toList
+        case Some(e) => throw ScriptError(e.getMessage, e.getDetails.get(0).get("errorMessage").toString)
+      }
+    })
   }
 
   def getFormResponses[T]: List[T] = {
