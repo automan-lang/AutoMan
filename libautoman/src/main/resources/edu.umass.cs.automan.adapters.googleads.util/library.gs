@@ -21,16 +21,21 @@ function estimation(form_id, question, required, min, max) {
   var item = form.addTextItem()
     .setTitle(question)
     .setRequired(required)
-  validateRange(form_id, item.getId(), min, max, "")
+  if (min == "" && max == "") {}
+  else if (min == "") validateLess(form_id, item.getId(), max)
+  else if (max == "") validateGreater(form_id, item.getId(), min)
+  else validateRange(form_id, item.getId(), min, max, "")
   return item.getId()
 }
 
-function multiEstimation(form_id, question, fields, required, dim) {
+function multiEstimation(form_id, question, field_names, min, max, required, dim) {
+  Logger.log("min: " + min[0])
+  Logger.log("min: " + Number(min[0]))
   FormApp.openById(form_id).addSectionHeaderItem()
     .setTitle(question)
-  var item1 = estimation(form_id, fields[0], required)
+  var item1 = estimation(form_id, field_names[0], required, min[0], max[0])
   for (var i = 1; i < dim; i++) {
-    estimation(form_id, fields[i], required)
+    estimation(form_id, field_names[i], required, min[i], max[i])
   }
   return item1
 }
@@ -102,6 +107,20 @@ function validateRange(form_id, item_id, min, max, help_text) {
   var validation = FormApp.createTextValidation()
     .setHelpText(help_text)
     .requireNumberBetween(Number(min), Number(max)) // inclusive
+    .build()
+  getTextItem(form_id, item_id).setValidation(validation)
+}
+
+function validateGreater(form_id, item_id, min) {
+  var validation = FormApp.createTextValidation()
+    .requireNumberGreaterThan(min)
+    .build()
+  getTextItem(form_id, item_id).setValidation(validation)
+}
+
+function validateLess(form_id, item_id, max) {
+  var validation = FormApp.createTextValidation()
+    .requireNumberLessThan(max)
     .build()
   getTextItem(form_id, item_id).setValidation(validation)
 }
