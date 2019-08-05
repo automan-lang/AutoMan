@@ -28,10 +28,11 @@ class GMultiEstimationQuestion extends MultiEstimationQuestion with GQuestion {
   override def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID): GMultiEstimationMockResponse = ???
 
   def create(): String = {
-    val fields = dimensions.map(_.id.toString.drop(1))
+    val field_names = dimensions.map(_.id.toString.drop(1))
+    val min_values = dimensions.map(_.min match { case Some(n) => n; case None => "" })
+    val max_values = dimensions.map(_.max match { case Some(n) => n; case None => "" })
     // default required so that all fields must be filled in to be considered one response
-    // possible workaround if !required: only consider answers that are all filled in
-    val params = List(form.id, text, fields, true, cardinality).map(_.asInstanceOf[AnyRef]).asJava
+    val params = List(form.id, text, field_names, min_values, max_values, true, cardinality).map(_.asInstanceOf[AnyRef]).asJava
     item_id_=(form.addQuestion("multiEstimation", params))
     item_id
   }
