@@ -7,9 +7,8 @@ object simple_test extends App {
   //val opts = Utilities.unsafe_optparse(args, "simple_program")
   implicit val a = gads(1373958703)
 
-  def which_one() = radio (
-    budget = 0,
-    wage = 0.75,
+  def which_one() = checkbox (
+    budget = 2.00,
     text = "Which one of these does not belong?",
     options = (
       choice('oscar, "Oscar the Grouch"),// "http://tinyurl.com/qfwlx56"),
@@ -22,11 +21,12 @@ object simple_test extends App {
     title = "Question 104"
   )
 
+
   automan(a) {
     which_one().answer match {
-      case answer: Answer[Symbol] =>
+      case answer: Answer[Set[Symbol]] =>
         println("The answer is: " + answer.value)
-      case lowconf: LowConfidenceAnswer[Symbol] =>
+      case lowconf: LowConfidenceAnswer[Set[Symbol]] =>
         println(
           "You ran out of money. The best answer is \"" +
             lowconf.value + "\" with a confidence of " + lowconf.confidence

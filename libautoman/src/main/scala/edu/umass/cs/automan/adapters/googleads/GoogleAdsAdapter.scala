@@ -4,8 +4,8 @@ import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.adapters.googleads.ads.Account
 import edu.umass.cs.automan.adapters.googleads.question._
-import edu.umass.cs.automan.adapters.mturk.logging.MTMemo
 import edu.umass.cs.automan.core.AutomanAdapter
+import edu.umass.cs.automan.core.logging.Memo
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 
@@ -20,26 +20,40 @@ object GoogleAdsAdapter {
 }
 
 class GoogleAdsAdapter extends AutomanAdapter {
-  override type CBQ       = GCheckboxQuestion
-  override type CBDQ      = GCheckboxVectorQuestion
-  override type MEQ       = GMultiEstimationQuestion
-  override type EQ        = GEstimationQuestion
-  override type FTQ       = GFreeTextQuestion
-  override type FTDQ      = GFreeTextVectorQuestion
-  override type RBQ       = GRadioButtonQuestion
-  override type RBDQ      = GRadioButtonVectorQuestion
-  override type MemoDB    = MTMemo //???
+  override type CBQ = GCheckboxQuestion
+  override type CBDQ = GCheckboxVectorQuestion
+  override type MEQ = GMultiEstimationQuestion
+  override type EQ = GEstimationQuestion
+  override type FTQ = GFreeTextQuestion
+  override type FTDQ = GFreeTextVectorQuestion
+  override type RBQ = GRadioButtonQuestion
+  override type RBDQ = GRadioButtonVectorQuestion
+  override type MemoDB = Memo
 
   private var _production_account_id: Option[Long] = None
   private var _production_account: Option[Account] = None
+  val test = true
 
-  def production_account_id: Long = _production_account_id match {case Some(id) => id; case None => throw new Exception("googleadsadapter account id")}
-  def production_account_id_=(id: Long) {_production_account_id = Some(id)}
+  def production_account_id: Long = _production_account_id match {
+    case Some(id) => id;
+    case None => throw new Exception("googleadsadapter account id")
+  }
 
-  def production_account: Account = _production_account match {case Some(c) => c; case None => throw new Exception("googleadsadapter production account")}
+  def production_account_id_=(id: Long) {
+    _production_account_id = Some(id)
+  }
+
+  def production_account: Account = _production_account match {
+    case Some(c) => c;
+    case None => throw new Exception("googleadsadapter production account")
+  }
 
   private def setup(): Unit = {
-    _production_account = try {Some(Account(production_account_id))} catch {case _ : Throwable => None}
+    if (!test) _production_account = try {
+      Some(Account(production_account_id))
+    } catch {
+      case _: Throwable => None
+    }
   }
 
   /**
@@ -50,11 +64,11 @@ class GoogleAdsAdapter extends AutomanAdapter {
     */
   protected[automan] def accept(ts: List[Task]): Option[List[Task]] =
     Some(
-    ts.map(t => {
-      t.question.asInstanceOf[GQuestion].campaign.delete()
-      t.copy_as_accepted()
-    })
-  )
+      ts.map(t => {
+        if (!test) t.question.asInstanceOf[GQuestion].campaign.delete()
+        t.copy_as_accepted()
+      })
+    )
 
   /**
     * Get the budget from the backend.
@@ -72,12 +86,12 @@ class GoogleAdsAdapter extends AutomanAdapter {
     */
   protected[automan] def cancel(ts: List[Task], toState: SchedulerState.Value): Option[List[Task]] = {
     val stateChanger = toState match {
-      case SchedulerState.CANCELLED => (t : Task) => t.copy_as_cancelled()
-      case SchedulerState.TIMEOUT => (t : Task) => t.copy_as_timeout()
-      case SchedulerState.DUPLICATE => (t : Task) => t.copy_as_duplicate()
+      case SchedulerState.CANCELLED => (t: Task) => t.copy_as_cancelled()
+      case SchedulerState.TIMEOUT => (t: Task) => t.copy_as_timeout()
+      case SchedulerState.DUPLICATE => (t: Task) => t.copy_as_duplicate()
       case _ => throw new Exception(s"Invalid target state $toState for cancellation request.")
     }
-    ts.foreach(t => t.question.asInstanceOf[GQuestion].campaign.delete())
+    if (!test) ts.foreach(t => t.question.asInstanceOf[GQuestion].campaign.delete())
     Some(ts.map(stateChanger))
   }
 
@@ -95,11 +109,11 @@ class GoogleAdsAdapter extends AutomanAdapter {
     // create campaign, ad, form
     def taskPost(t: Task): Task = {
       val q = t.question.asInstanceOf[GQuestion]
-      q.post(production_account)
+      if (!test) q.post(production_account)
       t.copy_as_running()
     }
 
-    Some(ts.map( t =>
+    Some(ts.map(t =>
       t.state match {
         case SchedulerState.READY => taskPost(t)
         case _ => throw new Exception(s"Invalid target state ${t.state} for post request.")
@@ -116,9 +130,9 @@ class GoogleAdsAdapter extends AutomanAdapter {
   protected[automan] def reject(ts_reasons: List[(Task, String)]): Option[List[Task]] =
     Some(
       ts_reasons.map(
-        {case (t: Task,s : String) =>
-            t.question.asInstanceOf[GQuestion].campaign.delete()
-            t.copy_as_rejected()
+        { case (t: Task, s: String) =>
+          if (!test) t.question.asInstanceOf[GQuestion].campaign.delete()
+          t.copy_as_rejected()
         }
       )
     )
@@ -135,9 +149,14 @@ class GoogleAdsAdapter extends AutomanAdapter {
   protected[automan] def retrieve(ts: List[Task], current_time: Date): Option[List[Task]] = {
     // get unique questions, update answer queue for each
     val qSet: Set[Question] = Set(ts.map(_.question): _*)
-    qSet.foreach(_.asInstanceOf[GQuestion].answer())
+    if (!test) {
+      qSet.foreach(_.asInstanceOf[GQuestion].answer())
+    }
+    else {
+      qSet.foreach(_.asInstanceOf[GQuestion].fakeAnswer())
+    }
 
-    def answer(t : Task): Task = {
+    def answer(t: Task): Task = {
       val q = t.question.asInstanceOf[GQuestion]
       val updatedT = q.answers_dequeue() match {
         case Some(a) => t.copy_with_answer(a, UUID.randomUUID().toString)
@@ -166,6 +185,6 @@ class GoogleAdsAdapter extends AutomanAdapter {
   protected def FTDQFactory() = new GFreeTextVectorQuestion
   protected def RBQFactory()  = new GRadioButtonQuestion
   protected def RBDQFactory() = new GRadioButtonVectorQuestion
-  // TODO: change to GMemo
-  override protected def MemoDBFactory(): MemoDB = new MTMemo(_log_config, _database_path, _in_mem_db)
+
+  override protected def MemoDBFactory(): MemoDB = new Memo(_log_config, _database_path, _in_mem_db)
 }

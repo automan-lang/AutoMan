@@ -326,8 +326,7 @@ trait DSL {
                           pay_all_on_failure: Boolean = true,
                           question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
                           text: String,
-                          title: String = null,
-                          wage: BigDecimal = MagicNumbers.USFederalMinimumWage
+                          title: String = null
                         )
                         (implicit a: A) : ScalarOutcome[Symbol] = {
     def initf[Q <: RadioButtonQuestion](q: Q) = {
@@ -343,7 +342,6 @@ trait DSL {
       q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
       q.pay_all_on_failure = pay_all_on_failure
       q.question_timeout_multiplier = question_timeout_multiplier
-      q.wage = wage
 
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }

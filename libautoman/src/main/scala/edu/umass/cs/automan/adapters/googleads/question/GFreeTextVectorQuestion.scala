@@ -5,10 +5,12 @@ import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.adapters.googleads.mock.GFreeTextMockResponse
 import edu.umass.cs.automan.adapters.googleads.policy.aggregation.GMinimumSpawnPolicy
+import edu.umass.cs.automan.adapters.googleads.util.KeywordList
 import edu.umass.cs.automan.core.question.FreeTextVectorQuestion
 import org.apache.commons.codec.binary.Hex
 
 import scala.collection.JavaConverters._
+import scala.util.Random
 
 class GFreeTextVectorQuestion extends FreeTextVectorQuestion with GQuestion {
   type QuestionOptionType = GQuestionOption
@@ -36,5 +38,14 @@ class GFreeTextVectorQuestion extends FreeTextVectorQuestion with GQuestion {
     val newResponses : List[A] = form.getItemResponses[A](item_id, read_so_far)
     read_so_far += newResponses.length
     answers_enqueue(newResponses)
+  }
+
+  //Queue a bunch (50% 1, 25% 2, 12.5% 3...) of fake answers
+  def fakeAnswer(): Unit = {
+    def fakeRespond(l : List[A]): List[A] = {
+      if (Random.nextBoolean()) fakeRespond(KeywordList.randomWord :: l)
+      else l
+    }
+    answers_enqueue(fakeRespond(Nil))
   }
 }

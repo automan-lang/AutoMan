@@ -2,11 +2,15 @@ package edu.umass.cs.automan.adapters.googleads.question
 
 import java.security.MessageDigest
 import java.util.{Date, UUID}
+
 import org.apache.commons.codec.binary.Hex
+
 import scala.collection.JavaConverters._
 import edu.umass.cs.automan.adapters.googleads.policy.aggregation.GMinimumSpawnPolicy
 import edu.umass.cs.automan.adapters.googleads.mock.GRadioButtonMockResponse
 import edu.umass.cs.automan.core.question.RadioButtonQuestion
+
+import scala.util.Random
 
 class GRadioButtonQuestion extends RadioButtonQuestion with GQuestion {
   override type QuestionOptionType = GQuestionOption
@@ -55,4 +59,14 @@ class GRadioButtonQuestion extends RadioButtonQuestion with GQuestion {
     read_so_far += newResponses.length
     answers_enqueue(newResponses)
   }
+
+  //Queue a bunch (50% 1, 25% 2, 12.5% 3...) of fake answers
+  def fakeAnswer(): Unit = {
+    def fakeRespond(l : List[A]): List[A] = {
+      if (Random.nextBoolean()) fakeRespond(options(Random.nextInt(options.length)).question_id :: l)
+      else l
+    }
+    answers_enqueue(fakeRespond(Nil))
+  }
+
 }

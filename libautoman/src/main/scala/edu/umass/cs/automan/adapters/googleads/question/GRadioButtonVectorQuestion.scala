@@ -9,6 +9,7 @@ import edu.umass.cs.automan.core.question.RadioButtonVectorQuestion
 import org.apache.commons.codec.binary.Hex
 
 import scala.collection.JavaConverters._
+import scala.util.Random
 
 class GRadioButtonVectorQuestion extends RadioButtonVectorQuestion with GQuestion {
   type QuestionOptionType = GQuestionOption
@@ -56,5 +57,13 @@ class GRadioButtonVectorQuestion extends RadioButtonVectorQuestion with GQuestio
     val newResponses : List[A] = form.getItemResponses[String](item_id, read_so_far).map(lookup)
     read_so_far += newResponses.length
     answers_enqueue(newResponses)
+  }
+
+  def fakeAnswer(): Unit = {
+    def fakeRespond(l : List[A]): List[A] = {
+      if (Random.nextBoolean()) fakeRespond(options(Random.nextInt(options.length)).question_id :: l)
+      else l
+    }
+    answers_enqueue(fakeRespond(Nil))
   }
 }

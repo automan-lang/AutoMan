@@ -373,15 +373,11 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
 
   def radio( confidence: Double = MagicNumbers.DefaultConfidence,
              budget: BigDecimal = MagicNumbers.DefaultBudget,
-             dont_reject: Boolean = true,
-             dry_run: Boolean = false,
              image_alt_text: String = null,
              image_url: String = null,
              initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
              minimum_spawn_policy: MinimumSpawnPolicy = null,
-             mock_answers: Iterable[MockAnswer[Symbol]] = null,
              options: List[AnyRef],
-             pay_all_on_failure: Boolean = true,
              question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
              text: String,
              title: String = null,
@@ -391,7 +387,8 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
              ad_description: String = "",
              english: Boolean = false, // restrict ad to English-speaking users
              other: Boolean = false,
-             required: Boolean = true // require respondents to answer this question
+             required: Boolean = true, // require respondents to answer this question
+             cpc: BigDecimal = MagicNumbers.DefaultCPC
              )
              (implicit a: GoogleAdsAdapter) : ScalarOutcome[Symbol] = {
     def initf(q: GRadioButtonQuestion): Unit = {
@@ -402,10 +399,7 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
       // mandatory parameters with sane defaults
       q.confidence = confidence
       q.budget = budget
-      q.dont_reject = dont_reject
-      q.dry_run = dry_run
       q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
-      q.pay_all_on_failure = pay_all_on_failure
       q.question_timeout_multiplier = question_timeout_multiplier
       // google-specific parameters
       q.english = english
@@ -417,7 +411,6 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
       if (image_url != null) { q.image_url = image_url }
       if (title != null) { q.title = title }
-      if (mock_answers != null ) { q.mock_answers = mock_answers }
       if (minimum_spawn_policy != null) { q.minimum_spawn_policy = minimum_spawn_policy }
       if (ad_title != null) { q.ad_title = ad_title }
       if (ad_subtitle != null) { q.ad_subtitle = ad_subtitle }

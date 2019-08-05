@@ -10,6 +10,7 @@ import edu.umass.cs.automan.core.question.MultiEstimationQuestion
 import org.apache.commons.codec.binary.Hex
 
 import scala.collection.JavaConverters._
+import scala.util.Random
 
 class GMultiEstimationQuestion extends MultiEstimationQuestion with GQuestion {
   type QuestionOptionType = GQuestionOption
@@ -42,6 +43,16 @@ class GMultiEstimationQuestion extends MultiEstimationQuestion with GQuestion {
     }
     read_so_far += newResponses.length
     answers_enqueue(newResponses)
+  }
+
+  //Queue a bunch (50% 1, 25% 2, 12.5% 3...) of fake answers
+  def fakeAnswer(): Unit = {
+    def fakeRespond(l : List[A]): List[A] = {
+      val fakeArray: Array[Double] = dimensions.map(x => Random.nextDouble())
+      if (Random.nextBoolean()) fakeRespond(fakeArray :: l)
+      else l
+    }
+    answers_enqueue(fakeRespond(Nil))
   }
 }
 

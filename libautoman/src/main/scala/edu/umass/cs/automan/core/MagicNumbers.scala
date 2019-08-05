@@ -11,4 +11,5 @@ object MagicNumbers {
   val DefaultSampleSizeForDistrib: Int = 30
   val DefaultConfidence: Double = 0.95
   val DefaultSpawnPolicy: MinimumSpawnPolicy = UserDefinableSpawnPolicy(0)
+  val DefaultCPC: BigDecimal = 0.50
 }

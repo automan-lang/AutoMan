@@ -26,6 +26,8 @@ import scala.collection.JavaConverters._
 import edu.umass.cs.automan.adapters.googleads.util.Service._
 import edu.umass.cs.automan.core.logging._
 
+import scala.io.StdIn.readLine
+import scala.math.BigDecimal.RoundingMode
 import scala.util.Random
 
 
@@ -106,6 +108,8 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
   }
 
   private def build(dailyBudget : BigDecimal, name : String) : Unit = {
+    if(dailyBudget > 50) do {println("Are you sure you want to spend >$50? y/n")} while (readLine() != "y")
+
     if(name.length > 30) {
       DebugLog("Budget '" + name + "' too long. Renamed to " + name.substring(0,29), LogLevelWarn(), LogType.ADAPTER, qID)
       return build(dailyBudget, name.substring(0,29))
@@ -114,12 +118,12 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
       DebugLog("Budget less than $0.02 set to $0.02 in account " + accountID, LogLevelWarn(), LogType.ADAPTER, qID)
       return build(0.02,name)
     }
-    _budget_id= newBudget(name)
+    _budget_id= newBudget(name, dailyBudget)
 
-    def newBudget(bName : String): Option[Long] = {
+    def newBudget(bName : String, dB: BigDecimal): Option[Long] = {
       val b = CampaignBudget.newBuilder.setName(StringValue.of(bName)) //builds a new budget (not yet created)
         .setDeliveryMethod(BudgetDeliveryMethod.ACCELERATED)
-        .setAmountMicros(Int64Value.of((dailyBudget * (1000000 / 2)).toLong))
+        .setAmountMicros(Int64Value.of((dB * (1000000 / 2)).toLong))
         .build()
 
       val bOp =
@@ -129,7 +133,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
 
       val campaignBudgetServiceClient = googleAdsClient.getLatestVersion.createCampaignBudgetServiceClient //opens budgets client
 
-      //create budget, catching for duplicate name (such a pain)
+      //create budget, catching for duplicate name and rounding issues (such a pain)
       try {
         val budgetResponse = campaignBudgetServiceClient.mutateCampaignBudgets(accountID.toString, ImmutableList.of(bOp))
         val budget: CampaignBudget = campaignBudgetServiceClient.getCampaignBudget(budgetResponse.getResults(0).getResourceName)
@@ -144,7 +148,14 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
             error: GoogleAdsError =>
               error.getErrorCode.getCampaignBudgetError == errors.CampaignBudgetErrorEnum.CampaignBudgetError.DUPLICATE_NAME
           }) match {
-            case Some(s) => newBudget(name + "-" + Random.nextInt(1000)) //Add some random numbers to the end
+            case Some(s) => newBudget(name + "-" + Random.nextInt(1000),dB) //Add some random numbers to the end
+            case None =>
+          }
+          e.getGoogleAdsFailure.getErrorsList.asScala.find({
+            error: GoogleAdsError =>
+              error.getErrorCode.getCampaignBudgetError == errors.CampaignBudgetErrorEnum.CampaignBudgetError.NON_MULTIPLE_OF_MINIMUM_CURRENCY_UNIT
+          }) match {
+            case Some(s) => newBudget(name,dB.setScale(2, RoundingMode.CEILING))
             case None => None
           }
         case err: Throwable => campaignBudgetServiceClient.shutdown(); None
@@ -208,7 +219,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
               error.getErrorCode.getCampaignError == com.google.ads.googleads.v2.errors.CampaignErrorEnum.CampaignError.DUPLICATE_CAMPAIGN_NAME
           }) match {
             case Some(s) => newCampaign(name + "-" + Random.nextInt(1000)) //Add some random numbers to the end
-            case None => campaignServiceClient.shutdown(); None
+            case None => None
           }
         case err: Throwable => campaignServiceClient.shutdown(); None
       }
@@ -324,10 +335,11 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
 
       cClient.mutateCampaigns(accountID.toString, ImmutableList.of(op))
 
-      cClient.shutdown()
-      cClient.awaitTermination(1, TimeUnit.SECONDS)
       true
     }
+
+    cClient.shutdown()
+    cClient.awaitTermination(1, TimeUnit.SECONDS)
   }
 
   /**
@@ -358,31 +370,30 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
 
   def delete() : Unit = {
     val csc = googleAdsClient.getLatestVersion.createCampaignServiceClient()
+    if (csc.getCampaign(ResourceNames.campaign(accountID, campaign_id)).getStatus != CampaignStatus.REMOVED) {
 
-    val cOp = CampaignOperation.newBuilder //create remove campaign op
-      .setRemove(ResourceNames.campaign(accountID,campaign_id))
-      .build()
-
-    csc.mutateCampaigns(accountID.toString,ImmutableList.of(cOp)) // remove campaign mutate
-    DebugLog(
-      "Deleted campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID
-    )
-
-    csc.shutdown()
-
-    val bsc = googleAdsClient.getLatestVersion.createCampaignBudgetServiceClient()
-
-    val bOp = CampaignBudgetOperation.newBuilder
-        .setRemove(ResourceNames.accountBudget(accountID,budget_id))
+      val cOp = CampaignOperation.newBuilder //create remove campaign op
+        .setRemove(ResourceNames.campaign(accountID, campaign_id))
         .build()
 
-    bsc.mutateCampaignBudgets(accountID.toString,ImmutableList.of(bOp))
-    bsc.shutdown()
-    DebugLog(
-      "Deleted budget " + budget_id, LogLevelInfo(), LogType.ADAPTER, qID
-    )
+      csc.mutateCampaigns(accountID.toString, ImmutableList.of(cOp)) // remove campaign mutate
+      DebugLog(
+        "Deleted campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID
+      )
 
-    bsc.awaitTermination(1,TimeUnit.SECONDS)
+      val bsc = googleAdsClient.getLatestVersion.createCampaignBudgetServiceClient()
+
+      val bOp = CampaignBudgetOperation.newBuilder
+        .setRemove(ResourceNames.campaignBudget(accountID, budget_id))
+        .build()
+
+      DebugLog(
+        "Deleted budget " + budget_id, LogLevelInfo(), LogType.ADAPTER, qID
+      )
+      bsc.mutateCampaignBudgets(accountID.toString, ImmutableList.of(bOp))
+      bsc.shutdown()
+    }
+    csc.shutdown()
   }
 
   // Heavy on the API calls

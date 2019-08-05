@@ -10,6 +10,7 @@ import edu.umass.cs.automan.core.question.CheckboxQuestion
 import org.apache.commons.codec.binary.Hex
 
 import scala.collection.JavaConverters._
+import scala.util.Random
 
 class GCheckboxQuestion extends CheckboxQuestion with GQuestion {
   type QuestionOptionType = GQuestionOption
@@ -61,5 +62,15 @@ class GCheckboxQuestion extends CheckboxQuestion with GQuestion {
     }
     read_so_far += newResponses.length
     answers_enqueue(newResponses)
+  }
+
+  //Queue a bunch (50% 1, 25% 2, 12.5% 3...) of fake answers
+  def fakeAnswer(): Unit = {
+    def fakeRespond(l : List[A]): List[A] = {
+      val fakeSet: Set[Symbol] = options.map(x => options(Random.nextInt(options.length)).question_id).toSet
+      if (Random.nextBoolean()) fakeRespond(fakeSet :: l)
+      else l
+    }
+    answers_enqueue(fakeRespond(Nil))
   }
 }

@@ -1,5 +1,7 @@
 package edu.umass.cs.automan.adapters.googleads.util
 
+import scala.util.Random
+
 object KeywordList {
   def keywords(): List[String] = {
     List("science",
@@ -41,4 +43,16 @@ object KeywordList {
       "learning", "earth", "physics", "biology", "chemistry",
       "textbook", "lessons", "student", "psychology")
   }
+
+  def randomWord: String = {
+    val dict = scala.io.Source.fromFile("/usr/share/dict/american-english").getLines.toArray
+
+    def word: String = {
+      val w = dict(Random.nextInt(dict.length))
+      if (w.length < 10) w.replaceAll("'s", "") else word
+    }
+
+    word
+  }
+
 }

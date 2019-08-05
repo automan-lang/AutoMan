@@ -8,6 +8,7 @@ import scala.collection.mutable
 
 trait GQuestion extends edu.umass.cs.automan.core.question.Question {
 
+  protected var _cpc: BigDecimal = 0.4
   protected var _ad_title: String = "Assist Crowdsourcing Research"
   protected var _ad_subtitle: String = "Input Your Expertise"
   protected var _ad_description: String = "Answer just one quick question to assist science research"
@@ -52,11 +53,14 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   def campaign_=(c: Campaign) { _campaign = Some(c) }
   def ad: Ad = _ad match { case Some(a) => a; case None => throw new UninitializedError }
   def ad_=(a: Ad) { _ad = Some(a) }
+  def cpc: BigDecimal = _cpc
+  def cpc_=(c : BigDecimal) {_cpc = c }
 
   // to be implemented by each question type
   def create(): String
   // queue up new responses from the backend to be processed
   def answer(): Unit
+  def fakeAnswer(): Unit
   def answers_enqueue(l: List[A]): Unit = l.foreach(answers.enqueue(_))
   def answers_dequeue(): Option[A] = { if (answers.isEmpty) None; else Some(answers.dequeue()) }
 
@@ -81,7 +85,7 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
       case Some(a) => a
       case None => {
         val a = camp.createAd(ad_title, ad_subtitle, ad_description, form.getPublishedUrl, KeywordList.keywords())
-        camp.setCPC(wage)
+        camp.setCPC(cpc)
         if (english) camp.restrictEnglish()
         a
       }
