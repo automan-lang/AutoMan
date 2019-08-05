@@ -30,7 +30,7 @@ class GEstimationQuestion extends EstimationQuestion with GQuestion {
   }
 
   def create(): String = {
-    val params = List(form.id, text, required).map(_.asInstanceOf[AnyRef]).asJava
+    val params = List(form.id, text, required, min_value, max_value).map(_.asInstanceOf[AnyRef]).asJava
     item_id_=(form.addQuestion("estimation", params))
     item_id
   }

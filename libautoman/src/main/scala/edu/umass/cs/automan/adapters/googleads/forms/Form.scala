@@ -184,22 +184,6 @@ class Form() {
 
   // TODO: only allow these to be called with estimation questions
   // data validation for estimation questions only
-  def requireNum(item_id: String, help: String = ""): Unit = {
-    formRequest("validateNum", List(id, item_id, help).map(_.asInstanceOf[AnyRef]).asJava)
-  }
-
-  def requireInt(item_id: String, help: String = ""): Unit = {
-    formRequest("validateInt", List(id, item_id, help).map(_.asInstanceOf[AnyRef]).asJava)
-  }
-
-  def requireGreater(item_id: String, min: Double, help: String = ""): Unit = {
-    formRequest("validateGreater", List(id, item_id, help, min).map(_.asInstanceOf[AnyRef]).asJava)
-  }
-
-  def requireLess(item_id: String, max: Double, help: String = ""): Unit = {
-    formRequest("validateLess", List(id, item_id, help, max).map(_.asInstanceOf[AnyRef]).asJava)
-  }
-
   def requireRange(item_id: String, min: Double, max: Double, help: String = ""): Unit = {
     formRequest("validateRange", List(id, item_id, help, min, max).map(_.asInstanceOf[AnyRef]).asJava)
   }

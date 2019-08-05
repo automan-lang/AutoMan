@@ -16,12 +16,12 @@ function checkboxImgs(form_id, question, other, required, choices, urls) {
   return item_id
 }
 
-function estimation(form_id, question, required) {
+function estimation(form_id, question, required, min, max) {
   var form = FormApp.openById(form_id)
   var item = form.addTextItem()
     .setTitle(question)
     .setRequired(required)
-  validateNum(form_id, item.getId(), "Please enter a number")
+  validateRange(form_id, item.getId(), min, max, "")
   return item.getId()
 }
 
@@ -90,14 +90,6 @@ function setShuffle(form_id) {
   FormApp.openById(form_id).setShuffleQuestions(true)
 }
 
-function validateNum(form_id, item_id, help_text) {
-  var validation = FormApp.createTextValidation()
-    .setHelpText(help_text)
-    .requireNumber()
-    .build()
-  getTextItem(form_id, item_id).setValidation(validation)
-}
-
 function validateInt(form_id, item_id, help_text) {
   var validation = FormApp.createTextValidation()
     .setHelpText(help_text)
@@ -106,26 +98,10 @@ function validateInt(form_id, item_id, help_text) {
   getTextItem(form_id, item_id).setValidation(validation)
 }
 
-function validateGreater(form_id, item_id, help_text, min) {
+function validateRange(form_id, item_id, min, max, help_text) {
   var validation = FormApp.createTextValidation()
     .setHelpText(help_text)
-    .requireNumberGreaterThan(min)
-    .build()
-  getTextItem(form_id, item_id).setValidation(validation)
-}
-
-function validateLess(form_id, item_id, help_text, max) {
-  var validation = FormApp.createTextValidation()
-    .setHelpText(help_text)
-    .requireNumberLessThan(max)
-    .build()
-  getTextItem(form_id, item_id).setValidation(validation)
-}
-
-function validateRange(form_id, item_id, help_text, min, max) {
-  var validation = FormApp.createTextValidation()
-    .setHelpText(help_text)
-    .requireNumberBetween(min, max) // inclusive
+    .requireNumberBetween(Number(min), Number(max)) // inclusive
     .build()
   getTextItem(form_id, item_id).setValidation(validation)
 }
