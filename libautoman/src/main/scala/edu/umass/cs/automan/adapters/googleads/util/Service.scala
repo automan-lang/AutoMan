@@ -168,6 +168,8 @@ object Service {
 
   def browse(url: String): Unit = {
     // Attempt to open it in the browser
+    println("Attempting to open authorization page in default browser to fix Google Script credential error.\n" +
+      "If no browser opens, please go to " + url  +" and sign in.")
     try
         if (Desktop.isDesktopSupported) {
           val desktop = Desktop.getDesktop
@@ -177,13 +179,13 @@ object Service {
         }
     catch {
       case e: IOException =>
-        DebugLog("Unable to open browser. Please go to " + url, LogLevelWarn(), LogType.ADAPTER, null)
+        println("Unable to open browser. Please go to " + url)
       case e: InternalError =>
         // A bug in a JRE can cause Desktop.isDesktopSupported() to throw an
         // InternalError rather than returning false. The error reads,
         // "Can't connect to X11 window server using ':0.0' as the value of the
         // DISPLAY variable." The exact error message may vary slightly.
-        DebugLog("Unable to open browser. Please go to " + url, LogLevelWarn(), LogType.ADAPTER, null)
+        println("Unable to open browser. Please go to " + url)
     }
   }
 }

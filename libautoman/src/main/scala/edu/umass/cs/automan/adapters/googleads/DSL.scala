@@ -381,7 +381,6 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
              question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
              text: String,
              title: String = null,
-             wage: BigDecimal = MagicNumbers.USFederalMinimumWage,
              ad_title: String = "",
              ad_subtitle: String = "",
              ad_description: String = "",
@@ -405,7 +404,7 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
       q.english = english
       q.other = other
       q.required = required
-      q.wage = wage // CPC
+      q.cpc = cpc
 
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }

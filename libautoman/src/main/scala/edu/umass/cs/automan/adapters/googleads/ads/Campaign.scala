@@ -109,6 +109,8 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
 
   private def build(dailyBudget : BigDecimal, name : String) : Unit = {
     if(dailyBudget > 50) do {println("Are you sure you want to spend >$50? y/n")} while (readLine() != "y")
+    if(dailyBudget > 100) do {println("Are you SURE you want to spend >$100? y/n")} while (readLine() != "y")
+    if(dailyBudget > 500) do {println("Are you ABSOLUTELY SURE you want to spend >$500? y/n")} while (readLine() != "y")
 
     if(name.length > 30) {
       DebugLog("Budget '" + name + "' too long. Renamed to " + name.substring(0,29), LogLevelWarn(), LogType.ADAPTER, qID)

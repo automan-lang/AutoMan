@@ -3,6 +3,7 @@ package edu.umass.cs.automan.adapters.googleads.question
 import edu.umass.cs.automan.adapters.googleads.ads.{Account, Ad, Campaign}
 import edu.umass.cs.automan.adapters.googleads.forms._
 import edu.umass.cs.automan.adapters.googleads.util.KeywordList
+import edu.umass.cs.automan.core.logging.{DebugLog, LogLevelInfo, LogType}
 
 import scala.collection.mutable
 
@@ -87,6 +88,12 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
         val a = camp.createAd(ad_title, ad_subtitle, ad_description, form.getPublishedUrl, KeywordList.keywords())
         camp.setCPC(cpc)
         if (english) camp.restrictEnglish()
+        while(!a.is_approved) {
+          DebugLog(
+            "Ad awaiting approval",LogLevelInfo(),LogType.ADAPTER,id
+          )
+          Thread.sleep(2*1000) //2 seconds should prevent rate limit
+        }
         a
       }
     }
