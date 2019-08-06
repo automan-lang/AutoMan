@@ -54,7 +54,7 @@ class GRadioButtonVectorQuestion extends RadioButtonVectorQuestion with GQuestio
         .get
         .question_id
     }
-    val newResponses : List[A] = form.getItemResponses[String](item_id, read_so_far).map(lookup)
+    val newResponses : List[A] = form.getItemResponses[String]("getRadioResponses", item_id, read_so_far).map(lookup)
     read_so_far += newResponses.length
     answers_enqueue(newResponses)
   }

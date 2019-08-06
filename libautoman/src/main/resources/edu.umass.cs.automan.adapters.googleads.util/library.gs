@@ -204,6 +204,21 @@ function getItemResponses(id, item_id, index) {
   else return ["Question not found"]
 }
 
+// shuffle choices for radio and checkbox questions
+function getCheckboxResponses(id, item_id, index) {
+  var form = FormApp.openById(id)
+  var item = form.getItemById(item_id).asCheckboxItem()
+  shuffleQuestion(item)
+  return getItemResponses(id, item_id, index)
+}
+
+function getRadioResponses(id, item_id, index) {
+  var form = FormApp.openById(id)
+  var item = form.getItemById(item_id).asMultipleChoiceItem()
+  shuffleQuestion(item)
+  return getItemResponses(id, item_id, index)
+}
+
 function getMultiResponses(form_id, item_id, index, dim) {
   var form = FormApp.openById(form_id)
   var formResponses = form.getResponses()

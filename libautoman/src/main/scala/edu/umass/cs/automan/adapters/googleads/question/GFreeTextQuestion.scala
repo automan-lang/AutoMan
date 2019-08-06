@@ -35,7 +35,7 @@ class GFreeTextQuestion extends FreeTextQuestion with GQuestion {
   }
 
   def answer(): Unit = {
-    val newResponses : List[A] = form.getItemResponses[A](item_id, read_so_far)
+    val newResponses : List[A] = form.getItemResponses[A]("getItemResponses", item_id, read_so_far)
     read_so_far += newResponses.length
     answers_enqueue(newResponses)
   }

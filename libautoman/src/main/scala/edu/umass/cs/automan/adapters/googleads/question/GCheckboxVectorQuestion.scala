@@ -58,7 +58,7 @@ class GCheckboxVectorQuestion extends CheckboxVectorQuestion with GQuestion {
     }
 
     val newResponses : List[A] = {
-      form.getItemResponses(item_id, read_so_far)
+      form.getItemResponses("getCheckboxResponses", item_id, read_so_far)
         .map((s: util.ArrayList[String]) => s.asScala.toList.map(lookup).toSet)
     }
     read_so_far += newResponses.length

@@ -134,9 +134,11 @@ class Form() {
     getResponses("getFormResponses", params)
   }
 
-  def getItemResponses[T](item_id: String, read_so_far: Int = 0): List[T] = {
+  // func is either "getItemResponses", "getCheckboxResponses", or "getRadioResponses"
+  // the latter two will also shuffle the question's choices
+  def getItemResponses[T](func: String, item_id: String, read_so_far: Int = 0): List[T] = {
     val params = List(id, item_id, read_so_far).map(_.asInstanceOf[AnyRef]).asJava
-     getResponses("getItemResponses", params)
+     getResponses(func, params)
   }
 
   def getMultiResponses[T] (item_id: String, read_so_far: Int = 0, dim: Int): List[T] = {
