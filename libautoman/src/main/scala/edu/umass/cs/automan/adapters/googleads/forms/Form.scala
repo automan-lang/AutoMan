@@ -64,7 +64,7 @@ class Form() {
 
   //----------- FORM UTILITIES --------------------------------------------------------------------
 
-  // performs an execution request with no returned response
+  // perform an execution request with no returned response
   def formRequest(func: String, params: java.util.List[AnyRef]): Unit = {
     formRetry(() => {
       val request = new ExecutionRequest()
@@ -82,9 +82,8 @@ class Form() {
     })
   }
 
-  // performs an execution request that returns a String
+  // perform an execution request that returns a String
   def formResponse(func: String, params: java.util.List[AnyRef]): String = {
-    formRetry(() => {
       val request = new ExecutionRequest()
         .setFunction(func)
         .setParameters(params)
@@ -97,21 +96,22 @@ class Form() {
         case None => op.getResponse.get("result").toString
         case Some(e) => throw ScriptError(e.getMessage, e.getDetails.get(0).get("errorMessage").toString)
       }
-    })
   }
 
-  // return item (question) id
+  // returns item (question) id
   def addQuestion(question_type: String, params: java.util.List[AnyRef]): String = {
     try { formResponse(question_type, params) }
     catch { case e: ScriptError =>
-      if (question_type == "checkboxImgs" || question_type == "radioButtonImgs")
+      if (question_type == "checkboxImgs" || question_type == "radioButtonImgs") {
         DebugLog(e.err + ": " + "Incorrect image formatting in choices. Make sure image URLs contain jpg or png formats.",
           LogLevelFatal(), LogType.ADAPTER, null)
+        sys.exit(1)
+      }
       ""
     }
   }
 
-  // performs an execution request that returns List of responses
+  // perform an execution request that returns List of responses
   def getResponses[T](func: String, params: java.util.List[AnyRef]): List[T] = {
     formRetry(() => {
       val request: ExecutionRequest = new ExecutionRequest()
@@ -148,12 +148,12 @@ class Form() {
 
   // get the url of the published form
   def getPublishedUrl: String = {
-    formResponse("getPublishedUrl", List(id.asInstanceOf[AnyRef]).asJava)
+    formRetry(() => { formResponse("getPublishedUrl", List(id.asInstanceOf[AnyRef]).asJava) })
   }
 
   // get the editor-enabled url of the form
   def getEditUrl: String = {
-    formResponse("getEditUrl", List(id.asInstanceOf[AnyRef]).asJava)
+    formRetry(() => { formResponse("getEditUrl", List(id.asInstanceOf[AnyRef]).asJava) })
   }
 
   //---------- FORM ADD-ONS -----------------------------------------------------------------------

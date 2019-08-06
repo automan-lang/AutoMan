@@ -43,12 +43,7 @@ object Service {
       "                    \"https://www.googleapis.com/auth/forms\"],\n" +
       "  \"exceptionLogging\":\"STACKDRIVER\" }")
 
-
-  /**
-    * Build a Google Ads Client to access the manager account
-    * @param path Path to the properties file directory
-    * @return A Google Ads Client built from properties file
-    */
+  // Build a Google Ads Client from the properties file to access the manager account
   def googleClient : GoogleAdsClient =  {
     val propertiesFile = new File(properties_path)
     GoogleAdsClient.newBuilder.fromPropertiesFile(propertiesFile).build()
@@ -81,6 +76,7 @@ object Service {
       .build()
   }
 
+  // Catch Apps Script API call failures and retry
   def formRetry[T](call: () => T, tries: Int = 0) : T = {
     try {
       call()
@@ -120,15 +116,9 @@ object Service {
     }
   }
 
-
-  /**
-    * Run the specified script function
-    * @param HTTP_TRANSPORT Automatically created
-    * @return A Credential object
-    */
+  // Run the specified script function, returning a Credential object
   protected[util] def getCredentials(HTTP_TRANSPORT: NetHttpTransport): Credential = {
     // Load client secrets
-
     val details = new GoogleClientSecrets.Details()
       .setAuthUri("https://accounts.google.com/o/oauth2/auth")
       .setClientId(client_id)

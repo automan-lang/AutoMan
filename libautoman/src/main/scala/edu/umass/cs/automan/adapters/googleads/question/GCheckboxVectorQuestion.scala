@@ -65,7 +65,7 @@ class GCheckboxVectorQuestion extends CheckboxVectorQuestion with GQuestion {
     answers_enqueue(newResponses)
   }
 
-  //Queue a bunch (50% 1, 25% 2, 12.5% 3...) of fake answers
+  // Queue a bunch (50% 1, 25% 2, 12.5% 3...) of fake answers
   def fakeAnswer(): Unit = {
     def fakeRespond(l : List[A]): List[A] = {
       val fakeSet: Set[Symbol] = options.map(x => options(Random.nextInt(options.length)).question_id).toSet

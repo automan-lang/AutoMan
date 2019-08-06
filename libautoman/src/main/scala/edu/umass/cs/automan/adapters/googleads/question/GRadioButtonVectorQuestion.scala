@@ -26,7 +26,6 @@ class GRadioButtonVectorQuestion extends RadioButtonVectorQuestion with GQuestio
     new String(Hex.encodeHex(md.digest(item_id.getBytes())))
   }
 
-
   // private API
   _minimum_spawn_policy = GMinimumSpawnPolicy
   override def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID): GRadioButtonMockResponse = {
@@ -59,6 +58,7 @@ class GRadioButtonVectorQuestion extends RadioButtonVectorQuestion with GQuestio
     answers_enqueue(newResponses)
   }
 
+  // Queue a bunch (50% 1, 25% 2, 12.5% 3...) of fake answers
   def fakeAnswer(): Unit = {
     def fakeRespond(l : List[A]): List[A] = {
       if (Random.nextBoolean()) fakeRespond(options(Random.nextInt(options.length)).question_id :: l)
