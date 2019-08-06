@@ -133,8 +133,8 @@ function shuffleForm(form_id) {
     if (items[i].getType() == FormApp.ItemType.MULTIPLE_CHOICE) {
       var item = items[i].asMultipleChoiceItem()
       shuffleQuestion(item)
-   } else if (items[i].getType() == FormApp.ItemType.MULTIPLE_CHOICE)
-       var item = items[i].asMultipleChoiceItem()
+   } else if (items[i].getType() == FormApp.ItemType.CHECKBOX)
+       var item = items[i].asCheckboxItem()
        shuffleQuestion(item)
    }
 }
@@ -155,6 +155,7 @@ function shuffleQuestion(item) {
 function addForm(title, limit) {
   var form = FormApp.create(title)
   form.setLimitOneResponsePerUser(limit)
+  form.hasRespondAgainLink(false)
   return form.getId()
 }
 
