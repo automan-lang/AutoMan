@@ -1,24 +1,28 @@
 
 import edu.umass.cs.automan.adapters.googleads.DSL._
+import edu.umass.cs.automan.adapters.googleads.util.KeywordList
 import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
 
 object simple_test extends App {
+
+  KeywordList.generateKeywords(75, Set("horse")).foreach(println)
+  System.exit(0)
 
   //val opts = Utilities.unsafe_optparse(args, "simple_program")
   implicit val a = gads(1373958703)
 
   def which_one() = radio(
     budget = 2.00,
-    text = "Which one of these does not belong?",
+    text = "Which ingredient goes in coffee?",
     options = (
-      choice('oscar, "Oscar the Grouch"), // "http://tinyurl.com/qfwlx56"),
-      choice('kermit, "Kermit the Frog"), // "http://tinyurl.com/nuwyz3u"),
-      choice('spongebob, "Spongebob Squarepants"), // "http://tinyurl.com/oj6wzx6"),
-      choice('cookiemonster, "Cookie Monster"), // "http://tinyurl.com/otb6thl"),
-      choice('thecount, "The Count") //, "http://tinyurl.com/nfdbyxa")
+      choice('milk,"Milk"),
+      choice('lemon,"Lemon"),
+      choice('salt,"Salt"),
+      choice('honey,"Honey")
     ),
     minimum_spawn_policy = UserDefinableSpawnPolicy(0),
-    title = "Question 104"
+    title = "Question 104",
+    cpc = 0.1
   )
 
   automan(a) {

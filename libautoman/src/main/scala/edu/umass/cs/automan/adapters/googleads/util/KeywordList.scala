@@ -1,6 +1,5 @@
 package edu.umass.cs.automan.adapters.googleads.util
 
-import edu.umass.cs.automan.adapters.googleads.ads.WordTest.getClass
 import net.sf.extjwnl.data.Synset
 import net.sf.extjwnl.dictionary.Dictionary
 
@@ -8,11 +7,10 @@ import scala.util.Random
 import scala.collection.JavaConverters._
 
 object KeywordList {
-  def keywords(): List[String] = {
-    List("science",
+  def keywords(): Set[String] = {
+    Set("science",
       "programming",
       "research",
-      "zoology",
       "analysis",
       "search",
       "study",
@@ -60,7 +58,7 @@ object KeywordList {
     word
   }
 
-  def generateKeywords(num: Int, words: Set[String]) {
+  def generateKeywords(num: Int, words: Set[String]) : Set[String] = {
     def syns(s: String, dictionary: Dictionary): Set[String] = {
       val words = dictionary
         .lookupAllIndexWords(s)
@@ -82,7 +80,14 @@ object KeywordList {
       genSynsRec(depth, words)
     }
 
-    genSyns(4,words).splitAt(num)._1
+    def keyGen(depth: Int, words: Set[String]): Set[String] = {
+      val keywords = genSyns(1, words)
+      if (keywords.size >= num) return keywords.splitAt(num)._1
+      if (depth > 4) keyGen(1,keywords ++ Set(randomWord,randomWord,randomWord,randomWord))
+      else keyGen(depth + 1, keywords)
+    }
+
+    keyGen(1,words)
   }
 
 }
