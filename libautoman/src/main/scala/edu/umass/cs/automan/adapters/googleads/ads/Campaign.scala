@@ -114,11 +114,11 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
 
     if(name.length > 30) {
       DebugLog("Budget '" + name + "' too long. Renamed to " + name.substring(0,29), LogLevelWarn(), LogType.ADAPTER, qID)
-      return build(dailyBudget, name.substring(0,29))
+      build(dailyBudget, name.substring(0,29))
     }
     if(dailyBudget < 0.02) {
       DebugLog("Budget less than $0.02 set to $0.02 in account " + accountID, LogLevelWarn(), LogType.ADAPTER, qID)
-      return build(0.02,name)
+      build(0.02,name)
     }
     _budget_id= newBudget(name, dailyBudget)
 
@@ -158,7 +158,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
               error.getErrorCode.getCampaignBudgetError == errors.CampaignBudgetErrorEnum.CampaignBudgetError.NON_MULTIPLE_OF_MINIMUM_CURRENCY_UNIT
           }) match {
             case Some(s) => newBudget(name,dB.setScale(2, RoundingMode.CEILING))
-            case None => None
+            case None => throw e
           }
         case err: Throwable => campaignBudgetServiceClient.shutdown(); None
       }

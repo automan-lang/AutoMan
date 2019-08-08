@@ -115,7 +115,7 @@ object DSL {
     }
     gads.EstimationQuestion(initf)
   }
-  // WIP
+
   def multiestimate( dimensions: Array[Dimension],
                      confidence: Double = MagicNumbers.DefaultConfidence,
                      budget: BigDecimal = MagicNumbers.DefaultBudget,
@@ -258,7 +258,6 @@ object DSL {
       q.ad_keywords = ad_keywords
       q.wage = cpc * 3600/initial_worker_timeout_in_s //calculate wage from cpc ($/task)
 
-
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
       if (image_url != null) { q.image_url = image_url }
@@ -311,7 +310,6 @@ object DSL {
       q.ad_keywords = ad_keywords
       q.wage = cpc * 3600/initial_worker_timeout_in_s //calculate wage from cpc ($/task)
 
-
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
       if (image_url != null) { q.image_url = image_url }
@@ -361,7 +359,6 @@ object DSL {
       q.cpc = cpc // CPC
       q.ad_keywords = ad_keywords
       q.wage = cpc * 3600/initial_worker_timeout_in_s //calculate wage from cpc ($/task)
-
 
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
@@ -462,7 +459,6 @@ object DSL {
       q.cpc = cpc // CPC
       q.ad_keywords = ad_keywords
       q.wage = cpc * 3600/initial_worker_timeout_in_s //calculate wage from cpc ($/task)
-
 
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
