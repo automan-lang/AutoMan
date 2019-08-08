@@ -53,7 +53,8 @@ libraryDependencies := {
     "com.google.api-client"      % "google-api-client"      % "1.30.2",
     "com.google.oauth-client"    % "google-oauth-client-jetty" % "1.30.1",
     "com.google.apis"            % "google-api-services-script" % "v1-rev379-1.25.0",
-    "com.beust"                  % "jcommander"             % "1.7"
+    "com.beust"                  % "jcommander"             % "1.7",
+    "net.sf.extjwnl"             % "extjwnl"                % "1.6.4"
   )
 }
 

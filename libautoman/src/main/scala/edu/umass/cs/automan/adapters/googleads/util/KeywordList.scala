@@ -1,6 +1,11 @@
 package edu.umass.cs.automan.adapters.googleads.util
 
+import edu.umass.cs.automan.adapters.googleads.ads.WordTest.getClass
+import net.sf.extjwnl.data.Synset
+import net.sf.extjwnl.dictionary.Dictionary
+
 import scala.util.Random
+import scala.collection.JavaConverters._
 
 object KeywordList {
   def keywords(): List[String] = {
@@ -53,6 +58,31 @@ object KeywordList {
     }
 
     word
+  }
+
+  def generateKeywords(num: Int, words: Set[String]) {
+    def syns(s: String, dictionary: Dictionary): Set[String] = {
+      val words = dictionary
+        .lookupAllIndexWords(s)
+        .getIndexWordArray
+        .toSet
+      val senses: Set[Synset] = words.flatMap(_.getSenses.asScala)
+      senses.flatMap(_.getWords.asScala.map(_.getLemma)).filter(!_.contains(" "))
+    }
+
+    def genSyns(depth: Int, words: Set[String]): Set[String] = {
+      val dictionary = Dictionary.getFileBackedInstance(getClass.getResource("/dict").getPath)
+
+      def genSynsRec(depth: Int, set: Set[String]): Set[String] = {
+        if (depth == 0) set
+        else genSynsRec(depth - 1, set.flatMap(s => syns(s, dictionary))
+        )
+      }
+
+      genSynsRec(depth, words)
+    }
+
+    genSyns(4,words).splitAt(num)._1
   }
 
 }

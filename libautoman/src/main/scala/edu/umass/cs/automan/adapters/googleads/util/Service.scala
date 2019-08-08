@@ -20,7 +20,7 @@ import com.google.api.client.util.store.FileDataStoreFactory
 import com.google.api.services.script.Script
 import com.google.api.services.script.model.{File => gFile}
 import edu.umass.cs.automan.adapters.googleads.ScriptError
-import edu.umass.cs.automan.core.logging.{DebugLog, LogLevelInfo, LogLevelWarn, LogType}
+import edu.umass.cs.automan.core.logging._
 
 object Service {
   protected[util] val credentials_json_path = "credentials/credentials.json"
@@ -97,7 +97,7 @@ object Service {
             DebugLog(e.err + ": Script execution failed again with message '" + e.details + "' Attempting to reset credentials.", LogLevelWarn(), LogType.ADAPTER, null)
             Authenticate.scriptRevamp()
           case 2 =>
-            DebugLog(e.err + ": Unfixable script failure: '" + e.details + "' Giving up.", LogLevelWarn(), LogType.ADAPTER, null)
+            DebugLog(e.err + ": Unfixable script failure: '" + e.details + "' Giving up.", LogLevelFatal(), LogType.ADAPTER, null)
             sys.exit(1)
         }
         formRetry(call, tries + 1)

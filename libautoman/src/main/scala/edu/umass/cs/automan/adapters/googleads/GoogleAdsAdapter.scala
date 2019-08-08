@@ -9,6 +9,8 @@ import edu.umass.cs.automan.core.logging.Memo
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 
+import scala.math.BigDecimal.RoundingMode
+
 object GoogleAdsAdapter {
   def apply(init: GoogleAdsAdapter => Unit): GoogleAdsAdapter = {
     val gaa : GoogleAdsAdapter = new GoogleAdsAdapter
@@ -87,7 +89,10 @@ class GoogleAdsAdapter extends AutomanAdapter {
   protected[automan] def cancel(ts: List[Task], toState: SchedulerState.Value): Option[List[Task]] = {
     val stateChanger = toState match {
       case SchedulerState.CANCELLED => (t: Task) => t.copy_as_cancelled()
-      case SchedulerState.TIMEOUT => (t: Task) => t.copy_as_timeout()
+      case SchedulerState.TIMEOUT => (t: Task) => {
+        ts.foreach(_.question.asInstanceOf[GQuestion].cpc = (ts.head.question.wage * t.worker_timeout / 3600).setScale(2,RoundingMode.CEILING))
+        t.copy_as_timeout()
+      }
       case SchedulerState.DUPLICATE => (t: Task) => t.copy_as_duplicate()
       case _ => throw new Exception(s"Invalid target state $toState for cancellation request.")
     }
@@ -115,7 +120,10 @@ class GoogleAdsAdapter extends AutomanAdapter {
 
     Some(ts.map(t =>
       t.state match {
-        case SchedulerState.READY => taskPost(t)
+        case SchedulerState.READY => {
+          ts.foreach(_.question.asInstanceOf[GQuestion].cpc = (ts.head.question.wage * t.worker_timeout / 3600).setScale(2,RoundingMode.CEILING))
+          taskPost(t)
+        }
         case _ => throw new Exception(s"Invalid target state ${t.state} for post request.")
       }
     ))
@@ -153,7 +161,8 @@ class GoogleAdsAdapter extends AutomanAdapter {
       qSet.foreach(_.asInstanceOf[GQuestion].answer())
     }
     else {
-      qSet.foreach(_.asInstanceOf[GQuestion].fakeAnswer())
+      println(qSet.head.asInstanceOf[GQuestion].cpc)
+      //qSet.foreach(_.asInstanceOf[GQuestion].fakeAnswer())
     }
 
     def answer(t: Task): Task = {
@@ -168,7 +177,7 @@ class GoogleAdsAdapter extends AutomanAdapter {
 
     Some(ts.map(t =>
       t.state match {
-        case SchedulerState.RUNNING => answer(t)
+        case SchedulerState.RUNNING => println(t.worker_timeout); answer(t)
         case _ => throw new Exception(s"Invalid target state ${t.state} for retrieve request.")
       }
     ))

@@ -9,7 +9,39 @@ import edu.umass.cs.automan.core.mock._
 import edu.umass.cs.automan.core.question.Dimension
 
 
-object DSL extends edu.umass.cs.automan.core.GDSL {
+object DSL {
+  val automan = edu.umass.cs.automan.automan
+  val LogConfig = edu.umass.cs.automan.core.logging.LogConfig
+  val Utilities = edu.umass.cs.automan.core.util.Utilities
+
+  // to simplify imports
+  type Answer[T] = edu.umass.cs.automan.core.answer.Answer[T]
+  type Answers[T] = edu.umass.cs.automan.core.answer.Answers[T]
+  type AsymmetricCI = edu.umass.cs.automan.core.question.confidence.AsymmetricCI
+  type DistributionOutcome[T] = edu.umass.cs.automan.core.answer.VectorOutcome[T]
+  type Estimate = edu.umass.cs.automan.core.answer.Estimate
+  type IncompleteAnswers[T] = edu.umass.cs.automan.core.answer.IncompleteAnswers[T]
+  type LowConfidenceAnswer[T] = edu.umass.cs.automan.core.answer.LowConfidenceAnswer[T]
+  type LowConfidenceEstimate = edu.umass.cs.automan.core.answer.LowConfidenceEstimate
+  type OverBudgetAnswer[T] = edu.umass.cs.automan.core.answer.OverBudgetAnswer[T]
+  type OverBudgetAnswers[T] = edu.umass.cs.automan.core.answer.OverBudgetAnswers[T]
+  type OverBudgetEstimate = edu.umass.cs.automan.core.answer.OverBudgetEstimate
+  type ScalarOutcome[T] = edu.umass.cs.automan.core.answer.ScalarOutcome[T]
+  type Outcome[T] = edu.umass.cs.automan.core.answer.Outcome[T]
+
+  // to simplify pattern matching
+  val Answer = edu.umass.cs.automan.core.answer.Answer
+  val Answers = edu.umass.cs.automan.core.answer.Answers
+  val Estimate = edu.umass.cs.automan.core.answer.Estimate
+  val IncompleteAnswers = edu.umass.cs.automan.core.answer.IncompleteAnswers
+  val LowConfidenceAnswer = edu.umass.cs.automan.core.answer.LowConfidenceAnswer
+  val LowConfidenceEstimate = edu.umass.cs.automan.core.answer.LowConfidenceEstimate
+  val OverBudgetAnswer = edu.umass.cs.automan.core.answer.OverBudgetAnswer
+  val OverBudgetAnswers = edu.umass.cs.automan.core.answer.OverBudgetAnswers
+  val OverBudgetEstimate = edu.umass.cs.automan.core.answer.OverBudgetEstimate
+  val SymmetricCI = edu.umass.cs.automan.core.question.confidence.SymmetricCI
+  val UnconstrainedCI = edu.umass.cs.automan.core.question.confidence.UnconstrainedCI
+
   type GQuestionOption = edu.umass.cs.automan.adapters.googleads.question.GQuestionOption
 
   def gads(production_account_id: Long) : GoogleAdsAdapter = {
@@ -33,8 +65,6 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
                 confidence: Double = MagicNumbers.DefaultConfidence,
                 budget: BigDecimal = MagicNumbers.DefaultBudget,
                 default_sample_size: Int = -1,
-                dont_reject: Boolean = true,
-                dry_run: Boolean = false,
                 estimator: Seq[Double] => Double = null,
                 image_alt_text: String = null,
                 image_url: String = null,
@@ -42,17 +72,15 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
                 max_value: Double = Double.MaxValue,
                 minimum_spawn_policy: MinimumSpawnPolicy = null,
                 min_value: Double = Double.MinValue,
-                mock_answers: Iterable[MockAnswer[Double]] = null,
-                pay_all_on_failure: Boolean = true,
                 question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
                 text: String,
-                title: String = null, // form title
-                wage: BigDecimal = MagicNumbers.USFederalMinimumWage, // unused, should automatically set CPC
+                form_title: String = null, // form title
                 ad_title: String = null,
                 ad_subtitle: String = null,
                 ad_description: String = null,
                 english: Boolean = false, // restrict ad to English-speaking users
-                required: Boolean = true // require respondents to answer this question
+                required: Boolean = true, // require respondents to answer this question
+                cpc: BigDecimal = MagicNumbers.DefaultCPC
                 )
                 (implicit gads: GoogleAdsAdapter) : EstimationOutcome = {
     def initf(q: GEstimationQuestion): Unit = {
@@ -63,15 +91,13 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
       q.confidence_interval = confidence_interval
       q.confidence = confidence
       q.budget = budget
-      q.dont_reject = dont_reject
-      q.dry_run = dry_run
       q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
-      q.pay_all_on_failure = pay_all_on_failure
       q.question_timeout_multiplier = question_timeout_multiplier
       // google-specific parameters
       q.english = english
       q.required = required
-      q.wage = wage // CPC
+
+      q.wage = cpc * 3600/initial_worker_timeout_in_s //calculate wage from cpc ($/task)
 
       // optional parameters
       if (default_sample_size != -1 && default_sample_size > 0) { q.default_sample_size = default_sample_size }
@@ -80,12 +106,12 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
       if (image_url != null) { q.image_url = image_url }
       if (max_value != Double.MaxValue) { q.max_value = max_value }
       if (min_value != Double.MinValue) { q.min_value = min_value }
-      if (title != null) { q.title = title }
-      if (mock_answers != null ) { q.mock_answers = mock_answers }
+      if (form_title != null) { q.title = form_title }
       if (minimum_spawn_policy != null) { q.minimum_spawn_policy = minimum_spawn_policy }
       if (ad_title != null) { q.ad_title = ad_title }
       if (ad_subtitle != null) { q.ad_subtitle = ad_subtitle }
       if (ad_description != null) { q.ad_description = ad_description }
+      if (cpc != null) {q.cpc = cpc}
     }
     gads.EstimationQuestion(initf)
   }
@@ -94,21 +120,17 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
                      confidence: Double = MagicNumbers.DefaultConfidence,
                      budget: BigDecimal = MagicNumbers.DefaultBudget,
                      default_sample_size: Int = -1,
-                     dont_reject: Boolean = true,
-                     dry_run: Boolean = false,
                      image_alt_text: String = null,
                      image_url: String = null,
                      initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
                      minimum_spawn_policy: MinimumSpawnPolicy = null,
-                     mock_answers: Iterable[MockAnswer[Array[Double]]] = null,
-                     pay_all_on_failure: Boolean = true,
                      question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
                      text: String,
                      title: String = null, // form title
-                     wage: BigDecimal = MagicNumbers.USFederalMinimumWage,
-                     ad_title: String = "",
-                     ad_subtitle: String = "",
-                     ad_description: String = "",
+                     cpc: BigDecimal = MagicNumbers.DefaultCPC,
+                     ad_title: String = null,
+                     ad_subtitle: String = null,
+                     ad_description: String = null,
                      english: Boolean = false, // restrict ad to English-speaking users
                      required: Boolean = true // require respondents to answer this question
                      )
@@ -121,22 +143,20 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
       // mandatory parameters with sane defaults
       q.confidence = confidence
       q.budget = budget
-      q.dont_reject = dont_reject
-      q.dry_run = dry_run
       q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
-      q.pay_all_on_failure = pay_all_on_failure
       q.question_timeout_multiplier = question_timeout_multiplier
       // google-specific parameters
       q.english = english
       q.required = required
-      q.wage = wage // CPC
+      q.wage = cpc // CPC
+
+      q.wage = cpc * 3600/initial_worker_timeout_in_s //calculate wage from cpc ($/task)
 
       // optional parameters
       if (default_sample_size != -1 && default_sample_size > 0) { q.default_sample_size = default_sample_size }
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
       if (image_url != null) { q.image_url = image_url }
       if (title != null) { q.title = title }
-      if (mock_answers != null ) { q.mock_answers = mock_answers }
       if (minimum_spawn_policy != null) { q.minimum_spawn_policy = minimum_spawn_policy }
       if (ad_title != null) { q.ad_title = ad_title }
       if (ad_subtitle != null) { q.ad_subtitle = ad_subtitle }
@@ -149,23 +169,19 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
                 confidence: Double = MagicNumbers.DefaultConfidence,
                 before_filter: String => String = (a: String) => a,
                 budget: BigDecimal = MagicNumbers.DefaultBudget,
-                dont_reject: Boolean = true,
-                dry_run: Boolean = false,
                 image_alt_text: String = null,
                 image_url: String = null,
                 initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
                 minimum_spawn_policy: MinimumSpawnPolicy = null,
-                mock_answers: Iterable[MockAnswer[String]] = null,
-                pay_all_on_failure: Boolean = true,
                 pattern: String, // still have to implement in apps script
                 pattern_error_text: String = null,
                 question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
                 text: String,
                 title: String = null,
-                wage: BigDecimal = MagicNumbers.USFederalMinimumWage,
-                ad_title: String = "",
-                ad_subtitle: String = "",
-                ad_description: String = "",
+                cpc: BigDecimal = MagicNumbers.DefaultCPC,
+                ad_title: String = null,
+                ad_subtitle: String = null,
+                ad_description: String = null,
                 english: Boolean = false, // restrict ad to English-speaking users
                 required: Boolean = true // require respondents to answer this question
                 )
@@ -179,22 +195,20 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
       q.allow_empty_pattern = allow_empty_pattern
       q.confidence = confidence
       q.budget = budget
-      q.dont_reject = dont_reject
-      q.dry_run = dry_run
       q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
-      q.pay_all_on_failure = pay_all_on_failure
       q.question_timeout_multiplier = question_timeout_multiplier
       // google-specific parameters
       q.english = english
       q.required = required
-      q.wage = wage // CPC
+      q.wage = cpc // CPC
+
+      q.wage = cpc * 3600/initial_worker_timeout_in_s //calculate wage from cpc ($/task)
 
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
       if (image_url != null) { q.image_url = image_url }
       if (pattern_error_text != null) { q.pattern_error_text = pattern_error_text }
       if (title != null) { q.title = title }
-      if (mock_answers != null ) { q.mock_answers = mock_answers }
       if (minimum_spawn_policy != null) { q.minimum_spawn_policy = minimum_spawn_policy }
       if (ad_title != null) { q.ad_title = ad_title }
       if (ad_subtitle != null) { q.ad_subtitle = ad_subtitle }
@@ -207,23 +221,19 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
                  sample_size: Int = MagicNumbers.DefaultSampleSizeForDistrib,
                  before_filter: String => String = (a: String) => a,
                  budget: BigDecimal = MagicNumbers.DefaultBudget,
-                 dont_reject: Boolean = true,
-                 dry_run: Boolean = false,
                  image_alt_text: String = null,
                  image_url: String = null,
                  initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
                  minimum_spawn_policy: MinimumSpawnPolicy = null,
-                 mock_answers: Iterable[MockAnswer[String]] = null,
-                 pay_all_on_failure: Boolean = true,
                  pattern: String = null,
                  pattern_error_text: String = null,
                  question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
                  text: String,
                  title: String = null,
-                 wage: BigDecimal = MagicNumbers.USFederalMinimumWage,
-                 ad_title: String = "",
-                 ad_subtitle: String = "",
-                 ad_description: String = "",
+                 cpc: BigDecimal = MagicNumbers.DefaultCPC,
+                 ad_title: String = null,
+                 ad_subtitle: String = null,
+                 ad_description: String = null,
                  english: Boolean = false, // restrict ad to English-speaking users
                  required: Boolean = true // require respondents to answer this question
                  )
@@ -236,15 +246,15 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
       q.allow_empty_pattern = allow_empty_pattern
       q.sample_size = sample_size
       q.budget = budget
-      q.dont_reject = dont_reject
-      q.dry_run = dry_run
       q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
-      q.pay_all_on_failure = pay_all_on_failure
       q.question_timeout_multiplier = question_timeout_multiplier
       // google-specific parameters
       q.english = english
       q.required = required
-      q.wage = wage // CPC
+      q.cpc = cpc // CPC
+
+      q.wage = cpc * 3600/initial_worker_timeout_in_s //calculate wage from cpc ($/task)
+
 
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
@@ -252,7 +262,6 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
       if (pattern != null) { q.pattern = pattern }
       if (pattern_error_text != null) { q.pattern_error_text = pattern_error_text }
       if (title != null) { q.title = title }
-      if (mock_answers != null ) { q.mock_answers = mock_answers }
       if (minimum_spawn_policy != null) { q.minimum_spawn_policy = minimum_spawn_policy }
       if (ad_title != null) { q.ad_title = ad_title }
       if (ad_subtitle != null) { q.ad_subtitle = ad_subtitle }
@@ -263,22 +272,18 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
 
   def checkbox( confidence: Double = MagicNumbers.DefaultConfidence,
                 budget: BigDecimal = MagicNumbers.DefaultBudget,
-                dont_reject: Boolean = true,
-                dry_run: Boolean = false,
                 image_alt_text: String = null,
                 image_url: String = null,
                 initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
                 minimum_spawn_policy: MinimumSpawnPolicy = null,
-                mock_answers: Iterable[MockAnswer[Set[Symbol]]] = null,
                 options: List[AnyRef],
-                pay_all_on_failure: Boolean = true,
                 question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
                 text: String,
                 title: String = null,
-                wage: BigDecimal = MagicNumbers.USFederalMinimumWage,
-                ad_title: String = "",
-                ad_subtitle: String = "",
-                ad_description: String = "",
+                cpc: BigDecimal = MagicNumbers.DefaultCPC,
+                ad_title: String = null,
+                ad_subtitle: String = null,
+                ad_description: String = null,
                 english: Boolean = false, // restrict ad to English-speaking users
                 other: Boolean = false,
                 required: Boolean = true // require respondents to answer this question
@@ -292,22 +297,21 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
       // mandatory parameters with sane defaults
       q.confidence = confidence
       q.budget = budget
-      q.dont_reject = dont_reject
-      q.dry_run = dry_run
       q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
-      q.pay_all_on_failure = pay_all_on_failure
       q.question_timeout_multiplier = question_timeout_multiplier
       // google-specific parameters
       q.english = english
       q.other = other
       q.required = required
-      q.wage = wage // CPC
+      q.cpc = cpc // CPC
+
+      q.wage = cpc * 3600/initial_worker_timeout_in_s //calculate wage from cpc ($/task)
+
 
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
       if (image_url != null) { q.image_url = image_url }
       if (title != null) { q.title = title }
-      if (mock_answers != null ) { q.mock_answers = mock_answers }
       if (minimum_spawn_policy != null) { q.minimum_spawn_policy = minimum_spawn_policy }
       if (ad_title != null) { q.ad_title = ad_title }
       if (ad_subtitle != null) { q.ad_subtitle = ad_subtitle }
@@ -318,22 +322,18 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
 
   def checkboxes( sample_size: Int = MagicNumbers.DefaultSampleSizeForDistrib,
                   budget: BigDecimal = MagicNumbers.DefaultBudget,
-                  dont_reject: Boolean = true,
-                  dry_run: Boolean = false,
                   image_alt_text: String = null,
                   image_url: String = null,
                   initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
                   minimum_spawn_policy: MinimumSpawnPolicy = null,
-                  mock_answers: Iterable[MockAnswer[Set[Symbol]]] = null,
                   options: List[AnyRef],
-                  pay_all_on_failure: Boolean = true,
                   question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
                   text: String,
                   title: String = null,
-                  wage: BigDecimal = MagicNumbers.USFederalMinimumWage,
-                  ad_title: String = "",
-                  ad_subtitle: String = "",
-                  ad_description: String = "",
+                  cpc: BigDecimal = MagicNumbers.DefaultCPC,
+                  ad_title: String = null,
+                  ad_subtitle: String = null,
+                  ad_description: String = null,
                   english: Boolean = false, // restrict ad to English-speaking users
                   other: Boolean = false,
                   required: Boolean = true // require respondents to answer this question
@@ -347,22 +347,21 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
       // mandatory parameters with sane defaults
       q.sample_size = sample_size
       q.budget = budget
-      q.dont_reject = dont_reject
-      q.dry_run = dry_run
       q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
-      q.pay_all_on_failure = pay_all_on_failure
       q.question_timeout_multiplier = question_timeout_multiplier
       // google-specific parameters
       q.english = english
       q.other = other
       q.required = required
-      q.wage = wage // CPC
+      q.cpc = cpc // CPC
+
+      q.wage = cpc * 3600/initial_worker_timeout_in_s //calculate wage from cpc ($/task)
+
 
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
       if (image_url != null) { q.image_url = image_url }
       if (title != null) { q.title = title }
-      if (mock_answers != null ) { q.mock_answers = mock_answers }
       if (minimum_spawn_policy != null) { q.minimum_spawn_policy = minimum_spawn_policy }
       if (ad_title != null) { q.ad_title = ad_title }
       if (ad_subtitle != null) { q.ad_subtitle = ad_subtitle }
@@ -381,9 +380,9 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
              question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
              text: String,
              title: String = null,
-             ad_title: String = "",
-             ad_subtitle: String = "",
-             ad_description: String = "",
+             ad_title: String = null,
+             ad_subtitle: String = null,
+             ad_description: String = null,
              english: Boolean = false, // restrict ad to English-speaking users
              other: Boolean = false,
              required: Boolean = true, // require respondents to answer this question
@@ -406,6 +405,8 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
       q.required = required
       q.cpc = cpc
 
+      q.wage = cpc * 3600/initial_worker_timeout_in_s //calculate wage from cpc ($/task)
+
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
       if (image_url != null) { q.image_url = image_url }
@@ -420,22 +421,18 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
 
   def radios( sample_size: Int = MagicNumbers.DefaultSampleSizeForDistrib,
               budget: BigDecimal = MagicNumbers.DefaultBudget,
-              dont_reject: Boolean = true,
-              dry_run: Boolean = false,
               image_alt_text: String = null,
               image_url: String = null,
               initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
               minimum_spawn_policy: MinimumSpawnPolicy = null,
-              mock_answers: Iterable[MockAnswer[Symbol]] = null,
               options: List[AnyRef],
-              pay_all_on_failure: Boolean = true,
               question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
               text: String,
               title: String = null,
-              wage: BigDecimal = MagicNumbers.USFederalMinimumWage,
-              ad_title: String = "",
-              ad_subtitle: String = "",
-              ad_description: String = "",
+              cpc: BigDecimal = MagicNumbers.DefaultCPC,
+              ad_title: String = null,
+              ad_subtitle: String = null,
+              ad_description: String = null,
               english: Boolean = false, // restrict ad to English-speaking users
               other: Boolean = false,
               required: Boolean = true // require respondents to answer this question
@@ -449,22 +446,21 @@ object DSL extends edu.umass.cs.automan.core.GDSL {
       // mandatory parameters with sane defaults
       q.sample_size = sample_size
       q.budget = budget
-      q.dont_reject = dont_reject
-      q.dry_run = dry_run
       q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
-      q.pay_all_on_failure = pay_all_on_failure
       q.question_timeout_multiplier = question_timeout_multiplier
       // google-specific parameters
       q.english = english
       q.other = other
       q.required = required
-      q.wage = wage // CPC
+      q.cpc = cpc // CPC
+
+      q.wage = cpc * 3600/initial_worker_timeout_in_s //calculate wage from cpc ($/task)
+
 
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
       if (image_url != null) { q.image_url = image_url }
       if (title != null) { q.title = title }
-      if (mock_answers != null ) { q.mock_answers = mock_answers }
       if (minimum_spawn_policy != null) { q.minimum_spawn_policy = minimum_spawn_policy }
       if (ad_title != null) { q.ad_title = ad_title }
       if (ad_subtitle != null) { q.ad_subtitle = ad_subtitle }
