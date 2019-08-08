@@ -13,11 +13,9 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   protected var _ad_title: String = "Assist Crowdsourcing Research"
   protected var _ad_subtitle: String = "Input Your Expertise"
   protected var _ad_description: String = "Answer just one quick question to assist science research"
+  protected var _ad_keywords: Set[String] = Set.empty
   protected var _english: Boolean = false
-  protected var _form_description: String = "This question is part of ongoing computer science research at Williams College.\n" +
-    "All answers are fully anonymous and we will not collect any personal information.\n" +
-    "Please answer only once.\n" +
-    "To find out more about Williams Computer Science visit https://csci.williams.edu/"
+  protected var _form_description: String = ""
   protected var _item_id: String = ""
   protected var _other: Boolean = false
   protected var _required: Boolean = true
@@ -35,6 +33,8 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   def ad_subtitle_=(as: String) { _ad_subtitle = as }
   def ad_description: String = _ad_description
   def ad_description_=(des: String) { _ad_description = des }
+  def ad_keywords: Set[String] = _ad_keywords
+  def ad_keywords_=(words: Set[String]) { _ad_keywords = words }
   def english: Boolean = _english
   def english_=(e: Boolean) { _english = e }
   def form_description: String = _form_description
@@ -85,7 +85,7 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
     val ad = _ad match {
       case Some(a) => a
       case None => {
-        val a = camp.createAd(ad_title, ad_subtitle, ad_description, form.getPublishedUrl, KeywordList.keywords())
+        val a = camp.createAd(ad_title, ad_subtitle, ad_description, form.getPublishedUrl, ad_keywords.toList)
         camp.setCPC(cpc)
         if (english) camp.restrictEnglish()
         while(!a.is_approved) {
