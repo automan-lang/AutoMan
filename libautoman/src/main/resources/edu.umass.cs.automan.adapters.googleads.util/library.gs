@@ -155,7 +155,7 @@ function shuffleQuestion(item) {
 function addForm(title, limit) {
   var form = FormApp.create(title)
   form.setLimitOneResponsePerUser(limit)
-  form.hasRespondAgainLink(false)
+  form.setShowLinkToRespondAgain(false)
   return form.getId()
 }
 
