@@ -84,7 +84,7 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
     ad_=( _ad match {
       case Some(a) => a
       case None =>
-        campaign.createAd(ad_title, ad_subtitle, ad_description, form.getPublishedUrl, ad_keywords.toList)
+        campaign.createAd(ad_title, ad_subtitle, ad_description, form.getPublishedUrl, ad_keywords.toList, cpc)
         campaign.setCPC(cpc)
         if (english) campaign.restrictEnglish()
         while(!ad.is_approved) {

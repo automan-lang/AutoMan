@@ -55,9 +55,7 @@ class Ad(googleAdsClient: GoogleAdsClient, accountId: Long, adGroupId: Long, tit
   private val adResourceName = response.getResults(0).getResourceName
   client.shutdown()
 
-  /**
-    * Delete the Google ad associated with this class
-    */
+  //Delete the Google ad associated with this class
   def delete(): Unit = {
     val sc = googleAdsClient.getLatestVersion.createAdGroupAdServiceClient()
 
@@ -68,23 +66,19 @@ class Ad(googleAdsClient: GoogleAdsClient, accountId: Long, adGroupId: Long, tit
     DebugLog("Deleted ad " + title, LogLevelInfo(), LogType.ADAPTER, qID)
   }
 
-  /**
-    * Gets whether this ad is enabled. If false, ad is paused or removed
-    * @return True if ad is enabled, false if paused or removed
-    */
+  //Gets whether this ad is enabled. If false, ad is paused or removed
   def is_enabled: Boolean = {
     query("ad_group_ad.status","ad_group_ad").head.getAdGroupAd.getStatus == AdGroupAdStatus.ENABLED
   }
 
-  /**
-    * Checks whether ad has passed review and is approved to run. If false, ad will not run
-    * @return True if ad is approved, false if awaiting approval or rejected
-    */
+  //Checks whether ad has passed review and is approved to run. If false, ad will not run
   def is_approved: Boolean = {
     query("ad_group_ad.policy_summary","ad_group_ad").head.getAdGroupAd.getPolicySummary.getApprovalStatus == PolicyApprovalStatus.APPROVED
   }
 
-  def query(field: String, resource: String): Iterable[GoogleAdsRow] = {
+  //Queries for fields under this ad. Should be used in place of get API calls
+  //See https://developers.google.com/google-ads/api/docs/query/interactive-gaql-builder
+  private def query(field: String, resource: String): Iterable[GoogleAdsRow] = {
     val gasc = googleAdsClient.getLatestVersion.createGoogleAdsServiceClient
 
     val searchQuery = s"SELECT $field FROM $resource WHERE ad_group_ad.ad.id = $id AND customer.id = $accountId"

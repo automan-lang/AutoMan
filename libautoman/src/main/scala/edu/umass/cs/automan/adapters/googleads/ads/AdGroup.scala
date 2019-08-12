@@ -20,26 +20,14 @@ import edu.umass.cs.automan.adapters.googleads.util.Service._
 import edu.umass.cs.automan.core.logging.{DebugLog, LogLevelInfo, LogType}
 
 object AdGroup {
-    /**
-      * Construct a new ad group and wrapper class
-      * @param accountId The ID of the parent account, found in the format xxx-xxx-xxxx
-      * @param campaignId The ID of the parent campaign
-      * @param name A new name for this ad group
-      * @return A new AdGroup wrapper class representing a newly created ad group
-      */
-    def apply(accountId : Long, campaignId: Long, name: String, qID: UUID) : AdGroup = {
+    //Construct a new ad group and wrapper class
+    def apply(accountId : Long, campaignId: Long, name: String, cpc: BigDecimal, qID: UUID) : AdGroup = {
         val googleAdsClient = googleClient
         val ag = new AdGroup(googleAdsClient, accountId, qID)
-        ag.build(campaignId, name)
+        ag.build(campaignId, name, cpc)
         ag
     }
-    /**
-      * Construct a new wrapper class for an existing ad group
-      * @param accountId The ID of the parent account, found in the format xxx-xxx-xxxx
-      * @param campaignId The ID of the parent campaign
-      * @param adGroupId The ID of the ad group to be loaded
-      * @return A new AdGroup wrapper class representing an existing ad group
-      */
+    //Construct a new wrapper class for an existing ad group
     def apply(accountId: Long, campaignId : Long, adGroupId : Long, qID: UUID) : AdGroup = {
         val googleAdsClient = googleClient
         val ag = new AdGroup(googleAdsClient, accountId, qID)
@@ -54,6 +42,7 @@ class AdGroup (googleAdsClient: GoogleAdsClient, accountId: Long, qID: UUID) {
 
     def adgroup_id : Long = _adgroup_id match {case Some(c) => c case None => throw new Exception("AdGroup not initialized")}
 
+    //Cost per click
     def cpc : BigDecimal = {
         val c = BigDecimal(query("ad_group.cpc_bid_micros","ad_group").head.getAdGroup.getCpcBidMicros.getValue)/1000000
         c
@@ -67,7 +56,7 @@ class AdGroup (googleAdsClient: GoogleAdsClient, accountId: Long, qID: UUID) {
         agsc.shutdown()
     }
 
-    private def build(campaignId: Long, name: String): Unit = {
+    private def build(campaignId: Long, name: String, cpc: BigDecimal): Unit = {
         val adGroupServiceClient =
         googleAdsClient.getLatestVersion.createAdGroupServiceClient()
 
@@ -78,13 +67,12 @@ class AdGroup (googleAdsClient: GoogleAdsClient, accountId: Long, qID: UUID) {
           .setStatus(AdGroupStatus.ENABLED)
           .setCampaign(StringValue.of(ResourceNames.campaign(accountId,campaignId)))
           .setType(AdGroupType.SEARCH_STANDARD)
-          .setCpcBidMicros(Int64Value.of((100 * 10000).toLong)) //$1
+          .setCpcBidMicros(Int64Value.of((cpc * 1000000).toLong)) //$0.1
           .build()
 
         val op =
         AdGroupOperation.newBuilder.setCreate(ag).build()
-        val response =
-        adGroupServiceClient.mutateAdGroups(accountId.toString, ImmutableList.of(op)) //Request to create adGroup
+        adGroupServiceClient.mutateAdGroups(accountId.toString, ImmutableList.of(op)) //create adGroup
 
         DebugLog(
             "Added adgroup " + name + " to campaign with ID " + campaignId, LogLevelInfo(), LogType.ADAPTER, qID
@@ -109,15 +97,6 @@ class AdGroup (googleAdsClient: GoogleAdsClient, accountId: Long, qID: UUID) {
         _adgroup_id = Some(searchResponse.head.getAdGroup.getId.getValue)
     }
 
-    /**
-      * Create a new ad under this ad group, automatically making an ad group for it and supplying keywords to ad to this ad group
-      * @param title The first part of the first line of the ad as it will appear as a link on Google search: "Title | Subtitle" Must be < 30 characters
-      * @param subtitle The second part of the first line of the ad as it will appear as a link on Google search: "Title | Subtitle" Must be < 30 characters
-      * @param description The second line of the ad as it will appear in Google search. Must be < 90 characters
-      * @param url The url for the ad to link to, which will be automatically truncated by Google when appearing in search results
-      * @param keywords A list of keywords to associate with the new ad (and this ad group) with broad match setting
-      * @return A new Ad wrapper class representing a newly created ad
-      */
     def createAd (title: String, subtitle: String, description: String, url: String, keywords: List[String],qID: UUID) : Ad = {
         if (keywords.nonEmpty) addKeyWords(keywords)
         else addKeyWords(title.split(" ").toList)
@@ -143,10 +122,7 @@ class AdGroup (googleAdsClient: GoogleAdsClient, accountId: Long, qID: UUID) {
           .build()
     }
 
-    /**
-      * Add search keywords to be added to this ad group (with broad match setting).
-      * @param words A list of words to be added as keywords
-      */
+    //Add search keywords to be added to this ad group (with broad match setting).
     protected[ads] def addKeyWords (words: List[String]) : Unit = {
         val agcsc = googleAdsClient.getLatestVersion.createAdGroupCriterionServiceClient()
         val l : List[AdGroupCriterionOperation] = words.map(addKeyWordHelper(_, agcsc))
@@ -161,10 +137,8 @@ class AdGroup (googleAdsClient: GoogleAdsClient, accountId: Long, qID: UUID) {
         )
     }
 
-    /**
-      * Delete the Google ad group associated with this class
-      */
-    def delete () : Unit = {
+    //Delete the backend ad group associated with this class
+    protected[ads] def delete () : Unit = {
         val agsc = googleAdsClient.getLatestVersion.createAdGroupServiceClient()
 
         val rmOp = AdGroupOperation.newBuilder.setRemove(ResourceNames.adGroup(accountId,adgroup_id)).build()
@@ -176,6 +150,7 @@ class AdGroup (googleAdsClient: GoogleAdsClient, accountId: Long, qID: UUID) {
         )
     }
 
+    //Set the cost per click of this ad group
     protected[ads] def setCPC (costPerClick : BigDecimal) : Unit = {
         val agsc = googleAdsClient.getLatestVersion.createAdGroupServiceClient()//opens ad group client
 
@@ -197,7 +172,9 @@ class AdGroup (googleAdsClient: GoogleAdsClient, accountId: Long, qID: UUID) {
         )
     }
 
-    def query(field: String, resource: String): Iterable[GoogleAdsRow] = {
+    //Query for a specific field from this ad group. Should be used in place of get
+    //See https://developers.google.com/google-ads/api/docs/query/interactive-gaql-builder
+    private def query(field: String, resource: String): Iterable[GoogleAdsRow] = {
         val gasc = googleAdsClient.getLatestVersion.createGoogleAdsServiceClient
 
         val searchQuery = s"SELECT $field FROM $resource WHERE ad_group.id = $adgroup_id AND customer.id = $accountId"

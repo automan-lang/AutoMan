@@ -84,6 +84,13 @@ class GoogleAdsAdapter extends AutomanAdapter {
   }
 
   protected[automan] def post(ts: List[Task], exclude_worker_ids: List[String]): Option[List[Task]] = {
+    // create form, campaign, and ad
+    def taskPost(t: Task): Task = {
+      val q = t.question.asInstanceOf[GQuestion]
+      if (!test) q.post(production_account)
+      t.copy_as_running()
+    }
+
     Some(ts.map(t =>
       t.state match {
         case SchedulerState.READY =>
@@ -93,13 +100,6 @@ class GoogleAdsAdapter extends AutomanAdapter {
         case _ => throw new Exception(s"Invalid target state ${t.state} for post request.")
       }
     ))
-
-    // create form, campaign, and ad
-    def taskPost(t: Task): Task = {
-      val q = t.question.asInstanceOf[GQuestion]
-      if (!test) q.post(production_account)
-      t.copy_as_running()
-    }
   }
 
   protected[automan] def reject(ts_reasons: List[(Task, String)]): Option[List[Task]] =
@@ -118,12 +118,6 @@ class GoogleAdsAdapter extends AutomanAdapter {
     if (!test) qSet.foreach(_.asInstanceOf[GQuestion].answer())
     else qSet.foreach(_.asInstanceOf[GQuestion].fakeAnswer())
 
-    Some(ts.map(t =>
-      t.state match {
-        case SchedulerState.RUNNING => answer(t)
-        case _ => throw new Exception(s"Invalid target state ${t.state} for retrieve request.")
-      }
-    ))
 
     def answer(t: Task): Task = {
       val q = t.question.asInstanceOf[GQuestion]
@@ -133,6 +127,13 @@ class GoogleAdsAdapter extends AutomanAdapter {
       }
       updatedT
     }
+
+    Some(ts.map(t =>
+      t.state match {
+        case SchedulerState.RUNNING => answer(t)
+        case _ => throw new Exception(s"Invalid target state ${t.state} for retrieve request.")
+      }
+    ))
   }
 
   def Option(id: Symbol, text: String) = new GQuestionOption(id, text, "")
