@@ -55,9 +55,7 @@ class AdGroup (googleAdsClient: GoogleAdsClient, accountId: Long, qID: UUID) {
     def adgroup_id : Long = _adgroup_id match {case Some(c) => c case None => throw new Exception("AdGroup not initialized")}
 
     def cpc : BigDecimal = {
-        val client = googleAdsClient.getLatestVersion.createAdGroupServiceClient
-        val c = BigDecimal(client.getAdGroup(ResourceNames.adGroup(accountId,adgroup_id)).getCpcBidMicros.getValue)/1000000
-        client.shutdown()
+        val c = BigDecimal(query("ad_group.cpc_bid_micros","ad_group").head.getAdGroup.getCpcBidMicros.getValue)/1000000
         c
     }
 
@@ -91,10 +89,24 @@ class AdGroup (googleAdsClient: GoogleAdsClient, accountId: Long, qID: UUID) {
         DebugLog(
             "Added adgroup " + name + " to campaign with ID " + campaignId, LogLevelInfo(), LogType.ADAPTER, qID
         )
-
-        //Save resource name
-        _adgroup_id = Some(adGroupServiceClient.getAdGroup(response.getResultsList.get(0).getResourceName).getId.getValue)
         adGroupServiceClient.shutdown()
+
+        //Save ID
+        val gasc = googleAdsClient.getLatestVersion.createGoogleAdsServiceClient
+
+        val searchQuery = s"SELECT ad_group.id FROM ad_group WHERE campaign.id = $campaignId AND customer.id = $accountId"
+
+        val request = SearchGoogleAdsRequest.newBuilder
+            .setCustomerId(accountId.toString)
+            .setPageSize(1)
+            .setQuery(searchQuery)
+            .build()
+
+        val searchResponse: Iterable[GoogleAdsRow] = gasc.search(request).iterateAll.asScala
+
+        gasc.shutdown()
+
+        _adgroup_id = Some(searchResponse.head.getAdGroup.getId.getValue)
     }
 
     /**
@@ -183,5 +195,21 @@ class AdGroup (googleAdsClient: GoogleAdsClient, accountId: Long, qID: UUID) {
         DebugLog(
             "Set CPC of ad group with ID " + adgroup_id + " to $" + costPerClick, LogLevelInfo(), LogType.ADAPTER, qID
         )
+    }
+
+    def query(field: String, resource: String): Iterable[GoogleAdsRow] = {
+        val gasc = googleAdsClient.getLatestVersion.createGoogleAdsServiceClient
+
+        val searchQuery = s"SELECT $field FROM $resource WHERE ad_group.id = $adgroup_id AND customer.id = $accountId"
+
+        val request = SearchGoogleAdsRequest.newBuilder
+          .setCustomerId(accountId.toString)
+          .setPageSize(1)
+          .setQuery(searchQuery)
+          .build()
+        val response: Iterable[GoogleAdsRow] = gasc.search(request).iterateAll.asScala
+
+        gasc.shutdown()
+        response
     }
 }

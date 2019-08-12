@@ -7,10 +7,12 @@ import com.google.ads.googleads.v2.enums.AdGroupAdStatusEnum.AdGroupAdStatus
 import com.google.ads.googleads.v2.common.ExpandedTextAdInfo
 import com.google.ads.googleads.v2.enums.PolicyApprovalStatusEnum.PolicyApprovalStatus
 import com.google.ads.googleads.v2.resources.{AdGroupAd, Ad => GoogleAd}
-import com.google.ads.googleads.v2.services.AdGroupAdOperation
+import com.google.ads.googleads.v2.services.{AdGroupAdOperation, GoogleAdsRow, SearchGoogleAdsRequest}
 import com.google.ads.googleads.v2.utils.ResourceNames
 import com.google.common.collect.ImmutableList
 import com.google.protobuf.StringValue
+
+import scala.collection.JavaConverters._
 import scala.io.StdIn.readLine
 import edu.umass.cs.automan.core.logging._
 
@@ -78,15 +80,7 @@ class Ad(googleAdsClient: GoogleAdsClient, accountId: Long, adGroupId: Long, tit
     * @return True if ad is enabled, false if paused or removed
     */
   def is_enabled: Boolean = {
-    val client = googleAdsClient
-      .getLatestVersion
-      .createAdGroupAdServiceClient
-
-    val b = client.getAdGroupAd(ResourceNames.adGroupAd(accountId, adGroupId, id))
-      .getStatus == AdGroupAdStatus.ENABLED
-
-    client.shutdown()
-    b
+    query("ad_group_ad.status","ad_group_ad").head.getAdGroupAd.getStatus == AdGroupAdStatus.ENABLED
   }
 
   /**
@@ -94,18 +88,23 @@ class Ad(googleAdsClient: GoogleAdsClient, accountId: Long, adGroupId: Long, tit
     * @return True if ad is approved, false if awaiting approval or rejected
     */
   def is_approved: Boolean = {
+    query("ad_group_ad.policy_summary","ad_group_ad").head.getAdGroupAd.getPolicySummary.getApprovalStatus == PolicyApprovalStatus.APPROVED
+  }
 
-    val client = googleAdsClient
-      .getLatestVersion
-      .createAdGroupAdServiceClient
+  def query(field: String, resource: String): Iterable[GoogleAdsRow] = {
+    val gasc = googleAdsClient.getLatestVersion.createGoogleAdsServiceClient
 
-    val b = client
-      .getAdGroupAd(ResourceNames.adGroupAd(accountId, adGroupId, id))
-      .getPolicySummary
-      .getApprovalStatus == PolicyApprovalStatus.APPROVED
+    val searchQuery = s"SELECT $field FROM $resource WHERE ad_group_ad.ad.id = $id AND customer.id = $accountId"
 
-    client.shutdown()
-    b
+    val request = SearchGoogleAdsRequest.newBuilder
+      .setCustomerId(accountId.toString)
+      .setPageSize(1)
+      .setQuery(searchQuery)
+      .build()
+    val response: Iterable[GoogleAdsRow] = gasc.search(request).iterateAll.asScala
+
+    gasc.shutdown()
+    response
   }
 }
 

@@ -34,7 +34,7 @@ class GoogleAdsAdapter extends AutomanAdapter {
 
   private var _production_account_id: Option[Long] = None
   private var _production_account: Option[Account] = None
-  val test = true
+  val test = false
 
   def production_account_id: Long = _production_account_id match {
     case Some(id) => id;
@@ -161,8 +161,7 @@ class GoogleAdsAdapter extends AutomanAdapter {
       qSet.foreach(_.asInstanceOf[GQuestion].answer())
     }
     else {
-      println(qSet.head.asInstanceOf[GQuestion].cpc)
-      //qSet.foreach(_.asInstanceOf[GQuestion].fakeAnswer())
+      qSet.foreach(_.asInstanceOf[GQuestion].fakeAnswer())
     }
 
     def answer(t: Task): Task = {
@@ -177,7 +176,7 @@ class GoogleAdsAdapter extends AutomanAdapter {
 
     Some(ts.map(t =>
       t.state match {
-        case SchedulerState.RUNNING => println(t.worker_timeout); answer(t)
+        case SchedulerState.RUNNING => answer(t)
         case _ => throw new Exception(s"Invalid target state ${t.state} for retrieve request.")
       }
     ))

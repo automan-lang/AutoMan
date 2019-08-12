@@ -9,16 +9,17 @@ import java.util.logging.Level
 
 import scala.collection.JavaConverters._
 import com.google.ads.googleads.lib.GoogleAdsClient
-import com.google.api.client.auth.oauth2.Credential
+import com.google.api.client.auth.oauth2.{Credential, TokenResponse}
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp.DefaultBrowser
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver
-import com.google.api.client.googleapis.auth.oauth2.{GoogleAuthorizationCodeFlow, GoogleClientSecrets}
+import com.google.api.client.googleapis.auth.oauth2.{GoogleAuthorizationCodeFlow, GoogleClientSecrets, GoogleRefreshTokenRequest}
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.client.util.store.FileDataStoreFactory
 import com.google.api.services.script.Script
 import com.google.api.services.script.model.{File => gFile}
+import com.google.auth.oauth2.UserCredentials
 import edu.umass.cs.automan.adapters.googleads.ScriptError
 import edu.umass.cs.automan.core.logging._
 
@@ -26,6 +27,9 @@ object Service {
   protected[util] val credentials_json_path = "credentials/credentials.json"
   protected[util] val properties_path = "credentials/ads.properties"
   protected[util] val tokens_path = "credentials/tokens"
+  protected[util] var timeout = 0
+  protected[util] var successful_calls = 0
+
 
   protected[util] val json_factory: JacksonFactory = JacksonFactory.getDefaultInstance
 
@@ -57,15 +61,15 @@ object Service {
   }
 
   def client_id: String = {
-      val properties = new Properties
-      properties.load(new FileInputStream(new File(properties_path)))
-      properties.getProperty("api.googleads.clientId")
+    val properties = new Properties
+    properties.load(new FileInputStream(new File(properties_path)))
+    properties.getProperty("api.googleads.clientId")
   }
 
   def client_secret: String = {
-      val properties = new Properties
-      properties.load(new FileInputStream(new File(properties_path)))
-      properties.getProperty("api.googleads.clientSecret")
+    val properties = new Properties
+    properties.load(new FileInputStream(new File(properties_path)))
+    properties.getProperty("api.googleads.clientSecret")
   }
 
   def service: Script = {
@@ -79,16 +83,54 @@ object Service {
   // Catch Apps Script API call failures and retry
   def formRetry[T](call: () => T, tries: Int = 0) : T = {
     try {
-      call()
+      Thread.sleep(timeout)
+      val ret = call()
+      successful_calls += 1
+      if(successful_calls >= 10) {
+        timeout = timeout/2
+        successful_calls = 0
+      }
+      ret
     } catch {
       case t: com.google.api.client.auth.oauth2.TokenResponseException =>
-        DebugLog(t.getDetails.getErrorDescription + ": Script execution failed to authorize. Attempting to reset credentials.", LogLevelWarn(), LogType.ADAPTER, null)
-        Authenticate.scriptRevamp()
-        formRetry(call)
+        tries match {
+          case 0 =>
+            DebugLog(t.getDetails.getErrorDescription + ": Script execution failed. Retrying now.", LogLevelWarn(), LogType.ADAPTER, null)
+            Thread.sleep(2*1000)
+            formRetry(call)
+          case 1 => DebugLog(t.getDetails.getErrorDescription + ": Script execution failed to authorize. Attempting to reset credentials.", LogLevelWarn(), LogType.ADAPTER, null)
+            Authenticate.scriptRevamp()
+          case 2 =>
+            DebugLog(t.getDetails.getErrorDescription + ": Unfixable script failure. Giving up.", LogLevelFatal(), LogType.ADAPTER, null)
+            sys.exit(1)
+        }
+        formRetry(call, tries + 1)
       case j: com.google.api.client.googleapis.json.GoogleJsonResponseException =>
-        DebugLog(j.getDetails.getMessage + ": Script execution failed to authorize. Attempting to reset credentials.", LogLevelWarn(), LogType.ADAPTER, null)
-        Authenticate.scriptRevamp()
+        DebugLog(j.getDetails.getMessage + ": Script execution failed. Doubling backoff to " + timeout, LogLevelWarn(), LogType.ADAPTER, null)
+        if (j.getDetails.getCode == 429) {
+          if (timeout == 0) {
+            timeout = 10
+            successful_calls = 0
+          }
+          else {
+            timeout = timeout*2
+            successful_calls = 0
+          }
+        }
         formRetry(call)
+
+        tries match {
+          case 0 =>
+            DebugLog(j.getDetails.getMessage + ": Script execution failed. Retrying now.", LogLevelWarn(), LogType.ADAPTER, null)
+            Thread.sleep(2*1000)
+            formRetry(call)
+          case 1 => DebugLog(j.getDetails.getMessage + ": Script execution failed to authorize. Attempting to reset credentials.", LogLevelWarn(), LogType.ADAPTER, null)
+            Authenticate.scriptRevamp()
+          case 2 =>
+            DebugLog(j.getDetails.getMessage + ": Unfixable script failure. Giving up.", LogLevelFatal(), LogType.ADAPTER, null)
+            sys.exit(1)
+        }
+        formRetry(call, tries + 1)
       case e: ScriptError =>
         tries match {
           case 0 =>
@@ -149,8 +191,10 @@ object Service {
 
       // receive authorization code and exchange it for an access token
       val code = receiver.waitForCode
-      val response = flow.newTokenRequest(code).setRedirectUri(redirectUri).execute
+      val response = flow.newTokenRequest(code)
+        .setRedirectUri(redirectUri).execute
       // store credential and return it
+
       return flow.createAndStoreCredential(response, "user")
     }
     finally receiver.stop()
