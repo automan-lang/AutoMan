@@ -12,7 +12,7 @@ object Form {
     * Construct a new form and wrapper class
     * @param title A new title for this form
     * @param limit Sets whether the form allows only one response per respondent.
-    *              If true, requires respondent to sign in to their Google account.
+    *              If true, requires respondent to sign into their Google account.
     * @return A new Form wrapper class representing a newly created form
     */
   def apply(title: String, limit: Boolean = false): Form = {
@@ -20,6 +20,7 @@ object Form {
     f.build(title, limit)
     f
   }
+
   /**
     * Construct a new wrapper class for an existing form
     * @param id The ID of the form to be loaded
@@ -30,6 +31,7 @@ object Form {
     f.load(id.toString().drop(1))
     f
   }
+
 }
 
 class Form() {
@@ -40,21 +42,20 @@ class Form() {
   // creates a new form, saving the id
   private def build(title : String, limit: Boolean) : Unit = {
     formRetry(() => {
-    val form_request = new ExecutionRequest()
-      .setFunction("addForm")
-      .setParameters(List(title, limit).map(_.asInstanceOf[AnyRef]).asJava)
-    val form_op = service.scripts()
-      .run(script_id, form_request)
-      .execute()
+      val form_request = new ExecutionRequest()
+        .setFunction("addForm")
+        .setParameters(List(title, limit).map(_.asInstanceOf[AnyRef]).asJava)
+      val form_op = service.scripts()
+        .run(script_id, form_request)
+        .execute()
 
-    val err = Option(form_op.getError)
-    _id = err match {
-      case None => {
-        DebugLog("Posted form with title: '" + title + "'", LogLevelInfo(), LogType.ADAPTER, null)
-        Some(form_op.getResponse.get("result").toString)
+      val err = Option(form_op.getError)
+      _id = err match {
+        case None =>
+          DebugLog("Posted form with title: '" + title + "'", LogLevelInfo(), LogType.ADAPTER, null)
+          Some(form_op.getResponse.get("result").toString)
+        case Some(e) => throw ScriptError(e.getMessage, e.getDetails.get(0).get("errorMessage").toString)
       }
-      case Some(e) => throw ScriptError(e.getMessage, e.getDetails.get(0).get("errorMessage").toString)
-    }
     })
   }
 

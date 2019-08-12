@@ -45,10 +45,9 @@ object Authenticate {
       "   Locate the client ID and secret")
     try { buildAdsProperties(properties_path, m_ID, dev_token) } //starts with "enter your client id
     catch {
-      case _ : com.google.api.client.http.HttpResponseException => {
+      case _ : com.google.api.client.http.HttpResponseException =>
         println("Some information was not correct. Try again")
         buildAdsProperties(properties_path,  m_ID, dev_token)
-      }
       case _ : Throwable => println("Properties build failed")
     }
 
@@ -58,7 +57,7 @@ object Authenticate {
       .setTitle("AutoMan"))
       .execute()
 
-    //Write script id to properties file
+    // Write script id to properties file
     val properties = new Properties
     properties.load(new FileInputStream(new File(properties_path)))
     properties.put("script.id",project.getScriptId)
@@ -83,7 +82,8 @@ object Authenticate {
     println(s"\nAll done. Your ad production account ID is: ${Account("AutoMan").account_id}")
   }
 
-  private def buildAdsProperties(path: String, managerId: String, developerToken: String): Unit = { // Generates the client ID and client secret from the Google Cloud Console:
+  // Generates the client ID and client secret from the Google Cloud Console
+  private def buildAdsProperties(path: String, managerId: String, developerToken: String): Unit = {
     val SCOPES = ImmutableList.builder[String].add("https://www.googleapis.com/auth/adwords",
       "https://www.googleapis.com/auth/script.projects",
       "https://www.googleapis.com/auth/script.deployments",
@@ -96,17 +96,21 @@ object Authenticate {
     print("Enter your client secret: ")
     val clientSecret = readLine()
 
-    val userAuthorizer = UserAuthorizer.newBuilder.setClientId(ClientId.of(clientId, clientSecret)).setScopes(SCOPES).setCallbackUri(URI.create(CALLBACK_URI)).build
+    val userAuthorizer = UserAuthorizer.newBuilder.setClientId(ClientId.of(clientId, clientSecret))
+      .setScopes(SCOPES).setCallbackUri(URI.create(CALLBACK_URI)).build
+
     val authorizationUrl = userAuthorizer.getAuthorizationUrl(null, null, null)
     printf("Open this link to authorize AutoMan:%n%s%n", authorizationUrl)
     // Waits for the authorization code.
     print("Go to advanced > Go to AutoMan and allow permissions. Type the code you received here: ")
-    @SuppressWarnings(Array("DefaultCharset")) val authorizationCode = // Reading from stdin, so default charset is appropriate.
-      new BufferedReader(new InputStreamReader(System.in)).readLine
+    // Reading from stdin, so default charset is appropriate
+    @SuppressWarnings(Array("DefaultCharset"))
+    val authorizationCode = new BufferedReader(new InputStreamReader(System.in)).readLine
     // Exchanges the authorization code for credentials and print the refresh token.
     val userCredentials = userAuthorizer.getCredentialsFromCode(authorizationCode, null)
     //printf("Your refresh token is: %s%n. You can ignore this", userCredentials.getRefreshToken)
-    // Inputs prop file values
+
+    // Inputs property file values
     val adsProperties = new Properties
     adsProperties.put(ConfigPropertyKey.CLIENT_ID.getPropertyKey, clientId)
     adsProperties.put(ConfigPropertyKey.CLIENT_SECRET.getPropertyKey, clientSecret)
@@ -122,9 +126,7 @@ object Authenticate {
       tokens.listFiles().foreach(_.delete())
       tokens.delete()
     }
-    catch {
-      case  _ : Throwable =>
-    }
-      service
-    }
+    catch { case  _ : Throwable => }
+    service
+  }
 }

@@ -204,7 +204,7 @@ object DSL {
       q.required = required
       q.wage = cpc // CPC
       q.ad_keywords = ad_keywords
-      q.wage = cpc * 3600/initial_worker_timeout_in_s //calculate wage from cpc ($/task)
+      q.wage = cpc * 3600/initial_worker_timeout_in_s // calculate wage from cpc ($/task)
 
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
@@ -256,7 +256,7 @@ object DSL {
       q.required = required
       q.cpc = cpc // CPC
       q.ad_keywords = ad_keywords
-      q.wage = cpc * 3600/initial_worker_timeout_in_s //calculate wage from cpc ($/task)
+      q.wage = cpc * 3600/initial_worker_timeout_in_s // calculate wage from cpc ($/task)
 
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
@@ -358,7 +358,7 @@ object DSL {
       q.required = required
       q.cpc = cpc // CPC
       q.ad_keywords = ad_keywords
-      q.wage = cpc * 3600/initial_worker_timeout_in_s //calculate wage from cpc ($/task)
+      q.wage = cpc * 3600/initial_worker_timeout_in_s // calculate wage from cpc ($/task)
 
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
@@ -408,7 +408,7 @@ object DSL {
       q.required = required
       q.cpc = cpc
       q.ad_keywords = ad_keywords
-      q.wage = cpc * 3600/initial_worker_timeout_in_s //calculate wage from cpc ($/task)
+      q.wage = cpc * 3600/initial_worker_timeout_in_s // calculate wage from cpc ($/task)
 
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
@@ -458,7 +458,7 @@ object DSL {
       q.required = required
       q.cpc = cpc // CPC
       q.ad_keywords = ad_keywords
-      q.wage = cpc * 3600/initial_worker_timeout_in_s //calculate wage from cpc ($/task)
+      q.wage = cpc * 3600/initial_worker_timeout_in_s // calculate wage from cpc ($/task)
 
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }

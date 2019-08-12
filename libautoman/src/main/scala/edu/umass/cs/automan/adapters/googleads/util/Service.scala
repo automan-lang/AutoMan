@@ -5,21 +5,18 @@ import java.awt.Desktop.Action
 import java.io._
 import java.net.URI
 import java.util.Properties
-import java.util.logging.Level
 
 import scala.collection.JavaConverters._
 import com.google.ads.googleads.lib.GoogleAdsClient
-import com.google.api.client.auth.oauth2.{Credential, TokenResponse}
-import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp.DefaultBrowser
+import com.google.api.client.auth.oauth2.Credential
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver
-import com.google.api.client.googleapis.auth.oauth2.{GoogleAuthorizationCodeFlow, GoogleClientSecrets, GoogleRefreshTokenRequest}
+import com.google.api.client.googleapis.auth.oauth2.{GoogleAuthorizationCodeFlow, GoogleClientSecrets}
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.client.util.store.FileDataStoreFactory
 import com.google.api.services.script.Script
 import com.google.api.services.script.model.{File => gFile}
-import com.google.auth.oauth2.UserCredentials
 import edu.umass.cs.automan.adapters.googleads.ScriptError
 import edu.umass.cs.automan.core.logging._
 
@@ -29,14 +26,13 @@ object Service {
   protected[util] val tokens_path = "credentials/tokens"
   protected[util] var timeout = 0
   protected[util] var successful_calls = 0
-
-
   protected[util] val json_factory: JacksonFactory = JacksonFactory.getDefaultInstance
 
   protected[util] val scopes: java.util.List[String] = List("https://www.googleapis.com/auth/script.projects",
     "https://www.googleapis.com/auth/script.deployments",
     "https://www.googleapis.com/auth/script.external_request",
     "https://www.googleapis.com/auth/forms").asJava
+
   protected[util] val config: gFile = new gFile()
     .setName("appsscript")
     .setType("JSON")
@@ -51,7 +47,7 @@ object Service {
   def googleClient : GoogleAdsClient =  {
     val propertiesFile = new File(properties_path)
     GoogleAdsClient.newBuilder.fromPropertiesFile(propertiesFile).build()
-  } //Build a google client
+  }
 
   // Accessors
   def script_id: String = {
@@ -97,7 +93,6 @@ object Service {
           case 0 =>
             DebugLog(t.getDetails.getErrorDescription + ": Script execution failed. Retrying now.", LogLevelWarn(), LogType.ADAPTER, null)
             Thread.sleep(2*1000)
-            formRetry(call)
           case 1 => DebugLog(t.getDetails.getErrorDescription + ": Script execution failed to authorize. Attempting to reset credentials.", LogLevelWarn(), LogType.ADAPTER, null)
             Authenticate.scriptRevamp()
           case 2 =>
@@ -105,6 +100,7 @@ object Service {
             sys.exit(1)
         }
         formRetry(call, tries + 1)
+
       case j: com.google.api.client.googleapis.json.GoogleJsonResponseException =>
         DebugLog(j.getDetails.getMessage + ": Script execution failed. Doubling backoff to " + timeout, LogLevelWarn(), LogType.ADAPTER, null)
         if (j.getDetails.getCode == 429) {
@@ -118,19 +114,19 @@ object Service {
           }
         }
         formRetry(call)
-
         tries match {
           case 0 =>
             DebugLog(j.getDetails.getMessage + ": Script execution failed. Retrying now.", LogLevelWarn(), LogType.ADAPTER, null)
             Thread.sleep(2*1000)
-            formRetry(call)
-          case 1 => DebugLog(j.getDetails.getMessage + ": Script execution failed to authorize. Attempting to reset credentials.", LogLevelWarn(), LogType.ADAPTER, null)
+          case 1 =>
+            DebugLog(j.getDetails.getMessage + ": Script execution failed to authorize. Attempting to reset credentials.", LogLevelWarn(), LogType.ADAPTER, null)
             Authenticate.scriptRevamp()
           case 2 =>
             DebugLog(j.getDetails.getMessage + ": Unfixable script failure. Giving up.", LogLevelFatal(), LogType.ADAPTER, null)
             sys.exit(1)
         }
         formRetry(call, tries + 1)
+
       case e: ScriptError =>
         tries match {
           case 0 =>
@@ -143,6 +139,7 @@ object Service {
             sys.exit(1)
         }
         formRetry(call, tries + 1)
+
       case a: Throwable =>
         tries match {
           case 0 =>
@@ -195,7 +192,7 @@ object Service {
         .setRedirectUri(redirectUri).execute
       // store credential and return it
 
-      return flow.createAndStoreCredential(response, "user")
+      flow.createAndStoreCredential(response, "user")
     }
     finally receiver.stop()
   }
@@ -212,9 +209,8 @@ object Service {
           }
         }
     catch {
-      case e: IOException =>
-        println("Unable to open browser. Please go to " + url)
-      case e: InternalError =>
+      case _: IOException => println("Unable to open browser. Please go to " + url)
+      case _: InternalError =>
         // A bug in a JRE can cause Desktop.isDesktopSupported() to throw an
         // InternalError rather than returning false. The error reads,
         // "Can't connect to X11 window server using ':0.0' as the value of the

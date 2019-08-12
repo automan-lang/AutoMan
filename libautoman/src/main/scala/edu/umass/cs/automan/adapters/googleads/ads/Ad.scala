@@ -17,15 +17,12 @@ import scala.io.StdIn.readLine
 import edu.umass.cs.automan.core.logging._
 
 class Ad(googleAdsClient: GoogleAdsClient, accountId: Long, adGroupId: Long, title: String, subtitle: String, description: String, url: String, qID: UUID) {
-  if(title.length > 30) {
+  if(title.length > 30)
     do {println("Ad title too long. Enter a new ad title (30 chars or less): ")} while (readLine().length() > 30)
-  }
-  if(subtitle.length > 30) {
+  if(subtitle.length > 30)
     do {println("Ad subtitle too long. Enter a new ad subtitle (30 chars or less): ")} while (readLine().length() > 30)
-  }
-  if(title.length > 90) {
+  if(title.length > 90)
     do {println("Ad description too long. Enter a new ad description (90 chars or less): ")} while (readLine().length() > 90)
-  }
 
   private val client = googleAdsClient.getLatestVersion.createAdGroupAdServiceClient()
 
@@ -52,9 +49,7 @@ class Ad(googleAdsClient: GoogleAdsClient, accountId: Long, adGroupId: Long, tit
   private val response = client.mutateAdGroupAds(accountId.toString, ImmutableList.of(operations))
   private val id = client.getAdGroupAd(response.getResults(0).getResourceName).getAd.getId.getValue
 
-  DebugLog(
-    "Created ad " + title + " to ad group with ID " + adGroupId, LogLevelInfo(), LogType.ADAPTER, qID
-  )
+  DebugLog("Created ad " + title + " to ad group with ID " + adGroupId, LogLevelInfo(), LogType.ADAPTER, qID)
 
   //Saves resource name
   private val adResourceName = response.getResults(0).getResourceName
@@ -70,9 +65,7 @@ class Ad(googleAdsClient: GoogleAdsClient, accountId: Long, adGroupId: Long, tit
     sc.mutateAdGroupAds(accountId.toString, ImmutableList.of(rmOp))
 
     sc.shutdown()
-    DebugLog(
-      "Deleted ad " + title, LogLevelInfo(), LogType.ADAPTER, qID
-    )
+    DebugLog("Deleted ad " + title, LogLevelInfo(), LogType.ADAPTER, qID)
   }
 
   /**

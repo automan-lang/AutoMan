@@ -65,38 +65,34 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   def answers_enqueue(l: List[A]): Unit = l.foreach(answers.enqueue(_))
   def answers_dequeue(): Option[A] = { if (answers.isEmpty) None; else Some(answers.dequeue()) }
 
+  // create form, campaign, and ad if none currently exist
   def post(acc: Account): Unit = {
-    _form match {
-      case Some(_) =>
-      case None => {
-        val form = Form(title)
+    form_=( _form match {
+      case Some(f) => f
+      case None =>
+        Form(title)
         form.setDescription(form_description)
-        form_=(form)
         create()
-      }
-    }
+        form
+    })
 
-    val camp = _campaign match {
+    campaign_=( _campaign match {
       case Some(c) => c
       case None => acc.createCampaign(budget, title, id)
-    }
-    campaign_=(camp)
+    })
 
-    val ad = _ad match {
+    ad_=( _ad match {
       case Some(a) => a
-      case None => {
-        val a = camp.createAd(ad_title, ad_subtitle, ad_description, form.getPublishedUrl, ad_keywords.toList)
-        camp.setCPC(cpc)
-        if (english) camp.restrictEnglish()
-        while(!a.is_approved) {
-          DebugLog(
-            "Ad awaiting approval",LogLevelInfo(),LogType.ADAPTER,id
-          )
-          Thread.sleep(5*1000) //5 seconds should prevent rate limit???
+      case None =>
+        campaign.createAd(ad_title, ad_subtitle, ad_description, form.getPublishedUrl, ad_keywords.toList)
+        campaign.setCPC(cpc)
+        if (english) campaign.restrictEnglish()
+        while(!ad.is_approved) {
+          DebugLog("Ad awaiting approval",LogLevelInfo(),LogType.ADAPTER,id)
+          Thread.sleep(5*1000) // 5 seconds should prevent rate limit
         }
-        a
-      }
-    }
-    ad_=(ad)
+        ad
+    })
   }
+
 }

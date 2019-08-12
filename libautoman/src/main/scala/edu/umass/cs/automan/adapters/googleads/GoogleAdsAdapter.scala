@@ -34,11 +34,12 @@ class GoogleAdsAdapter extends AutomanAdapter {
 
   private var _production_account_id: Option[Long] = None
   private var _production_account: Option[Account] = None
+  // toggle sandbox mode
   val test = false
 
   def production_account_id: Long = _production_account_id match {
-    case Some(id) => id;
-    case None => throw new Exception("googleadsadapter account id")
+    case Some(id) => id
+    case None => throw new Exception("GoogleAdsAdapter production account id")
   }
 
   def production_account_id_=(id: Long) {
@@ -46,8 +47,8 @@ class GoogleAdsAdapter extends AutomanAdapter {
   }
 
   def production_account: Account = _production_account match {
-    case Some(c) => c;
-    case None => throw new Exception("googleadsadapter production account")
+    case Some(c) => c
+    case None => throw new Exception("GoogleAdsAdapter production account")
   }
 
   private def setup(): Unit = {
@@ -58,111 +59,71 @@ class GoogleAdsAdapter extends AutomanAdapter {
     }
   }
 
-  /**
-    * Tell the backend to accept the answer associated with this ANSWERED task.
-    *
-    * @param ts ANSWERED tasks.
-    * @return Some ACCEPTED tasks if successful.
-    */
-  protected[automan] def accept(ts: List[Task]): Option[List[Task]] =
-    Some(
-      ts.map(t => {
-        if (!test) t.question.asInstanceOf[GQuestion].campaign.delete()
-        t.copy_as_accepted()
-      })
-    )
+  protected[automan] def accept(ts: List[Task]): Option[List[Task]] = {
+    Some( ts.map(t => {
+      if (!test) t.question.asInstanceOf[GQuestion].campaign.delete()
+      t.copy_as_accepted()
+    }))
+  }
 
-  /**
-    * Get the budget from the backend.
-    *
-    * @return Some budget if successful.
-    */
   protected[automan] def backend_budget(): Option[BigDecimal] = Some(Int.MaxValue)
 
-  /**
-    * Cancel the given tasks.
-    *
-    * @param ts      A list of tasks to cancel.
-    * @param toState Which scheduler state tasks should become after cancellation.
-    * @return Some list of cancelled tasks if successful.
-    */
   protected[automan] def cancel(ts: List[Task], toState: SchedulerState.Value): Option[List[Task]] = {
     val stateChanger = toState match {
       case SchedulerState.CANCELLED => (t: Task) => t.copy_as_cancelled()
       case SchedulerState.TIMEOUT => (t: Task) => {
-        ts.foreach(_.question.asInstanceOf[GQuestion].cpc = (ts.head.question.wage * t.worker_timeout / 3600).setScale(2,RoundingMode.CEILING))
+        ts.foreach(_.question.asInstanceOf[GQuestion].cpc =
+          (ts.head.question.wage * t.worker_timeout / 3600).setScale(2,RoundingMode.CEILING))
         t.copy_as_timeout()
       }
       case SchedulerState.DUPLICATE => (t: Task) => t.copy_as_duplicate()
       case _ => throw new Exception(s"Invalid target state $toState for cancellation request.")
     }
-    if (!test) ts.foreach(t => t.question.asInstanceOf[GQuestion].campaign.delete())
+    if (!test) ts.foreach( t => t.question.asInstanceOf[GQuestion].campaign.delete())
     Some(ts.map(stateChanger))
   }
 
-  /**
-    * Post tasks on the backend, one task for each task.  All tasks given should
-    * be marked READY. The method returns the complete list of tasks passed
-    * but with new states. Blocking. Invariant: the size of the list of input
-    * tasks == the size of the list of the output tasks.
-    *
-    * @param ts                 A list of new tasks.
-    * @param exclude_worker_ids Worker IDs to exclude, if any. Not used here.
-    * @return Some list of the posted tasks if successful.
-    */
   protected[automan] def post(ts: List[Task], exclude_worker_ids: List[String]): Option[List[Task]] = {
-    // create campaign, ad, form
+    Some(ts.map(t =>
+      t.state match {
+        case SchedulerState.READY =>
+          ts.foreach(_.question.asInstanceOf[GQuestion].cpc =
+            (ts.head.question.wage * t.worker_timeout / 3600).setScale(2,RoundingMode.CEILING))
+          taskPost(t)
+        case _ => throw new Exception(s"Invalid target state ${t.state} for post request.")
+      }
+    ))
+
+    // create form, campaign, and ad
     def taskPost(t: Task): Task = {
       val q = t.question.asInstanceOf[GQuestion]
       if (!test) q.post(production_account)
       t.copy_as_running()
     }
-
-    Some(ts.map(t =>
-      t.state match {
-        case SchedulerState.READY => {
-          ts.foreach(_.question.asInstanceOf[GQuestion].cpc = (ts.head.question.wage * t.worker_timeout / 3600).setScale(2,RoundingMode.CEILING))
-          taskPost(t)
-        }
-        case _ => throw new Exception(s"Invalid target state ${t.state} for post request.")
-      }
-    ))
   }
 
-  /**
-    * Tell the backend to reject the answer associated with this ANSWERED task.
-    *
-    * @param ts_reasons A list of pairs of ANSWERED tasks and their rejection reasons.
-    * @return Some REJECTED tasks if succesful.
-    */
   protected[automan] def reject(ts_reasons: List[(Task, String)]): Option[List[Task]] =
-    Some(
-      ts_reasons.map(
-        { case (t: Task, s: String) =>
+    Some( ts_reasons.map(
+        { case (t: Task, _: String) =>
           if (!test) t.question.asInstanceOf[GQuestion].campaign.delete()
           t.copy_as_rejected()
         }
       )
     )
 
-  /**
-    * Ask the backend to retrieve answers given a list of RUNNING tasks. Invariant:
-    * the size of the list of input tasks == the size of the list of the output
-    * tasks. The virtual_time parameter is ignored when not running in simulator mode.
-    *
-    * @param ts           A list of RUNNING tasks.
-    * @param current_time The current virtual time.
-    * @return Some list of RUNNING, RETRIEVED, or TIMEOUT tasks if successful.
-    */
   protected[automan] def retrieve(ts: List[Task], current_time: Date): Option[List[Task]] = {
-    // get unique questions, update answer queue for each
+    // get unique questions and update answer queue for each
     val qSet: Set[Question] = Set(ts.map(_.question): _*)
-    if (!test) {
-      qSet.foreach(_.asInstanceOf[GQuestion].answer())
-    }
-    else {
-      qSet.foreach(_.asInstanceOf[GQuestion].fakeAnswer())
-    }
+
+    if (!test) qSet.foreach(_.asInstanceOf[GQuestion].answer())
+    else qSet.foreach(_.asInstanceOf[GQuestion].fakeAnswer())
+
+    Some(ts.map(t =>
+      t.state match {
+        case SchedulerState.RUNNING => answer(t)
+        case _ => throw new Exception(s"Invalid target state ${t.state} for retrieve request.")
+      }
+    ))
 
     def answer(t: Task): Task = {
       val q = t.question.asInstanceOf[GQuestion]
@@ -172,14 +133,6 @@ class GoogleAdsAdapter extends AutomanAdapter {
       }
       updatedT
     }
-
-
-    Some(ts.map(t =>
-      t.state match {
-        case SchedulerState.RUNNING => answer(t)
-        case _ => throw new Exception(s"Invalid target state ${t.state} for retrieve request.")
-      }
-    ))
   }
 
   def Option(id: Symbol, text: String) = new GQuestionOption(id, text, "")

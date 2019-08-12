@@ -25,9 +25,8 @@ object KeywordList {
 
     def word: String = {
       val w = dict(Random.nextInt(dict.length))
-      if (w.length < 10) w.replaceAll("'s", "") else word
+      if (w.length < 10) w.replaceAll("'s", ""); else word
     }
-
     word
   }
 
@@ -43,14 +42,13 @@ object KeywordList {
 
     def genSyns(depth: Int, words: Set[String]): Set[String] = {
       val dictionary = Dictionary.getFileBackedInstance(getClass.getResource("/dict").getPath)
+      genSynsRec(depth, words)
 
       def genSynsRec(depth: Int, set: Set[String]): Set[String] = {
         if (depth == 0) set
         else genSynsRec(depth - 1, set.flatMap(s => syns(s, dictionary))
         )
       }
-
-      genSynsRec(depth, words)
     }
 
     def keyGen(depth: Int, words: Set[String]): Set[String] = {
