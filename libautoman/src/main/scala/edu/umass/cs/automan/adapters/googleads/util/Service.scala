@@ -78,6 +78,7 @@ object Service {
 
   // Catch Apps Script API call failures and retry
   def formRetry[T](call: () => T, tries: Int = 0) : T = {
+    //TODO: make timeoutstate class (not vars in objects)
     try {
       Thread.sleep(timeout)
       val ret = call()
@@ -154,6 +155,8 @@ object Service {
         formRetry(call, tries + 1)
     }
   }
+
+  //TODO: cite this -> https://developers.google.com/apps-script/api/quickstart/java (heavily changed)
 
   // Run the specified script function, returning a Credential object
   protected[util] def getCredentials(HTTP_TRANSPORT: NetHttpTransport): Credential = {

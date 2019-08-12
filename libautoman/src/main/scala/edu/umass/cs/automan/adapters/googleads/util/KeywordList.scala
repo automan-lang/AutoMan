@@ -20,6 +20,7 @@ object KeywordList {
       "scistarter", "global", "national", "mechanical turk", "mturk")
   }
 
+  //TODO: this only works on Williams lab machines
   def randomWord: String = {
     val dict = scala.io.Source.fromFile("/usr/share/dict/american-english").getLines.toArray
 
@@ -30,6 +31,7 @@ object KeywordList {
     word
   }
 
+  //TODO: Cite this -> http://extjwnl.sourceforge.net/ and also decide if this is even worth including
   def generateKeywords(num: Int, words: Set[String]) : Set[String] = {
     def syns(s: String, dictionary: Dictionary): Set[String] = {
       val words = dictionary
