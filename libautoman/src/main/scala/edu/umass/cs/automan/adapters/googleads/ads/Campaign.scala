@@ -104,6 +104,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
     )
   }
 
+
   private def build(dailyBudget: BigDecimal, name: String): Unit = {
     if (dailyBudget > 50) do {
       println("Are you sure you want to spend >$50? y/n")
@@ -119,6 +120,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
       DebugLog("Budget '" + name + "' too long. Renamed to " + name.substring(0, 29), LogLevelWarn(), LogType.ADAPTER, qID)
       return build(dailyBudget, name.substring(0, 29))
     }
+
     if (dailyBudget < 0.02) {
       DebugLog("Budget less than $0.02 set to $0.02 in account " + accountID, LogLevelWarn(), LogType.ADAPTER, qID)
       return build(0.02, name)
@@ -160,7 +162,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
             error: GoogleAdsError =>
               error.getErrorCode.getCampaignBudgetError == errors.CampaignBudgetErrorEnum.CampaignBudgetError.NON_MULTIPLE_OF_MINIMUM_CURRENCY_UNIT
           }) match {
-            case Some(s) => newBudget(name, dB.setScale(2, RoundingMode.CEILING))
+            case Some(s) => newBudget(name,dB.setScale(2, RoundingMode.CEILING))
             case None => throw e
           }
         case err: Throwable => campaignBudgetServiceClient.shutdown(); None
