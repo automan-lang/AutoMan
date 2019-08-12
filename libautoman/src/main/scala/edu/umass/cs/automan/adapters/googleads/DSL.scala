@@ -43,10 +43,11 @@ object DSL {
 
   type GQuestionOption = edu.umass.cs.automan.adapters.googleads.question.GQuestionOption
 
-  def gads(production_account_id: Long) : GoogleAdsAdapter = {
+  def gads(production_account_id: Long, dry_run: Boolean = false) : GoogleAdsAdapter = {
     val initf = (g: GoogleAdsAdapter) => {
       // mandatory parameters
       g.production_account_id_=(1373958703)
+      g.test = dry_run
     }
       GoogleAdsAdapter(initf)
   }
@@ -93,6 +94,7 @@ object DSL {
       q.budget = budget
       q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
       q.question_timeout_multiplier = question_timeout_multiplier
+      q.pay_all_on_failure = true
       // google-specific parameters
       q.english = english
       q.required = required
@@ -146,6 +148,7 @@ object DSL {
       q.budget = budget
       q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
       q.question_timeout_multiplier = question_timeout_multiplier
+      q.pay_all_on_failure = true
       // google-specific parameters
       q.english = english
       q.required = required
@@ -199,6 +202,7 @@ object DSL {
       q.budget = budget
       q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
       q.question_timeout_multiplier = question_timeout_multiplier
+      q.pay_all_on_failure = true
       // google-specific parameters
       q.english = english
       q.required = required
@@ -251,6 +255,7 @@ object DSL {
       q.budget = budget
       q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
       q.question_timeout_multiplier = question_timeout_multiplier
+      q.pay_all_on_failure = true
       // google-specific parameters
       q.english = english
       q.required = required
@@ -302,6 +307,7 @@ object DSL {
       q.budget = budget
       q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
       q.question_timeout_multiplier = question_timeout_multiplier
+      q.pay_all_on_failure = true
       // google-specific parameters
       q.english = english
       q.other = other
@@ -352,6 +358,7 @@ object DSL {
       q.budget = budget
       q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
       q.question_timeout_multiplier = question_timeout_multiplier
+      q.pay_all_on_failure = true
       // google-specific parameters
       q.english = english
       q.other = other
@@ -402,6 +409,7 @@ object DSL {
       q.budget = budget
       q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
       q.question_timeout_multiplier = question_timeout_multiplier
+      q.pay_all_on_failure = true
       // google-specific parameters
       q.english = english
       q.other = other
@@ -452,6 +460,7 @@ object DSL {
       q.budget = budget
       q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
       q.question_timeout_multiplier = question_timeout_multiplier
+      q.pay_all_on_failure = true
       // google-specific parameters
       q.english = english
       q.other = other

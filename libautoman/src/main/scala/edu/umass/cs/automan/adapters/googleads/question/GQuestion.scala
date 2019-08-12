@@ -67,32 +67,31 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
 
   // create form, campaign, and ad if none currently exist
   def post(acc: Account): Unit = {
-    form_=( _form match {
-      case Some(f) => f
+     _form match {
+      case Some(f) =>
       case None =>
-        Form(title)
+        form = Form(title)
         form.setDescription(form_description)
         create()
-        form
-    })
+    }
 
-    campaign_=( _campaign match {
+    campaign = _campaign match {
       case Some(c) => c
       case None => acc.createCampaign(budget, title, id)
-    })
+    }
 
-    ad_=( _ad match {
+    ad = _ad match {
       case Some(a) => a
       case None =>
-        campaign.createAd(ad_title, ad_subtitle, ad_description, form.getPublishedUrl, ad_keywords.toList, cpc)
+        val a =campaign.createAd(ad_title, ad_subtitle, ad_description, form.getPublishedUrl, ad_keywords.toList, cpc)
         campaign.setCPC(cpc)
         if (english) campaign.restrictEnglish()
-        while(!ad.is_approved) {
+        while(!a.is_approved) {
           DebugLog("Ad awaiting approval",LogLevelInfo(),LogType.ADAPTER,id)
           Thread.sleep(5*1000) // 5 seconds should prevent rate limit
         }
-        ad
-    })
+        a
+    }
   }
 
 }

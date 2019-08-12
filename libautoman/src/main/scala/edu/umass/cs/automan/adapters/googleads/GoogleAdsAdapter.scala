@@ -9,6 +9,7 @@ import edu.umass.cs.automan.core.logging.Memo
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 
+import scala.collection.immutable
 import scala.math.BigDecimal.RoundingMode
 
 object GoogleAdsAdapter {
@@ -35,7 +36,7 @@ class GoogleAdsAdapter extends AutomanAdapter {
   private var _production_account_id: Option[Long] = None
   private var _production_account: Option[Account] = None
   // toggle sandbox mode
-  val test = false
+  var test = false
 
   def production_account_id: Long = _production_account_id match {
     case Some(id) => id
@@ -112,13 +113,18 @@ class GoogleAdsAdapter extends AutomanAdapter {
     )
 
   protected[automan] def retrieve(ts: List[Task], current_time: Date): Option[List[Task]] = {
-    // get unique questions and update answer queue for each
-    val qSet: Set[Question] = Set(ts.map(_.question): _*)
 
-    if (!test) qSet.foreach(_.asInstanceOf[GQuestion].answer())
-    else qSet.foreach(_.asInstanceOf[GQuestion].fakeAnswer())
+    // get unique questions and one task
+    val qMap: Map[GQuestion,Task] = ts
+      .map(t => t.question.asInstanceOf[GQuestion]-> t).groupBy(_._1).map({case (k,v) => (k,v.head._2)})
 
+    //Just questions
+    val qSet = qMap.keys.toSet
 
+    if (!test) qSet.foreach(_.answer())
+    else qSet.foreach(_.fakeAnswer())
+
+    //Get and queue answers for each question
     def answer(t: Task): Task = {
       val q = t.question.asInstanceOf[GQuestion]
       val updatedT = q.answers_dequeue() match {
@@ -128,12 +134,25 @@ class GoogleAdsAdapter extends AutomanAdapter {
       updatedT
     }
 
-    Some(ts.map(t =>
+    val answeredTasks: List[Task] = ts.map(t =>
       t.state match {
         case SchedulerState.RUNNING => answer(t)
         case _ => throw new Exception(s"Invalid target state ${t.state} for retrieve request.")
       }
-    ))
+    )
+
+    val remaining: List[Task] = qMap.flatMap({case (q: GQuestion, t: Task) =>
+      var l: List[Task] = Nil
+      var a: Option[q.A] = q.answers_dequeue()
+      while(a.isDefined) {
+        val _t = t.copy(UUID.randomUUID())
+        l = _t.copy_with_answer(a.get, UUID.randomUUID().toString) :: l
+        a = q.answers_dequeue()
+      }
+      l
+    }).toList
+
+    Some(answeredTasks ++ remaining)
   }
 
   def Option(id: Symbol, text: String) = new GQuestionOption(id, text, "")

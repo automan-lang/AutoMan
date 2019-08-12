@@ -16,7 +16,7 @@ object KeywordList {
       "astronomy", "professor", "undergraduate", "knowledge", "earth",
       "physics", "biology", "psychology", "chemistry", "ecology",
       "volunteer", "nonprofit", "software", "machine learning", "environment",
-      "engineering", "statistics", "medical", "projects", "green energy",
+      "engineering", "statistics", "medical", "projects",
       "scistarter", "global", "national", "mechanical turk", "mturk")
   }
 

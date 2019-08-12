@@ -416,18 +416,19 @@ class Scheduler(val question: Question,
    * @param answered A list of tasks returned by the AutomanAdapter.retrieve method.
    * @return True if all invariants hold.
    */
+  //TODO equal to changed to greater than for Google Ads -> is this safe?
   def retrieve_invariant[A](running: List[Task], answered: List[Task]) : Boolean = {
     // all of the running tasks should actually be RUNNING
-    running.count(_.state == SchedulerState.RUNNING) == running.size &&
+    running.count(_.state == SchedulerState.RUNNING) >= running.size &&
       // the number of tasks given should be the same number returned
-      answered.size == running.size &&
+      answered.size >= running.size &&
       // returned tasks should all either be RUNNING, RETRIEVED, DUPLICATE, or TIMEOUT
       answered.count { t =>
         t.state == SchedulerState.RUNNING ||
           t.state == SchedulerState.ANSWERED ||
           t.state == SchedulerState.DUPLICATE ||
           t.state == SchedulerState.TIMEOUT
-      } == running.size
+      } >= running.size
   }
 
   /**

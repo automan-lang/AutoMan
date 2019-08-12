@@ -133,7 +133,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
   }
 
   //Create a new campaign (only called in apply)
-  private def build(dailyBudget: BigDecimal, name: String): Campaign = {
+  private def build(dailyBudget: BigDecimal, n: String): Campaign = {
 
     //Make sure that Max doesn't spend the whole endowment
     if (dailyBudget > 50) do {
@@ -147,19 +147,19 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
     } while (readLine() != "y")
 
     //Name must be less than 30 chars
-    if (name.length > 30) {
-      DebugLog("Budget '" + name + "' too long. Renamed to " + name.substring(0, 29), LogLevelWarn(), LogType.ADAPTER, qID)
-      return build(dailyBudget, name.substring(0, 29))  //Try again
+    if (n.length > 30) {
+      DebugLog("Budget '" + n + "' too long. Renamed to " + n.substring(0, 29), LogLevelWarn(), LogType.ADAPTER, qID)
+      return build(dailyBudget, n.substring(0, 29))  //Try again
     }
 
     //Budget must be at least $0.02
     if (dailyBudget < 0.02) {
       DebugLog("Budget less than $0.02 set to $0.02 in account " + accountID, LogLevelWarn(), LogType.ADAPTER, qID)
-      return build(0.02, name)   //Try again
+      return build(0.02, n)   //Try again
     }
 
     //New budget on backend, save ID
-    _budget_id = newBudget(name, dailyBudget)
+    _budget_id = newBudget(n, dailyBudget)
 
     //builds campaign networks options (where you want the ad to be published)
     val networkSettings = NetworkSettings.newBuilder
@@ -170,10 +170,10 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
       .build()
 
     //New campaign on backend, save name and ID
-    newCampaign(name, networkSettings) match {
-      case Some((i, n)) =>
-        _campaign_id = Some(i)
-        _name = Some(n)
+    newCampaign(n, networkSettings) match {
+      case Some((a, b)) =>
+        _campaign_id = Some(a)
+        _name = Some(b)
         this
       case None => this
     }
@@ -207,11 +207,12 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
       campaignBudgetServiceClient.shutdown()
 
       //Query for newly created ID
-      val budgetID = query(
+      val budgetID = queryFilter(
         "campaign_budget.id",
-        "campaign_budget"
+        "campaign_budget",
+        List(s"campaign_budget.name = '$bName'")
       ).head
-        .getAccountBudget
+        .getCampaignBudget
         .getId
         .getValue
 
@@ -227,7 +228,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
         e.getGoogleAdsFailure.getErrorsList.asScala.find({
             _.getErrorCode.getCampaignBudgetError == errors.CampaignBudgetErrorEnum.CampaignBudgetError.DUPLICATE_NAME
         }) match {
-          case Some(_) => return newBudget(name + "-" + Random.nextInt(1000), dB) //Retry
+          case Some(_) => return newBudget(bName + "-" + Random.nextInt(1000), dB) //Retry
           case None =>
         }
 
@@ -235,7 +236,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
         e.getGoogleAdsFailure.getErrorsList.asScala.find({
           _.getErrorCode.getCampaignBudgetError == errors.CampaignBudgetErrorEnum.CampaignBudgetError.NON_MULTIPLE_OF_MINIMUM_CURRENCY_UNIT
         }) match {
-          case Some(_) => newBudget(name,dB.setScale(2, RoundingMode.CEILING)) //Retry
+          case Some(_) => newBudget(bName,dB.setScale(2, RoundingMode.CEILING)) //Retry
           case None => throw e  //Probably this should just return None, but much harder to debug that way
         }
 
@@ -295,7 +296,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
           error: GoogleAdsError =>
             error.getErrorCode.getCampaignError == com.google.ads.googleads.v2.errors.CampaignErrorEnum.CampaignError.DUPLICATE_CAMPAIGN_NAME
         }) match {
-          case Some(_) => newCampaign(name + "-" + Random.nextInt(1000), networkSettings) //Add some random numbers to the end
+          case Some(_) => newCampaign(cName + "-" + Random.nextInt(1000), networkSettings) //Add some random numbers to the end
           case None => throw e //Probably should just return None, but much harder to debug that way
         }
 

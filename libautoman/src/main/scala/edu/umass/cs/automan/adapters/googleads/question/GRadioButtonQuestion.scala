@@ -63,7 +63,7 @@ class GRadioButtonQuestion extends RadioButtonQuestion with GQuestion {
   // Queue a bunch (50% 1, 25% 2, 12.5% 3...) of fake answers
   def fakeAnswer(): Unit = {
     def fakeRespond(l : List[A]): List[A] = {
-      if (Random.nextBoolean()) fakeRespond(options(Random.nextInt(options.length)).question_id :: l)
+      if (Random.nextBoolean()) fakeRespond(options(Random.nextGaussian().toInt.abs).question_id :: l)
       else l
     }
     answers_enqueue(fakeRespond(Nil))
