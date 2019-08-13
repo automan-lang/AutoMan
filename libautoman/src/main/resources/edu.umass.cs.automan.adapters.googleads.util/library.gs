@@ -21,10 +21,10 @@ function estimation(form_id, question, required, min, max) {
   var item = form.addTextItem()
     .setTitle(question)
     .setRequired(required)
-  if (min == "" && max == "") {}
+  if (min == "" && max == "") validateNum(form_id, item.getId())
   else if (min == "" && min != 0) validateLess(form_id, item.getId(), max)
   else if (max == "" && max != 0) validateGreater(form_id, item.getId(), min)
-  else validateRange(form_id, item.getId(), min, max, "")
+  else validateRange(form_id, item.getId(), min, max)
   return item.getId()
 }
 
@@ -95,17 +95,22 @@ function setShuffle(form_id) {
   FormApp.openById(form_id).setShuffleQuestions(true)
 }
 
-function validateInt(form_id, item_id, help_text) {
+function validateNum(form_id, item_id) {
   var validation = FormApp.createTextValidation()
-    .setHelpText(help_text)
+    .requireNumber()
+    .build()
+  getTextItem(form_id, item_id).setValidation(validation)
+}
+
+function validateInt(form_id, item_id) {
+  var validation = FormApp.createTextValidation()
     .requireWholeNumber()
     .build()
   getTextItem(form_id, item_id).setValidation(validation)
 }
 
-function validateRange(form_id, item_id, min, max, help_text) {
+function validateRange(form_id, item_id, min, max) {
   var validation = FormApp.createTextValidation()
-    .setHelpText(help_text)
     .requireNumberBetween(Number(min), Number(max)) // inclusive
     .build()
   getTextItem(form_id, item_id).setValidation(validation)

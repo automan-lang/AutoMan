@@ -14,7 +14,9 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   protected var _ad_subtitle: String = "Input Your Expertise"
   protected var _ad_description: String = "Answer just one quick question to assist science research"
   protected var _ad_keywords: Set[String] = Set.empty
-  protected var _english: Boolean = false
+  protected var _english_only: Boolean = false
+  protected var _male_only: Boolean = false
+  protected var _female_only: Boolean = false
   protected var _form_description: String = ""
   protected var _item_id: String = ""
   protected var _other: Boolean = false
@@ -35,8 +37,12 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   def ad_description_=(des: String) { _ad_description = des }
   def ad_keywords: Set[String] = _ad_keywords
   def ad_keywords_=(words: Set[String]) { _ad_keywords = words }
-  def english: Boolean = _english
-  def english_=(e: Boolean) { _english = e }
+  def english_only: Boolean = _english_only
+  def english_only_=(e: Boolean) { _english_only = e }
+  def male_only: Boolean = _male_only
+  def male_only_=(m: Boolean) { _male_only = m }
+  def female_only: Boolean = _female_only
+  def female_only_=(f: Boolean) { _female_only = f }
   def form_description: String = _form_description
   def form_description_=(fd: String) { _form_description = fd }
   def item_id: String = _item_id
@@ -85,7 +91,9 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
       case None =>
         val a =campaign.createAd(ad_title, ad_subtitle, ad_description, form.getPublishedUrl, ad_keywords.toList, cpc)
         campaign.setCPC(cpc)
-        if (english) campaign.restrictEnglish()
+        if (english_only) campaign.englishOnly()
+        if (male_only) campaign.maleOnly()
+        if (female_only) campaign.femaleOnly()
         while(!a.is_approved) {
           DebugLog("Ad awaiting approval",LogLevelInfo(),LogType.ADAPTER,id)
           Thread.sleep(5*1000) // 5 seconds should prevent rate limit
@@ -93,5 +101,4 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
         a
     }
   }
-
 }

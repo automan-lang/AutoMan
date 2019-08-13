@@ -80,6 +80,8 @@ object DSL {
                 ad_description: String = null,
                 ad_keywords: Set[String] = keywords(),
                 english: Boolean = false, // restrict ad to English-speaking users
+                male: Boolean = false,    // restrict ad to male users
+                female: Boolean = false,  // restrict ad to female users
                 required: Boolean = true, // require respondents to answer this question
                 cpc: BigDecimal = MagicNumbers.DefaultCPC
                 )
@@ -96,7 +98,9 @@ object DSL {
       q.question_timeout_multiplier = question_timeout_multiplier
       q.pay_all_on_failure = true
       // google-specific parameters
-      q.english = english
+      q.english_only = english
+      q.male_only = male
+      q.female_only = female
       q.required = required
       q.ad_keywords = ad_keywords
       q.wage = cpc * 3600/initial_worker_timeout_in_s //calculate wage from cpc ($/task)
@@ -134,8 +138,10 @@ object DSL {
                      ad_subtitle: String = null,
                      ad_description: String = null,
                      ad_keywords: Set[String] = keywords(),
-                     english: Boolean = false, // restrict ad to English-speaking users
-                     required: Boolean = true // require respondents to answer this question
+                     english: Boolean = false,
+                     male: Boolean = false,
+                     female: Boolean = false,
+                     required: Boolean = true
                      )
                      (implicit a: GoogleAdsAdapter) : MultiEstimationOutcome = {
     def initf(q: GMultiEstimationQuestion): Unit = {
@@ -150,7 +156,9 @@ object DSL {
       q.question_timeout_multiplier = question_timeout_multiplier
       q.pay_all_on_failure = true
       // google-specific parameters
-      q.english = english
+      q.english_only = english
+      q.male_only = male
+      q.female_only = female
       q.required = required
       q.wage = cpc // CPC
       q.ad_keywords = ad_keywords
@@ -187,8 +195,10 @@ object DSL {
                 ad_subtitle: String = null,
                 ad_description: String = null,
                 ad_keywords: Set[String] = keywords(),
-                english: Boolean = false, // restrict ad to English-speaking users
-                required: Boolean = true // require respondents to answer this question
+                english: Boolean = false,
+                male: Boolean = false,
+                female: Boolean = false,
+                required: Boolean = true
                 )
                 (implicit a: GoogleAdsAdapter) : ScalarOutcome[String] = {
     def initf(q: GFreeTextQuestion): Unit = {
@@ -204,7 +214,9 @@ object DSL {
       q.question_timeout_multiplier = question_timeout_multiplier
       q.pay_all_on_failure = true
       // google-specific parameters
-      q.english = english
+      q.english_only = english
+      q.male_only = male
+      q.female_only = female
       q.required = required
       q.wage = cpc // CPC
       q.ad_keywords = ad_keywords
@@ -241,8 +253,10 @@ object DSL {
                  ad_subtitle: String = null,
                  ad_description: String = null,
                  ad_keywords: Set[String] = keywords(),
-                 english: Boolean = false, // restrict ad to English-speaking users
-                 required: Boolean = true // require respondents to answer this question
+                 english: Boolean = false,
+                 male: Boolean = false,
+                 female: Boolean = false,
+                 required: Boolean = true
                  )
                  (implicit a: GoogleAdsAdapter) : VectorOutcome[String] = {
     def initf(q: GFreeTextVectorQuestion): Unit = {
@@ -257,7 +271,9 @@ object DSL {
       q.question_timeout_multiplier = question_timeout_multiplier
       q.pay_all_on_failure = true
       // google-specific parameters
-      q.english = english
+      q.english_only = english
+      q.male_only = male
+      q.female_only = female
       q.required = required
       q.cpc = cpc // CPC
       q.ad_keywords = ad_keywords
@@ -292,9 +308,11 @@ object DSL {
                 ad_subtitle: String = null,
                 ad_description: String = null,
                 ad_keywords: Set[String] = keywords(),
-                english: Boolean = false, // restrict ad to English-speaking users
+                english: Boolean = false,
+                male: Boolean = false,
+                female: Boolean = false,
                 other: Boolean = false,
-                required: Boolean = true // require respondents to answer this question
+                required: Boolean = true
                 )
                 (implicit a: GoogleAdsAdapter) : ScalarOutcome[Set[Symbol]] = {
     def initf(q: GCheckboxQuestion): Unit = {
@@ -309,7 +327,9 @@ object DSL {
       q.question_timeout_multiplier = question_timeout_multiplier
       q.pay_all_on_failure = true
       // google-specific parameters
-      q.english = english
+      q.english_only = english
+      q.male_only = male
+      q.female_only = female
       q.other = other
       q.required = required
       q.cpc = cpc // CPC
@@ -343,9 +363,11 @@ object DSL {
                   ad_subtitle: String = null,
                   ad_description: String = null,
                   ad_keywords: Set[String] = keywords(),
-                  english: Boolean = false, // restrict ad to English-speaking users
+                  english: Boolean = false,
+                  male: Boolean = false,
+                  female: Boolean = false,
                   other: Boolean = false,
-                  required: Boolean = true // require respondents to answer this question
+                  required: Boolean = true
                   )
                   (implicit a: GoogleAdsAdapter) : VectorOutcome[Set[Symbol]] = {
     def initf(q: GCheckboxVectorQuestion): Unit = {
@@ -360,7 +382,9 @@ object DSL {
       q.question_timeout_multiplier = question_timeout_multiplier
       q.pay_all_on_failure = true
       // google-specific parameters
-      q.english = english
+      q.english_only = english
+      q.male_only = male
+      q.female_only = female
       q.other = other
       q.required = required
       q.cpc = cpc // CPC
@@ -393,9 +417,11 @@ object DSL {
              ad_subtitle: String = null,
              ad_description: String = null,
              ad_keywords: Set[String] = keywords(),
-             english: Boolean = false, // restrict ad to English-speaking users
+             english: Boolean = false,
+             male: Boolean = false,
+             female: Boolean = false,
              other: Boolean = false,
-             required: Boolean = true, // require respondents to answer this question
+             required: Boolean = true,
              cpc: BigDecimal = MagicNumbers.DefaultCPC
              )
              (implicit a: GoogleAdsAdapter) : ScalarOutcome[Symbol] = {
@@ -411,7 +437,9 @@ object DSL {
       q.question_timeout_multiplier = question_timeout_multiplier
       q.pay_all_on_failure = true
       // google-specific parameters
-      q.english = english
+      q.english_only = english
+      q.male_only = male
+      q.female_only = female
       q.other = other
       q.required = required
       q.cpc = cpc
@@ -445,9 +473,11 @@ object DSL {
               ad_subtitle: String = null,
               ad_description: String = null,
               ad_keywords: Set[String] = keywords(),
-              english: Boolean = false, // restrict ad to English-speaking users
+              english: Boolean = false,
+              male: Boolean = false,
+              female: Boolean = false,
               other: Boolean = false,
-              required: Boolean = true // require respondents to answer this question
+              required: Boolean = true
               )
               (implicit a: GoogleAdsAdapter) : VectorOutcome[Symbol] = {
     def initf(q: GRadioButtonVectorQuestion): Unit = {
@@ -462,7 +492,9 @@ object DSL {
       q.question_timeout_multiplier = question_timeout_multiplier
       q.pay_all_on_failure = true
       // google-specific parameters
-      q.english = english
+      q.english_only = english
+      q.male_only = male
+      q.female_only = female
       q.other = other
       q.required = required
       q.cpc = cpc // CPC
@@ -483,8 +515,8 @@ object DSL {
 
   // Instead of writing a list, let the user supply a "big tuple"
   implicit def product2OptionList(p: Product) : List[GQuestionOption] = p.productIterator.toList.asInstanceOf[List[GQuestionOption]]
-  implicit def tupSymbString2MTQuestionOption(opt: (Symbol, String))(implicit mt: GoogleAdsAdapter) : GQuestionOption = choice(opt._1, opt._2)
-  implicit def tupStrURL2MTQuestionOption(opt: (String, String))(implicit mt: GoogleAdsAdapter) : GQuestionOption = choice(Symbol(opt._1), opt._1, opt._2)
-  implicit def tupWithURL2MTQuestionOption(opt: (Symbol, String, String))(implicit mt: GoogleAdsAdapter) : GQuestionOption = choice(opt._1, opt._2, opt._3)
-  implicit def str2MTQuestionOption(s: String)(implicit mt: GoogleAdsAdapter) : GQuestionOption = choice(Symbol(s), s)
+  implicit def tupSymbString2MTQuestionOption(opt: (Symbol, String))(implicit ga: GoogleAdsAdapter) : GQuestionOption = choice(opt._1, opt._2)
+  implicit def tupStrURL2MTQuestionOption(opt: (String, String))(implicit ga: GoogleAdsAdapter) : GQuestionOption = choice(Symbol(opt._1), opt._1, opt._2)
+  implicit def tupWithURL2MTQuestionOption(opt: (Symbol, String, String))(implicit ga: GoogleAdsAdapter) : GQuestionOption = choice(opt._1, opt._2, opt._3)
+  implicit def str2MTQuestionOption(s: String)(implicit ga: GoogleAdsAdapter) : GQuestionOption = choice(Symbol(s), s)
 }

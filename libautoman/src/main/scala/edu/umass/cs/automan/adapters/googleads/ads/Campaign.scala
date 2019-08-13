@@ -1,23 +1,22 @@
 package edu.umass.cs.automan.adapters.googleads.ads
 
-import com.google.ads.googleads.v2.{common,resources,enums,services,errors,utils}
-import resources.{CampaignBudget, CampaignCriterion, LanguageConstantName, Campaign => GoogleCampaign}
-import services.{CampaignBudgetOperation, CampaignOperation, GoogleAdsRow, SearchGoogleAdsRequest,CampaignCriterionOperation}
-
-import GoogleCampaign.NetworkSettings
+import com.google.ads.googleads.v2.{common, enums, errors, resources, services, utils}
 import com.google.ads.googleads.lib.GoogleAdsClient
 import com.google.ads.googleads.lib.utils.FieldMasks
-import common.LanguageInfo
-import common.ManualCpc
+import com.google.common.collect.ImmutableList
+import com.google.protobuf.{BoolValue, Int64Value, StringValue}
+import common.{GenderInfo, LanguageInfo, ManualCpc}
 import enums.AdvertisingChannelTypeEnum.AdvertisingChannelType
 import enums.BiddingStrategyTypeEnum.BiddingStrategyType
 import enums.BudgetDeliveryMethodEnum.BudgetDeliveryMethod
 import enums.CampaignCriterionStatusEnum.CampaignCriterionStatus
 import enums.CampaignStatusEnum.CampaignStatus
+import enums.GenderTypeEnum.GenderType
 import errors.GoogleAdsError
+import resources.{CampaignBudget, CampaignCriterion, LanguageConstantName, Campaign => GoogleCampaign}
+import GoogleCampaign.NetworkSettings
+import services.{CampaignBudgetOperation, CampaignCriterionOperation, CampaignOperation, GoogleAdsRow, SearchGoogleAdsRequest}
 import utils.ResourceNames
-import com.google.common.collect.ImmutableList
-import com.google.protobuf.{BoolValue, Int64Value, StringValue}
 
 import edu.umass.cs.automan.adapters.googleads.util.Service._
 import edu.umass.cs.automan.core.logging._
@@ -26,9 +25,7 @@ import scala.collection.JavaConverters._
 import scala.io.StdIn.readLine
 import scala.math.BigDecimal.RoundingMode
 import scala.util.Random
-
 import java.util.UUID
-
 
 object Campaign {
   //Construct a new campaign and wrapper class
@@ -448,7 +445,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
   def resume(): Boolean = {
     if (setStatus(CampaignStatus.ENABLED)) {
       DebugLog(
-        "Paused campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID
+        "Resumed campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID
       )
       true
     }
@@ -546,7 +543,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
   }
 
   //Restrict the campaign to only show to English speakers
-  def restrictEnglish(): Unit = {
+  def englishOnly(): Unit = {
     //Open campaign criterion client
     val agcsc = googleAdsClient.getLatestVersion.createCampaignCriterionServiceClient()
 
@@ -573,6 +570,54 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
       "Added English language restriction to campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID
     )
   }
+
+  // will also exclude undetermined gender
+  def setGender(gender: GenderType): Unit = {
+    val agcsc = googleAdsClient.getLatestVersion.createCampaignCriterionServiceClient()
+
+    // Gender to exclude
+    val criterion1 = CampaignCriterion.newBuilder
+      .setNegative(BoolValue.of(true))
+      .setGender(GenderInfo.newBuilder
+        .setType(gender)
+        .build)
+
+      .setStatus(CampaignCriterionStatus.ENABLED)
+      .setCampaign(StringValue.of(ResourceNames.campaign(accountID, campaign_id)))
+      .build()
+
+    val op1 =
+      CampaignCriterionOperation.newBuilder
+        .setCreate(criterion1)
+        .build()
+
+    val criterion2 = CampaignCriterion.newBuilder
+      .setNegative(BoolValue.of(true))
+      .setGender(GenderInfo.newBuilder
+        .setType(GenderType.UNDETERMINED)
+        .build)
+
+      .setStatus(CampaignCriterionStatus.ENABLED)
+      .setCampaign(StringValue.of(ResourceNames.campaign(accountID, campaign_id)))
+      .build()
+
+    val op2 =
+      CampaignCriterionOperation.newBuilder
+        .setCreate(criterion2)
+        .build()
+
+    //Create criterion through mutate
+    agcsc.mutateCampaignCriteria(accountID.toString, ImmutableList.of(op1, op2))
+
+    agcsc.shutdown()
+    DebugLog(
+      "Added gender targeting to campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID
+    )
+  }
+
+  def maleOnly(): Unit = setGender(GenderType.FEMALE)
+
+  def femaleOnly(): Unit = setGender(GenderType.MALE)
 
   //Method to query for info about this campaign: ALL "GET" API CALLS SHOULD BE REPLACED WITH THIS\
   //See https://developers.google.com/google-ads/api/docs/query/interactive-gaql-builder
@@ -609,5 +654,4 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
     gasc.shutdown()
     response
   }
-
 }
