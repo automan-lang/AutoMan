@@ -15,6 +15,7 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   protected var _ad_description: String = "Answer just one quick question to assist science research"
   protected var _ad_keywords: Set[String] = Set.empty
   protected var _english_only: Boolean = false
+  protected var _us_only: Boolean = false
   protected var _male_only: Boolean = false
   protected var _female_only: Boolean = false
   protected var _form_description: String = ""
@@ -39,6 +40,8 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   def ad_keywords_=(words: Set[String]) { _ad_keywords = words }
   def english_only: Boolean = _english_only
   def english_only_=(e: Boolean) { _english_only = e }
+  def us_only: Boolean = _us_only
+  def us_only_=(us: Boolean) { _us_only = us }
   def male_only: Boolean = _male_only
   def male_only_=(m: Boolean) { _male_only = m }
   def female_only: Boolean = _female_only
@@ -98,6 +101,7 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
         val a =campaign.createAd(ad_title, ad_subtitle, ad_description, form.getPublishedUrl, ad_keywords.toList, cpc)
         campaign.setCPC(cpc)
         if (english_only) campaign.englishOnly()
+        if (us_only) campaign.usOnly()
         if (male_only) campaign.maleOnly()
         if (female_only) campaign.femaleOnly()
         while(!a.is_approved) {

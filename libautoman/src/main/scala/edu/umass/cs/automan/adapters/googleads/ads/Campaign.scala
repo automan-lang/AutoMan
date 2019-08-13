@@ -5,7 +5,7 @@ import com.google.ads.googleads.lib.GoogleAdsClient
 import com.google.ads.googleads.lib.utils.FieldMasks
 import com.google.common.collect.ImmutableList
 import com.google.protobuf.{BoolValue, Int64Value, StringValue}
-import common.{GenderInfo, LanguageInfo, ManualCpc}
+import common.{GenderInfo, LanguageInfo, LocationInfo, ManualCpc}
 import enums.AdvertisingChannelTypeEnum.AdvertisingChannelType
 import enums.BiddingStrategyTypeEnum.BiddingStrategyType
 import enums.BudgetDeliveryMethodEnum.BudgetDeliveryMethod
@@ -13,11 +13,10 @@ import enums.CampaignCriterionStatusEnum.CampaignCriterionStatus
 import enums.CampaignStatusEnum.CampaignStatus
 import enums.GenderTypeEnum.GenderType
 import errors.GoogleAdsError
-import resources.{CampaignBudget, CampaignCriterion, LanguageConstantName, Campaign => GoogleCampaign}
+import resources.{CampaignBudget, CampaignCriterion, LanguageConstantName, GeoTargetConstantName, Campaign => GoogleCampaign}
 import GoogleCampaign.NetworkSettings
 import services.{CampaignBudgetOperation, CampaignCriterionOperation, CampaignOperation, GoogleAdsRow, SearchGoogleAdsRequest}
 import utils.ResourceNames
-
 import edu.umass.cs.automan.adapters.googleads.util.Service._
 import edu.umass.cs.automan.core.logging._
 
@@ -272,18 +271,15 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
     //Try to create campaign
     try {
       //Create campaign through mutate
-      val response = campaignServiceClient.mutateCampaigns(accountID.toString, ImmutableList.of(cOp))
-      val regex = raw"customers\/[0-9]+\/campaigns\/([0-9]+)".r
-      val id = response.getResults(0).getResourceName match {
-        case regex(i) => i.toLong
-      }
+      campaignServiceClient.mutateCampaigns(accountID.toString, ImmutableList.of(cOp))
 
       DebugLog(
         "Created campaign " + cName + " in account " + accountID, LogLevelInfo(), LogType.ADAPTER, qID
       )
 
       campaignServiceClient.shutdown()
-      Some((id, cName))
+      Some((queryFilter("campaign.id","campaign",List(s"customer.id = $accountID",s"campaign.name = '$cName'")).head.getCampaign.getId.getValue,
+        queryFilter("campaign.name","campaign",List(s"customer.id = $accountID",s"campaign.name = '$cName'")).head.getCampaign.getName.getValue))
     }
 
     //Catch fixable errors and retry if possible
@@ -574,6 +570,32 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
     )
   }
 
+  def usOnly(): Unit = {
+    val agcsc = googleAdsClient.getLatestVersion.createCampaignCriterionServiceClient()
+
+    val criterion = CampaignCriterion.newBuilder
+      .setLocation(LocationInfo.newBuilder
+      .setGeoTargetConstant(StringValue.of(GeoTargetConstantName.format(2840.toString)))
+      .build)
+
+      .setStatus(CampaignCriterionStatus.ENABLED)
+      .setCampaign(StringValue.of(ResourceNames.campaign(accountID, campaign_id)))
+      .build()
+
+    val op = CampaignCriterionOperation.newBuilder
+      .setCreate(criterion)
+      .build()
+
+    agcsc.mutateCampaignCriteria(accountID.toString, ImmutableList.of(op))
+
+    agcsc.shutdown()
+    DebugLog("Added US location targeting to campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID)
+  }
+
+  def maleOnly(): Unit = setGender(GenderType.FEMALE)
+
+  def femaleOnly(): Unit = setGender(GenderType.MALE)
+
   // will also exclude undetermined gender
   def setGender(gender: GenderType): Unit = {
     val agcsc = googleAdsClient.getLatestVersion.createCampaignCriterionServiceClient()
@@ -609,18 +631,11 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
         .setCreate(criterion2)
         .build()
 
-    //Create criterion through mutate
     agcsc.mutateCampaignCriteria(accountID.toString, ImmutableList.of(op1, op2))
 
     agcsc.shutdown()
-    DebugLog(
-      "Added gender targeting to campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID
-    )
+    DebugLog("Added gender targeting to campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID)
   }
-
-  def maleOnly(): Unit = setGender(GenderType.FEMALE)
-
-  def femaleOnly(): Unit = setGender(GenderType.MALE)
 
   //Method to query for info about this campaign: ALL "GET" API CALLS SHOULD BE REPLACED WITH THIS\
   //See https://developers.google.com/google-ads/api/docs/query/interactive-gaql-builder
