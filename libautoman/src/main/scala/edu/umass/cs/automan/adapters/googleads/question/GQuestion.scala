@@ -78,6 +78,12 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
       case None =>
         form = Form(title)
         form.setDescription(form_description)
+
+        _image_url match {
+          case None =>
+          case Some(url) => form.addImage(url)
+        }
+
         create()
     }
 

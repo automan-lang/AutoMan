@@ -72,29 +72,19 @@ class AdGroup (googleAdsClient: GoogleAdsClient, accountId: Long, qID: UUID) {
 
         val op =
         AdGroupOperation.newBuilder.setCreate(ag).build()
-        adGroupServiceClient.mutateAdGroups(accountId.toString, ImmutableList.of(op)) //create adGroup
+
+        val response = adGroupServiceClient.mutateAdGroups(accountId.toString, ImmutableList.of(op)) //create adGroup
+        val regex = raw"customers\/[0-9]+\/adGroups\/([0-9]+)".r
+        val id = response.getResults(0).getResourceName match {
+            case regex(i) => i.toLong
+        }
+
+        _adgroup_id = Some(id)
+        adGroupServiceClient.shutdown()
 
         DebugLog(
             "Added adgroup " + name + " to campaign with ID " + campaignId, LogLevelInfo(), LogType.ADAPTER, qID
         )
-        adGroupServiceClient.shutdown()
-
-        //Save ID
-        val gasc = googleAdsClient.getLatestVersion.createGoogleAdsServiceClient
-
-        val searchQuery = s"SELECT ad_group.id FROM ad_group WHERE campaign.id = $campaignId AND customer.id = $accountId"
-
-        val request = SearchGoogleAdsRequest.newBuilder
-            .setCustomerId(accountId.toString)
-            .setPageSize(1)
-            .setQuery(searchQuery)
-            .build()
-
-        val searchResponse: Iterable[GoogleAdsRow] = gasc.search(request).iterateAll.asScala
-
-        gasc.shutdown()
-
-        _adgroup_id = Some(searchResponse.head.getAdGroup.getId.getValue)
     }
 
     def createAd (title: String, subtitle: String, description: String, url: String, keywords: List[String],qID: UUID) : Ad = {

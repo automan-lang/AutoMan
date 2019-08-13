@@ -272,15 +272,18 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
     //Try to create campaign
     try {
       //Create campaign through mutate
-      campaignServiceClient.mutateCampaigns(accountID.toString, ImmutableList.of(cOp))
+      val response = campaignServiceClient.mutateCampaigns(accountID.toString, ImmutableList.of(cOp))
+      val regex = raw"customers\/[0-9]+\/campaigns\/([0-9]+)".r
+      val id = response.getResults(0).getResourceName match {
+        case regex(i) => i.toLong
+      }
 
       DebugLog(
         "Created campaign " + cName + " in account " + accountID, LogLevelInfo(), LogType.ADAPTER, qID
       )
 
       campaignServiceClient.shutdown()
-      Some((queryFilter("campaign.id","campaign",List(s"customer.id = $accountID",s"campaign.name = '$cName'")).head.getCampaign.getId.getValue,
-        queryFilter("campaign.name","campaign",List(s"customer.id = $accountID",s"campaign.name = '$cName'")).head.getCampaign.getName.getValue))
+      Some((id, cName))
     }
 
     //Catch fixable errors and retry if possible

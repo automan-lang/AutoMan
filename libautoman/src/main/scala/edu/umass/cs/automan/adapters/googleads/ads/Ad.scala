@@ -1,11 +1,14 @@
 package edu.umass.cs.automan.adapters.googleads.ads
 
+import java.util
 import java.util.UUID
 
 import com.google.ads.googleads.lib.GoogleAdsClient
+import com.google.ads.googleads.v2.services.MutateAdGroupAdsResponse
 import com.google.ads.googleads.v2.enums.AdGroupAdStatusEnum.AdGroupAdStatus
-import com.google.ads.googleads.v2.common.ExpandedTextAdInfo
+import com.google.ads.googleads.v2.common.{ExpandedTextAdInfo, PolicyTopicEntry}
 import com.google.ads.googleads.v2.enums.PolicyApprovalStatusEnum.PolicyApprovalStatus
+import com.google.ads.googleads.v2.errors.{GoogleAdsError, GoogleAdsException}
 import com.google.ads.googleads.v2.resources.{AdGroupAd, Ad => GoogleAd}
 import com.google.ads.googleads.v2.services.{AdGroupAdOperation, GoogleAdsRow, SearchGoogleAdsRequest}
 import com.google.ads.googleads.v2.utils.ResourceNames
@@ -26,40 +29,75 @@ class Ad(googleAdsClient: GoogleAdsClient, accountId: Long, adGroupId: Long, tit
 
   private val client = googleAdsClient.getLatestVersion.createAdGroupAdServiceClient()
 
-  // Creates the information within the ad i.e. title, subtitle, description
-  private val expandedTextAdInfo = ExpandedTextAdInfo.newBuilder
-    .setHeadlinePart1(StringValue.of(title))
-    .setHeadlinePart2(StringValue.of(subtitle))
-    .setDescription(StringValue.of(description))
-    .build()
 
-  // Wraps the info in an Ads.Ad object
-  private val ad = GoogleAd.newBuilder
-    .setExpandedTextAd(expandedTextAdInfo)
-    .addFinalUrls(StringValue.of(url))
-    .build()
+  def postAd (title: String, subtitle: String, description: String, url: String) : Long = {
+    // Creates the information within the ad i.e. title, subtitle, description
+    val expandedTextAdInfo =
+    ExpandedTextAdInfo.newBuilder
+      .setHeadlinePart1(StringValue.of(title))
+      .setHeadlinePart2(StringValue.of(subtitle))
+      .setDescription(StringValue.of(description))
+      .build()
 
-  // Builds the final ad representation within ad group
-  private val adGroupAd = AdGroupAd.newBuilder
-    .setAdGroup(StringValue.of(ResourceNames.adGroup(accountId, adGroupId)))
-    .setAd(ad)
-    .build()
+    // Wraps the info in an Ads.Ad object
+    val ad =
+    GoogleAd.newBuilder
+      .setExpandedTextAd(expandedTextAdInfo)
+      .addFinalUrls(StringValue.of(url))
+      .build()
 
-  private val operations = AdGroupAdOperation.newBuilder.setCreate(adGroupAd).build()
-  private val response = client.mutateAdGroupAds(accountId.toString, ImmutableList.of(operations))
-  private val id = client.getAdGroupAd(response.getResults(0).getResourceName).getAd.getId.getValue
+    // Builds the final ad representation within ad group
+    val adGroupAd =
+    AdGroupAd.newBuilder
+      .setAdGroup(StringValue.of(ResourceNames.adGroup(accountId, adGroupId)))
+      .setAd(ad)
+      .build()
 
+    val operations =
+    AdGroupAdOperation.newBuilder.setCreate(adGroupAd).build()
+
+
+    try {
+      val response: MutateAdGroupAdsResponse = client.mutateAdGroupAds(accountId.toString, ImmutableList.of(operations))
+    } catch {
+      case gae: GoogleAdsException =>
+        //Look for duplicate name, add some random numbers to the name if found
+        gae.getGoogleAdsFailure.getErrorsList.asScala.find({
+          error: GoogleAdsError =>
+            error.getErrorCode.getPolicyFindingError == com.google.ads.googleads.v2.errors.PolicyFindingErrorEnum.PolicyFindingError.POLICY_FINDING
+        }) match {
+          case Some(p) => {
+            val l = p.getDetails.getPolicyFindingDetails.getPolicyTopicEntriesList.asScala
+            l.foreach(x => println(
+              x.getTopic.getValue + " in ad text. \n" +
+                "Please change the following " + x.getType.getValueDescriptor.getName + ": \n" +
+                x.getEvidencesList.asScala.flatMap(_.getTextList.getTextsList.asScala).mkString(", ")))
+            println("Please enter a new ad title: ")
+            val t = readLine()
+            println("Please enter a new ad subtitle: ")
+            val s = readLine()
+            println("Please enter a new ad description: ")
+            val d = readLine()
+            postAd(t,s,d,url)
+          }
+          case None => throw gae //Probably should just return None, but much harder to debug that way
+        }
+
+
+    }
+
+    queryFilter("ad_group_ad.ad.id","ad_group_ad",List(s"ad_group.id = '$adGroupId'")).head.getAdGroupAd.getAd.getId.getValue
+  }
+
+  private val id = postAd(title,subtitle,description,url)
   DebugLog("Created ad " + title + " to ad group with ID " + adGroupId, LogLevelInfo(), LogType.ADAPTER, qID)
-
-  //Saves resource name
-  private val adResourceName = response.getResults(0).getResourceName
   client.shutdown()
 
   //Delete the Google ad associated with this class
   def delete(): Unit = {
     val sc = googleAdsClient.getLatestVersion.createAdGroupAdServiceClient()
 
-    val rmOp = AdGroupAdOperation.newBuilder.setRemove(adResourceName).build()
+    val rmOp = AdGroupAdOperation.newBuilder.setRemove(ResourceNames.adGroupAd(accountId,adGroupId,id)).build()
     sc.mutateAdGroupAds(accountId.toString, ImmutableList.of(rmOp))
 
     sc.shutdown()
@@ -82,6 +120,22 @@ class Ad(googleAdsClient: GoogleAdsClient, accountId: Long, adGroupId: Long, tit
     val gasc = googleAdsClient.getLatestVersion.createGoogleAdsServiceClient
 
     val searchQuery = s"SELECT $field FROM $resource WHERE ad_group_ad.ad.id = $id AND customer.id = $accountId"
+
+    val request = SearchGoogleAdsRequest.newBuilder
+      .setCustomerId(accountId.toString)
+      .setPageSize(1)
+      .setQuery(searchQuery)
+      .build()
+    val response: Iterable[GoogleAdsRow] = gasc.search(request).iterateAll.asScala
+
+    gasc.shutdown()
+    response
+  }
+
+  private def queryFilter(field: String, resource: String, filters: List[String]): Iterable[GoogleAdsRow] = {
+    val gasc = googleAdsClient.getLatestVersion.createGoogleAdsServiceClient
+
+    val searchQuery = s"SELECT $field FROM $resource WHERE " + filters.mkString(" AND ")
 
     val request = SearchGoogleAdsRequest.newBuilder
       .setCustomerId(accountId.toString)
