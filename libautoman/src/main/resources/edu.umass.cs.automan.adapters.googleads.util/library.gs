@@ -22,8 +22,8 @@ function estimation(form_id, question, required, min, max) {
     .setTitle(question)
     .setRequired(required)
   if (min == "" && max == "") {}
-  else if (min == "") validateLess(form_id, item.getId(), max)
-  else if (max == "") validateGreater(form_id, item.getId(), min)
+  else if (min == "" && min != 0) validateLess(form_id, item.getId(), max)
+  else if (max == "" && max != 0) validateGreater(form_id, item.getId(), min)
   else validateRange(form_id, item.getId(), min, max, "")
   return item.getId()
 }

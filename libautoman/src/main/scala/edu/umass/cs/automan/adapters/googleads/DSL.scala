@@ -74,7 +74,7 @@ object DSL {
                 min_value: Double = Double.MinValue,
                 question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
                 text: String,
-                form_title: String = null, // form title
+                form_title: String = null,
                 ad_title: String = null,
                 ad_subtitle: String = null,
                 ad_description: String = null,
@@ -128,7 +128,7 @@ object DSL {
                      minimum_spawn_policy: MinimumSpawnPolicy = null,
                      question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
                      text: String,
-                     title: String = null, // form title
+                     form_title: String = null,
                      cpc: BigDecimal = MagicNumbers.DefaultCPC,
                      ad_title: String = null,
                      ad_subtitle: String = null,
@@ -160,7 +160,7 @@ object DSL {
       if (default_sample_size != -1 && default_sample_size > 0) { q.default_sample_size = default_sample_size }
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
       if (image_url != null) { q.image_url = image_url }
-      if (title != null) { q.title = title }
+      if (form_title != null) { q.title = form_title }
       if (minimum_spawn_policy != null) { q.minimum_spawn_policy = minimum_spawn_policy }
       if (ad_title != null) { q.ad_title = ad_title }
       if (ad_subtitle != null) { q.ad_subtitle = ad_subtitle }
@@ -181,7 +181,7 @@ object DSL {
                 pattern_error_text: String = null,
                 question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
                 text: String,
-                title: String = null,
+                form_title: String = null,
                 cpc: BigDecimal = MagicNumbers.DefaultCPC,
                 ad_title: String = null,
                 ad_subtitle: String = null,
@@ -214,7 +214,7 @@ object DSL {
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
       if (image_url != null) { q.image_url = image_url }
       if (pattern_error_text != null) { q.pattern_error_text = pattern_error_text }
-      if (title != null) { q.title = title }
+      if (form_title != null) { q.title = form_title }
       if (minimum_spawn_policy != null) { q.minimum_spawn_policy = minimum_spawn_policy }
       if (ad_title != null) { q.ad_title = ad_title }
       if (ad_subtitle != null) { q.ad_subtitle = ad_subtitle }
@@ -235,7 +235,7 @@ object DSL {
                  pattern_error_text: String = null,
                  question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
                  text: String,
-                 title: String = null,
+                 form_title: String = null,
                  cpc: BigDecimal = MagicNumbers.DefaultCPC,
                  ad_title: String = null,
                  ad_subtitle: String = null,
@@ -268,7 +268,7 @@ object DSL {
       if (image_url != null) { q.image_url = image_url }
       if (pattern != null) { q.pattern = pattern }
       if (pattern_error_text != null) { q.pattern_error_text = pattern_error_text }
-      if (title != null) { q.title = title }
+      if (form_title != null) { q.title = form_title }
       if (minimum_spawn_policy != null) { q.minimum_spawn_policy = minimum_spawn_policy }
       if (ad_title != null) { q.ad_title = ad_title }
       if (ad_subtitle != null) { q.ad_subtitle = ad_subtitle }
@@ -286,7 +286,7 @@ object DSL {
                 options: List[AnyRef],
                 question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
                 text: String,
-                title: String = null,
+                form_title: String = null,
                 cpc: BigDecimal = MagicNumbers.DefaultCPC,
                 ad_title: String = null,
                 ad_subtitle: String = null,
@@ -319,7 +319,7 @@ object DSL {
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
       if (image_url != null) { q.image_url = image_url }
-      if (title != null) { q.title = title }
+      if (form_title != null) { q.title = form_title }
       if (minimum_spawn_policy != null) { q.minimum_spawn_policy = minimum_spawn_policy }
       if (ad_title != null) { q.ad_title = ad_title }
       if (ad_subtitle != null) { q.ad_subtitle = ad_subtitle }
@@ -337,7 +337,7 @@ object DSL {
                   options: List[AnyRef],
                   question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
                   text: String,
-                  title: String = null,
+                  form_title: String = null,
                   cpc: BigDecimal = MagicNumbers.DefaultCPC,
                   ad_title: String = null,
                   ad_subtitle: String = null,
@@ -370,7 +370,7 @@ object DSL {
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
       if (image_url != null) { q.image_url = image_url }
-      if (title != null) { q.title = title }
+      if (form_title != null) { q.title = form_title }
       if (minimum_spawn_policy != null) { q.minimum_spawn_policy = minimum_spawn_policy }
       if (ad_title != null) { q.ad_title = ad_title }
       if (ad_subtitle != null) { q.ad_subtitle = ad_subtitle }
@@ -388,7 +388,7 @@ object DSL {
              options: List[AnyRef],
              question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
              text: String,
-             title: String = null,
+             form_title: String = null,
              ad_title: String = null,
              ad_subtitle: String = null,
              ad_description: String = null,
@@ -421,7 +421,7 @@ object DSL {
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
       if (image_url != null) { q.image_url = image_url }
-      if (title != null) { q.title = title }
+      if (form_title != null) { q.title = form_title }
       if (minimum_spawn_policy != null) { q.minimum_spawn_policy = minimum_spawn_policy }
       if (ad_title != null) { q.ad_title = ad_title }
       if (ad_subtitle != null) { q.ad_subtitle = ad_subtitle }
@@ -439,7 +439,7 @@ object DSL {
               options: List[AnyRef],
               question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
               text: String,
-              title: String = null,
+              form_title: String = null,
               cpc: BigDecimal = MagicNumbers.DefaultCPC,
               ad_title: String = null,
               ad_subtitle: String = null,
@@ -472,7 +472,7 @@ object DSL {
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
       if (image_url != null) { q.image_url = image_url }
-      if (title != null) { q.title = title }
+      if (form_title != null) { q.title = form_title }
       if (minimum_spawn_policy != null) { q.minimum_spawn_policy = minimum_spawn_policy }
       if (ad_title != null) { q.ad_title = ad_title }
       if (ad_subtitle != null) { q.ad_subtitle = ad_subtitle }
