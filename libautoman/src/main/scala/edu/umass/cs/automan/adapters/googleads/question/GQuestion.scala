@@ -191,10 +191,10 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
         }
         a
     }
+  }
 
     def isApproved: Boolean = {
       if (ad.is_approved) true
       else false
-    }
   }
 }

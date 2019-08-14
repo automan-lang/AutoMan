@@ -8,15 +8,17 @@ import java.util.Properties
 
 import scala.collection.JavaConverters._
 import com.google.ads.googleads.lib.GoogleAdsClient
-import com.google.api.client.auth.oauth2.Credential
+import com.google.api.client.auth.oauth2.Credential.AccessMethod
+import com.google.api.client.auth.oauth2.{BearerToken, Credential, StoredCredential}
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver
-import com.google.api.client.googleapis.auth.oauth2.{GoogleAuthorizationCodeFlow, GoogleClientSecrets}
+import com.google.api.client.googleapis.auth.oauth2.{GoogleAuthorizationCodeFlow, GoogleClientSecrets, GoogleCredential}
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.client.util.store.FileDataStoreFactory
 import com.google.api.services.script.Script
 import com.google.api.services.script.model.{File => gFile}
+import com.google.auth.oauth2.UserCredentials
 import edu.umass.cs.automan.adapters.googleads.ScriptError
 import edu.umass.cs.automan.core.logging._
 
@@ -171,11 +173,11 @@ object Service {
 
     // Build flow and trigger user authorization request
     val flow = new GoogleAuthorizationCodeFlow.Builder(HTTP_TRANSPORT, json_factory, clientSecrets, scopes)
-      .setDataStoreFactory(new FileDataStoreFactory(new java.io.File(tokens_path)))
+     .setDataStoreFactory(new FileDataStoreFactory(new java.io.File(tokens_path)))
       .setAccessType("offline")
       .build()
-    val receiver = new LocalServerReceiver.Builder().setPort(8888).build
 
+    val receiver = new LocalServerReceiver.Builder().setPort(8888).build
     try {
       val credential = flow.loadCredential("user")
       if (credential != null
