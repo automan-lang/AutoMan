@@ -5,7 +5,7 @@ import com.google.ads.googleads.lib.GoogleAdsClient
 import com.google.ads.googleads.lib.utils.FieldMasks
 import com.google.common.collect.ImmutableList
 import com.google.protobuf.{BoolValue, Int64Value, StringValue}
-import common.{GenderInfo, LanguageInfo, ManualCpc}
+import common.{GenderInfo, LanguageInfo, LocationInfo, ManualCpc}
 import enums.AdvertisingChannelTypeEnum.AdvertisingChannelType
 import enums.BiddingStrategyTypeEnum.BiddingStrategyType
 import enums.BudgetDeliveryMethodEnum.BudgetDeliveryMethod
@@ -13,11 +13,10 @@ import enums.CampaignCriterionStatusEnum.CampaignCriterionStatus
 import enums.CampaignStatusEnum.CampaignStatus
 import enums.GenderTypeEnum.GenderType
 import errors.GoogleAdsError
-import resources.{CampaignBudget, CampaignCriterion, LanguageConstantName, Campaign => GoogleCampaign}
+import resources.{CampaignBudget, CampaignCriterion, LanguageConstantName, GeoTargetConstantName, Campaign => GoogleCampaign}
 import GoogleCampaign.NetworkSettings
 import services.{CampaignBudgetOperation, CampaignCriterionOperation, CampaignOperation, GoogleAdsRow, SearchGoogleAdsRequest}
 import utils.ResourceNames
-
 import edu.umass.cs.automan.adapters.googleads.util.Service._
 import edu.umass.cs.automan.core.logging._
 
@@ -33,9 +32,7 @@ object Campaign {
             dailyBudget: BigDecimal,
             name: String,
             qID: UUID): Campaign = {
-
     val googleAdsClient = googleClient
-
     val camp: Campaign = new Campaign(googleAdsClient, accountId, qID)
     camp.build(dailyBudget, name)
   }
@@ -44,9 +41,7 @@ object Campaign {
   def apply(accountId: Long,
             campId: Long,
             qID: UUID): Campaign = {
-
     val googleAdsClient = googleClient
-
     val camp: Campaign = new Campaign(googleAdsClient, accountId, qID)
     camp.load(accountId,campId)
   }
@@ -57,7 +52,6 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
   private var _campaign_id: Option[Long] = None
   private var _budget_id: Option[Long] = None
   private var _name: Option[String] = None
-
 
   def campaign_id: Long = _campaign_id match {
     case Some(id) => id
@@ -122,16 +116,13 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
       .getCampaignBudget
       .getId.getValue)
 
-    DebugLog(
-      "Loaded campaign " + name + " in account " + accountID, LogLevelInfo(), LogType.ADAPTER, qID
-    )
+    DebugLog("Loaded campaign " + name + " in account " + accountID, LogLevelInfo(), LogType.ADAPTER, qID)
 
     this
   }
 
   //Create a new campaign (only called in apply)
   private def build(dailyBudget: BigDecimal, n: String): Campaign = {
-
     //Make sure that Max doesn't spend the whole endowment
     if (dailyBudget > 50) do {
       println("Are you sure you want to spend >$50? y/n")
@@ -174,8 +165,6 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
         this
       case None => this
     }
-
-
   }
 
   //Create a new budget on the backend, automatically catching fixable errors and retrying
@@ -272,18 +261,12 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
     //Try to create campaign
     try {
       //Create campaign through mutate
-      val response = campaignServiceClient.mutateCampaigns(accountID.toString, ImmutableList.of(cOp))
-      val regex = raw"customers\/[0-9]+\/campaigns\/([0-9]+)".r
-      val id = response.getResults(0).getResourceName match {
-        case regex(i) => i.toLong
-      }
-
-      DebugLog(
-        "Created campaign " + cName + " in account " + accountID, LogLevelInfo(), LogType.ADAPTER, qID
-      )
+      campaignServiceClient.mutateCampaigns(accountID.toString, ImmutableList.of(cOp))
+      DebugLog("Created campaign " + cName + " in account " + accountID, LogLevelInfo(), LogType.ADAPTER, qID)
 
       campaignServiceClient.shutdown()
-      Some((id, cName))
+      Some((queryFilter("campaign.id","campaign",List(s"customer.id = $accountID",s"campaign.name = '$cName'")).head.getCampaign.getId.getValue,
+        queryFilter("campaign.name","campaign",List(s"customer.id = $accountID",s"campaign.name = '$cName'")).head.getCampaign.getName.getValue))
     }
 
     //Catch fixable errors and retry if possible
@@ -324,9 +307,8 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
                url: String,
                keywords: List[String],
                cpc: BigDecimal): Ad = {
-
       //Creates adgroup and ad under it
-    createAdGroup(title,cpc).createAd(title, subtitle, description, url, keywords, qID)
+      createAdGroup(title,cpc).createAd(title, subtitle, description, url, keywords, qID)
   }
 
   //Set the daily budget of the campaign, in dollars
@@ -349,9 +331,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
     //Set budget through mutate
     bClient.mutateCampaignBudgets(accountID.toString, ImmutableList.of(bOp))
 
-    DebugLog(
-      "Set budget of campaign " + name + " to $" + newBudget, LogLevelInfo(), LogType.ADAPTER, qID
-    )
+    DebugLog("Set budget of campaign " + name + " to $" + newBudget, LogLevelInfo(), LogType.ADAPTER, qID)
     bClient.shutdown()
   }
 
@@ -374,15 +354,10 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
     //Only log the first 5 for sanity
     words.length match {
       case x if x < 5 =>
-        DebugLog(
-          "Added keywords ot campaign " + name + ":" + words, LogLevelInfo(), LogType.ADAPTER, qID
-        )
+        DebugLog("Added keywords to campaign " + name + ":" + words, LogLevelInfo(), LogType.ADAPTER, qID)
       case _ =>
-        DebugLog(
-          "Added keywords ot campaign " + name + ":" + words.splitAt(6)._1, LogLevelInfo(), LogType.ADAPTER, qID
-        )
+        DebugLog("Added keywords to campaign " + name + ":" + words.splitAt(6)._1, LogLevelInfo(), LogType.ADAPTER, qID)
     }
-
   }
 
   //Sets the cost per click of all ads in this campaign. Only works if campaign already has ads
@@ -391,22 +366,16 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
     val ag = getAdGroups
 
     if (ag.isEmpty) {
-      DebugLog(
-        "Failed to set CPC of campaign " + name + ". Must create ad before setting CPC", LogLevelWarn(), LogType.ADAPTER, qID
-      )
+      DebugLog("Failed to set CPC of campaign " + name + ". Must create ad before setting CPC", LogLevelWarn(), LogType.ADAPTER, qID)
     } else {
       ag.foreach(_.setCPC(costPerClick))
-
-      DebugLog(
-        "Set CPC of campaign " + name + " to $" + costPerClick, LogLevelInfo(), LogType.ADAPTER, qID
-      )
+      DebugLog("Set CPC of campaign " + name + " to $" + costPerClick, LogLevelInfo(), LogType.ADAPTER, qID)
     }
   }
 
 
   //Generic method for pausing or resuming campaigns: true if status changed
   private def setStatus(s: CampaignStatus): Boolean = {
-
     //Don't set status to s if status is already s
     if (query("campaign.id","campaign").head.getCampaign.getStatus == s) {
       false
@@ -436,9 +405,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
   //Set the status of this campaign to paused. If already paused, return false
   def pause(): Boolean = {
     if (setStatus(CampaignStatus.PAUSED)) {
-      DebugLog(
-        "Paused campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID
-      )
+      DebugLog("Paused campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID)
       true
     }
     else false
@@ -447,9 +414,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
   //Set the status of this campaign to enabled. If already enabled, return false
   def resume(): Boolean = {
     if (setStatus(CampaignStatus.ENABLED)) {
-      DebugLog(
-        "Resumed campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID
-      )
+      DebugLog("Resumed campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID)
       true
     }
     else false
@@ -471,9 +436,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
 
       //Remove campaign with mutate
       csc.mutateCampaigns(accountID.toString, ImmutableList.of(cOp))
-      DebugLog(
-        "Deleted campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID
-      )
+      DebugLog("Deleted campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID)
 
       //Open create/delete campaign budget client
       val bsc = googleAdsClient.getLatestVersion.createCampaignBudgetServiceClient()
@@ -486,14 +449,11 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
       //Remove budget through mutate
       bsc.mutateCampaignBudgets(accountID.toString, ImmutableList.of(bOp))
 
-      DebugLog(
-        "Deleted budget " + budget_id, LogLevelInfo(), LogType.ADAPTER, qID
-      )
+      DebugLog("Deleted budget " + budget_id, LogLevelInfo(), LogType.ADAPTER, qID)
 
       bsc.shutdown()
       csc.shutdown()
       true
-
     } else false
   }
 
@@ -509,14 +469,13 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
       .setPageSize(1)
       .setQuery(searchQuery)
       .build()
-    val response: Iterable[GoogleAdsRow] = gasc.search(request).iterateAll.asScala
 
+    val response: Iterable[GoogleAdsRow] = gasc.search(request).iterateAll.asScala
     var l: List[String] = Nil
 
     for (googleAdsRow: GoogleAdsRow <- response) {
       l = googleAdsRow.getSearchTermView.getSearchTerm.getValue :: l
     }
-
     gasc.shutdown()
     l
   }
@@ -540,59 +499,64 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
     for (googleAdsRow: GoogleAdsRow <- response) {
       l = googleAdsRow.getMetrics.getClicks.getValue.toInt :: l
     }
-
     gasc.shutdown()
     l.fold(0: Int)(_ + _)
   }
 
-  //Restrict the campaign to only show to English speakers
-  def englishOnly(): Unit = {
-    //Open campaign criterion client
+  def setCriteria(criterion: CampaignCriterion.Builder): Unit = {
+    // open campaign criterion client
     val agcsc = googleAdsClient.getLatestVersion.createCampaignCriterionServiceClient()
 
-    //Build new english restriction criterion
-    val criterion = CampaignCriterion.newBuilder
-      .setLanguage(LanguageInfo.newBuilder
-        .setLanguageConstant(StringValue.of(LanguageConstantName.format(1000.toString)))
-        .build)
-
-      .setStatus(CampaignCriterionStatus.ENABLED)
+    val c = criterion.setStatus(CampaignCriterionStatus.ENABLED)
       .setCampaign(StringValue.of(ResourceNames.campaign(accountID, campaign_id)))
       .build()
 
-    //Build criterion create op
-    val op = CampaignCriterionOperation.newBuilder
-      .setCreate(criterion)
+    // build criterion create op
+    val op: CampaignCriterionOperation = CampaignCriterionOperation.newBuilder
+      .setCreate(c)
       .build()
 
     //Create criterion through mutate
     agcsc.mutateCampaignCriteria(accountID.toString, ImmutableList.of(op))
 
     agcsc.shutdown()
-    DebugLog(
-      "Added English language restriction to campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID
-    )
   }
+
+  //Restrict the campaign to only show to English speakers
+  def englishOnly(): Unit = {
+    //Build new english restriction criterion
+    val criterion = CampaignCriterion.newBuilder
+      .setLanguage(LanguageInfo.newBuilder
+        .setLanguageConstant(StringValue.of(LanguageConstantName.format(1000.toString)))
+        .build)
+
+    setCriteria(criterion)
+    DebugLog("Added English language restriction to campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID)
+  }
+
+  // restrict campaign to only show to people living in the US
+  def usOnly(): Unit = {
+    val criterion: CampaignCriterion.Builder = CampaignCriterion.newBuilder
+      .setLocation(LocationInfo.newBuilder
+      .setGeoTargetConstant(StringValue.of(GeoTargetConstantName.format(2840.toString)))
+      .build)
+
+    setCriteria(criterion)
+    DebugLog("Added US location targeting to campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID)
+  }
+
+  def maleOnly(): Unit = setGender(GenderType.FEMALE)
+
+  def femaleOnly(): Unit = setGender(GenderType.MALE)
 
   // will also exclude undetermined gender
   def setGender(gender: GenderType): Unit = {
-    val agcsc = googleAdsClient.getLatestVersion.createCampaignCriterionServiceClient()
-
-    // Gender to exclude
+    // gender to exclude
     val criterion1 = CampaignCriterion.newBuilder
       .setNegative(BoolValue.of(true))
       .setGender(GenderInfo.newBuilder
         .setType(gender)
         .build)
-
-      .setStatus(CampaignCriterionStatus.ENABLED)
-      .setCampaign(StringValue.of(ResourceNames.campaign(accountID, campaign_id)))
-      .build()
-
-    val op1 =
-      CampaignCriterionOperation.newBuilder
-        .setCreate(criterion1)
-        .build()
 
     val criterion2 = CampaignCriterion.newBuilder
       .setNegative(BoolValue.of(true))
@@ -600,27 +564,10 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
         .setType(GenderType.UNDETERMINED)
         .build)
 
-      .setStatus(CampaignCriterionStatus.ENABLED)
-      .setCampaign(StringValue.of(ResourceNames.campaign(accountID, campaign_id)))
-      .build()
-
-    val op2 =
-      CampaignCriterionOperation.newBuilder
-        .setCreate(criterion2)
-        .build()
-
-    //Create criterion through mutate
-    agcsc.mutateCampaignCriteria(accountID.toString, ImmutableList.of(op1, op2))
-
-    agcsc.shutdown()
-    DebugLog(
-      "Added gender targeting to campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID
-    )
+    setCriteria(criterion1)
+    setCriteria(criterion2)
+    DebugLog("Added gender targeting to campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID)
   }
-
-  def maleOnly(): Unit = setGender(GenderType.FEMALE)
-
-  def femaleOnly(): Unit = setGender(GenderType.MALE)
 
   //Method to query for info about this campaign: ALL "GET" API CALLS SHOULD BE REPLACED WITH THIS\
   //See https://developers.google.com/google-ads/api/docs/query/interactive-gaql-builder

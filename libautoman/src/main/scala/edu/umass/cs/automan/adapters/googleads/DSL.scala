@@ -87,6 +87,7 @@ object DSL {
                 ad_description: String = null,
                 ad_keywords: Set[String] = keywords(),
                 english: Boolean = false, // restrict ad to English-speaking users
+                us: Boolean = false,      // restrict ad to the US
                 male: Boolean = false,    // restrict ad to male users
                 female: Boolean = false,  // restrict ad to female users
                 required: Boolean = true, // require respondents to answer this question
@@ -106,6 +107,7 @@ object DSL {
       q.pay_all_on_failure = true
       // google-specific parameters
       q.english_only = english
+      q.us_only = us
       q.male_only = male
       q.female_only = female
       q.required = required
@@ -146,6 +148,7 @@ object DSL {
                      ad_description: String = null,
                      ad_keywords: Set[String] = keywords(),
                      english: Boolean = false,
+                     us: Boolean = false,
                      male: Boolean = false,
                      female: Boolean = false,
                      required: Boolean = true
@@ -164,6 +167,7 @@ object DSL {
       q.pay_all_on_failure = true
       // google-specific parameters
       q.english_only = english
+      q.us_only = us
       q.male_only = male
       q.female_only = female
       q.required = required
@@ -203,6 +207,7 @@ object DSL {
                 ad_description: String = null,
                 ad_keywords: Set[String] = keywords(),
                 english: Boolean = false,
+                us: Boolean = false,
                 male: Boolean = false,
                 female: Boolean = false,
                 required: Boolean = true
@@ -222,6 +227,7 @@ object DSL {
       q.pay_all_on_failure = true
       // google-specific parameters
       q.english_only = english
+      q.us_only = us
       q.male_only = male
       q.female_only = female
       q.required = required
@@ -261,6 +267,7 @@ object DSL {
                  ad_description: String = null,
                  ad_keywords: Set[String] = keywords(),
                  english: Boolean = false,
+                 us: Boolean = false,
                  male: Boolean = false,
                  female: Boolean = false,
                  required: Boolean = true
@@ -279,6 +286,7 @@ object DSL {
       q.pay_all_on_failure = true
       // google-specific parameters
       q.english_only = english
+      q.us_only = us
       q.male_only = male
       q.female_only = female
       q.required = required
@@ -316,6 +324,7 @@ object DSL {
                 ad_description: String = null,
                 ad_keywords: Set[String] = keywords(),
                 english: Boolean = false,
+                us: Boolean = false,
                 male: Boolean = false,
                 female: Boolean = false,
                 other: Boolean = false,
@@ -335,6 +344,7 @@ object DSL {
       q.pay_all_on_failure = true
       // google-specific parameters
       q.english_only = english
+      q.us_only = us
       q.male_only = male
       q.female_only = female
       q.other = other
@@ -371,6 +381,7 @@ object DSL {
                   ad_description: String = null,
                   ad_keywords: Set[String] = keywords(),
                   english: Boolean = false,
+                  us: Boolean = false,
                   male: Boolean = false,
                   female: Boolean = false,
                   other: Boolean = false,
@@ -390,6 +401,7 @@ object DSL {
       q.pay_all_on_failure = true
       // google-specific parameters
       q.english_only = english
+      q.us_only = us
       q.male_only = male
       q.female_only = female
       q.other = other
@@ -425,6 +437,7 @@ object DSL {
              ad_description: String = null,
              ad_keywords: Set[String] = keywords(),
              english: Boolean = false,
+             us: Boolean = false,
              male: Boolean = false,
              female: Boolean = false,
              other: Boolean = false,
@@ -445,6 +458,7 @@ object DSL {
       q.pay_all_on_failure = true
       // google-specific parameters
       q.english_only = english
+      q.us_only = us
       q.male_only = male
       q.female_only = female
       q.other = other
@@ -481,6 +495,7 @@ object DSL {
               ad_description: String = null,
               ad_keywords: Set[String] = keywords(),
               english: Boolean = false,
+              us: Boolean = false,
               male: Boolean = false,
               female: Boolean = false,
               other: Boolean = false,
@@ -500,6 +515,7 @@ object DSL {
       q.pay_all_on_failure = true
       // google-specific parameters
       q.english_only = english
+      q.us_only = us
       q.male_only = male
       q.female_only = female
       q.other = other
