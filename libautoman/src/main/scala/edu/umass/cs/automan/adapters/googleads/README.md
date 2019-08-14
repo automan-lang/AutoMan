@@ -1,3 +1,5 @@
+# Summer Research 2019
+
 ## The problem we were trying to solve
 
 Our goal this  summer was to extend AutoMan to support crowdsourcing backends other than Amazon Mechanical Turk. Specifically, Google Ads seemed like it could potentially solve some of the biggest issues of using MTurk. The advantages that Google Ads has over MTurk are:
@@ -8,7 +10,7 @@ Our goal this  summer was to extend AutoMan to support crowdsourcing backends ot
 
 3. Access to up to 2 billion potential workers
 
-This *targeted crowdsourcing* framework draws from existing research [Quizz](https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/42022.pdf) showing that online advertising could produce higher quality results at lower or comparable cost to paid crowdsourcing platforms. 
+This *targeted crowdsourcing* framework draws from existing research (such as [Quizz](https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/42022.pdf)) showing that online advertising could produce higher quality results at lower or comparable cost to paid crowdsourcing platforms. 
 
 ## Approach
 
