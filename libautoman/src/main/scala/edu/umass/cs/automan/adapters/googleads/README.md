@@ -1,6 +1,6 @@
 ## The problem we were trying to solve
 
-Our goal this  summer was to extend AutoMan to support crowdsourcing backends other than Amazon Mechanical Turk. Specifically, Google Ads seemed like it could potentially solve some of the biggest issues of using MTurk. The advantages that Google Ads have over MTurk are:
+Our goal this  summer was to extend AutoMan to support crowdsourcing backends other than Amazon Mechanical Turk. Specifically, Google Ads seemed like it could potentially solve some of the biggest issues of using MTurk. The advantages that Google Ads has over MTurk are:
 
 1. Removal of the monetary incentive that MTurk workers might feel to prioritize speed over quality of work
 
@@ -8,7 +8,7 @@ Our goal this  summer was to extend AutoMan to support crowdsourcing backends ot
 
 3. Access to up to 2 billion potential workers
 
-This *targeted crowdsourcing* framework draws from existing research [Quizz](https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/42022.pdf) that proves that online advertising could produce higher quality results at lower or comparable cost to paid crowdsourcing platforms. 
+This *targeted crowdsourcing* framework draws from existing research [Quizz](https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/42022.pdf) showing that online advertising could produce higher quality results at lower or comparable cost to paid crowdsourcing platforms. 
 
 ## Approach
 
@@ -16,17 +16,17 @@ We used the [Google Ads](https://developers.google.com/google-ads/api/reference/
 
 ## How far we got
 
-Most of the Google Ads adapter works as expected: ads and forms are programmatically created through calls of the DSL. Since Google Forms supports all the AutoMan question types, we were able to easily implement questions as forms. So far, the program flow looks like:
+Most of the Google Ads adapter works as expected: ads and forms are programmatically created and AutoMan performs quality check on the responses received. Since Google Forms supports all the AutoMan question types, we were able to easily implement questions as forms. So far, the program flow looks like:
   
-1. Authorization for first-time users includes creating a Google Cloud Project, acquiring a developer token, deploying the Apps Script library, etc. Running `Authenticate.setup()` leads users through this setup process.
+1. The setup process for first-time users includes creating a Google Cloud Project, acquiring a developer token, deploying the Apps Script library, etc. Running `Authenticate.setup()` leads users through this process, and it should be done once for every new machine MadMan is being run on.
 
-2. Call a DSL function like `radio()` with the proper parameters; it will create a Google Form and Ad based on the information supplied here.
+2. Call a DSL function like `radio()` with the proper parameters; it will create a Google Form and Ad based on the information supplied. Refer to `example_program` for initializing the Google Ads adapter.
 
 3. The scheduler will wait for the ad to get approved, then check for answers periodically (for checkbox and radio button questions, these retrieve calls also shuffles the question options order).
 
 4. AutoMan will check if the answers reach the specified confidence interval and provide a final answer.
 
-5. The Google Ads adapter is different from MTurk in that it can’t set a limit on the possible number of responses. If the adapter receives more answers than it was expecting, they’ll factor into the current confidence calculations automatically instead of getting ignored.
+The Google Ads adapter is different from MTurk in that it can’t set a limit on the possible number of responses. If the adapter receives more answers than it was expecting, the extra answers will factor into the current confidence calculations automatically instead of getting ignored.
 
 ## How we know our approach worked
 
@@ -36,10 +36,14 @@ Resulting data from the ad campaigns suggests that it’s possible for cost per 
 
 ## Future work
 
-1. Forms should be independently hosted outside of Google to allow JavaScript to be added in the surrounding environment to receive signals about when responses are submitted and to ensure respondent uniqueness.
+1. Hosting forms outside of Google allows JavaScript to be added in the surrounding environment, allowing us to do things like ensuring respondent uniqueness.
 
-2. The above would allow us to incorporate Google Analytics to optimize for responses
+2. The above would allow us to incorporate Google Analytics to optimize for responses: in theory, we could consider responses as "conversions" and let Analytics automatically improve our ad campaigns over time
 
 3. Implementing thread concurrency for Google Ads would allow its tasks to run in parallel like MTurk tasks
 
 4. It would also be interesting to incorporate some of the exploration/exploitation framework laid out in Quizz: in other words, use the *quiz* feature of Forms to introduce calibration questions to filter for qualified users. This data can be fed into Analytics to improve cost and answer quality over time by targeting websites that qualified users are found.
+
+5. Right now, we can toggle targeting for certain demographic parameters such as English speakers, gender, and people in the US. This targeting feature can be further improved and automated depending on the user's purpose. For example, someone doing a social science survey on middle-aged females living in the US has different goals compared to someone looking to transcribe different street signs as quickly as possible. For the latter, representativeness does not matter---they might set something such as `representativeness = false` and MadMan could try to find groups that maximizes responses (it could also simply have no demographics targeting whatsoever).
+
+*Karmen Liang '21 and Max Stein '21*
