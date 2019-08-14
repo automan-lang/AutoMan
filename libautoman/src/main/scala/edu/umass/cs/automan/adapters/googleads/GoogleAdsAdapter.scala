@@ -5,7 +5,7 @@ import java.util.{Date, UUID}
 import edu.umass.cs.automan.adapters.googleads.ads.Account
 import edu.umass.cs.automan.adapters.googleads.question._
 import edu.umass.cs.automan.core.AutomanAdapter
-import edu.umass.cs.automan.core.logging.Memo
+import edu.umass.cs.automan.core.logging.{DebugLog, LogLevelInfo, LogType, Memo}
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 
@@ -86,11 +86,14 @@ class GoogleAdsAdapter extends AutomanAdapter {
 
   protected[automan] def post(ts: List[Task], exclude_worker_ids: List[String]): Option[List[Task]] = {
     // create form, campaign, and ad
-    def taskPost(t: Task): Task = {
-      val q = t.question.asInstanceOf[GQuestion]
-      if (!test) q.post(production_account)
-      t.copy_as_running()
-    }
+
+      def taskPost(t: Task): Task = {
+        val q = t.question.asInstanceOf[GQuestion]
+        this.synchronized {
+          if (!test) q.post(production_account)
+        }
+        t.copy_as_running()
+      }
 
     Some(ts.map(t =>
       t.state match {
@@ -121,7 +124,14 @@ class GoogleAdsAdapter extends AutomanAdapter {
     //Just questions
     val qSet = qMap.keys.toSet
 
-    if (!test) qSet.foreach(_.answer())
+    if (!test) qSet.foreach {q =>
+        if(!q.isApproved) {
+          DebugLog("Ad awaiting approval", LogLevelInfo(), LogType.ADAPTER, q.id)
+          Thread.sleep(15000) //no need to check if ad is approved more than every 15 seconds
+        } else {
+          q.answer()
+        }
+    }
     else qSet.foreach(_.fakeAnswer())
 
     //Get and queue answers for each question

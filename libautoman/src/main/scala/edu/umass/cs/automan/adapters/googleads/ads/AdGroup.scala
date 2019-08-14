@@ -83,7 +83,7 @@ class AdGroup (googleAdsClient: GoogleAdsClient, accountId: Long, qID: UUID) {
         adGroupServiceClient.shutdown()
 
         DebugLog(
-            "Added adgroup " + name + " to campaign with ID " + campaignId, LogLevelInfo(), LogType.ADAPTER, qID
+            "Added adgroup " + _adgroup_id + " to campaign with ID " + campaignId, LogLevelInfo(), LogType.ADAPTER, qID
         )
     }
 

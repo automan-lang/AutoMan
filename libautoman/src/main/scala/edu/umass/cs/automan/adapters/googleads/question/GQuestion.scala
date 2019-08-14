@@ -73,38 +73,39 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
 
   // create form, campaign, and ad if none currently exist
   def post(acc: Account): Unit = {
-     _form match {
-      case Some(f) =>
-      case None =>
-        form = Form(title)
-        form.setDescription(form_description)
+      _form match {
+        case Some(f) =>
+        case None =>
+          form = Form(title)
+          form.setDescription(form_description)
 
-        _image_url match {
-          case None =>
-          case Some(url) => form.addImage(url)
-        }
+          _image_url match {
+            case None =>
+            case Some(url) => form.addImage(url)
+          }
 
-        create()
+          create()
+      }
+
+      campaign = _campaign match {
+        case Some(c) => c
+        case None => acc.createCampaign(budget, title, id)
+      }
+
+      _ad match {
+        case Some(a) =>
+        case None =>
+          val a = campaign.createAd(ad_title, ad_subtitle, ad_description, form.getPublishedUrl, ad_keywords.toList, cpc)
+          campaign.setCPC(cpc)
+          if (english_only) campaign.englishOnly()
+          if (male_only) campaign.maleOnly()
+          if (female_only) campaign.femaleOnly()
+          ad = a
+      }
     }
 
-    campaign = _campaign match {
-      case Some(c) => c
-      case None => acc.createCampaign(budget, title, id)
-    }
-
-    ad = _ad match {
-      case Some(a) => a
-      case None =>
-        val a =campaign.createAd(ad_title, ad_subtitle, ad_description, form.getPublishedUrl, ad_keywords.toList, cpc)
-        campaign.setCPC(cpc)
-        if (english_only) campaign.englishOnly()
-        if (male_only) campaign.maleOnly()
-        if (female_only) campaign.femaleOnly()
-        while(!a.is_approved) {
-          DebugLog("Ad awaiting approval",LogLevelInfo(),LogType.ADAPTER,id)
-          Thread.sleep(5*1000) // 5 seconds should prevent rate limit
-        }
-        a
-    }
+  def isApproved: Boolean = {
+    if(ad.is_approved) true
+    else false
   }
 }

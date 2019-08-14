@@ -4,6 +4,8 @@ import edu.umass.cs.automan.adapters.googleads.question._
 import edu.umass.cs.automan.adapters.googleads.util.KeywordList._
 import edu.umass.cs.automan.core.MagicNumbers
 import edu.umass.cs.automan.core.answer._
+import edu.umass.cs.automan.core.logging.LogConfig.LogConfig
+import edu.umass.cs.automan.core.logging.{LogLevel, LogLevelInfo}
 import edu.umass.cs.automan.core.question.confidence._
 import edu.umass.cs.automan.core.policy.aggregation._
 import edu.umass.cs.automan.core.question.Dimension
@@ -43,9 +45,14 @@ object DSL {
 
   type GQuestionOption = edu.umass.cs.automan.adapters.googleads.question.GQuestionOption
 
-  def gads(production_account_id: Long, dry_run: Boolean = false) : GoogleAdsAdapter = {
+  def gads(production_account_id: Long,
+           dry_run: Boolean = false,
+           logging: LogConfig = LogConfig.TRACE_MEMOIZE,
+           log_verbosity: LogLevel = LogLevelInfo()) : GoogleAdsAdapter = {
     val initf = (g: GoogleAdsAdapter) => {
       // mandatory parameters
+      g.logging = logging
+      g.log_verbosity = log_verbosity
       g.production_account_id_=(1373958703)
       g.test = dry_run
     }

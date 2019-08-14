@@ -24,7 +24,7 @@ class GCheckboxVectorQuestion extends CheckboxVectorQuestion with GQuestion {
 
   override def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
-    new String(Hex.encodeHex(md.digest(item_id.getBytes())))
+    new String(Hex.encodeHex(md.digest(id.toString.getBytes())))
   }
 
 
