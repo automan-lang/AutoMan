@@ -22,6 +22,7 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   protected var _other: Boolean = false
   protected var _required: Boolean = true
   protected var _answers: mutable.Queue[A] = mutable.Queue.empty
+  private var _approved: Boolean = false
 
   // number of answers retrieved from backend so far
   protected[question] var read_so_far: Int = 0
@@ -85,43 +86,43 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
 
   // create form, campaign, and ad if none currently exist
   def post(acc: Account): Unit = {
-    _form match {
-      case Some(_) =>
-      case None =>
-        form = Form(title)
-        form.setDescription(form_description)
+      _form match {
+        case Some(_) =>
+        case None =>
+          form = Form(title)
+          form.setDescription(form_description)
 
-        _image_url match {
-          case None =>
-          case Some(url) => form.addImage(url)
-        }
-        create()
-    }
+          _image_url match {
+            case None =>
+            case Some(url) => form.addImage(url)
+          }
+          create()
+      }
 
-    campaign = _campaign match {
-      case Some(c) => c
-      case None => acc.createCampaign(budget, title, id)
-    }
+      campaign = _campaign match {
+        case Some(c) => c
+        case None => acc.createCampaign(budget, id.toString.split("-")(0), id)
+      }
 
-    ad = _ad match {
-      case Some(a) => a
-      case None =>
-        val a = campaign.createAd(ad_title, ad_subtitle, ad_description, form.getPublishedUrl, ad_keywords.toList, cpc)
-        campaign.setCPC(cpc)
-        if (english_only) campaign.englishOnly()
-        if (us_only) campaign.usOnly()
-        if (male_only) campaign.maleOnly()
-        if (female_only) campaign.femaleOnly()
-        while (!a.is_approved) {
-          DebugLog("Ad awaiting approval", LogLevelInfo(), LogType.ADAPTER, id)
-          Thread.sleep(5 * 1000) // 5 seconds should prevent rate limit
-        }
-        a
-    }
+      ad = _ad match {
+        case Some(a) => a
+        case None =>
+          val a = campaign.createAd(ad_title, ad_subtitle, ad_description, form.getPublishedUrl, ad_keywords.toList, cpc)
+          campaign.setCPC(cpc)
+          if (english_only) campaign.englishOnly()
+          if (us_only) campaign.usOnly()
+          if (male_only) campaign.maleOnly()
+          if (female_only) campaign.femaleOnly()
+          a
+      }
   }
 
     def isApproved: Boolean = {
-      if (ad.is_approved) true
+      if (_approved) true
+      else if (ad.is_approved) {
+        _approved = true
+        true
+      }
       else false
     }
 }

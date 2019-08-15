@@ -1,29 +1,23 @@
 package edu.umass.cs.automan.adapters.googleads
 
-import java.io.File
-
-import com.google.api.client.auth.oauth2.StoredCredential
-
-import scala.collection.JavaConverters._
-import com.google.api.client.util.store.{DataStore, FileDataStoreFactory}
 import edu.umass.cs.automan.adapters.googleads.DSL._
-import edu.umass.cs.automan.core.logging.LogLevelInfo
+import edu.umass.cs.automan.core.logging.{LogLevelInfo,LogLevelWarn}
 import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
 
 
 object concurrent_example extends App {
 
-  val opts = Utilities.unsafe_optparse(args, "concurrent_example")
+  //val opts = Utilities.unsafe_optparse(args, "concurrent_example")
 
   implicit val a: GoogleAdsAdapter = gads(
-    opts('key).toLong,
+    1234567890,
     dry_run = false,
     logging = LogConfig.NO_LOGGING,
     log_verbosity = LogLevelInfo()
   )
 
-  def which_one(cpc: BigDecimal) = radio(
-    budget = 2.00,
+  def which_one(cpc: BigDecimal, name: String) = radio(
+    budget = 3.00,
     text = s"Which ingredient goes in coffee?",
     options = (
       choice('milk, "Milk"),
@@ -32,15 +26,14 @@ object concurrent_example extends App {
       choice('honey, "Honey")
     ),
     minimum_spawn_policy = UserDefinableSpawnPolicy(0),
-    form_title = "Question 14",
+    form_title = name,
     cpc = cpc
   )
 
   automan(a) {
-
     val radioOutcomes: List[DSL.ScalarOutcome[Symbol]] =
       List(0.06, 0.12, 0.24, 0.48).map(
-        x => which_one(x)
+        x => which_one(x, "name test " + x)
       )
 
     radioOutcomes foreach { x =>
@@ -54,7 +47,5 @@ object concurrent_example extends App {
           )
       }
     }
-
-    a.close()
   }
 }

@@ -61,7 +61,7 @@ class GoogleAdsAdapter extends AutomanAdapter {
   }
 
   protected[automan] def accept(ts: List[Task]): Option[List[Task]] = {
-    Some( ts.map(t => {
+    Some(ts.map(t => {
       if (!test) t.question.asInstanceOf[GQuestion].campaign.delete()
       t.copy_as_accepted()
     }))
@@ -74,32 +74,32 @@ class GoogleAdsAdapter extends AutomanAdapter {
       case SchedulerState.CANCELLED => (t: Task) => t.copy_as_cancelled()
       case SchedulerState.TIMEOUT => (t: Task) => {
         ts.foreach(_.question.asInstanceOf[GQuestion].cpc =
-          (ts.head.question.wage * t.worker_timeout / 3600).setScale(2,RoundingMode.CEILING))
+          (ts.head.question.wage * t.worker_timeout / 3600).setScale(2, RoundingMode.CEILING))
         t.copy_as_timeout()
       }
       case SchedulerState.DUPLICATE => (t: Task) => t.copy_as_duplicate()
       case _ => throw new Exception(s"Invalid target state $toState for cancellation request.")
     }
-    if (!test) ts.foreach( t => t.question.asInstanceOf[GQuestion].campaign.delete())
+    if (!test) ts.foreach(t => t.question.asInstanceOf[GQuestion].campaign.delete())
     Some(ts.map(stateChanger))
   }
 
   protected[automan] def post(ts: List[Task], exclude_worker_ids: List[String]): Option[List[Task]] = {
     // create form, campaign, and ad
 
-      def taskPost(t: Task): Task = {
-        val q = t.question.asInstanceOf[GQuestion]
-        this.synchronized {
-          if (!test) q.post(production_account)
-        }
-        t.copy_as_running()
+    def taskPost(t: Task): Task = {
+      val q = t.question.asInstanceOf[GQuestion]
+      this.synchronized {
+        if (!test) q.post(production_account)
       }
+      t.copy_as_running()
+    }
 
     Some(ts.map(t =>
       t.state match {
         case SchedulerState.READY =>
           ts.foreach(_.question.asInstanceOf[GQuestion].cpc =
-            (ts.head.question.wage * t.worker_timeout / 3600).setScale(2,RoundingMode.CEILING))
+            (ts.head.question.wage * t.worker_timeout / 3600).setScale(2, RoundingMode.CEILING))
           taskPost(t)
         case _ => throw new Exception(s"Invalid target state ${t.state} for post request.")
       }
@@ -107,32 +107,31 @@ class GoogleAdsAdapter extends AutomanAdapter {
   }
 
   protected[automan] def reject(ts_reasons: List[(Task, String)]): Option[List[Task]] =
-    Some( ts_reasons.map(
-        { case (t: Task, _: String) =>
-          if (!test) t.question.asInstanceOf[GQuestion].campaign.delete()
-          t.copy_as_rejected()
-        }
-      )
+    Some(ts_reasons.map(
+      { case (t: Task, _: String) =>
+        if (!test) t.question.asInstanceOf[GQuestion].campaign.delete()
+        t.copy_as_rejected()
+      }
+    )
     )
 
   protected[automan] def retrieve(ts: List[Task], current_time: Date): Option[List[Task]] = {
 
     // get unique questions and one task
-    val qMap: Map[GQuestion,Task] = ts
-      .map(t => t.question.asInstanceOf[GQuestion]-> t).groupBy(_._1).map({case (k,v) => (k,v.head._2)})
+    val qMap: Map[GQuestion, Task] = ts
+      .map(t => t.question.asInstanceOf[GQuestion] -> t).groupBy(_._1).map({ case (k, v) => (k, v.head._2) })
 
     //Just questions
     val qSet = qMap.keys.toSet
 
-    if (!test) qSet.foreach {q =>
-        if(!q.isApproved) {
+      if (!test) qSet.foreach { q =>
+        if (!q.isApproved) {
           DebugLog("Ad awaiting approval", LogLevelInfo(), LogType.ADAPTER, q.id)
-          Thread.sleep(15000) //no need to check if ad is approved more than every 15 seconds
-        } else {
+          Thread.sleep(10000) //wait 10s //TODO: q._update_frequency does nothing, but this should probably go in core
+        } else
           q.answer()
-        }
-    }
-    else qSet.foreach(_.fakeAnswer())
+      }
+      else qSet.foreach(q => q.fakeAnswer())
 
     //Get and queue answers for each question
     def answer(t: Task): Task = {

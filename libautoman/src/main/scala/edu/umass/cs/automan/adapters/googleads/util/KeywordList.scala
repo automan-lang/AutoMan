@@ -1,8 +1,5 @@
 package edu.umass.cs.automan.adapters.googleads.util
 
-import net.sf.extjwnl.data.Synset
-import net.sf.extjwnl.dictionary.Dictionary
-
 import scala.util.Random
 import scala.collection.JavaConverters._
 
@@ -29,38 +26,6 @@ object KeywordList {
       if (w.length < 10) w.replaceAll("'s", ""); else word
     }
     word
-  }
-
-  //TODO: Cite this -> http://extjwnl.sourceforge.net/ and also decide if this is even worth including
-  def generateKeywords(num: Int, words: Set[String]) : Set[String] = {
-    def syns(s: String, dictionary: Dictionary): Set[String] = {
-      val words = dictionary
-        .lookupAllIndexWords(s)
-        .getIndexWordArray
-        .toSet
-      val senses: Set[Synset] = words.flatMap(_.getSenses.asScala)
-      senses.flatMap(_.getWords.asScala.map(_.getLemma)).filter(!_.contains(" "))
-    }
-
-    def genSyns(depth: Int, words: Set[String]): Set[String] = {
-      val dictionary = Dictionary.getFileBackedInstance(getClass.getResource("/dict").getPath)
-
-      def genSynsRec(depth: Int, set: Set[String]): Set[String] = {
-        if (depth == 0) set
-        else genSynsRec(depth - 1, set.flatMap(s => syns(s, dictionary))
-        )
-      }
-      genSynsRec(depth, words)
-    }
-
-    def keyGen(depth: Int, words: Set[String]): Set[String] = {
-      val keywords = genSyns(1, words)
-      if (keywords.size >= num) return keywords.splitAt(num)._1
-      if (depth > 4) keyGen(1,keywords ++ Set(randomWord,randomWord,randomWord,randomWord))
-      else keyGen(depth + 1, keywords)
-    }
-
-    keyGen(1,words)
   }
 
 }
