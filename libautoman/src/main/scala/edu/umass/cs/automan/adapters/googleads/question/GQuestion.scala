@@ -1,8 +1,8 @@
 package edu.umass.cs.automan.adapters.googleads.question
 
 import edu.umass.cs.automan.adapters.googleads.ads.{Account, Ad, Campaign}
+import edu.umass.cs.automan.adapters.googleads.enums.Qualification
 import edu.umass.cs.automan.adapters.googleads.forms._
-import edu.umass.cs.automan.core.logging.{DebugLog, LogLevelInfo, LogType}
 
 import scala.collection.mutable
 
@@ -23,7 +23,7 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   protected var _required: Boolean = true
   protected var _answers: mutable.Queue[A] = mutable.Queue.empty
   private var _approved: Boolean = false
-  private var _qualifications = Nil
+  private var _qualifications: List[Qualification] = Nil
 
   // number of answers retrieved from backend so far
   protected[question] var read_so_far: Int = 0
@@ -59,6 +59,8 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   def required_=(r: Boolean) { _required = r }
   def answers: mutable.Queue[A] = _answers
   def answers_=(a: mutable.Queue[A]) { _answers = a }
+  def qualifications: List[Qualification] = _qualifications
+  def qualifications_=(q: List[Qualification]) { _qualifications = q}
 
   def form: Form = _form match {
     case Some(f) => f;
@@ -87,43 +89,40 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
 
   // create form, campaign, and ad if none currently exist
   def post(acc: Account): Unit = {
-      _form match {
-        case Some(_) =>
-        case None =>
-          form = Form(title)
-          form.setDescription(form_description)
+    _form match {
+      case Some(_) =>
+      case None =>
+        form = Form(title)
+        form.setDescription(form_description)
 
-          _image_url match {
-            case None =>
-            case Some(url) => form.addImage(url)
-          }
-          create()
-      }
+        _image_url match {
+          case None =>
+          case Some(url) => form.addImage(url)
+        }
+        create()
+    }
 
-      campaign = _campaign match {
-        case Some(c) => c
-        case None => acc.createCampaign(budget, id.toString.split("-")(0), id)
-      }
+    campaign = _campaign match {
+      case Some(c) => c
+      case None => acc.createCampaign(budget, id.toString.split("-")(0), id)
+    }
 
-      ad = _ad match {
-        case Some(a) => a
-        case None =>
-          val a = campaign.createAd(ad_title, ad_subtitle, ad_description, form.getPublishedUrl, ad_keywords.toList, cpc)
+    ad = _ad match {
+      case Some(a) => a
+      case None =>
+        val a = campaign.createAd(ad_title, ad_subtitle, ad_description, form.getPublishedUrl, ad_keywords.toList, cpc)
 
-          _qualifications.foreach{q =>
-            campaign.qualify(q)
-          }
-
-          a
-      }
+        _qualifications.foreach(q => campaign.qualify(q))
+        a
+    }
   }
 
-    def isApproved: Boolean = {
-      if (_approved) true
-      else if (ad.is_approved) {
-        _approved = true
-        true
-      }
-      else false
+  def isApproved: Boolean = {
+    if (_approved) true
+    else if (ad.is_approved) {
+      _approved = true
+      true
     }
+    else false
+  }
 }

@@ -541,7 +541,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
         .build)
 
     setCriteria(criterion)
-    DebugLog("Added English language restriction to campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID)
+    DebugLog("Added language restriction to campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID)
   }
 
   // restrict campaign to only show to people living in the a certain country
@@ -552,7 +552,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
       .build)
 
     setCriteria(criterion)
-    DebugLog("Added US location targeting to campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID)
+    DebugLog("Added location targeting to campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID)
   }
 
   // will also exclude undetermined gender
