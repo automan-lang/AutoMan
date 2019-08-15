@@ -87,12 +87,9 @@ object DSL {
                 ad_subtitle: String = null,
                 ad_description: String = null,
                 ad_keywords: Set[String] = keywords(),
-                english: Boolean = false, // restrict ad to English-speaking users
-                us: Boolean = false,      // restrict ad to the US
-                male: Boolean = false,    // restrict ad to male users
-                female: Boolean = false,  // restrict ad to female users
                 required: Boolean = true, // require respondents to answer this question
-                cpc: BigDecimal = MagicNumbers.DefaultCPC
+                cpc: BigDecimal = MagicNumbers.DefaultCPC,
+                qualifications: List[Qualification] = Nil
                 )
                 (implicit gads: GoogleAdsAdapter) : EstimationOutcome = {
     def initf(q: GEstimationQuestion): Unit = {
@@ -107,13 +104,10 @@ object DSL {
       q.question_timeout_multiplier = question_timeout_multiplier
       q.pay_all_on_failure = true
       // google-specific parameters
-      q.english_only = english
-      q.us_only = us
-      q.male_only = male
-      q.female_only = female
       q.required = required
       q.ad_keywords = ad_keywords
       q.wage = cpc * 3600/initial_worker_timeout_in_s //calculate wage from cpc ($/task)
+      q.qualifications = qualifications
 
       // optional parameters
       if (default_sample_size != -1 && default_sample_size > 0) { q.default_sample_size = default_sample_size }
@@ -143,16 +137,13 @@ object DSL {
                      question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
                      text: String,
                      form_title: String = null,
-                     cpc: BigDecimal = MagicNumbers.DefaultCPC,
                      ad_title: String = null,
                      ad_subtitle: String = null,
                      ad_description: String = null,
                      ad_keywords: Set[String] = keywords(),
-                     english: Boolean = false,
-                     us: Boolean = false,
-                     male: Boolean = false,
-                     female: Boolean = false,
-                     required: Boolean = true
+                     required: Boolean = true,
+                     cpc: BigDecimal = MagicNumbers.DefaultCPC,
+                     qualifications: List[Qualification] = Nil
                      )
                      (implicit a: GoogleAdsAdapter) : MultiEstimationOutcome = {
     def initf(q: GMultiEstimationQuestion): Unit = {
@@ -167,14 +158,11 @@ object DSL {
       q.question_timeout_multiplier = question_timeout_multiplier
       q.pay_all_on_failure = true
       // google-specific parameters
-      q.english_only = english
-      q.us_only = us
-      q.male_only = male
-      q.female_only = female
       q.required = required
       q.wage = cpc // CPC
       q.ad_keywords = ad_keywords
       q.wage = cpc * 3600/initial_worker_timeout_in_s //calculate wage from cpc ($/task)
+      q.qualifications = qualifications
 
       // optional parameters
       if (default_sample_size != -1 && default_sample_size > 0) { q.default_sample_size = default_sample_size }
@@ -202,16 +190,13 @@ object DSL {
                 question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
                 text: String,
                 form_title: String = null,
-                cpc: BigDecimal = MagicNumbers.DefaultCPC,
                 ad_title: String = null,
                 ad_subtitle: String = null,
                 ad_description: String = null,
                 ad_keywords: Set[String] = keywords(),
-                english: Boolean = false,
-                us: Boolean = false,
-                male: Boolean = false,
-                female: Boolean = false,
-                required: Boolean = true
+                required: Boolean = true,
+                cpc: BigDecimal = MagicNumbers.DefaultCPC,
+                qualifications: List[Qualification] = Nil
                 )
                 (implicit a: GoogleAdsAdapter) : ScalarOutcome[String] = {
     def initf(q: GFreeTextQuestion): Unit = {
@@ -227,14 +212,11 @@ object DSL {
       q.question_timeout_multiplier = question_timeout_multiplier
       q.pay_all_on_failure = true
       // google-specific parameters
-      q.english_only = english
-      q.us_only = us
-      q.male_only = male
-      q.female_only = female
       q.required = required
       q.wage = cpc // CPC
       q.ad_keywords = ad_keywords
       q.wage = cpc * 3600/initial_worker_timeout_in_s // calculate wage from cpc ($/task)
+      q.qualifications = qualifications
 
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
@@ -262,16 +244,13 @@ object DSL {
                  question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
                  text: String,
                  form_title: String = null,
-                 cpc: BigDecimal = MagicNumbers.DefaultCPC,
                  ad_title: String = null,
                  ad_subtitle: String = null,
                  ad_description: String = null,
                  ad_keywords: Set[String] = keywords(),
-                 english: Boolean = false,
-                 us: Boolean = false,
-                 male: Boolean = false,
-                 female: Boolean = false,
-                 required: Boolean = true
+                 required: Boolean = true,
+                 cpc: BigDecimal = MagicNumbers.DefaultCPC,
+                 qualifications: List[Qualification] = Nil
                  )
                  (implicit a: GoogleAdsAdapter) : VectorOutcome[String] = {
     def initf(q: GFreeTextVectorQuestion): Unit = {
@@ -286,14 +265,11 @@ object DSL {
       q.question_timeout_multiplier = question_timeout_multiplier
       q.pay_all_on_failure = true
       // google-specific parameters
-      q.english_only = english
-      q.us_only = us
-      q.male_only = male
-      q.female_only = female
       q.required = required
       q.cpc = cpc // CPC
       q.ad_keywords = ad_keywords
       q.wage = cpc * 3600/initial_worker_timeout_in_s // calculate wage from cpc ($/task)
+      q.qualifications = qualifications
 
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
@@ -319,17 +295,14 @@ object DSL {
                 question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
                 text: String,
                 form_title: String = null,
-                cpc: BigDecimal = MagicNumbers.DefaultCPC,
                 ad_title: String = null,
                 ad_subtitle: String = null,
                 ad_description: String = null,
                 ad_keywords: Set[String] = keywords(),
-                english: Boolean = false,
-                us: Boolean = false,
-                male: Boolean = false,
-                female: Boolean = false,
                 other: Boolean = false,
-                required: Boolean = true
+                required: Boolean = true,
+                cpc: BigDecimal = MagicNumbers.DefaultCPC,
+                qualifications: List[Qualification] = Nil
                 )
                 (implicit a: GoogleAdsAdapter) : ScalarOutcome[Set[Symbol]] = {
     def initf(q: GCheckboxQuestion): Unit = {
@@ -344,15 +317,12 @@ object DSL {
       q.question_timeout_multiplier = question_timeout_multiplier
       q.pay_all_on_failure = true
       // google-specific parameters
-      q.english_only = english
-      q.us_only = us
-      q.male_only = male
-      q.female_only = female
       q.other = other
       q.required = required
       q.cpc = cpc // CPC
       q.ad_keywords = ad_keywords
       q.wage = cpc * 3600/initial_worker_timeout_in_s //calculate wage from cpc ($/task)
+      q.qualifications = qualifications
 
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
@@ -376,17 +346,14 @@ object DSL {
                   question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
                   text: String,
                   form_title: String = null,
-                  cpc: BigDecimal = MagicNumbers.DefaultCPC,
                   ad_title: String = null,
                   ad_subtitle: String = null,
                   ad_description: String = null,
                   ad_keywords: Set[String] = keywords(),
-                  english: Boolean = false,
-                  us: Boolean = false,
-                  male: Boolean = false,
-                  female: Boolean = false,
                   other: Boolean = false,
-                  required: Boolean = true
+                  required: Boolean = true,
+                  cpc: BigDecimal = MagicNumbers.DefaultCPC,
+                  qualifications: List[Qualification] = Nil
                   )
                   (implicit a: GoogleAdsAdapter) : VectorOutcome[Set[Symbol]] = {
     def initf(q: GCheckboxVectorQuestion): Unit = {
@@ -401,15 +368,12 @@ object DSL {
       q.question_timeout_multiplier = question_timeout_multiplier
       q.pay_all_on_failure = true
       // google-specific parameters
-      q.english_only = english
-      q.us_only = us
-      q.male_only = male
-      q.female_only = female
       q.other = other
       q.required = required
       q.cpc = cpc // CPC
       q.ad_keywords = ad_keywords
       q.wage = cpc * 3600/initial_worker_timeout_in_s // calculate wage from cpc ($/task)
+      q.qualifications = qualifications
 
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
@@ -437,10 +401,6 @@ object DSL {
              ad_subtitle: String = null,
              ad_description: String = null,
              ad_keywords: Set[String] = keywords(),
-             english: Boolean = false,
-             us: Boolean = false,
-             male: Boolean = false,
-             female: Boolean = false,
              other: Boolean = false,
              required: Boolean = true,
              cpc: BigDecimal = MagicNumbers.DefaultCPC,
@@ -459,10 +419,6 @@ object DSL {
       q.question_timeout_multiplier = question_timeout_multiplier
       q.pay_all_on_failure = true
       // google-specific parameters
-      q.english_only = english
-      q.us_only = us
-      q.male_only = male
-      q.female_only = female
       q.other = other
       q.required = required
       q.cpc = cpc
@@ -492,17 +448,14 @@ object DSL {
               question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
               text: String,
               form_title: String = null,
-              cpc: BigDecimal = MagicNumbers.DefaultCPC,
               ad_title: String = null,
               ad_subtitle: String = null,
               ad_description: String = null,
               ad_keywords: Set[String] = keywords(),
-              english: Boolean = false,
-              us: Boolean = false,
-              male: Boolean = false,
-              female: Boolean = false,
               other: Boolean = false,
-              required: Boolean = true
+              required: Boolean = true,
+              cpc: BigDecimal = MagicNumbers.DefaultCPC,
+              qualifications: List[Qualification] = Nil
               )
               (implicit a: GoogleAdsAdapter) : VectorOutcome[Symbol] = {
     def initf(q: GRadioButtonVectorQuestion): Unit = {
@@ -517,15 +470,12 @@ object DSL {
       q.question_timeout_multiplier = question_timeout_multiplier
       q.pay_all_on_failure = true
       // google-specific parameters
-      q.english_only = english
-      q.us_only = us
-      q.male_only = male
-      q.female_only = female
       q.other = other
       q.required = required
       q.cpc = cpc // CPC
       q.ad_keywords = ad_keywords
       q.wage = cpc * 3600/initial_worker_timeout_in_s // calculate wage from cpc ($/task)
+      q.qualifications = qualifications
 
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }
