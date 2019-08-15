@@ -1,6 +1,7 @@
 package edu.umass.cs.automan.adapters.googleads
 
 import edu.umass.cs.automan.adapters.googleads.DSL._
+import edu.umass.cs.automan.adapters.googleads.enums._
 
 object example_program extends App {
 
@@ -9,9 +10,11 @@ object example_program extends App {
   def planets() = estimate(
     form_title = "Question 50",
     text = "How many planets are there in the solar system?",
-    confidence_interval = SymmetricCI(50),
+    confidence_interval = SymmetricCI(2),
     budget = 10.00,
-    min_value = 0
+    min_value = 0,
+    // target English and/or Spanish-speaking males in the US and UK who are between 25-34 years old
+    qualifications = List(ENGLISH, SPANISH, US, UK, MALE, _25_34)
   )
 
   automan(ga) {
