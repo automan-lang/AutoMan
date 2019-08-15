@@ -1,5 +1,6 @@
 package edu.umass.cs.automan.adapters.googleads
 
+import edu.umass.cs.automan.adapters.googleads.enums.Qualification
 import edu.umass.cs.automan.adapters.googleads.question._
 import edu.umass.cs.automan.adapters.googleads.util.KeywordList._
 import edu.umass.cs.automan.core.MagicNumbers
@@ -442,7 +443,8 @@ object DSL {
              female: Boolean = false,
              other: Boolean = false,
              required: Boolean = true,
-             cpc: BigDecimal = MagicNumbers.DefaultCPC
+             cpc: BigDecimal = MagicNumbers.DefaultCPC,
+             qualifications: List[Qualification] = Nil
              )
              (implicit a: GoogleAdsAdapter) : ScalarOutcome[Symbol] = {
     def initf(q: GRadioButtonQuestion): Unit = {
@@ -466,6 +468,7 @@ object DSL {
       q.cpc = cpc
       q.ad_keywords = ad_keywords
       q.wage = cpc * 3600/initial_worker_timeout_in_s // calculate wage from cpc ($/task)
+      q.qualifications = qualifications
 
       // optional parameters
       if (image_alt_text != null) { q.image_alt_text = image_alt_text }

@@ -23,6 +23,7 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
   protected var _required: Boolean = true
   protected var _answers: mutable.Queue[A] = mutable.Queue.empty
   private var _approved: Boolean = false
+  private var _qualifications = Nil
 
   // number of answers retrieved from backend so far
   protected[question] var read_so_far: Int = 0
@@ -108,11 +109,11 @@ trait GQuestion extends edu.umass.cs.automan.core.question.Question {
         case Some(a) => a
         case None =>
           val a = campaign.createAd(ad_title, ad_subtitle, ad_description, form.getPublishedUrl, ad_keywords.toList, cpc)
-          campaign.setCPC(cpc)
-          if (english_only) campaign.englishOnly()
-          if (us_only) campaign.usOnly()
-          if (male_only) campaign.maleOnly()
-          if (female_only) campaign.femaleOnly()
+
+          _qualifications.foreach{q =>
+            campaign.qualify(q)
+          }
+
           a
       }
   }

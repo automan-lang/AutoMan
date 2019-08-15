@@ -13,7 +13,7 @@ import enums.CampaignCriterionStatusEnum.CampaignCriterionStatus
 import enums.CampaignStatusEnum.CampaignStatus
 import enums.GenderTypeEnum.GenderType
 import errors.GoogleAdsError
-import resources.{CampaignBudget, CampaignCriterion, LanguageConstantName, GeoTargetConstantName, Campaign => GoogleCampaign}
+import resources.{CampaignBudget, CampaignCriterion, GeoTargetConstantName, LanguageConstantName, Campaign => GoogleCampaign}
 import GoogleCampaign.NetworkSettings
 import services.{CampaignBudgetOperation, CampaignCriterionOperation, CampaignOperation, GoogleAdsRow, SearchGoogleAdsRequest}
 import utils.ResourceNames
@@ -25,6 +25,8 @@ import scala.io.StdIn.readLine
 import scala.math.BigDecimal.RoundingMode
 import scala.util.Random
 import java.util.UUID
+
+import edu.umass.cs.automan.adapters.googleads.enums._
 
 object Campaign {
   //Construct a new campaign and wrapper class
@@ -522,40 +524,44 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
     agcsc.shutdown()
   }
 
+  def qualify (q : Qualification) = {
+    q match {
+      case l : Language => setLanguage(l.Value)
+      case c : Country => setCountry(c.Value)
+      case g : Gender => setGender(g.Value)
+    }
+  }
+
   //Restrict the campaign to only show to English speakers
-  def englishOnly(): Unit = {
+  private def setLanguage(language: Int): Unit = {
     //Build new english restriction criterion
     val criterion = CampaignCriterion.newBuilder
       .setLanguage(LanguageInfo.newBuilder
-        .setLanguageConstant(StringValue.of(LanguageConstantName.format(1000.toString)))
+        .setLanguageConstant(StringValue.of(LanguageConstantName.format(language.toString)))
         .build)
 
     setCriteria(criterion)
     DebugLog("Added English language restriction to campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID)
   }
 
-  // restrict campaign to only show to people living in the US
-  def usOnly(): Unit = {
+  // restrict campaign to only show to people living in the a certain country
+  private def setCountry(country: Int): Unit = {
     val criterion: CampaignCriterion.Builder = CampaignCriterion.newBuilder
       .setLocation(LocationInfo.newBuilder
-      .setGeoTargetConstant(StringValue.of(GeoTargetConstantName.format(2840.toString)))
+      .setGeoTargetConstant(StringValue.of(GeoTargetConstantName.format(country.toString)))
       .build)
 
     setCriteria(criterion)
     DebugLog("Added US location targeting to campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID)
   }
 
-  def maleOnly(): Unit = setGender(GenderType.FEMALE)
-
-  def femaleOnly(): Unit = setGender(GenderType.MALE)
-
   // will also exclude undetermined gender
-  def setGender(gender: GenderType): Unit = {
+  private def setGender(gender: Int): Unit = {
     // gender to exclude
     val criterion1 = CampaignCriterion.newBuilder
       .setNegative(BoolValue.of(true))
       .setGender(GenderInfo.newBuilder
-        .setType(gender)
+        .setTypeValue(gender)
         .build)
 
     val criterion2 = CampaignCriterion.newBuilder
