@@ -1,11 +1,11 @@
 package edu.umass.cs.automan.adapters.googleads.ads
 
-import com.google.ads.googleads.v2.{common, enums, errors, resources, services, utils}
+import com.google.ads.googleads.v2._
 import com.google.ads.googleads.lib.GoogleAdsClient
 import com.google.ads.googleads.lib.utils.FieldMasks
 import com.google.common.collect.ImmutableList
 import com.google.protobuf.{BoolValue, Int64Value, StringValue}
-import common.{GenderInfo, LanguageInfo, LocationInfo, ManualCpc}
+import common._
 import enums.AdvertisingChannelTypeEnum.AdvertisingChannelType
 import enums.BiddingStrategyTypeEnum.BiddingStrategyType
 import enums.BudgetDeliveryMethodEnum.BudgetDeliveryMethod
@@ -15,7 +15,7 @@ import enums.GenderTypeEnum.GenderType
 import errors.GoogleAdsError
 import resources.{CampaignBudget, CampaignCriterion, GeoTargetConstantName, LanguageConstantName, Campaign => GoogleCampaign}
 import GoogleCampaign.NetworkSettings
-import services.{CampaignBudgetOperation, CampaignCriterionOperation, CampaignOperation, GoogleAdsRow, SearchGoogleAdsRequest}
+import services._
 import utils.ResourceNames
 import edu.umass.cs.automan.adapters.googleads.util.Service._
 import edu.umass.cs.automan.core.logging._
@@ -26,6 +26,7 @@ import scala.math.BigDecimal.RoundingMode
 import scala.util.Random
 import java.util.UUID
 
+import com.google.ads.googleads.v2.enums.AgeRangeTypeEnum
 import edu.umass.cs.automan.adapters.googleads.enums._
 
 object Campaign {
@@ -505,7 +506,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
     l.fold(0: Int)(_ + _)
   }
 
-  def setCriteria(criterion: CampaignCriterion.Builder): Unit = {
+  private def setCriteria(criterion: CampaignCriterion.Builder): Unit = {
     // open campaign criterion client
     val agcsc = googleAdsClient.getLatestVersion.createCampaignCriterionServiceClient()
 
@@ -524,11 +525,12 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
     agcsc.shutdown()
   }
 
-  def qualify (q : Qualification) = {
+  def qualify (q : Qualification) : Unit = {
     q match {
       case l : Language => setLanguage(l.Value)
       case c : Country => setCountry(c.Value)
       case g : Gender => setGender(g.Value)
+      case a : AgeRange => setAgeRange(a.Value)
     }
   }
 
@@ -541,7 +543,19 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
         .build)
 
     setCriteria(criterion)
-    DebugLog("Added English language restriction to campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID)
+    DebugLog("Added language restriction to campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID)
+  }
+
+  //Restrict the campaign to only show to English speakers
+  private def setAgeRange(age: Int): Unit = {
+    //Build new english restriction criterion
+    val criterion = CampaignCriterion.newBuilder
+      .setAgeRange(AgeRangeInfo.newBuilder
+        .setTypeValue(age)
+        .build)
+
+    setCriteria(criterion)
+    DebugLog("Added age restriction to campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID)
   }
 
   // restrict campaign to only show to people living in the a certain country
@@ -552,7 +566,7 @@ class Campaign(googleAdsClient: GoogleAdsClient, accountID: Long, qID: UUID) {
       .build)
 
     setCriteria(criterion)
-    DebugLog("Added US location targeting to campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID)
+    DebugLog("Added location targeting to campaign " + name, LogLevelInfo(), LogType.ADAPTER, qID)
   }
 
   // will also exclude undetermined gender
