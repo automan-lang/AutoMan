@@ -1,6 +1,8 @@
 package edu.umass.cs.automan.adapters.mturk.worker
 
 import java.util.UUID
+
+import com.amazonaws.services.mturk.model.Assignment
 //import com.amazonaws.mturk.requester.{Assignment, HIT}
 import software.amazon.awssdk.services.mturk._
 import com.amazonaws.client.builder._
