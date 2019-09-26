@@ -1,6 +1,7 @@
 package edu.umass.cs.automan.adapters.mturk.logging.tables
 
-import com.amazonaws.mturk.requester.Comparator
+//import com.amazonaws.mturk.requester.Comparator
+import software.amazon.awssdk.Comparator
 import scala.slick.driver.H2Driver.simple._
 
 object DBQualificationRequirement {

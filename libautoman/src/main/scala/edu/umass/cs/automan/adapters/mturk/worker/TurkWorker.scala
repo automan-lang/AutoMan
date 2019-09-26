@@ -2,14 +2,16 @@ package edu.umass.cs.automan.adapters.mturk.worker
 
 import java.util.concurrent.PriorityBlockingQueue
 import java.util.Date
-import com.amazonaws.mturk.service.axis.RequesterService
+
+//import com.amazonaws.mturk.service.axis.RequesterService
+import com.amazonaws.services.mturk.AmazonMTurk
 import edu.umass.cs.automan.adapters.mturk.logging.MTMemo
 import edu.umass.cs.automan.adapters.mturk.mock.MockRequesterService
 import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
 import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 
-class TurkWorker(val backend: RequesterService, val sleep_ms: Int, val mock_service: Option[MockRequesterService], val memo_handle: MTMemo) {
+class TurkWorker(val backend: AmazonMTurk, val sleep_ms: Int, val mock_service: Option[MockRequesterService], val memo_handle: MTMemo) {
   type HITID = String
   type BatchKey = (String,BigDecimal,Int)   // (group_id, cost, timeout); uniquely identifies a batch
   type HITKey = (BatchKey, String)          // (BatchKey, memo_hash); uniquely identifies a HIT

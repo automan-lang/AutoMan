@@ -1,19 +1,24 @@
 package edu.umass.cs.automan.adapters.mturk
 
 import java.util.{Date, Locale}
-import com.amazonaws.mturk.requester.HIT
-import com.amazonaws.mturk.util.ClientConfig
-import com.amazonaws.mturk.service.axis.RequesterService
+
+//import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
+import com.sun.deploy.config.ClientConfig
+import software.amazon.awssdk.services.mturk._
+import com.amazonaws.client.builder._
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
+import com.amazonaws.services.mturk.{AmazonMTurk, AmazonMTurkClientBuilder}
 import edu.umass.cs.automan.adapters.mturk.worker.WorkerRunnable.RetryState
-import edu.umass.cs.automan.adapters.mturk.worker.{MTurkMethods, WorkerRunnable, TurkWorker}
+import edu.umass.cs.automan.adapters.mturk.worker.{MTurkMethods, TurkWorker, WorkerRunnable}
 import edu.umass.cs.automan.adapters.mturk.logging.MTMemo
-import edu.umass.cs.automan.adapters.mturk.mock.{MockSetup, MockServiceState, MockRequesterService}
+import edu.umass.cs.automan.adapters.mturk.mock.{MockRequesterService, MockServiceState, MockSetup}
 import edu.umass.cs.automan.adapters.mturk.question._
-import edu.umass.cs.automan.core.logging.{LogType, LogLevelDebug, DebugLog}
-import edu.umass.cs.automan.core.question.{Dimension$, Question}
+import edu.umass.cs.automan.core.logging.{DebugLog, LogLevelDebug, LogType}
+import edu.umass.cs.automan.core.question.{Dimension, Question}
 import edu.umass.cs.automan.core.scheduler.SchedulerState._
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 import edu.umass.cs.automan.core.AutomanAdapter
+import software.amazon.awssdk.services.mturk.model.HIT
 
 object MTurkAdapter {
   def apply(init: MTurkAdapter => Unit) : MTurkAdapter = {
@@ -38,13 +43,16 @@ class MTurkAdapter extends AutomanAdapter {
   override type RBQ     = MTRadioButtonQuestion
   override type RBDQ    = MTRadioButtonVectorQuestion
   override type MemoDB  = MTMemo
+  private val SANDBOX_ENDPOINT = "mturk-requester-sandbox.us-east-1.amazonaws.com"
+  private val PROD_ENDPOINT = "https://mturk-requester.us-east-1.amazonaws.com"
+  private val SIGNING_REGION = "us-east-1"
 
   private var _access_key_id: Option[String] = None
   private var _backend_update_frequency_ms : Int = 4500 // lower than 1 second is inadvisable
   private var _worker : Option[TurkWorker] = None
   private var _secret_access_key: Option[String] = None
-  private var _service_url : String = ClientConfig.SANDBOX_SERVICE_URL
-  private var _service : Option[RequesterService] = None
+  private var _endpoint : EndpointConfiguration = new EndpointConfiguration(SANDBOX_ENDPOINT, SIGNING_REGION)
+  private var _service : Option[AmazonMTurk] = None
   private var _use_mock: Option[MockSetup] = None
 
   // user-visible getters and setters
@@ -56,13 +64,11 @@ class MTurkAdapter extends AutomanAdapter {
   def locale_=(l: Locale) { _locale = l }
   def use_mock: MockSetup = _use_mock match { case Some(ms) => ms; case None => ??? }
   def use_mock_=(mock_setup: MockSetup) { _use_mock = Some(mock_setup) }
-  def sandbox_mode = {
-    _service_url == ClientConfig.SANDBOX_SERVICE_URL
-  }
+  def sandbox_mode = true
   def sandbox_mode_=(b: Boolean) {
     b match {
-      case true => _service_url = ClientConfig.SANDBOX_SERVICE_URL
-      case false => _service_url = ClientConfig.PRODUCTION_SERVICE_URL
+      case true => _endpoint = new EndpointConfiguration(SANDBOX_ENDPOINT, SIGNING_REGION)
+      case false => _endpoint = new EndpointConfiguration(PROD_ENDPOINT, SIGNING_REGION)
     }
   }
   def secret_access_key: String = _secret_access_key match { case Some(s) => s; case None => "" }
@@ -140,18 +146,23 @@ class MTurkAdapter extends AutomanAdapter {
   private def setup() {
     val rs = _use_mock match {
       case Some(mock_setup) =>
-        val mss = MockServiceState(
-          mock_setup.budget.bigDecimal,
-          Map.empty,
-          Map.empty,
-          Map.empty,
-          Map.empty,
-          Map.empty,
-          Map.empty,
-          List.empty
-        )
-        new MockRequesterService(mss, this.toClientConfig)
-      case None => new RequesterService(this.toClientConfig)
+//        val mss = MockServiceState(
+//          mock_setup.budget.bigDecimal,
+//          Map.empty,
+//          Map.empty,
+//          Map.empty,
+//          Map.empty,
+//          Map.empty,
+//          Map.empty,
+//          List.empty
+//        )
+        //new MockRequesterService(mss, this.toClientConfig)
+        throw new Exception("TODO: Mock setup")
+      case None => {
+        val builder: AmazonMTurkClientBuilder = AmazonMTurkClientBuilder.standard
+        builder.setEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(PROD_ENDPOINT, SIGNING_REGION))
+        builder.build()
+      }
     }
     val pool = _use_mock match {
       case Some(mock_setup) =>
@@ -166,10 +177,10 @@ class MTurkAdapter extends AutomanAdapter {
   private def toClientConfig : ClientConfig = {
     import scala.collection.JavaConversions
 
-    val _config = new ClientConfig
+    val _config = new ClientConfig // what is this?
     _config.setAccessKeyId(_access_key_id match { case Some(k) => k; case None => throw InvalidKeyIDException("access_key_id must be defined")})
     _config.setSecretAccessKey(_secret_access_key match { case Some(k) => k; case None => throw InvalidSecretKeyException("secret_access_key must be defined")})
-    _config.setServiceURL(_service_url)
+    _config.setServiceURL(_endpoint)
     _config
   }
 
