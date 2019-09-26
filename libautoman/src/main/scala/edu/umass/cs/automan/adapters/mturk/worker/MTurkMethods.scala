@@ -4,12 +4,12 @@ import java.text.SimpleDateFormat
 import java.util.{Date, UUID}
 
 import com.amazonaws.services.mturk.{AmazonMTurk, model}
-import com.amazonaws.services.mturk.model.{AcceptQualificationRequestRequest, ApproveAssignmentRequest, AssociateQualificationWithWorkerRequest, Comparator, CreateAdditionalAssignmentsForHITRequest, CreateAdditionalAssignmentsForHITResult, CreateHITRequest, CreateHITTypeRequest, CreateQualificationTypeRequest, CreateQualificationTypeResult, DeleteQualificationTypeRequest, DisassociateQualificationFromWorkerRequest, GetAccountBalanceRequest, GetHITRequest, ListAssignmentsForHITRequest, ListHITsRequest, ListHITsResult, ListQualificationRequestsRequest, RejectAssignmentRequest, RejectQualificationRequestRequest, UpdateExpirationForHITRequest}
+import com.amazonaws.services.mturk.model.{AcceptQualificationRequestRequest, ApproveAssignmentRequest, Assignment, AssociateQualificationWithWorkerRequest, Comparator, CreateAdditionalAssignmentsForHITRequest, CreateAdditionalAssignmentsForHITResult, CreateHITRequest, CreateHITTypeRequest, CreateQualificationTypeRequest, CreateQualificationTypeResult, DeleteQualificationTypeRequest, DisassociateQualificationFromWorkerRequest, GetAccountBalanceRequest, GetHITRequest, ListAssignmentsForHITRequest, ListHITsRequest, ListHITsResult, ListQualificationRequestsRequest, RejectAssignmentRequest, RejectQualificationRequestRequest, UpdateExpirationForHITRequest}
 //import com.amazonaws.services.mturk.model.{HIT, Assignment, QualificationRequirement, UpdateQualificationTypeRequest, QualificationRequest, RejectQualificationRequestRequest} //TODO: figure out where these should come from
 
 //import software.amazon.awssdk.services.mturk.model.RejectAssignmentRequest
 //https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/mturk/model/Assignment.html
-import software.amazon.awssdk.services.mturk.model.{HIT, Assignment, QualificationRequirement, UpdateQualificationTypeRequest, QualificationRequest, RejectQualificationRequestRequest} //https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/mturk/model/CreateHitRequest.html
+import software.amazon.awssdk.services.mturk.model.{HIT, QualificationRequirement, UpdateQualificationTypeRequest, QualificationRequest, RejectQualificationRequestRequest} //https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/mturk/model/CreateHitRequest.html
 import edu.umass.cs.automan.adapters.mturk.mock.MockRequesterService
 import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
 import edu.umass.cs.automan.adapters.mturk.util.Key
@@ -130,14 +130,14 @@ object MTurkMethods {
 
   private[worker] def mturk_approveAssignment(assignment: Assignment, text: String, backend: AmazonMTurk) : Unit = {
     backend.approveAssignment(new ApproveAssignmentRequest()
-      .withAssignmentId(assignment.assignmentId)
+      .withAssignmentId(assignment.getAssignmentId)
       .withRequesterFeedback(text)
     )
   }
 
   private[worker] def mturk_rejectAssignment(assignment: Assignment, reason: String, backend: AmazonMTurk) : Unit = {
     backend.rejectAssignment(new RejectAssignmentRequest()
-      .withAssignmentId(assignment.assignmentId) // ok if use non-sdk one...
+      .withAssignmentId(assignment.getAssignmentId) // ok if use non-sdk one...
       .withRequesterFeedback(reason))
     //(assignment.getAssignmentId, reason)
   }
@@ -278,7 +278,7 @@ object MTurkMethods {
 
     // we update the state like this so that inconsistent state snapshots are not possible
     // update HIT key -> HIT ID map
-    internal_state = internal_state.updateHITIDs(hit_key, hs.gerHITId)
+    internal_state = internal_state.updateHITIDs(hit_key, hs.getHITId)
 
     // update HIT ID -> HITState map
     internal_state.updateHITStates(hs.getHITId, hs)

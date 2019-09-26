@@ -1,6 +1,7 @@
 package edu.umass.cs.automan.adapters.mturk.worker
 
-import com.amazonaws.mturk.requester.Assignment
+//import com.amazonaws.mturk.requester.Assignment
+import software.amazon.awssdk.services.mturk.model.Assignment
 import edu.umass.cs.automan.adapters.mturk.util.Key
 import edu.umass.cs.automan.adapters.mturk.util.Key._
 import edu.umass.cs.automan.core.logging.{LogType, LogLevelDebug, DebugLog}
