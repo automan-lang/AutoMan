@@ -1,13 +1,19 @@
 package edu.umass.cs.automan.adapters.mturk.logging
 
-import java.util.{UUID, Calendar}
-import com.amazonaws.mturk.requester._
-import com.amazonaws.mturk.service.axis.RequesterService
-import edu.umass.cs.automan.adapters.mturk.worker.{MTState, HITState, HITType}
+import java.util.{Calendar, UUID}
+
+import com.amazonaws.services.mturk.model.{Comparator, GetHITRequest, GetQualificationTypeRequest, QualificationRequirement}
+
+//import com.amazonaws.mturk.requester._
+//import com.amazonaws.mturk.service.axis.RequesterService
+import com.amazonaws.services.mturk.AmazonMTurk
+import com.amazonaws.services.mturk.model.{Assignment, AssignmentStatus}
+import edu.umass.cs.automan.adapters.mturk.worker.{HITState, HITType, MTState}
 import edu.umass.cs.automan.adapters.mturk.logging.tables.{DBAssignment, DBQualificationRequirement}
 import edu.umass.cs.automan.adapters.mturk.util.Key
 import edu.umass.cs.automan.adapters.mturk.util.Key._
 import edu.umass.cs.automan.core.logging._
+
 import scala.slick.driver.H2Driver.simple._
 
 class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Boolean) extends Memo(log_config, database_path, in_mem_db) {
@@ -26,21 +32,32 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
                   taskId: UUID) {
     def this(a: AssnTuple) = this(a._1, a._2, a._3, a._4, a._5, a._6, a._7, a._8, a._9, a._10, a._11, a._12, a._13)
     def toAssignment() : Assignment = {
-      new Assignment(
-        null,
-        this.assignmentId,
-        this.workerId,
-        this.HITId,
-        this.assignmentStatus,
-        this.autoApprovalTime.orNull,
-        this.acceptTime.orNull,
-        this.submitTime.orNull,
-        this.approvalTime.orNull,
-        this.rejectionTime.orNull,
-        this.deadline.orNull,
-        this.answer,
-        this.requesterFeedback.orNull
-      )
+      new Assignment().withAssignmentId(this.assignmentId)
+        .withWorkerId(this.workerId)
+        .withHITId(this.HITId)
+        .withAssignmentStatus(this.assignmentStatus)
+        .withAutoApprovalTime(this.autoApprovalTime.orNull)
+        .withAcceptTime(this.acceptTime.orNull)
+        .withSubmitTime(this.submitTime.orNull)
+        .withApprovalTime(this.approvalTime.orNull)
+        .withRejectionTime(this.rejectionTime.orNull)
+        .withDeadline(this.deadline.orNull)
+        .withAnswer(this.answer)
+        .withRequesterFeedback(this.requesterFeedback.orNull)
+//        null,
+//        this.assignmentId,
+//        this.workerId,
+//        this.HITId,
+//        this.assignmentStatus,
+//        this.autoApprovalTime.orNull,
+//        this.acceptTime.orNull,
+//        this.submitTime.orNull,
+//        this.approvalTime.orNull,
+//        this.rejectionTime.orNull,
+//        this.deadline.orNull,
+//        this.answer,
+//        this.requesterFeedback.orNull
+//      )
     }
   }
 
@@ -73,7 +90,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
     }
   }
 
-  def restore_mt_state(backend: RequesterService) : Option[MTState] = {
+  def restore_mt_state(backend: AmazonMTurk) : Option[MTState] = {
     db_opt match {
       case Some(db) => db withSession { implicit s =>
         val hit_types: Map[Key.BatchKey, HITType] = getHITTypeMap
@@ -283,7 +300,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
       // something must be present in the ID field, but since it doesn't
       // matter what it is, we just use 1; the database subs in the
       // appropriate autoincremented ID.
-      (1, d.getQualificationTypeId, d.getIntegerValue.toInt, d.getComparator, d.getRequiredToPreview.booleanValue(), true, hittype.id)
+      (1, d.getQualificationTypeId, d.getIntegerValues.get(0), d.getComparator, d.getRequiredToPreview.booleanValue(), true, hittype.id) //TODO: ugh
     }
   }
 
@@ -325,14 +342,27 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
 
   private def tuple2Assignment(tup: (String, String, String, AssignmentStatus, Option[Calendar], Option[Calendar], Option[Calendar], Option[Calendar], Option[Calendar], Option[Calendar], String, Option[String], UUID)) : Assignment = {
     val (assignmentId, workerId, hit_id, assignmentStatus, autoApprovalTime, acceptTime, submitTime, approvalTime, rejectionTime, deadline, answer, requesterFeedback, taskId) = tup
-    new Assignment(null, assignmentId, workerId, hit_id, assignmentStatus, autoApprovalTime.orNull, acceptTime.orNull, submitTime.orNull, approvalTime.orNull, rejectionTime.orNull, deadline.orNull, answer, requesterFeedback.orNull)
+    //new Assignment(null, assignmentId, workerId, hit_id, assignmentStatus, autoApprovalTime.orNull, acceptTime.orNull, submitTime.orNull, approvalTime.orNull, rejectionTime.orNull, deadline.orNull, answer, requesterFeedback.orNull)
+    new Assignment()
+      .withAssignmentId(assignmentId)
+      .withWorkerId(workerId)
+      .withHITId(hit_id)
+      .withAssignmentStatus(assignmentStatus)
+      .withAutoApprovalTime(autoApprovalTime.orNull)
+      .withAcceptTime(acceptTime.orNull)
+      .withSubmitTime(submitTime.orNull)
+      .withApprovalTime(approvalTime.orNull)
+      .withRejectionTime(rejectionTime.orNull)
+      .withDeadline(deadline.orNull)
+      .withAnswer(answer)
+      .withRequesterFeedback(requesterFeedback.orNull)
   }
 
   private def taskAssignmentMap(implicit session: DBSession) : Map[UUID,Assignment] = {
     dbAssignment.list.map(row => row._13 -> tuple2Assignment(row)).toMap
   }
 
-  private def getHITStateMap(htid_map: Map[String, HITType], backend: RequesterService)(implicit session: DBSession) : Map[String,HITState] = {
+  private def getHITStateMap(htid_map: Map[String, HITType], backend: AmazonMTurk)(implicit session: DBSession) : Map[String,HITState] = {
     // restore all HIT IDs from database
     val hit_ids = allHITs.list.map { case(hit_id, hit_type_id, is_cancelled) => hit_id -> (hit_type_id,is_cancelled) }.toMap
 
@@ -342,7 +372,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
     // this means that this call will fail in testing if the
     // MTAdapter object is completely disposed and constructed again
     // since mock HITs do not persist between runs.
-    val hits = hit_ids.keys.map { hit_id => backend.getHIT(hit_id) }
+    val hits = hit_ids.keys.map { hit_id => backend.getHIT(new GetHITRequest().withHITId(hit_id)) }
 
     // restore saved Task-Assignment pairings
     val all_ta_map = taskAssignmentMap
@@ -417,12 +447,13 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
     query.map { r => ((r._2.groupId, r._1._1._1._2.cost, r._1._1._1._2.worker_timeout_in_s), r._1._1._1._1.memo_hash) -> r._1._2.HITId }.list.toMap
   }
 
-  private def createQualificationFromType(qualtype: QualificationType, batch_no: Int) : QualificationRequirement = {
-    new QualificationRequirement(qualtype.getQualificationTypeId, Comparator.EqualTo, batch_no, null, false)
+  private def createQualificationFromType(qualtype: AmazonMTurk, batch_no: Int) : QualificationRequirement = { //TODO: why is qualtype AmazonMTurk?
+    new QualificationRequirement().withQualificationTypeId(qualtype.getQualificationType(new GetQualificationTypeRequest()).getQualificationType().getQualificationTypeId), Comparator.EqualTo, batch_no, null, false)
+    //getQualificationTypeId, Comparator.EqualTo, batch_no, null, false)
   }
 
-  private def getQualRecFromMTurk(qual_id: String, batch_no: Int, backend: RequesterService) : QualificationRequirement = {
-    val qual_type = backend.getQualificationType(qual_id)
+  private def getQualRecFromMTurk(qual_id: String, batch_no: Int, backend: AmazonMTurk) : QualificationRequirement = {
+    val qual_type = backend.getQualificationType(new GetQualificationTypeRequest().withQualificationTypeId(qual_id))
     createQualificationFromType(qual_type, batch_no)
   }
 

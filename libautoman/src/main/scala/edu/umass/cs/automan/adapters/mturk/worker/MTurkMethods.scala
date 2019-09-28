@@ -1,15 +1,16 @@
 package edu.umass.cs.automan.adapters.mturk.worker
 
 import java.text.SimpleDateFormat
+import java.util
 import java.util.{Date, UUID}
 
 import com.amazonaws.services.mturk.{AmazonMTurk, model}
-import com.amazonaws.services.mturk.model.{AcceptQualificationRequestRequest, ApproveAssignmentRequest, Assignment, AssociateQualificationWithWorkerRequest, Comparator, CreateAdditionalAssignmentsForHITRequest, CreateAdditionalAssignmentsForHITResult, CreateHITRequest, CreateHITTypeRequest, CreateQualificationTypeRequest, CreateQualificationTypeResult, DeleteQualificationTypeRequest, DisassociateQualificationFromWorkerRequest, GetAccountBalanceRequest, GetHITRequest, ListAssignmentsForHITRequest, ListHITsRequest, ListHITsResult, ListQualificationRequestsRequest, RejectAssignmentRequest, RejectQualificationRequestRequest, UpdateExpirationForHITRequest}
+import com.amazonaws.services.mturk.model.{AcceptQualificationRequestRequest, ApproveAssignmentRequest, Assignment, AssociateQualificationWithWorkerRequest, Comparator, CreateAdditionalAssignmentsForHITRequest, CreateAdditionalAssignmentsForHITResult, CreateHITRequest, CreateHITResult, CreateHITTypeRequest, CreateQualificationTypeRequest, CreateQualificationTypeResult, DeleteQualificationTypeRequest, DisassociateQualificationFromWorkerRequest, GetAccountBalanceRequest, GetHITRequest, GetHITResult, ListAssignmentsForHITRequest, ListHITsRequest, ListHITsResult, ListQualificationRequestsRequest, ListQualificationRequestsResult, QualificationRequirement, RejectAssignmentRequest, RejectQualificationRequestRequest, UpdateExpirationForHITRequest}
 //import com.amazonaws.services.mturk.model.{HIT, Assignment, QualificationRequirement, UpdateQualificationTypeRequest, QualificationRequest, RejectQualificationRequestRequest} //TODO: figure out where these should come from
 
-//import software.amazon.awssdk.services.mturk.model.RejectAssignmentRequest
+//import software.amazon.awssdk.services.mturk.model.HIT
 //https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/mturk/model/Assignment.html
-import software.amazon.awssdk.services.mturk.model.{HIT, QualificationRequirement, UpdateQualificationTypeRequest, QualificationRequest, RejectQualificationRequestRequest} //https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/mturk/model/CreateHitRequest.html
+//import software.amazon.awssdk.services.mturk.model.{HIT, UpdateQualificationTypeRequest, QualificationRequest, RejectQualificationRequestRequest} //https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/mturk/model/CreateHitRequest.html
 import edu.umass.cs.automan.adapters.mturk.mock.MockRequesterService
 import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
 import edu.umass.cs.automan.adapters.mturk.util.Key
@@ -17,8 +18,8 @@ import edu.umass.cs.automan.adapters.mturk.util.Key._
 import edu.umass.cs.automan.core.logging.{LogLevelDebug, LogType, LogLevelInfo, DebugLog}
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
-import edu.umass.cs.automan.adapters.mturk.worker.HITState
 import edu.umass.cs.automan.core.util.{Stopwatch, Utilities}
+import scala.collection.JavaConversions._
 
 /**
   * A collection of stateless MTurk utility functions.
@@ -49,18 +50,18 @@ object MTurkMethods {
 
     // get all requests for this HIT's group disqualification
     //val requests = backend.getAllQualificationRequests(
-    val requests : List[QualificationRequest] = backend.listQualificationRequests( // requests is ListQualificationRequestsResult
-      new ListQualificationRequestsRequest().withQualificationTypeId(hitstate.hittype.disqualification.qualificationTypeId)
-    ).getQualificationRequests // now making list of QualificationRequests?
+    val requests: util.List[model.QualificationRequest] = backend.listQualificationRequests( // requests is ListQualificationRequestsResult
+      new ListQualificationRequestsRequest().withQualificationTypeId(hitstate.hittype.disqualification.getQualificationTypeId)
+    ).getQualificationRequests() // now making list of QualificationRequests?
     //https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/mturk/model/QualificationRequest.html
 
     requests.foreach { request =>
       // "SubjectId" === "WorkerId"
-      val worker_id = request.workerId() //request.getSubjectId // worker id?
+      val worker_id = request.getWorkerId() //request.getSubjectId // worker id?
 
       // the HITType being requested
-      val hit_type_id = if(internal_state.disqualifications.contains(request.qualificationTypeId)) {
-        internal_state.getHITTypeIDforQualificationTypeID(request.qualificationTypeId)
+      val hit_type_id = if(internal_state.disqualifications.contains(request.getQualificationTypeId)) {
+        internal_state.getHITTypeIDforQualificationTypeID(request.getQualificationTypeId)
       } else {
         throw new Exception("User-defined qualifications not yet supported.")
       }
@@ -74,13 +75,13 @@ object MTurkMethods {
         // granting this would violate i.i.d. guarantee
         if (internal_state.getHITTypeForWhitelistedWorker(worker_id, group_id).id != hit_type_id) {
           backend.rejectQualificationRequest(new model.RejectQualificationRequestRequest()
-            .withQualificationRequestId(request.qualificationRequestId)
+            .withQualificationRequestId(request.getQualificationRequestId)
             .withReason("You have already requested a qualification or submitted work for an associated HITType " +
                         "that disqualifies you from participating in this HITType."))
           // otherwise, they're requesting something we've already granted; reject
         } else {
           backend.rejectQualificationRequest(new model.RejectQualificationRequestRequest()
-            .withQualificationRequestId(request.qualificationRequestId)
+            .withQualificationRequestId(request.getQualificationRequestId)
             .withReason("You cannot request this qualification more than once.")
           )
         }
@@ -91,7 +92,7 @@ object MTurkMethods {
         val batchKey = internal_state.getBatchKeyByHITTypeId(hit_type_id).get
         // get the batch_no associated with the BatchKey; guaranteed to exist
         backend.acceptQualificationRequest(new AcceptQualificationRequestRequest()
-          .withQualificationRequestId(request.qualificationRequestId())
+          .withQualificationRequestId(request.getQualificationRequestId())
             .withIntegerValue(internal_state.getBatchNo(batchKey).get) // not sure if that's what's intended
         )
           //request.qualificationRequestId, internal_state.getBatchNo(batchKey).get)
@@ -121,11 +122,17 @@ object MTurkMethods {
       //"AutoMan " + UUID.randomUUID(), "automan", qualtxt)
 
     DebugLog(s"Creating disqualification ID: ${qual.getQualificationType.getQualificationTypeId}.",LogLevelInfo(),LogType.ADAPTER,null)
-    new QualificationRequirement(qual.getQualificationType.getQualificationTypeId, model.Comparator.EqualTo, batch_no, null, false)
+    new QualificationRequirement()
+      .withQualificationTypeId(qual.getQualificationType.getQualificationTypeId)
+      .withComparator(model.Comparator.EqualTo)
+      .withIntegerValues(batch_no)
+      .withActionsGuarded("Accept") //TODO: Check if this is what we want
+
+    //model.Comparator.EqualTo, batch_no, null, false)
   }
 
   private[worker] def mturk_getAllAssignmentsForHIT(hit_state: HITState, backend: AmazonMTurk): Array[Assignment] = {
-    backend.listAssignmentsForHIT(new ListAssignmentsForHITRequest().withHITId(hit_state.HITId))
+    backend.listAssignmentsForHIT(new ListAssignmentsForHITRequest().withHITId(hit_state.HITId)).getAssignments.toArray[Assignment]
   }
 
   private[worker] def mturk_approveAssignment(assignment: Assignment, text: String, backend: AmazonMTurk) : Unit = {
@@ -148,9 +155,9 @@ object MTurkMethods {
         .withExpireAt(new java.util.Date)) // need to do time in past?
   }
 
-  private[worker] def mturk_getAccountBalance(backend: AmazonMTurk): String = {
+  private[worker] def mturk_getAccountBalance(backend: AmazonMTurk): BigDecimal = {
     //new BigDecimal(backend.getAccountBalance(new GetAccountBalanceRequest).toString())
-    backend.getAccountBalance(new GetAccountBalanceRequest).toString() //TODO: change back to bigdecimal?
+    new scala.math.BigDecimal(backend.getAccountBalance(new GetAccountBalanceRequest).toString())//TODO: change back to bigdecimal?
   }
 
   private[worker] def mturk_disposeQualificationType(qual_id: QualificationID, backend: AmazonMTurk) : Unit = {
@@ -200,13 +207,14 @@ object MTurkMethods {
     val batch_no = internal_state.getBatchNo(batch_key).get
 
     // create disqualification for batch
+    // TODO: tinker with imports
     val disqualification: QualificationRequirement = mturk_createQualification(title, batch_key, batch_no, backend)
     DebugLog(s"Created disqualification ${disqualification.getQualificationTypeId} for batch key = " + batch_key, LogLevelDebug(), LogType.ADAPTER, null)
     // getQTId is in the doc...
 
     // whenever we create a new group, we need to add the disqualification to the HITType
     // EXCEPT if it's the very first time the group is posted
-    val qs =
+    val qs: util.Collection[QualificationRequirement] =
       if (batch_no != 1) {
         DebugLog(s"Batch #${batch_no} run, using disqualification ${disqualification.getQualificationTypeId} for batch " + batch_key, LogLevelDebug(), LogType.ADAPTER, null)
         List(disqualification)
@@ -222,9 +230,9 @@ object MTurkMethods {
       .withAssignmentDurationInSeconds(worker_timeout.toLong + WORKER_TIMEOUT_EPSILON_S)              // amount of time the worker has to complete the task
       .withReward(cost.toString())                                                // cost in USD TODO: reward == cost?
       .withTitle(title)                                                      // title
-      .withKeywords(keywords.mkString(",")         )                              // keywords
+      .withKeywords(keywords.mkString(","))                              // keywords
       .withDescription(desc)                                                      // description
-      .withQualificationRequirements(qs.toArray)                                                    // qualifications
+      .withQualificationRequirements(qs)                                                    // qualifications
     )
     val hittype = HITType(hit_type_id.getHITTypeId, disqualification, group_id)
 
@@ -263,18 +271,19 @@ object MTurkMethods {
       .withLifetimeInSeconds(ts.head.timeout_in_s.toLong)        // lifetimeInSeconds
       .withMaxAssignments(ts.size)                            // maxAssignments
       .withRequesterAnnotation(question.id.toString)               // requesterAnnotation
-      .withQualificationRequirements(Array[QualificationRequirement]())  // qualificationRequirements; defined by HITType
+      .withQualificationRequirements(Array[QualificationRequirement]().toList)  // qualificationRequirements; defined by HITType
       //Array[String]())                    // responseGroup TODO: what's this doing?
+    )
 
     // we immediately query the backend for the HIT's complete details
     // because the HIT structure returned by createHIT has a number
     // of uninitialized fields; return new HITState
-    val hs = HITState(backend.getHIT(hit.getHITId), ts, hit_type)
+    val hs = new HITState(backend.getHIT(new GetHITRequest().withHITId(hit.getHIT.getHITId)).getHIT, ts, hit_type, false)
 
     // calculate new HIT key
     val hit_key = (batch_key, question.memo_hash)
 
-    DebugLog(s"Creating new HIT with ID ${hs.getHITId} for batch key ${batch_key} and ${ts.size} assignments.", LogLevelDebug(), LogType.ADAPTER, question.id)
+    DebugLog(s"Creating new HIT with ID ${hs.HITID} for batch key ${batch_key} and ${ts.size} assignments.", LogLevelDebug(), LogType.ADAPTER, question.id)
 
     // we update the state like this so that inconsistent state snapshots are not possible
     // update HIT key -> HIT ID map

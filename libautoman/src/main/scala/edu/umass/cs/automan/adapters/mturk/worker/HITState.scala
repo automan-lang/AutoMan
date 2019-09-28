@@ -2,14 +2,15 @@ package edu.umass.cs.automan.adapters.mturk.worker
 
 import java.util.UUID
 
-import com.amazonaws.services.mturk.model.Assignment
+import com.amazonaws.services.mturk.model.{Assignment, HIT}
+//import com.amazonaws.services.mturk.model.HIT
 
 //import com.amazonaws.mturk.requester.{Assignment, HIT}
 import software.amazon.awssdk.services.mturk._
 import com.amazonaws.client.builder._
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.services.mturk.{AmazonMTurk, AmazonMTurkClientBuilder}
-import software.amazon.awssdk.services.mturk.model.HIT
+//import software.amazon.awssdk.services.mturk.model.HIT
 import edu.umass.cs.automan.adapters.mturk.mock.MockRequesterService
 import edu.umass.cs.automan.core.scheduler.Task
 import edu.umass.cs.automan.core.util.Utilities
@@ -70,6 +71,6 @@ case class HITState(hit: HIT, t_a_map: Map[UUID,Option[Assignment]], hittype: HI
     HITState(updated_hit, t_a_map ++ ts.map(_.task_id -> None), hittype, cancelled)
   }
 
-  def HITId : String = hit.getHITId
+  def HITId : String = hit.getHITId()
   def HITType = hittype
 }

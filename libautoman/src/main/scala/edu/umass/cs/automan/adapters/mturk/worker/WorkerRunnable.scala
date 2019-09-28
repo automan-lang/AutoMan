@@ -2,9 +2,11 @@ package edu.umass.cs.automan.adapters.mturk.worker
 
 import java.util.Date
 import java.util.concurrent.PriorityBlockingQueue
-import com.amazonaws.mturk.requester.QualificationRequirement
-import com.amazonaws.mturk.service.axis.RequesterService
-import com.amazonaws.mturk.service.exception.ServiceException
+
+import com.amazonaws.services.mturk.model.{Assignment, QualificationRequirement, ServiceException}
+//import com.amazonaws.mturk.requester.QualificationRequirement
+//import com.amazonaws.mturk.service.axis.RequesterService
+//import com.amazonaws.mturk.service.exception.ServiceException
 import edu.umass.cs.automan.adapters.mturk.mock.MockRequesterService
 import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
 import edu.umass.cs.automan.adapters.mturk.util.Key
@@ -143,7 +145,7 @@ class WorkerRunnable(tw: TurkWorker,
           case Some(assignment) =>
             // only update task object if the task isn't already answered
             // and if the answer actually happens in the past (ugly hack for mocks)
-            if (t.state == SchedulerState.RUNNING && !assignment.getSubmitTime.after(ct)) {
+            if (t.state == SchedulerState.RUNNING && !assignment.getSubmitTime.after(ct.getTime)) {
               // get worker_id
               val worker_id = assignment.getWorkerId
 
