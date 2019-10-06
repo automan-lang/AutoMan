@@ -1,7 +1,10 @@
 package edu.umass.cs.automan.adapters.mturk.logging.tables
 
 import java.util.{Calendar, UUID}
-import com.amazonaws.mturk.requester.AssignmentStatus
+
+//import com.amazonaws.mturk.requester.AssignmentStatus
+import com.amazonaws.services.mturk.model.AssignmentStatus
+
 import scala.slick.driver.H2Driver.simple._
 
 object DBAssignment {

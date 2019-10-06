@@ -2,15 +2,27 @@ package edu.umass.cs.automan.adapters.mturk.mock
 
 import java.lang
 import java.lang.{Boolean, Double}
-import com.amazonaws.mturk.requester._
-import com.amazonaws.mturk.service.axis.RequesterService
-import com.amazonaws.mturk.service.exception.ServiceException
-import com.amazonaws.mturk.util.ClientConfig
+
+import com.amazonaws.Request
+import com.amazonaws.services.mturk.model.{AssignmentStatus, QualificationRequest, QualificationType}
+//import edu.umass.cs.automan.adapters.mturk.mock.AssignmentStatus.AssignmentStatus //TODO: change this?
+
+//import com.amazonaws.Request
+import com.amazonaws.services.mturk.model.{Assignment, HIT, HITReviewStatus, HITStatus}
+
+//import com.amazonaws.mturk.requester._
+//import com.amazonaws.mturk.service.axis.RequesterService
+//import com.amazonaws.mturk.service.exception.ServiceException
+//import com.amazonaws.mturk.util.ClientConfig
 import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
 import edu.umass.cs.automan.adapters.mturk.worker.WorkerRunnable
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.util._
 import java.util.{Calendar, Date, UUID}
+
+import com.amazonaws.services.mturk.AmazonMTurk
+import com.amazonaws.services.mturk.model.{QualificationRequirement, ServiceException}
+import com.sun.deploy.config.ClientConfig
 
 /**
  * An object used to simulate a Mechanical Turk backend. Can be used by
@@ -21,7 +33,7 @@ import java.util.{Calendar, Date, UUID}
  * @param initial_state a MockServiceState object representing the initial state.
  * @param config an MTurk SDK ClientConfig object; not actually used.
  */
-private[mturk] class MockRequesterService(initial_state: MockServiceState, config: ClientConfig) extends RequesterService(config) {
+private[mturk] class MockRequesterService(initial_state: MockServiceState, config: ClientConfig) extends AmazonMTurk(config) {
   private var _state = initial_state
   private var _transaction_count = 0
   private val TRANSACTION_THRESHOLD = WorkerRunnable.OK_THRESHOLD + 1
@@ -34,10 +46,10 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
     }
   }
 
-  override def forceExpireHIT(hitId: String): Unit = synchronized {
-    // NOP
-    diePeriodically()
-  }
+//  override def forceExpireHIT(hitId: String): Unit = synchronized {
+//    // NOP
+//    diePeriodically()
+//  }
 
   override def createHIT(hitTypeId: String,
                          title: String,
@@ -60,52 +72,71 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
     val now = Utilities.nowCal()
     val expiry = Utilities.calInSeconds(now, lifetimeInSeconds.toInt)
 
-    val hit = new HIT(
-        null,                                       // request
-        hit_id,                                     // HIT ID
-        hitTypeId,                                  // HIT Type ID
-        null,                                       // HIT Group ID
-        null,                                       // HIT Layout ID
-        now,                                        // creationTime
-        hit_type.title,                             // title
-        hit_type.description,                       // description
-        question_xml,                               // question
-        hit_type.keywords,                          // keywords
-        HITStatus.Assignable,                       // HIT Status
-        maxAssignments,                             // maxAssignments
-        new Price(new java.math.BigDecimal(hit_type.reward), "USD", "$"),  // reward
-        hit_type.autoApprovalDelayInSeconds,        // autoApprovalDelayInSeconds
-        expiry,                                     // expiration
-        hit_type.assignmentDurationInSeconds,       // assignmentDurationInSeconds
-        requesterAnnotation,                        // requesterAnnotation
-        hit_type.qualRequirements,                  // qualificationRequirements
-        HITReviewStatus.NotReviewed,                // HITReviewStatus
-        0,                                          // numberOfAssignmentsPending
-        maxAssignments,                             // numberOfAssignmentsAvailable
-        0                                           // numberOfAssignmentsCompleted
-      )
+    val hit = new HIT()
+        .withHITId(hit_id)
+        .withHITTypeId(hitTypeId)
+        .withCreationTime(now.getTime)
+        .withTitle(hit_type.title)
+        .withDescription(hit_type.description)
+        .withQuestion(question_xml)
+        .withKeywords(hit_type.keywords)
+        .withHITStatus(HITStatus.Assignable)
+        .withMaxAssignments(maxAssignments)
+        .withReward(hit_type.reward.toString)
+        .withAutoApprovalDelayInSeconds(hit_type.autoApprovalDelayInSeconds)
+        .withExpiration(expiry.getTime)
+        .withAssignmentDurationInSeconds(hit_type.assignmentDurationInSeconds)
+        .withRequesterAnnotation(requesterAnnotation)
+        .withQualificationRequirements(hit_type.qualRequirements.toList)
+        .withHITReviewStatus(HITReviewStatus.NotReviewed)
+        .withNumberOfAssignmentsPending(0)
+        .withNumberOfAssignmentsAvailable(maxAssignments)
+        .withNumberOfAssignmentsCompleted(0)
+//        null,                                       // request
+//        hit_id,                                     // HIT ID
+//        hitTypeId,                                  // HIT Type ID
+//        null,                                       // HIT Group ID
+//        null,                                       // HIT Layout ID
+//        now,                                        // creationTime
+//        hit_type.title,                             // title
+//        hit_type.description,                       // description
+//        question_xml,                               // question
+//        hit_type.keywords,                          // keywords
+//        HITStatus.Assignable,                       // HIT Status
+//        maxAssignments,                             // maxAssignments
+//        new Price(new java.math.BigDecimal(hit_type.reward), "USD", "$"),  // reward
+//        hit_type.autoApprovalDelayInSeconds,        // autoApprovalDelayInSeconds
+//        expiry,                                     // expiration
+//        hit_type.assignmentDurationInSeconds,       // assignmentDurationInSeconds
+//        requesterAnnotation,                        // requesterAnnotation
+//        hit_type.qualRequirements,                  // qualificationRequirements
+//        HITReviewStatus.NotReviewed,                // HITReviewStatus
+//        0,                                          // numberOfAssignmentsPending
+//        maxAssignments,                             // numberOfAssignmentsAvailable
+//        0                                           // numberOfAssignmentsCompleted
+//      )
     _state = _state.addHIT(question_id, hit)
     hit
   }
 
-  override def getHIT(hitId: String): HIT = synchronized {
+  def getHIT(hitId: String): HIT = synchronized { // removed override
     diePeriodically()
     _state.getHITforHITId(hitId)
   }
 
-  override def extendHIT(hitId: String,
+  def extendHIT(hitId: String,
                          maxAssignmentsIncrement: Integer,
                          expirationIncrementInSeconds: lang.Long): Unit = synchronized {
     diePeriodically()
     _state = _state.extendHIT(hitId, expirationIncrementInSeconds.toInt, maxAssignmentsIncrement)
   }
 
-  override def rejectAssignment(assignmentId: String, requesterFeedback: String): Unit = synchronized {
+  def rejectAssignment(assignmentId: String, requesterFeedback: String): Unit = synchronized {
     diePeriodically()
     _state = _state.updateAssignmentStatus(UUID.fromString(assignmentId), AssignmentStatus.REJECTED)
   }
 
-  override def getAllAssignmentsForHIT(hitId: String): Array[Assignment] = synchronized {
+  def getAllAssignmentsForHIT(hitId: String): Array[Assignment] = synchronized {
     diePeriodically()
     val question_id = UUID.fromString(_state.getHITforHITId(hitId).getRequesterAnnotation)
 
@@ -153,7 +184,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
  *
    * @return Assignment object.
    */
-  private def newAssignment(request: Request,
+  private def newAssignment(request: Request[Any], //TODO: figure out what type this should actually be
                              assignmentId: String,
                              workerId: String,
                              HITId: String,
@@ -166,60 +197,70 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
                              deadline: Calendar,
                              answer: String,
                              requesterFeedback: String) : Assignment = {
-    new Assignment(
-      request,
-      assignmentId,
-      workerId,
-      HITId,
-      assignmentStatus,
-      autoApprovalTime,
-      acceptTime,
-      submitTime,
-      approvalTime,
-      rejectionTime,
-      deadline,
-      answer,
-      requesterFeedback
-    )
+    new Assignment()
+      .withAssignmentId(assignmentId)
+      .withWorkerId(workerId)
+      .withHITId(HITId)
+      .withAssignmentStatus(assignmentStatus: AssignmentStatus)
+      .withAutoApprovalTime(autoApprovalTime.getTime)
+      .withAcceptTime(acceptTime.getTime)
+      .withSubmitTime(submitTime.getTime)
+      .withRejectionTime(rejectionTime.getTime)
+      .withDeadline(deadline.getTime)
+      .withAnswer(answer)
+      .withRequesterFeedback(requesterFeedback)
+//      request,
+//      assignmentId,
+//      workerId,
+//      HITId,
+//      assignmentStatus,
+//      autoApprovalTime,
+//      acceptTime,
+//      submitTime,
+//      approvalTime,
+//      rejectionTime,
+//      deadline,
+//      answer,
+//      requesterFeedback
   }
 
-  override def rejectQualificationRequest(qualificationRequestId: String,
+  def rejectQualificationRequest(qualificationRequestId: String,
                                           reason: String): Unit = synchronized {
     // NOP
     diePeriodically()
   }
 
-  override def getAccountBalance = synchronized {
+  def getAccountBalance = synchronized {
     diePeriodically()
     _state.budget.doubleValue()
   }
 
-  override def revokeQualification(qualificationTypeId: String,
+  def revokeQualification(qualificationTypeId: String,
                                    subjectId: String,
                                    reason: String): Unit = synchronized {
     // NOP
     diePeriodically()
   }
 
-  override def disposeQualificationType(qualificationTypeId: String): QualificationType = synchronized {
+  def disposeQualificationType(qualificationTypeId: String): QualificationType = synchronized {
     diePeriodically()
     val (mss,qt) = _state.deleteQualificationById(qualificationTypeId)
     _state = mss
     qt
   }
 
-  override def getAllQualificationRequests(qualificationTypeId: String): Array[QualificationRequest] = synchronized {
+  def getAllQualificationRequests(qualificationTypeId: String): Array[QualificationRequest] = synchronized {
     diePeriodically()
     Array[QualificationRequest]()
   }
 
-  override def grantQualification(qualificationRequestId: String,
+  def grantQualification(qualificationRequestId: String,
                                   integerValue: Integer): Unit = synchronized {
     diePeriodically()
     // NOP
   }
 
-  override def createQualificationType(name: String,
+  def createQualificationType(name: String,
                                        keywords: String,
                                        description: String): QualificationType = synchronized {
     diePeriodically()
@@ -234,7 +275,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
     qt
   }
 
-  override def assignQualification(qualificationTypeId: String,
+  def assignQualification(qualificationTypeId: String,
                                    workerId: String,
                                    integerValue: Integer,
                                    sendNotification: Boolean): Unit = synchronized {
@@ -262,7 +303,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
     _state = _state.addAssignments(q.id, assignments)
   }
 
-  override def registerHITType(autoApprovalDelayInSeconds: lang.Long,
+  def registerHITType(autoApprovalDelayInSeconds: lang.Long,
                                assignmentDurationInSeconds: lang.Long,
                                reward: Double,
                                title: String,
@@ -284,12 +325,12 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
     hit_type.id.toString
   }
 
-  override def approveAssignment(assignmentId: String, requesterFeedback: String): Unit = synchronized {
+  def approveAssignment(assignmentId: String, requesterFeedback: String): Unit = synchronized {
     diePeriodically()
     _state = _state.updateAssignmentStatus(UUID.fromString(assignmentId), AssignmentStatus.APPROVED)
   }
 
-  override def searchAllHITs(): Array[HIT] = synchronized {
+  def searchAllHITs(): Array[HIT] = synchronized {
     diePeriodically()
     _state.hits_by_question_id.flatMap(_._2).toArray
   }
@@ -298,7 +339,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
     _state = _state.updateAssignmentStatus(UUID.fromString(assignmentId), AssignmentStatus.ANSWERED)
   }
 
-  override def getAllQualificationTypes: Array[QualificationType] = {
+  def getAllQualificationTypes: Array[QualificationType] = {
     _state.qualification_types.toArray
   }
 }

@@ -3,7 +3,7 @@ package edu.umass.cs.automan.adapters.mturk
 import java.util.{Date, Locale}
 
 //import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
-import com.sun.deploy.config.ClientConfig
+//import com.sun.deploy.config.ClientConfig
 import software.amazon.awssdk.services.mturk._
 import com.amazonaws.client.builder._
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
@@ -174,15 +174,28 @@ class MTurkAdapter extends AutomanAdapter {
     _worker = Some(pool)
   }
 
-  private def toClientConfig : ClientConfig = {
+  private def toClientConfig = {
     import scala.collection.JavaConversions
 
-    val _config = new ClientConfig // what is this?
-    _config.setAccessKeyId(_access_key_id match { case Some(k) => k; case None => throw InvalidKeyIDException("access_key_id must be defined")})
-    _config.setSecretAccessKey(_secret_access_key match { case Some(k) => k; case None => throw InvalidSecretKeyException("secret_access_key must be defined")})
-    _config.setServiceURL(_endpoint)
-    _config
-  }
+//    val _config = new ClientConfig // what is this?
+//    _config.setAccessKeyId(_access_key_id match { case Some(k) => k; case None => throw InvalidKeyIDException("access_key_id must be defined")})
+//    _config.setSecretAccessKey(_secret_access_key match { case Some(k) => k; case None => throw InvalidSecretKeyException("secret_access_key must be defined")})
+//    _config.setServiceURL(_endpoint)
+//    _config
+//  }
+    val _config = new AmazonMTurkClientBuilder() // what is this?
+    _config.setEndpointConfiguration(_endpoint)
+    _config.build()
+//    _config.setAccessKeyId(_access_key_id match { case Some(k) => k; case None => throw InvalidKeyIDException("access_key_id must be defined")})
+//    _config.setSecretAccessKey(_secret_access_key match { case Some(k) => k; case None => throw InvalidSecretKeyException("secret_access_key must be defined")})
+//    _config.setServiceURL(_endpoint)
+//    _config
+//  }Config // what is this?
+//      _config.setAccessKeyId(_access_key_id match { case Some(k) => k; case None => throw InvalidKeyIDException("access_key_id must be defined")})
+//      _config.setSecretAccessKey(_secret_access_key match { case Some(k) => k; case None => throw InvalidSecretKeyException("secret_access_key must be defined")})
+//      _config.setServiceURL(_endpoint)
+//      _config
+   }
 
   override protected[automan] def close(): Unit = {
     super.close()
@@ -200,12 +213,12 @@ class MTurkAdapter extends AutomanAdapter {
     DebugLog("Initializing memo DB \"" + _database_path + "\" with MTurk extensions.", LogLevelDebug(), LogType.ADAPTER, null)
     new MTMemo(_log_config, _database_path, _in_mem_db)
   }
-  protected[automan] def getAllHITs : Array[HIT] = {
+  protected[automan] def getAllHITs : Array[AnyRef] = { //TODO: fix types
     _service match {
       case Some(rs) =>
         val timeoutState = new RetryState(_backend_update_frequency_ms)
-        WorkerRunnable.turkRetry(() => MTurkMethods.mturk_searchAllHITs(rs), timeoutState)
-      case None => Array[HIT]()
+        WorkerRunnable.turkRetry(() => MTurkMethods.mturk_searchAllHITs(rs).getHITs.toArray(), timeoutState)
+      case None => Array[AnyRef]()
     }
   }
 }

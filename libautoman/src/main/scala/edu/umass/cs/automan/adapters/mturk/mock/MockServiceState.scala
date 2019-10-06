@@ -2,7 +2,10 @@ package edu.umass.cs.automan.adapters.mturk.mock
 
 import java.util.UUID
 
-import com.amazonaws.mturk.requester.{HIT, QualificationType}
+import com.amazonaws.services.mturk.model.QualificationType
+
+//import com.amazonaws.mturk.requester.{HIT, QualificationType}
+import com.amazonaws.services.mturk.model.{HIT}
 import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.util.Utilities
@@ -80,9 +83,9 @@ case class MockServiceState(budget: java.math.BigDecimal,
     cloned_hit.setNumberOfAssignmentsAvailable(hit.getNumberOfAssignmentsAvailable)
     cloned_hit.setNumberOfAssignmentsCompleted(hit.getNumberOfAssignmentsCompleted)
     cloned_hit.setNumberOfAssignmentsPending(hit.getNumberOfAssignmentsPending)
-    cloned_hit.setQualificationRequirement(hit.getQualificationRequirement)
+    cloned_hit.setQualificationRequirements(hit.getQualificationRequirements)
     cloned_hit.setQuestion(hit.getQuestion)
-    cloned_hit.setRequest(hit.getRequest)
+    //cloned_hit.setRequest(hit.getRequest) //TODO: this doesn't seem to exist anymore
     cloned_hit.setRequesterAnnotation(hit.getRequesterAnnotation)
     cloned_hit.setReward(hit.getReward)
     cloned_hit.setTitle(hit.getTitle)
@@ -99,7 +102,7 @@ case class MockServiceState(budget: java.math.BigDecimal,
     val cloned_hit = cloneHIT(hit)
 
     // update selected fields
-    cloned_hit.setExpiration(Utilities.calInSeconds(cloned_hit.getExpiration, deltaSec))
+    cloned_hit.setExpiration(Utilities.calInSeconds(cloned_hit.getExpiration, deltaSec).getTime())
     cloned_hit.setMaxAssignments(cloned_hit.getMaxAssignments + deltaAssignments)
 
     // update hit list

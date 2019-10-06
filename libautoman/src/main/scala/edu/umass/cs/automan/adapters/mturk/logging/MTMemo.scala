@@ -448,7 +448,14 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
   }
 
   private def createQualificationFromType(qualtype: AmazonMTurk, batch_no: Int) : QualificationRequirement = { //TODO: why is qualtype AmazonMTurk?
-    new QualificationRequirement().withQualificationTypeId(qualtype.getQualificationType(new GetQualificationTypeRequest()).getQualificationType().getQualificationTypeId), Comparator.EqualTo, batch_no, null, false)
+    new QualificationRequirement().withQualificationTypeId(
+      qualtype.getQualificationType(
+        new GetQualificationTypeRequest()
+      ).getQualificationType().getQualificationTypeId)
+      .withComparator(Comparator.EqualTo)
+      .withIntegerValues(batch_no)
+      .withActionsGuarded("Accept") //TODO: check if correct
+    //, Comparator.EqualTo, batch_no, null, false)
     //getQualificationTypeId, Comparator.EqualTo, batch_no, null, false)
   }
 

@@ -1,7 +1,9 @@
 package edu.umass.cs.automan.adapters.mturk.question
 
 import edu.umass.cs.automan.core.scheduler.BackendResult
-import com.amazonaws.mturk.requester.{Assignment, QualificationRequirement}
+//import com.amazonaws.mturk.requester.{Assignment, QualificationRequirement}
+import com.amazonaws.services.mturk.model.{QualificationRequirement, Assignment}
+
 import xml.XML
 
 trait MTurkQuestion {
@@ -33,8 +35,8 @@ trait MTurkQuestion {
     new BackendResult[A](
       fromXML(XML.loadString(a.getAnswer)),
       a.getWorkerId,
-      a.getAcceptTime.getTime,
-      a.getSubmitTime.getTime
+      a.getAcceptTime,
+      a.getSubmitTime
     )
   }
   protected[mturk] def fromXML(x: scala.xml.Node) : A
