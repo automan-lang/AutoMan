@@ -278,6 +278,7 @@ class WorkerRunnable(tw: TurkWorker,
               LogType.ADAPTER,
               t.question.id)
             WorkerRunnable.turkRetry(() => MTurkMethods.mturk_approveAssignment(assignment, "Thanks!", tw.backend), timeoutState)
+            //TODO: why is it getting the sdk Assignment?
             t.copy_as_accepted()
           case None =>
             throw new Exception("Cannot accept non-existent assignment.")

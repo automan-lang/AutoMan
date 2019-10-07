@@ -4,6 +4,7 @@ import java.lang
 import java.lang.{Boolean, Double}
 
 import com.amazonaws.Request
+import com.amazonaws.services.mturk.{AmazonMTurk, model}
 import com.amazonaws.services.mturk.model.{AssignmentStatus, QualificationRequest, QualificationType}
 //import edu.umass.cs.automan.adapters.mturk.mock.AssignmentStatus.AssignmentStatus //TODO: change this?
 
@@ -33,7 +34,7 @@ import com.sun.deploy.config.ClientConfig
  * @param initial_state a MockServiceState object representing the initial state.
  * @param config an MTurk SDK ClientConfig object; not actually used.
  */
-private[mturk] class MockRequesterService(initial_state: MockServiceState, config: ClientConfig) extends AmazonMTurk(config) {
+private[mturk] class MockRequesterService(initial_state: MockServiceState, config: ClientConfig) extends AmazonMTurk { //TODO: what about config? (originally RequestorService(config))
   private var _state = initial_state
   private var _transaction_count = 0
   private val TRANSACTION_THRESHOLD = WorkerRunnable.OK_THRESHOLD + 1
@@ -165,7 +166,8 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
         assn_id.toString,
         mock_response.workerId.toString,
         hitId,
-        com.amazonaws.mturk.requester.AssignmentStatus.Submitted,
+        //com.amazonaws.mturk.requester.AssignmentStatus.Submitted,
+        new AssignmentStatus("Submitted"), //TODO: how to set status?
         Utilities.calInSeconds(mock_response.responseTime, 16400),
         null,
         mock_response.responseTime,

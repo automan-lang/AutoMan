@@ -2,12 +2,12 @@ package edu.umass.cs.automan.adapters.mturk.logging
 
 import java.util.{Calendar, UUID}
 
-import com.amazonaws.services.mturk.model.{Comparator, GetHITRequest, GetQualificationTypeRequest, QualificationRequirement}
+import com.amazonaws.services.mturk.model.{Assignment, Comparator, GetHITRequest, GetQualificationTypeRequest, QualificationRequirement}
 
 //import com.amazonaws.mturk.requester._
 //import com.amazonaws.mturk.service.axis.RequesterService
 import com.amazonaws.services.mturk.AmazonMTurk
-import com.amazonaws.services.mturk.model.{Assignment, AssignmentStatus}
+import com.amazonaws.services.mturk.model.{AssignmentStatus}
 import edu.umass.cs.automan.adapters.mturk.worker.{HITState, HITType, MTState}
 import edu.umass.cs.automan.adapters.mturk.logging.tables.{DBAssignment, DBQualificationRequirement}
 import edu.umass.cs.automan.adapters.mturk.util.Key
@@ -36,7 +36,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
         .withWorkerId(this.workerId)
         .withHITId(this.HITId)
         .withAssignmentStatus(this.assignmentStatus)
-        .withAutoApprovalTime(this.autoApprovalTime.orNull)
+        .withAutoApprovalTime(this.autoApprovalTime.orNull.getTime())
         .withAcceptTime(this.acceptTime.orNull)
         .withSubmitTime(this.submitTime.orNull)
         .withApprovalTime(this.approvalTime.orNull)
@@ -226,7 +226,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
       dbAssignment
         .filter(_.assignmentId === a.getAssignmentId)
         .map{ r => (r.assignmentStatus, r.autoApprovalTime, r.acceptTime, r.submitTime, r.approvalTime, r.rejectionTime, r.deadline, r.requesterFeedback) }
-        .update(a.getAssignmentStatus, Option(a.getAutoApprovalTime), Option(a.getAcceptTime), Option(a.getSubmitTime), Option(a.getApprovalTime), Option(a.getRejectionTime), Option(a.getDeadline), Option(a.getRequesterFeedback))
+        .update(a.getAssignmentStatus, Option(a.getAutoApprovalTime), Option(a.getAcceptTime), Option(a.getSubmitTime), Option(a.getApprovalTime), Option(a.getRejectionTime), Option(a.getDeadline), Option(a.getRequesterFeedback)) //TODO: Not sure what this is
     }
   }
 
@@ -348,7 +348,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
       .withWorkerId(workerId)
       .withHITId(hit_id)
       .withAssignmentStatus(assignmentStatus)
-      .withAutoApprovalTime(autoApprovalTime.orNull)
+      .withAutoApprovalTime(autoApprovalTime.orNull.getTime)
       .withAcceptTime(acceptTime.orNull)
       .withSubmitTime(submitTime.orNull)
       .withApprovalTime(approvalTime.orNull)
@@ -426,7 +426,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
       val disquals = qualdata.flatMap { case (_, _, _, _, _, q_id, comp, iv, reqd, is_disq) =>
         if (is_disq) {
           // a disqualification
-          Some(new QualificationRequirement(q_id, comp, iv, null, reqd))
+          Some(new QualificationRequirement (q_id, comp, iv, null, reqd))
         } else {
           None
         }

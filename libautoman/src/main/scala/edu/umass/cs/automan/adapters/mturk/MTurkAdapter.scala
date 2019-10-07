@@ -1,6 +1,14 @@
 package edu.umass.cs.automan.adapters.mturk
 
+import java.util
 import java.util.{Date, Locale}
+
+import com.amazonaws.ClientConfiguration
+import com.amazonaws.auth.{AWSCredentialsProvider, AWSStaticCredentialsProvider, BasicAWSCredentials}
+import com.amazonaws.client.AwsSyncClientParams
+import com.amazonaws.handlers.RequestHandler2
+import com.amazonaws.metrics.RequestMetricCollector
+import com.amazonaws.monitoring.{CsmConfigurationProvider, MonitoringListener}
 
 //import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 //import com.sun.deploy.config.ClientConfig
@@ -47,16 +55,16 @@ class MTurkAdapter extends AutomanAdapter {
   private val PROD_ENDPOINT = "https://mturk-requester.us-east-1.amazonaws.com"
   private val SIGNING_REGION = "us-east-1"
 
-  private var _access_key_id: Option[String] = None
+  private var _access_key_id: String = "" // Changed from option because amazon takes care of it
   private var _backend_update_frequency_ms : Int = 4500 // lower than 1 second is inadvisable
   private var _worker : Option[TurkWorker] = None
-  private var _secret_access_key: Option[String] = None
+  private var _secret_access_key: String = ""
   private var _endpoint : EndpointConfiguration = new EndpointConfiguration(SANDBOX_ENDPOINT, SIGNING_REGION)
   private var _service : Option[AmazonMTurk] = None
   private var _use_mock: Option[MockSetup] = None
 
   // user-visible getters and setters
-  def access_key_id: String = _access_key_id match { case Some(id) => id; case None => "" }
+  def access_key_id: String = _access_key_id match { case Some(id) => id; case None => "" } //TODO: figure this out
   def access_key_id_=(id: String) { _access_key_id = Some(id) }
   def backend_update_frequency_ms = _backend_update_frequency_ms
   def backend_update_frequency_ms_=(ms: Int) { _backend_update_frequency_ms = ms }
@@ -183,8 +191,23 @@ class MTurkAdapter extends AutomanAdapter {
 //    _config.setServiceURL(_endpoint)
 //    _config
 //  }
-    val _config = new AmazonMTurkClientBuilder() // what is this?
+    val _creds = new AWSStaticCredentialsProvider(new BasicAWSCredentials(_access_key_id, _secret_access_key))
+//    val _params = new AwsSyncClientParams { //TODO: figure out if this is right
+//      override def getCredentialsProvider: AWSCredentialsProvider = _creds
+//
+//      override def getClientConfiguration: ClientConfiguration = ???
+//
+//      override def getRequestMetricCollector: RequestMetricCollector = ???
+//
+//      override def getRequestHandlers: util.List[RequestHandler2] = ???
+//
+//      override def getClientSideMonitoringConfigurationProvider: CsmConfigurationProvider = ???
+//
+//      override def getMonitoringListener: MonitoringListener = ???
+//    }
+    val _config = new AmazonMTurkClientBuilder() //TODO: .standard?
     _config.setEndpointConfiguration(_endpoint)
+    _config.setCredentials(_creds)
     _config.build()
 //    _config.setAccessKeyId(_access_key_id match { case Some(k) => k; case None => throw InvalidKeyIDException("access_key_id must be defined")})
 //    _config.setSecretAccessKey(_secret_access_key match { case Some(k) => k; case None => throw InvalidSecretKeyException("secret_access_key must be defined")})

@@ -142,7 +142,7 @@ object MTurkMethods {
     )
   }
 
-  private[worker] def mturk_rejectAssignment(assignment: Assignment, reason: String, backend: AmazonMTurk) : Unit = {
+  private[worker] def mturk_rejectAssignment(assignment: Assignment, reason: String, backend: AmazonMTurk) : Unit = { //TODO: why is it doing sdk one?
     backend.rejectAssignment(new RejectAssignmentRequest()
       .withAssignmentId(assignment.getAssignmentId) // ok if use non-sdk one...
       .withRequesterFeedback(reason))
@@ -157,7 +157,7 @@ object MTurkMethods {
 
   private[worker] def mturk_getAccountBalance(backend: AmazonMTurk): BigDecimal = {
     //new BigDecimal(backend.getAccountBalance(new GetAccountBalanceRequest).toString())
-    new scala.math.BigDecimal(backend.getAccountBalance(new GetAccountBalanceRequest).toString())//TODO: change back to bigdecimal?
+    new scala.math.BigDecimal(backend.getAccountBalance(new GetAccountBalanceRequest))//TODO: change back to bigdecimal?
   }
 
   private[worker] def mturk_disposeQualificationType(qual_id: QualificationID, backend: AmazonMTurk) : Unit = {
