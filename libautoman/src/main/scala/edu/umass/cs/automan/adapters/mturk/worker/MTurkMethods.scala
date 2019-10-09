@@ -5,7 +5,7 @@ import java.util
 import java.util.{Date, UUID}
 
 import com.amazonaws.services.mturk.{AmazonMTurk, model}
-import com.amazonaws.services.mturk.model.{AcceptQualificationRequestRequest, ApproveAssignmentRequest, Assignment, AssociateQualificationWithWorkerRequest, Comparator, CreateAdditionalAssignmentsForHITRequest, CreateAdditionalAssignmentsForHITResult, CreateHITRequest, CreateHITResult, CreateHITTypeRequest, CreateQualificationTypeRequest, CreateQualificationTypeResult, DeleteQualificationTypeRequest, DisassociateQualificationFromWorkerRequest, GetAccountBalanceRequest, GetHITRequest, GetHITResult, ListAssignmentsForHITRequest, ListHITsRequest, ListHITsResult, ListQualificationRequestsRequest, ListQualificationRequestsResult, QualificationRequirement, RejectAssignmentRequest, RejectQualificationRequestRequest, UpdateExpirationForHITRequest}
+import com.amazonaws.services.mturk.model.{AcceptQualificationRequestRequest, ApproveAssignmentRequest, Assignment, AssociateQualificationWithWorkerRequest, Comparator, CreateAdditionalAssignmentsForHITRequest, CreateAdditionalAssignmentsForHITResult, CreateHITRequest, CreateHITResult, CreateHITTypeRequest, CreateQualificationTypeRequest, CreateQualificationTypeResult, DeleteQualificationTypeRequest, DisassociateQualificationFromWorkerRequest, GetAccountBalanceRequest, GetAccountBalanceResult, GetHITRequest, GetHITResult, ListAssignmentsForHITRequest, ListHITsRequest, ListHITsResult, ListQualificationRequestsRequest, ListQualificationRequestsResult, QualificationRequirement, RejectAssignmentRequest, RejectQualificationRequestRequest, UpdateExpirationForHITRequest}
 //import com.amazonaws.services.mturk.model.{HIT, Assignment, QualificationRequirement, UpdateQualificationTypeRequest, QualificationRequest, RejectQualificationRequestRequest} //TODO: figure out where these should come from
 
 //import software.amazon.awssdk.services.mturk.model.HIT
@@ -157,7 +157,8 @@ object MTurkMethods {
 
   private[worker] def mturk_getAccountBalance(backend: AmazonMTurk): BigDecimal = {
     //new BigDecimal(backend.getAccountBalance(new GetAccountBalanceRequest).toString())
-    new scala.math.BigDecimal(backend.getAccountBalance(new GetAccountBalanceRequest))//TODO: change back to bigdecimal?
+    val bal: String = backend.getAccountBalance(new GetAccountBalanceRequest).getAvailableBalance
+    new java.math.BigDecimal(bal) //TODO: change back to bigdecimal?
   }
 
   private[worker] def mturk_disposeQualificationType(qual_id: QualificationID, backend: AmazonMTurk) : Unit = {
@@ -278,19 +279,19 @@ object MTurkMethods {
     // we immediately query the backend for the HIT's complete details
     // because the HIT structure returned by createHIT has a number
     // of uninitialized fields; return new HITState
-    val hs = new HITState(backend.getHIT(new GetHITRequest().withHITId(hit.getHIT.getHITId)).getHIT, ts, hit_type, false)
+    val hs = new HITState(backend.getHIT(new GetHITRequest().withHITId(hit.getHIT.getHITId)).getHIT, ts.toMap[UUID,Option[Assignment]], hit_type, false)
 
     // calculate new HIT key
     val hit_key = (batch_key, question.memo_hash)
 
-    DebugLog(s"Creating new HIT with ID ${hs.HITID} for batch key ${batch_key} and ${ts.size} assignments.", LogLevelDebug(), LogType.ADAPTER, question.id)
+    DebugLog(s"Creating new HIT with ID ${hs.HITId} for batch key ${batch_key} and ${ts.size} assignments.", LogLevelDebug(), LogType.ADAPTER, question.id)
 
     // we update the state like this so that inconsistent state snapshots are not possible
     // update HIT key -> HIT ID map
-    internal_state = internal_state.updateHITIDs(hit_key, hs.getHITId)
+    internal_state = internal_state.updateHITIDs(hit_key, hs.HITId)
 
     // update HIT ID -> HITState map
-    internal_state.updateHITStates(hs.getHITId, hs)
+    internal_state.updateHITStates(hs.HITId, hs)
   }
 
   private[worker] def mturk_extendHIT(ts: List[Task], timeout_in_s: Int, hit_key: HITKey, state: MTState, backend: AmazonMTurk) : MTState = {

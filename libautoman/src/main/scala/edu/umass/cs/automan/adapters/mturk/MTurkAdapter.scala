@@ -55,10 +55,10 @@ class MTurkAdapter extends AutomanAdapter {
   private val PROD_ENDPOINT = "https://mturk-requester.us-east-1.amazonaws.com"
   private val SIGNING_REGION = "us-east-1"
 
-  private var _access_key_id: String = "" // Changed from option because amazon takes care of it
+  private var _access_key_id: Option[String] = Some("") // Changed from option because amazon takes care of it
   private var _backend_update_frequency_ms : Int = 4500 // lower than 1 second is inadvisable
   private var _worker : Option[TurkWorker] = None
-  private var _secret_access_key: String = ""
+  private var _secret_access_key: Option[String] = Some("")
   private var _endpoint : EndpointConfiguration = new EndpointConfiguration(SANDBOX_ENDPOINT, SIGNING_REGION)
   private var _service : Option[AmazonMTurk] = None
   private var _use_mock: Option[MockSetup] = None
@@ -167,7 +167,7 @@ class MTurkAdapter extends AutomanAdapter {
         //new MockRequesterService(mss, this.toClientConfig)
         throw new Exception("TODO: Mock setup")
       case None => {
-        val builder: AmazonMTurkClientBuilder = AmazonMTurkClientBuilder.standard
+        val builder: AmazonMTurkClientBuilder = AmazonMTurkClientBuilder.standard //TODO: standard?
         builder.setEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(PROD_ENDPOINT, SIGNING_REGION))
         builder.build()
       }
@@ -191,24 +191,11 @@ class MTurkAdapter extends AutomanAdapter {
 //    _config.setServiceURL(_endpoint)
 //    _config
 //  }
-    val _creds = new AWSStaticCredentialsProvider(new BasicAWSCredentials(_access_key_id, _secret_access_key))
-//    val _params = new AwsSyncClientParams { //TODO: figure out if this is right
-//      override def getCredentialsProvider: AWSCredentialsProvider = _creds
-//
-//      override def getClientConfiguration: ClientConfiguration = ???
-//
-//      override def getRequestMetricCollector: RequestMetricCollector = ???
-//
-//      override def getRequestHandlers: util.List[RequestHandler2] = ???
-//
-//      override def getClientSideMonitoringConfigurationProvider: CsmConfigurationProvider = ???
-//
-//      override def getMonitoringListener: MonitoringListener = ???
-//    }
-    val _config = new AmazonMTurkClientBuilder() //TODO: .standard?
+    val _creds = new AWSStaticCredentialsProvider(new BasicAWSCredentials(_access_key_id.getOrElse(""), _secret_access_key.getOrElse("")))
+    val _config: AmazonMTurkClientBuilder = AmazonMTurkClientBuilder.standard //TODO: .standard?
     _config.setEndpointConfiguration(_endpoint)
     _config.setCredentials(_creds)
-    _config.build()
+    _config.build() // TODO: figure out if I need stuff below
 //    _config.setAccessKeyId(_access_key_id match { case Some(k) => k; case None => throw InvalidKeyIDException("access_key_id must be defined")})
 //    _config.setSecretAccessKey(_secret_access_key match { case Some(k) => k; case None => throw InvalidSecretKeyException("secret_access_key must be defined")})
 //    _config.setServiceURL(_endpoint)

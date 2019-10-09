@@ -1,8 +1,8 @@
 package edu.umass.cs.automan.adapters.mturk.logging
 
-import java.util.{Calendar, UUID}
+import java.util.{Calendar, Date, UUID}
 
-import com.amazonaws.services.mturk.model.{Assignment, Comparator, GetHITRequest, GetQualificationTypeRequest, QualificationRequirement}
+import com.amazonaws.services.mturk.model.{Assignment, Comparator, GetHITRequest, GetQualificationTypeRequest, QualificationRequirement, QualificationType}
 
 //import com.amazonaws.mturk.requester._
 //import com.amazonaws.mturk.service.axis.RequesterService
@@ -37,11 +37,11 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
         .withHITId(this.HITId)
         .withAssignmentStatus(this.assignmentStatus)
         .withAutoApprovalTime(this.autoApprovalTime.orNull.getTime())
-        .withAcceptTime(this.acceptTime.orNull)
-        .withSubmitTime(this.submitTime.orNull)
-        .withApprovalTime(this.approvalTime.orNull)
-        .withRejectionTime(this.rejectionTime.orNull)
-        .withDeadline(this.deadline.orNull)
+        .withAcceptTime(this.acceptTime.orNull.getTime())
+        .withSubmitTime(this.submitTime.orNull.getTime())
+        .withApprovalTime(this.approvalTime.orNull.getTime())
+        .withRejectionTime(this.rejectionTime.orNull.getTime())
+        .withDeadline(this.deadline.orNull.getTime())
         .withAnswer(this.answer)
         .withRequesterFeedback(this.requesterFeedback.orNull)
 //        null,
@@ -236,18 +236,24 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
         assignment.getAssignmentId,
         assignment.getWorkerId,
         assignment.getHITId,
-        assignment.getAssignmentStatus,
-        Option(assignment.getAutoApprovalTime),
-        Option(assignment.getAcceptTime),
-        Option(assignment.getSubmitTime),
-        Option(assignment.getApprovalTime),
-        Option(assignment.getRejectionTime),
-        Option(assignment.getDeadline),
+        AssignmentStatus.fromValue(assignment.getAssignmentStatus),
+        Option(toCal(assignment.getAutoApprovalTime)),
+        Option(toCal(assignment.getAcceptTime)),
+        Option(toCal(assignment.getSubmitTime)),
+        Option(toCal(assignment.getApprovalTime)),
+        Option(toCal(assignment.getRejectionTime)),
+        Option(toCal(assignment.getDeadline)),
         assignment.getAnswer,
         Option(assignment.getRequesterFeedback),
         task_id
       )
     }
+  }
+
+  private def toCal(date: Date): Calendar = {
+    val cal = Calendar.getInstance()
+    cal.setTime(date)
+    cal
   }
 
   private def HITState2TaskHITTuples(hitstates: List[HITState]) : List[(String, UUID)] = {
@@ -293,14 +299,14 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
     }
   }
 
-  private def HITType2QualificationTuples(inserts: List[(HITType,Int)]) : List[(Int, String, Int, Comparator, Boolean, Boolean, String)] = {
+  private def HITType2QualificationTuples(inserts: List[(HITType,Int)]) : List[(Int, String, Int, Comparator, String, Boolean, String)] = { // changed required to view to string because deprecated
     implicit val comparatorMapper = DBQualificationRequirement.comparatorMapper
     inserts.map { case (hittype,batch_no) =>
       val d: QualificationRequirement = hittype.disqualification
       // something must be present in the ID field, but since it doesn't
       // matter what it is, we just use 1; the database subs in the
       // appropriate autoincremented ID.
-      (1, d.getQualificationTypeId, d.getIntegerValues.get(0), d.getComparator, d.getRequiredToPreview.booleanValue(), true, hittype.id) //TODO: ugh
+      (1, d.getQualificationTypeId, d.getIntegerValues.get(0).toInt, Comparator.fromValue(d.getComparator), d.getActionsGuarded, true, hittype.id)
     }
   }
 
@@ -327,7 +333,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
         q.qualificationTypeId,
         q.comparator,
         q.integerValue,
-        q.requiredToPreview,
+        q.actionsGuarded,
         q.isDisqualification)
     }
   }
@@ -349,11 +355,11 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
       .withHITId(hit_id)
       .withAssignmentStatus(assignmentStatus)
       .withAutoApprovalTime(autoApprovalTime.orNull.getTime)
-      .withAcceptTime(acceptTime.orNull)
-      .withSubmitTime(submitTime.orNull)
-      .withApprovalTime(approvalTime.orNull)
-      .withRejectionTime(rejectionTime.orNull)
-      .withDeadline(deadline.orNull)
+      .withAcceptTime(acceptTime.orNull.getTime)
+      .withSubmitTime(submitTime.orNull.getTime)
+      .withApprovalTime(approvalTime.orNull.getTime)
+      .withRejectionTime(rejectionTime.orNull.getTime)
+      .withDeadline(deadline.orNull.getTime)
       .withAnswer(answer)
       .withRequesterFeedback(requesterFeedback.orNull)
   }
@@ -388,7 +394,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
     // return a map from HIT to HITState
     hits.map { hit =>
       // get all the tasks for this HIT
-      val task_ids = task_ids_by_hitid(hit.getHITId)
+      val task_ids = task_ids_by_hitid(hit.getHIT.getHITId)
 
       // make a task-assignment map for this HIT;
       // when a task_id has no entry in the map, insert value None
@@ -401,11 +407,11 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
       }.toMap
 
       // construct HITState
-      val hit_id = hit.getHITId
+      val hit_id = hit.getHIT.getHITId
       val hit_type_id = hit_ids(hit_id)._1
       val hit_type = htid_map(hit_type_id)
       val cancelled = hit_ids(hit_id)._2
-      hit_id -> HITState(hit, taskAssignmentMapFiltered, hit_type, cancelled)
+      hit_id -> HITState(hit.getHIT, taskAssignmentMapFiltered, hit_type, cancelled)
     }.toMap
   }
 
@@ -426,7 +432,11 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
       val disquals = qualdata.flatMap { case (_, _, _, _, _, q_id, comp, iv, reqd, is_disq) =>
         if (is_disq) {
           // a disqualification
-          Some(new QualificationRequirement (q_id, comp, iv, null, reqd))
+          Some(new QualificationRequirement()
+            .withQualificationTypeId(q_id)
+            .withComparator(comp)
+            .withIntegerValues(iv) //TODO: not sure what reqd is for; is this necessary?
+          ) //q_id, comp, iv, null, reqd))
         } else {
           None
         }
@@ -447,11 +457,11 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
     query.map { r => ((r._2.groupId, r._1._1._1._2.cost, r._1._1._1._2.worker_timeout_in_s), r._1._1._1._1.memo_hash) -> r._1._2.HITId }.list.toMap
   }
 
-  private def createQualificationFromType(qualtype: AmazonMTurk, batch_no: Int) : QualificationRequirement = { //TODO: why is qualtype AmazonMTurk?
-    new QualificationRequirement().withQualificationTypeId(
-      qualtype.getQualificationType(
-        new GetQualificationTypeRequest()
-      ).getQualificationType().getQualificationTypeId)
+  private def createQualificationFromType(qualtype: QualificationType, batch_no: Int) : QualificationRequirement = {
+    new QualificationRequirement().withQualificationTypeId(qualtype.getQualificationTypeId)
+        //.getQualificationType(
+        //new GetQualificationTypeRequest())
+      //.getQualificationType().getQualificationTypeId)
       .withComparator(Comparator.EqualTo)
       .withIntegerValues(batch_no)
       .withActionsGuarded("Accept") //TODO: check if correct
@@ -461,7 +471,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
 
   private def getQualRecFromMTurk(qual_id: String, batch_no: Int, backend: AmazonMTurk) : QualificationRequirement = {
     val qual_type = backend.getQualificationType(new GetQualificationTypeRequest().withQualificationTypeId(qual_id))
-    createQualificationFromType(qual_type, batch_no)
+    createQualificationFromType(qual_type.getQualificationType, batch_no)
   }
 
   private def getWorkerWhitelist(implicit session: DBSession) : Map[(String,String),String] = {

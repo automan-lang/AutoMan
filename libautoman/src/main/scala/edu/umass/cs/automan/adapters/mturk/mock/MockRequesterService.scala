@@ -1,6 +1,6 @@
 package edu.umass.cs.automan.adapters.mturk.mock
 
-import java.lang
+import java.{lang, util}
 import java.lang.{Boolean, Double}
 
 import com.amazonaws.Request
@@ -88,7 +88,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
         .withExpiration(expiry.getTime)
         .withAssignmentDurationInSeconds(hit_type.assignmentDurationInSeconds)
         .withRequesterAnnotation(requesterAnnotation)
-        .withQualificationRequirements(hit_type.qualRequirements.toList)
+        .setQualificationRequirements(new util.LinkedList[QualificationRequirement]().addAll(0, hit_type.qualRequirements)) //hit_type.qualRequirements.toList)) //TODO: wut
         .withHITReviewStatus(HITReviewStatus.NotReviewed)
         .withNumberOfAssignmentsPending(0)
         .withNumberOfAssignmentsAvailable(maxAssignments)
@@ -167,7 +167,8 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
         mock_response.workerId.toString,
         hitId,
         //com.amazonaws.mturk.requester.AssignmentStatus.Submitted,
-        new AssignmentStatus("Submitted"), //TODO: how to set status?
+        "Submitted",
+        //AssignmentStatus.withName("Submitted"), //TODO: how to set status?
         Utilities.calInSeconds(mock_response.responseTime, 16400),
         null,
         mock_response.responseTime,
@@ -190,7 +191,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
                              assignmentId: String,
                              workerId: String,
                              HITId: String,
-                             assignmentStatus: AssignmentStatus,
+                             assignmentStatus: String, // change back to AssignmentStatus.Value?
                              autoApprovalTime: Calendar,
                              acceptTime: Calendar,
                              submitTime: Calendar,
@@ -203,7 +204,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
       .withAssignmentId(assignmentId)
       .withWorkerId(workerId)
       .withHITId(HITId)
-      .withAssignmentStatus(assignmentStatus: AssignmentStatus)
+      .withAssignmentStatus(assignmentStatus: String)
       .withAutoApprovalTime(autoApprovalTime.getTime)
       .withAcceptTime(acceptTime.getTime)
       .withSubmitTime(submitTime.getTime)
