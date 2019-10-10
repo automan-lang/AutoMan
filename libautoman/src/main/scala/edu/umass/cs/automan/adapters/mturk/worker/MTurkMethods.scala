@@ -147,7 +147,7 @@ object MTurkMethods {
     )
   }
 
-  private[worker] def mturk_rejectAssignment(assignment: Assignment, reason: String, backend: AmazonMTurk) : Unit = { //TODO: why is it doing sdk one?
+  private[worker] def mturk_rejectAssignment(assignment: Assignment, reason: String, backend: AmazonMTurk) : Unit = {
     backend.rejectAssignment(new RejectAssignmentRequest()
       .withAssignmentId(assignment.getAssignmentId) // ok if use non-sdk one...
       .withRequesterFeedback(reason))

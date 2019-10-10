@@ -3,6 +3,7 @@ package edu.umass.cs.automan.adapters.mturk.logging
 import java.util.{Calendar, Date, UUID}
 
 import com.amazonaws.services.mturk.model.{Assignment, Comparator, GetHITRequest, GetQualificationTypeRequest, QualificationRequirement, QualificationType}
+import edu.umass.cs.automan.adapters.mturk.mock
 
 //import com.amazonaws.mturk.requester._
 //import com.amazonaws.mturk.service.axis.RequesterService
@@ -226,7 +227,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
       dbAssignment
         .filter(_.assignmentId === a.getAssignmentId)
         .map{ r => (r.assignmentStatus, r.autoApprovalTime, r.acceptTime, r.submitTime, r.approvalTime, r.rejectionTime, r.deadline, r.requesterFeedback) }
-        .update(a.getAssignmentStatus, Option(a.getAutoApprovalTime), Option(a.getAcceptTime), Option(a.getSubmitTime), Option(a.getApprovalTime), Option(a.getRejectionTime), Option(a.getDeadline), Option(a.getRequesterFeedback)) //TODO: Not sure what this is
+        .update(new AssignmentStatus(a.getAssignmentStatus), Option(a.getAutoApprovalTime), Option(a.getAcceptTime), Option(a.getSubmitTime), Option(a.getApprovalTime), Option(a.getRejectionTime), Option(a.getDeadline), Option(a.getRequesterFeedback)) //TODO: Not sure what this is
     }
   }
 

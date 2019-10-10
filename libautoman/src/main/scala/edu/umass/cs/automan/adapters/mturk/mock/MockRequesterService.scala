@@ -2,6 +2,7 @@ package edu.umass.cs.automan.adapters.mturk.mock
 
 import java.{lang, util}
 import java.lang.{Boolean, Double}
+import scala.collection.JavaConverters._
 
 import com.amazonaws.Request
 import com.amazonaws.services.mturk.{AmazonMTurk, model}
@@ -88,11 +89,12 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
         .withExpiration(expiry.getTime)
         .withAssignmentDurationInSeconds(hit_type.assignmentDurationInSeconds)
         .withRequesterAnnotation(requesterAnnotation)
-        .withQualificationRequirements(qualificationRequirements.toList)//(new util.LinkedList[QualificationRequirement]().addAll(0, hit_type.qualRequirements)) //hit_type.qualRequirements.toList)) //TODO: wut
+        .withQualificationRequirements(qualificationRequirements.toList.asJava)//java.util.Arrays.asList(qualificationRequirements))//(qualificationRequirements.toList)//(new util.LinkedList[QualificationRequirement]().addAll(0, hit_type.qualRequirements)) //hit_type.qualRequirements.toList)) //TODO: wut
         .withHITReviewStatus(HITReviewStatus.NotReviewed)
         .withNumberOfAssignmentsPending(0)
         .withNumberOfAssignmentsAvailable(maxAssignments)
         .withNumberOfAssignmentsCompleted(0)
+    java.util.Arrays.asList(qualificationRequirements)
 //        null,                                       // request
 //        hit_id,                                     // HIT ID
 //        hitTypeId,                                  // HIT Type ID
