@@ -6,6 +6,8 @@ import java.util.{Date, UUID}
 
 import com.amazonaws.services.mturk.{AmazonMTurk, model}
 import com.amazonaws.services.mturk.model.{AcceptQualificationRequestRequest, ApproveAssignmentRequest, Assignment, AssociateQualificationWithWorkerRequest, Comparator, CreateAdditionalAssignmentsForHITRequest, CreateAdditionalAssignmentsForHITResult, CreateHITRequest, CreateHITResult, CreateHITTypeRequest, CreateQualificationTypeRequest, CreateQualificationTypeResult, DeleteQualificationTypeRequest, DisassociateQualificationFromWorkerRequest, GetAccountBalanceRequest, GetAccountBalanceResult, GetHITRequest, GetHITResult, ListAssignmentsForHITRequest, ListHITsRequest, ListHITsResult, ListQualificationRequestsRequest, ListQualificationRequestsResult, QualificationRequirement, RejectAssignmentRequest, RejectQualificationRequestRequest, UpdateExpirationForHITRequest}
+
+import scala.collection.immutable.HashMap
 //import com.amazonaws.services.mturk.model.{HIT, Assignment, QualificationRequirement, UpdateQualificationTypeRequest, QualificationRequest, RejectQualificationRequestRequest} //TODO: figure out where these should come from
 
 //import software.amazon.awssdk.services.mturk.model.HIT
@@ -261,7 +263,7 @@ object MTurkMethods {
     DebugLog("Posting task XML:\n" + xml.toString, LogLevelDebug(), LogType.ADAPTER, question.id)
 
     val hit = backend.createHIT(new CreateHITRequest()
-      //hit_type.id,                        // hitTypeId
+      //hit_type.id,                        // hitTypeId TODO: figure out id
 //      null,                               // title; defined by HITType
 //      null,                               // description
 //      null,                               // keywords; defined by HITType
@@ -279,7 +281,10 @@ object MTurkMethods {
     // we immediately query the backend for the HIT's complete details
     // because the HIT structure returned by createHIT has a number
     // of uninitialized fields; return new HITState
-    val hs = new HITState(backend.getHIT(new GetHITRequest().withHITId(hit.getHIT.getHITId)).getHIT, ts.toMap[UUID,Option[Assignment]], hit_type, false)
+    //val tsMap = new HashMap[UUID,Option[Assignment]]()
+    //ts.foreach {t => tsMap add (t.getID, t)}
+    val tsMap = ts.map (t => t.getID -> t) toMap //ts.toMap[UUID,Option[Assignment]]
+    val hs = new HITState(backend.getHIT(new GetHITRequest().withHITId(hit.getHIT.getHITId)).getHIT, tsMap, hit_type, false)
 
     // calculate new HIT key
     val hit_key = (batch_key, question.memo_hash)
