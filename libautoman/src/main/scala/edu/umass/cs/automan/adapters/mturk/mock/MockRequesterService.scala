@@ -88,7 +88,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
         .withExpiration(expiry.getTime)
         .withAssignmentDurationInSeconds(hit_type.assignmentDurationInSeconds)
         .withRequesterAnnotation(requesterAnnotation)
-        .setQualificationRequirements(new util.LinkedList[QualificationRequirement]().addAll(0, hit_type.qualRequirements)) //hit_type.qualRequirements.toList)) //TODO: wut
+        .withQualificationRequirements(qualificationRequirements.toList)//(new util.LinkedList[QualificationRequirement]().addAll(0, hit_type.qualRequirements)) //hit_type.qualRequirements.toList)) //TODO: wut
         .withHITReviewStatus(HITReviewStatus.NotReviewed)
         .withNumberOfAssignmentsPending(0)
         .withNumberOfAssignmentsAvailable(maxAssignments)

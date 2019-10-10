@@ -3,6 +3,7 @@ package edu.umass.cs.automan.adapters.mturk.worker
 import java.text.SimpleDateFormat
 import java.util
 import java.util.{Date, UUID}
+import scala.collection.JavaConverters._
 
 import com.amazonaws.services.mturk.{AmazonMTurk, model}
 import com.amazonaws.services.mturk.model.{AcceptQualificationRequestRequest, ApproveAssignmentRequest, Assignment, AssociateQualificationWithWorkerRequest, Comparator, CreateAdditionalAssignmentsForHITRequest, CreateAdditionalAssignmentsForHITResult, CreateHITRequest, CreateHITResult, CreateHITTypeRequest, CreateQualificationTypeRequest, CreateQualificationTypeResult, DeleteQualificationTypeRequest, DisassociateQualificationFromWorkerRequest, GetAccountBalanceRequest, GetAccountBalanceResult, GetHITRequest, GetHITResult, ListAssignmentsForHITRequest, ListHITsRequest, ListHITsResult, ListQualificationRequestsRequest, ListQualificationRequestsResult, QualificationRequirement, RejectAssignmentRequest, RejectQualificationRequestRequest, UpdateExpirationForHITRequest}
@@ -134,7 +135,9 @@ object MTurkMethods {
   }
 
   private[worker] def mturk_getAllAssignmentsForHIT(hit_state: HITState, backend: AmazonMTurk): Array[Assignment] = {
-    backend.listAssignmentsForHIT(new ListAssignmentsForHITRequest().withHITId(hit_state.HITId)).getAssignments.toArray[Assignment]
+    backend.listAssignmentsForHIT(new ListAssignmentsForHITRequest().withHITId(hit_state.HITId)).getAssignments.asScala.toArray[Assignment]
+    //val assignArr = assignList.toArray()[Assignment]//toArray
+    //assignArr
   }
 
   private[worker] def mturk_approveAssignment(assignment: Assignment, text: String, backend: AmazonMTurk) : Unit = {
