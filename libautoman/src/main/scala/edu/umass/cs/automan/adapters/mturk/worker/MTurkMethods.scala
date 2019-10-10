@@ -283,8 +283,10 @@ object MTurkMethods {
     // of uninitialized fields; return new HITState
     //val tsMap = new HashMap[UUID,Option[Assignment]]()
     //ts.foreach {t => tsMap add (t.getID, t)}
-    val tsMap = ts.map (t => t.getID -> t) toMap //ts.toMap[UUID,Option[Assignment]]
-    val hs = new HITState(backend.getHIT(new GetHITRequest().withHITId(hit.getHIT.getHITId)).getHIT, tsMap, hit_type, false)
+    //val tsMap = ts.map (t => t.getID -> t) toMap //ts.toMap[UUID,Option[Assignment]]
+    val hs = HITState(backend.getHIT(new GetHITRequest().withHITId(hit.getHIT.getHITId)).getHIT, ts, hit_type)
+
+    //def apply(): MTurkMethods = new MTurkMethods()
 
     // calculate new HIT key
     val hit_key = (batch_key, question.memo_hash)
