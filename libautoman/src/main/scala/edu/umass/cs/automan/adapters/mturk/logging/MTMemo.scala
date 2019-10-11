@@ -1,6 +1,7 @@
 package edu.umass.cs.automan.adapters.mturk.logging
 
 import java.util.{Calendar, Date, UUID}
+import edu.umass.cs.automan.core.util.Utilities._
 
 import com.amazonaws.services.mturk.model.{Assignment, Comparator, GetHITRequest, GetQualificationTypeRequest, QualificationRequirement, QualificationType}
 import edu.umass.cs.automan.adapters.mturk.mock
@@ -222,12 +223,33 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
     dbAssignment ++= a_inserts
 
     // update existing Assignments
-    // a.getAssignmentStatus, a.getAutoApprovalTime, a.getAcceptTime, a.getSubmitTime, a.getApprovalTime, a.getRejectionTime, a.getDeadline, a.getRequesterFeedback
     assignment_updates.foreach { case (a, task_id) =>
       dbAssignment
-        .filter(_.assignmentId === a.getAssignmentId)
-        .map{ r => (r.assignmentStatus, r.autoApprovalTime, r.acceptTime, r.submitTime, r.approvalTime, r.rejectionTime, r.deadline, r.requesterFeedback) }
-        .update(AssignmentStatus.fromValue(a.getAssignmentStatus))//, Option(a.getAutoApprovalTime), Option(a.getAcceptTime), Option(a.getSubmitTime), Option(a.getApprovalTime), Option(a.getRejectionTime), Option(a.getDeadline), Option(a.getRequesterFeedback)) //TODO: Not sure what this is
+        .filter(_.assignmentId === a.getAssignmentId())
+        .map { row =>
+          (
+            row.assignmentStatus,
+            row.autoApprovalTime,
+            row.acceptTime,
+            row.submitTime,
+            row.approvalTime,
+            row.rejectionTime,
+            row.deadline,
+            row.requesterFeedback
+          )
+        }
+        .update(
+          (
+            AssignmentStatus.fromValue(a.getAssignmentStatus()),
+            Option(dateToCalendar(a.getAutoApprovalTime())),
+            Option(dateToCalendar(a.getAcceptTime())),
+            Option(dateToCalendar(a.getSubmitTime())),
+            Option(dateToCalendar(a.getApprovalTime())),
+            Option(dateToCalendar(a.getRejectionTime())),
+            Option(dateToCalendar(a.getDeadline())),
+            Option(a.getRequesterFeedback())
+          )
+        )
     }
   }
 
