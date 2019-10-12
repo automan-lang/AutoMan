@@ -2,9 +2,9 @@ package edu.umass.cs.automan.adapters.mturk.mock
 
 import java.{lang, util}
 import java.lang.{Boolean, Double}
-import scala.collection.JavaConverters._
 
-import com.amazonaws.Request
+import scala.collection.JavaConverters._
+import com.amazonaws.{ ClientConfiguration, Request }
 import com.amazonaws.services.mturk.{AmazonMTurk, model}
 import com.amazonaws.services.mturk.model.{AssignmentStatus, QualificationRequest, QualificationType}
 //import edu.umass.cs.automan.adapters.mturk.mock.AssignmentStatus.AssignmentStatus //TODO: change this?
@@ -24,7 +24,7 @@ import java.util.{Calendar, Date, UUID}
 
 import com.amazonaws.services.mturk.AmazonMTurk
 import com.amazonaws.services.mturk.model.{QualificationRequirement, ServiceException}
-import com.sun.deploy.config.ClientConfig
+//import com.sun.deploy.config.ClientConfig
 
 /**
  * An object used to simulate a Mechanical Turk backend. Can be used by
@@ -33,9 +33,9 @@ import com.sun.deploy.config.ClientConfig
  * should not be directly instantiated. All methods should be thread-safe
  * since this object's methods may be invoked by multiple threads.
  * @param initial_state a MockServiceState object representing the initial state.
- * @param config an MTurk SDK ClientConfig object; not actually used.
+ * @param config an Amazon SDK ClientConfiguration object; not actually used.
  */
-private[mturk] abstract class MockRequesterService(initial_state: MockServiceState, config: ClientConfig) extends AmazonMTurk { //TODO: what about config? (originally RequestorService(config))
+private[mturk] abstract class MockRequesterService(initial_state: MockServiceState, config: ClientConfiguration) extends AmazonMTurk { //TODO: what about config? (originally RequestorService(config))
   private var _state = initial_state
   private var _transaction_count = 0
   private val TRANSACTION_THRESHOLD = WorkerRunnable.OK_THRESHOLD + 1
