@@ -35,7 +35,7 @@ import com.sun.deploy.config.ClientConfig
  * @param initial_state a MockServiceState object representing the initial state.
  * @param config an MTurk SDK ClientConfig object; not actually used.
  */
-private[mturk] class MockRequesterService(initial_state: MockServiceState, config: ClientConfig) extends AmazonMTurk { //TODO: what about config? (originally RequestorService(config))
+private[mturk] abstract class MockRequesterService(initial_state: MockServiceState, config: ClientConfig) extends AmazonMTurk { //TODO: what about config? (originally RequestorService(config))
   private var _state = initial_state
   private var _transaction_count = 0
   private val TRANSACTION_THRESHOLD = WorkerRunnable.OK_THRESHOLD + 1
@@ -53,7 +53,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState, confi
 //    diePeriodically()
 //  }
 
-  override def createHIT(hitTypeId: String,
+  def createHIT(hitTypeId: String,
                          title: String,
                          description: String,
                          keywords: String,
