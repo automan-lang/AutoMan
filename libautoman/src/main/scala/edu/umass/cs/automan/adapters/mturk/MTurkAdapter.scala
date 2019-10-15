@@ -13,6 +13,7 @@ import com.amazonaws.monitoring.{CsmConfigurationProvider, MonitoringListener}
 //import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 //import com.sun.deploy.config.ClientConfig
 import software.amazon.awssdk.services.mturk._
+import com.amazonaws.ClientConfiguration
 import com.amazonaws.client.builder._
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.services.mturk.{AmazonMTurk, AmazonMTurkClientBuilder}
@@ -154,18 +155,20 @@ class MTurkAdapter extends AutomanAdapter {
   private def setup() {
     val rs = _use_mock match {
       case Some(mock_setup) =>
-//        val mss = MockServiceState(
-//          mock_setup.budget.bigDecimal,
-//          Map.empty,
-//          Map.empty,
-//          Map.empty,
-//          Map.empty,
-//          Map.empty,
-//          Map.empty,
-//          List.empty
-//        )
-        //new MockRequesterService(mss, this.toClientConfig)
-        throw new Exception("TODO: Mock setup")
+        val mss = MockServiceState(
+          mock_setup.budget.bigDecimal,
+          Map.empty,
+          Map.empty,
+          Map.empty,
+          Map.empty,
+          Map.empty,
+          Map.empty,
+          List.empty
+        )
+        //this.toClientConfig
+        //new MockRequesterService() {}
+        new MockRequesterService(mss)//this.toClientConfig)
+        //throw new Exception("TODO: Mock setup")
       case None => {
         val builder: AmazonMTurkClientBuilder = AmazonMTurkClientBuilder.standard //TODO: standard?
         builder.setEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(PROD_ENDPOINT, SIGNING_REGION))
@@ -191,6 +194,7 @@ class MTurkAdapter extends AutomanAdapter {
 //    _config.setServiceURL(_endpoint)
 //    _config
 //  }
+    //val _config = new ClientConfiguration()
     val _creds = new AWSStaticCredentialsProvider(new BasicAWSCredentials(_access_key_id.getOrElse(""), _secret_access_key.getOrElse("")))
     val _config: AmazonMTurkClientBuilder = AmazonMTurkClientBuilder.standard //TODO: .standard?
     _config.setEndpointConfiguration(_endpoint)

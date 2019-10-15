@@ -4,9 +4,10 @@ import java.{lang, util}
 import java.lang.{Boolean, Double}
 
 import scala.collection.JavaConverters._
-import com.amazonaws.{ ClientConfiguration, Request }
+import com.amazonaws.{AmazonWebServiceRequest, ClientConfiguration, Request, ResponseMetadata}
 import com.amazonaws.services.mturk.{AmazonMTurk, model}
-import com.amazonaws.services.mturk.model.{AssignmentStatus, QualificationRequest, QualificationType}
+import com.amazonaws.services.mturk.model.{AcceptQualificationRequestRequest, AcceptQualificationRequestResult, ApproveAssignmentRequest, ApproveAssignmentResult, AssignmentStatus, AssociateQualificationWithWorkerRequest, AssociateQualificationWithWorkerResult, CreateAdditionalAssignmentsForHITRequest, CreateAdditionalAssignmentsForHITResult, CreateHITRequest, CreateHITResult, CreateHITTypeRequest, CreateHITTypeResult, CreateHITWithHITTypeRequest, CreateHITWithHITTypeResult, CreateQualificationTypeRequest, CreateQualificationTypeResult, CreateWorkerBlockRequest, CreateWorkerBlockResult, DeleteHITRequest, DeleteHITResult, DeleteQualificationTypeRequest, DeleteQualificationTypeResult, DeleteWorkerBlockRequest, DeleteWorkerBlockResult, DisassociateQualificationFromWorkerRequest, DisassociateQualificationFromWorkerResult, GetAccountBalanceRequest, GetAccountBalanceResult, GetAssignmentRequest, GetAssignmentResult, GetFileUploadURLRequest, GetFileUploadURLResult, GetHITRequest, GetHITResult, GetQualificationScoreRequest, GetQualificationScoreResult, GetQualificationTypeRequest, GetQualificationTypeResult, ListAssignmentsForHITRequest, ListAssignmentsForHITResult, ListBonusPaymentsRequest, ListBonusPaymentsResult, ListHITsForQualificationTypeRequest, ListHITsForQualificationTypeResult, ListHITsRequest, ListHITsResult, ListQualificationRequestsRequest, ListQualificationRequestsResult, ListQualificationTypesRequest, ListQualificationTypesResult, ListReviewPolicyResultsForHITRequest, ListReviewPolicyResultsForHITResult, ListReviewableHITsRequest, ListReviewableHITsResult, ListWorkerBlocksRequest, ListWorkerBlocksResult, ListWorkersWithQualificationTypeRequest, ListWorkersWithQualificationTypeResult, NotifyWorkersRequest, NotifyWorkersResult, QualificationRequest, QualificationType, RejectAssignmentRequest, RejectAssignmentResult, RejectQualificationRequestRequest, RejectQualificationRequestResult, SendBonusRequest, SendBonusResult, SendTestEventNotificationRequest, SendTestEventNotificationResult, UpdateExpirationForHITRequest, UpdateExpirationForHITResult, UpdateHITReviewStatusRequest, UpdateHITReviewStatusResult, UpdateHITTypeOfHITRequest, UpdateHITTypeOfHITResult, UpdateNotificationSettingsRequest, UpdateNotificationSettingsResult, UpdateQualificationTypeRequest, UpdateQualificationTypeResult}
+import edu.umass.cs.automan.adapters.mturk.worker.MTurkMethods
 //import edu.umass.cs.automan.adapters.mturk.mock.AssignmentStatus.AssignmentStatus //TODO: change this?
 
 //import com.amazonaws.Request
@@ -33,9 +34,11 @@ import com.amazonaws.services.mturk.model.{QualificationRequirement, ServiceExce
  * should not be directly instantiated. All methods should be thread-safe
  * since this object's methods may be invoked by multiple threads.
  * @param initial_state a MockServiceState object representing the initial state.
- * @param config an Amazon SDK ClientConfiguration object; not actually used.
+ *  config an Amazon SDK ClientConfiguration object; not actually used.
  */
-private[mturk] abstract class MockRequesterService(initial_state: MockServiceState, config: ClientConfiguration) extends AmazonMTurk { //TODO: what about config? (originally RequestorService(config))
+
+//private[mturk] abstract class MockRequesterService(initial_state: MockServiceState, config: ClientConfiguration) extends AmazonMTurk { //TODO: what about config? (originally RequestorService(config))
+private[mturk] class MockRequesterService(initial_state: MockServiceState) extends AmazonMTurk {
   private var _state = initial_state
   private var _transaction_count = 0
   private val TRANSACTION_THRESHOLD = WorkerRunnable.OK_THRESHOLD + 1
@@ -347,4 +350,87 @@ private[mturk] abstract class MockRequesterService(initial_state: MockServiceSta
   def getAllQualificationTypes: Array[QualificationType] = {
     _state.qualification_types.toArray
   }
+
+  // TODO: do we need to implement all of these?
+  def acceptQualificationRequest(acceptQualificationRequestRequest: AcceptQualificationRequestRequest): AcceptQualificationRequestResult = ???
+
+  def approveAssignment(approveAssignmentRequest: ApproveAssignmentRequest): ApproveAssignmentResult = ???
+
+  def associateQualificationWithWorker(associateQualificationWithWorkerRequest: AssociateQualificationWithWorkerRequest): AssociateQualificationWithWorkerResult = ???
+
+  def createAdditionalAssignmentsForHIT(createAdditionalAssignmentsForHITRequest: CreateAdditionalAssignmentsForHITRequest): CreateAdditionalAssignmentsForHITResult = ???
+
+  def createHIT(createHITRequest: CreateHITRequest): CreateHITResult = ???
+
+  def createHITType(createHITTypeRequest: CreateHITTypeRequest): CreateHITTypeResult = ???
+
+  def createHITWithHITType(createHITWithHITTypeRequest: CreateHITWithHITTypeRequest): CreateHITWithHITTypeResult = ???
+
+  def createQualificationType(createQualificationTypeRequest: CreateQualificationTypeRequest): CreateQualificationTypeResult = ???
+
+  def createWorkerBlock(createWorkerBlockRequest: CreateWorkerBlockRequest): CreateWorkerBlockResult = ???
+
+  def deleteHIT(deleteHITRequest: DeleteHITRequest): DeleteHITResult = ???
+
+  def deleteQualificationType(deleteQualificationTypeRequest: DeleteQualificationTypeRequest): DeleteQualificationTypeResult = ???
+
+  def deleteWorkerBlock(deleteWorkerBlockRequest: DeleteWorkerBlockRequest): DeleteWorkerBlockResult = ???
+
+  def disassociateQualificationFromWorker(disassociateQualificationFromWorkerRequest: DisassociateQualificationFromWorkerRequest): DisassociateQualificationFromWorkerResult = ???
+
+  def getAccountBalance(getAccountBalanceRequest: GetAccountBalanceRequest): GetAccountBalanceResult = MTurkMethods.mturk_getAccountBalance()
+
+  def getAssignment(getAssignmentRequest: GetAssignmentRequest): GetAssignmentResult = ???
+
+  def getFileUploadURL(getFileUploadURLRequest: GetFileUploadURLRequest): GetFileUploadURLResult = ???
+
+  def getHIT(getHITRequest: GetHITRequest): GetHITResult = ???
+
+  def getQualificationScore(getQualificationScoreRequest: GetQualificationScoreRequest): GetQualificationScoreResult = ???
+
+  def getQualificationType(getQualificationTypeRequest: GetQualificationTypeRequest): GetQualificationTypeResult = ???
+
+  def listAssignmentsForHIT(listAssignmentsForHITRequest: ListAssignmentsForHITRequest): ListAssignmentsForHITResult = ???
+
+  def listBonusPayments(listBonusPaymentsRequest: ListBonusPaymentsRequest): ListBonusPaymentsResult = ???
+
+  def listHITs(listHITsRequest: ListHITsRequest): ListHITsResult = ???
+
+  def listHITsForQualificationType(listHITsForQualificationTypeRequest: ListHITsForQualificationTypeRequest): ListHITsForQualificationTypeResult = ???
+
+  def listQualificationRequests(listQualificationRequestsRequest: ListQualificationRequestsRequest): ListQualificationRequestsResult = ???
+
+  def listQualificationTypes(listQualificationTypesRequest: ListQualificationTypesRequest): ListQualificationTypesResult = ???
+
+  def listReviewPolicyResultsForHIT(listReviewPolicyResultsForHITRequest: ListReviewPolicyResultsForHITRequest): ListReviewPolicyResultsForHITResult = ???
+
+  def listReviewableHITs(listReviewableHITsRequest: ListReviewableHITsRequest): ListReviewableHITsResult = ???
+
+  def listWorkerBlocks(listWorkerBlocksRequest: ListWorkerBlocksRequest): ListWorkerBlocksResult = ???
+
+  def listWorkersWithQualificationType(listWorkersWithQualificationTypeRequest: ListWorkersWithQualificationTypeRequest): ListWorkersWithQualificationTypeResult = ???
+
+  def notifyWorkers(notifyWorkersRequest: NotifyWorkersRequest): NotifyWorkersResult = ???
+
+  def rejectAssignment(rejectAssignmentRequest: RejectAssignmentRequest): RejectAssignmentResult = ???
+
+  def rejectQualificationRequest(rejectQualificationRequestRequest: RejectQualificationRequestRequest): RejectQualificationRequestResult = ???
+
+  def sendBonus(sendBonusRequest: SendBonusRequest): SendBonusResult = ???
+
+  def sendTestEventNotification(sendTestEventNotificationRequest: SendTestEventNotificationRequest): SendTestEventNotificationResult = ???
+
+  def updateExpirationForHIT(updateExpirationForHITRequest: UpdateExpirationForHITRequest): UpdateExpirationForHITResult = ???
+
+  def updateHITReviewStatus(updateHITReviewStatusRequest: UpdateHITReviewStatusRequest): UpdateHITReviewStatusResult = ???
+
+  def updateHITTypeOfHIT(updateHITTypeOfHITRequest: UpdateHITTypeOfHITRequest): UpdateHITTypeOfHITResult = ???
+
+  def updateNotificationSettings(updateNotificationSettingsRequest: UpdateNotificationSettingsRequest): UpdateNotificationSettingsResult = ???
+
+  def updateQualificationType(updateQualificationTypeRequest: UpdateQualificationTypeRequest): UpdateQualificationTypeResult = ???
+
+  def shutdown(): Unit = ???
+
+  def getCachedResponseMetadata(request: AmazonWebServiceRequest): ResponseMetadata = ???
 }
