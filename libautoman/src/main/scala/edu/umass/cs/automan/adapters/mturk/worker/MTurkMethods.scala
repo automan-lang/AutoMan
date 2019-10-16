@@ -3,10 +3,10 @@ package edu.umass.cs.automan.adapters.mturk.worker
 import java.text.SimpleDateFormat
 import java.util
 import java.util.{Date, UUID}
-import scala.collection.JavaConverters._
 
+import scala.collection.JavaConverters._
 import com.amazonaws.services.mturk.{AmazonMTurk, model}
-import com.amazonaws.services.mturk.model.{AcceptQualificationRequestRequest, ApproveAssignmentRequest, Assignment, AssociateQualificationWithWorkerRequest, Comparator, CreateAdditionalAssignmentsForHITRequest, CreateAdditionalAssignmentsForHITResult, CreateHITRequest, CreateHITResult, CreateHITTypeRequest, CreateQualificationTypeRequest, CreateQualificationTypeResult, DeleteQualificationTypeRequest, DisassociateQualificationFromWorkerRequest, GetAccountBalanceRequest, GetAccountBalanceResult, GetHITRequest, GetHITResult, ListAssignmentsForHITRequest, ListHITsRequest, ListHITsResult, ListQualificationRequestsRequest, ListQualificationRequestsResult, QualificationRequirement, RejectAssignmentRequest, RejectQualificationRequestRequest, UpdateExpirationForHITRequest}
+import com.amazonaws.services.mturk.model._
 
 import scala.collection.immutable.HashMap
 //import com.amazonaws.services.mturk.model.{HIT, Assignment, QualificationRequirement, UpdateQualificationTypeRequest, QualificationRequest, RejectQualificationRequestRequest} //TODO: figure out where these should come from
@@ -121,6 +121,7 @@ object MTurkMethods {
         //.setDescription(UUID.randomUUID())
         .withKeywords("automan")
         .withDescription(qualtxt)
+        .withQualificationTypeStatus(QualificationTypeStatus.Inactive)
     ) : CreateQualificationTypeResult //UUID keyword?
       //"AutoMan " + UUID.randomUUID(), "automan", qualtxt)
 
@@ -265,20 +266,13 @@ object MTurkMethods {
     val xml = question.asInstanceOf[MTurkQuestion].toXML(randomize = true).toString()
     DebugLog("Posting task XML:\n" + xml.toString, LogLevelDebug(), LogType.ADAPTER, question.id)
 
-    val hit = backend.createHIT(new CreateHITRequest()
-      //hit_type.id,                        // hitTypeId TODO: figure out id
-//      null,                               // title; defined by HITType
-//      null,                               // description
-//      null,                               // keywords; defined by HITType
-      .withQuestion(xml)                                // question xml
-//      null,                               // reward; defined by HITType
-//      null,                               // assignmentDurationInSeconds; defined by HITType
-//      null,                               // autoApprovalDelayInSeconds; defined by HITType
-      .withLifetimeInSeconds(ts.head.timeout_in_s.toLong)        // lifetimeInSeconds
-      .withMaxAssignments(ts.size)                            // maxAssignments
-      .withRequesterAnnotation(question.id.toString)               // requesterAnnotation
-      .withQualificationRequirements(Array[QualificationRequirement]().toList)  // qualificationRequirements; defined by HITType
-      //Array[String]())                    // responseGroup TODO: what's this doing?
+    var hit = backend.createHITWithHITType(
+      new CreateHITWithHITTypeRequest()
+        .withHITTypeId(hit_type.id)
+        .withQuestion(xml)
+        .withLifetimeInSeconds(ts.head.timeout_in_s.toLong)
+        .withMaxAssignments(ts.size)
+        .withRequesterAnnotation(question.id.toString)
     )
 
     // we immediately query the backend for the HIT's complete details
