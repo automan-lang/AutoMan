@@ -167,7 +167,7 @@ class MTurkAdapter extends AutomanAdapter {
         )
         //this.toClientConfig
         //new MockRequesterService() {}
-        new MockRequesterService(mss)//this.toClientConfig)
+        new MockRequesterService(mss)
         //throw new Exception("TODO: Mock setup")
       case None => {
         val builder: AmazonMTurkClientBuilder = AmazonMTurkClientBuilder.standard //TODO: standard?
@@ -187,7 +187,7 @@ class MTurkAdapter extends AutomanAdapter {
 
   private def toClientConfig = {
     import scala.collection.JavaConversions
-
+    //TODO make sure it's not actually communicating with backend
 //    val _config = new ClientConfig // what is this?
 //    _config.setAccessKeyId(_access_key_id match { case Some(k) => k; case None => throw InvalidKeyIDException("access_key_id must be defined")})
 //    _config.setSecretAccessKey(_secret_access_key match { case Some(k) => k; case None => throw InvalidSecretKeyException("secret_access_key must be defined")})

@@ -137,10 +137,13 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState) exten
     _state = _state.extendHIT(hitId, expirationIncrementInSeconds.toInt, maxAssignmentsIncrement)
   }
 
-  def rejectAssignment(assignmentId: String, requesterFeedback: String): Unit = synchronized {
-    diePeriodically()
-    _state = _state.updateAssignmentStatus(UUID.fromString(assignmentId), AssignmentStatus.REJECTED)
+  override def rejectAssignment(rejectAssignmentRequest: RejectAssignmentRequest): Unit ={
+
   }
+//  (assignmentId: String, requesterFeedback: String): Unit = synchronized {
+//    diePeriodically()
+//    _state = _state.updateAssignmentStatus(UUID.fromString(assignmentId), AssignmentStatus.REJECTED)
+//  }
 
   def getAllAssignmentsForHIT(hitId: String): Array[Assignment] = synchronized {
     diePeriodically()
@@ -232,43 +235,43 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState) exten
 //      requesterFeedback
   }
 
-  def rejectQualificationRequest(qualificationRequestId: String,
+  override def rejectQualificationRequest(qualificationRequestId: String,
                                           reason: String): Unit = synchronized {
     // NOP
     diePeriodically()
   }
 
-  def getAccountBalance = synchronized {
+  override def getAccountBalance = synchronized {
     diePeriodically()
     _state.budget.doubleValue()
   }
 
-  def revokeQualification(qualificationTypeId: String,
+  override def revokeQualification(qualificationTypeId: String,
                                    subjectId: String,
                                    reason: String): Unit = synchronized {
     // NOP
     diePeriodically()
   }
 
-  def disposeQualificationType(qualificationTypeId: String): QualificationType = synchronized {
+  override def disposeQualificationType(qualificationTypeId: String): QualificationType = synchronized {
     diePeriodically()
     val (mss,qt) = _state.deleteQualificationById(qualificationTypeId)
     _state = mss
     qt
   }
 
-  def getAllQualificationRequests(qualificationTypeId: String): Array[QualificationRequest] = synchronized {
+  override def getAllQualificationRequests(qualificationTypeId: String): Array[QualificationRequest] = synchronized {
     diePeriodically()
     Array[QualificationRequest]()
   }
 
-  def grantQualification(qualificationRequestId: String,
+  override def grantQualification(qualificationRequestId: String,
                                   integerValue: Integer): Unit = synchronized {
     diePeriodically()
     // NOP
   }
 
-  def createQualificationType(name: String,
+  override def createQualificationType(name: String,
                                        keywords: String,
                                        description: String): QualificationType = synchronized {
     diePeriodically()
@@ -283,7 +286,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState) exten
     qt
   }
 
-  def assignQualification(qualificationTypeId: String,
+  override def assignQualification(qualificationTypeId: String,
                                    workerId: String,
                                    integerValue: Integer,
                                    sendNotification: Boolean): Unit = synchronized {
@@ -298,7 +301,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState) exten
    * @param q Question.
    * @param t Scheduler startup time.
    */
-  def registerQuestion(q: Question, t: Date): Unit = synchronized {
+  override def registerQuestion(q: Question, t: Date): Unit = synchronized {
     val assignments = q.mock_answers.map { a =>
       // get time x milliseconds from t
       val d = Utilities.xMillisecondsFromDate(a.time_delta_in_ms, t)
@@ -311,7 +314,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState) exten
     _state = _state.addAssignments(q.id, assignments)
   }
 
-  def registerHITType(autoApprovalDelayInSeconds: lang.Long,
+  override def registerHITType(autoApprovalDelayInSeconds: lang.Long,
                                assignmentDurationInSeconds: lang.Long,
                                reward: Double,
                                title: String,
@@ -333,104 +336,21 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState) exten
     hit_type.id.toString
   }
 
-  def approveAssignment(assignmentId: String, requesterFeedback: String): Unit = synchronized {
+  override def approveAssignment(assignmentId: String, requesterFeedback: String): Unit = synchronized {
     diePeriodically()
     _state = _state.updateAssignmentStatus(UUID.fromString(assignmentId), AssignmentStatus.APPROVED)
   }
 
-  def searchAllHITs(): Array[HIT] = synchronized {
+  override def searchAllHITs(): Array[HIT] = synchronized {
     diePeriodically()
     _state.hits_by_question_id.flatMap(_._2).toArray
   }
 
-  def takeAssignment(assignmentId: String): Unit = synchronized {
+  override def takeAssignment(assignmentId: String): Unit = synchronized {
     _state = _state.updateAssignmentStatus(UUID.fromString(assignmentId), AssignmentStatus.ANSWERED)
   }
 
-  def getAllQualificationTypes: Array[QualificationType] = {
+  override def getAllQualificationTypes: Array[QualificationType] = {
     _state.qualification_types.toArray
   }
-
-  // TODO: do we need to implement all of these?
-  def acceptQualificationRequest(acceptQualificationRequestRequest: AcceptQualificationRequestRequest): AcceptQualificationRequestResult = ???
-
-  def approveAssignment(approveAssignmentRequest: ApproveAssignmentRequest): ApproveAssignmentResult = ???
-
-  def associateQualificationWithWorker(associateQualificationWithWorkerRequest: AssociateQualificationWithWorkerRequest): AssociateQualificationWithWorkerResult = ???
-
-  def createAdditionalAssignmentsForHIT(createAdditionalAssignmentsForHITRequest: CreateAdditionalAssignmentsForHITRequest): CreateAdditionalAssignmentsForHITResult = ???
-
-  def createHIT(createHITRequest: CreateHITRequest): CreateHITResult = ???
-
-  def createHITType(createHITTypeRequest: CreateHITTypeRequest): CreateHITTypeResult = ???
-
-  def createHITWithHITType(createHITWithHITTypeRequest: CreateHITWithHITTypeRequest): CreateHITWithHITTypeResult = ???
-
-  def createQualificationType(createQualificationTypeRequest: CreateQualificationTypeRequest): CreateQualificationTypeResult = ???
-
-  def createWorkerBlock(createWorkerBlockRequest: CreateWorkerBlockRequest): CreateWorkerBlockResult = ???
-
-  def deleteHIT(deleteHITRequest: DeleteHITRequest): DeleteHITResult = ???
-
-  def deleteQualificationType(deleteQualificationTypeRequest: DeleteQualificationTypeRequest): DeleteQualificationTypeResult = ???
-
-  def deleteWorkerBlock(deleteWorkerBlockRequest: DeleteWorkerBlockRequest): DeleteWorkerBlockResult = ???
-
-  def disassociateQualificationFromWorker(disassociateQualificationFromWorkerRequest: DisassociateQualificationFromWorkerRequest): DisassociateQualificationFromWorkerResult = ???
-
-  def getAccountBalance(getAccountBalanceRequest: GetAccountBalanceRequest): GetAccountBalanceResult = MTurkMethods.mturk_getAccountBalance()
-
-  def getAssignment(getAssignmentRequest: GetAssignmentRequest): GetAssignmentResult = ???
-
-  def getFileUploadURL(getFileUploadURLRequest: GetFileUploadURLRequest): GetFileUploadURLResult = ???
-
-  def getHIT(getHITRequest: GetHITRequest): GetHITResult = ???
-
-  def getQualificationScore(getQualificationScoreRequest: GetQualificationScoreRequest): GetQualificationScoreResult = ???
-
-  def getQualificationType(getQualificationTypeRequest: GetQualificationTypeRequest): GetQualificationTypeResult = ???
-
-  def listAssignmentsForHIT(listAssignmentsForHITRequest: ListAssignmentsForHITRequest): ListAssignmentsForHITResult = ???
-
-  def listBonusPayments(listBonusPaymentsRequest: ListBonusPaymentsRequest): ListBonusPaymentsResult = ???
-
-  def listHITs(listHITsRequest: ListHITsRequest): ListHITsResult = ???
-
-  def listHITsForQualificationType(listHITsForQualificationTypeRequest: ListHITsForQualificationTypeRequest): ListHITsForQualificationTypeResult = ???
-
-  def listQualificationRequests(listQualificationRequestsRequest: ListQualificationRequestsRequest): ListQualificationRequestsResult = ???
-
-  def listQualificationTypes(listQualificationTypesRequest: ListQualificationTypesRequest): ListQualificationTypesResult = ???
-
-  def listReviewPolicyResultsForHIT(listReviewPolicyResultsForHITRequest: ListReviewPolicyResultsForHITRequest): ListReviewPolicyResultsForHITResult = ???
-
-  def listReviewableHITs(listReviewableHITsRequest: ListReviewableHITsRequest): ListReviewableHITsResult = ???
-
-  def listWorkerBlocks(listWorkerBlocksRequest: ListWorkerBlocksRequest): ListWorkerBlocksResult = ???
-
-  def listWorkersWithQualificationType(listWorkersWithQualificationTypeRequest: ListWorkersWithQualificationTypeRequest): ListWorkersWithQualificationTypeResult = ???
-
-  def notifyWorkers(notifyWorkersRequest: NotifyWorkersRequest): NotifyWorkersResult = ???
-
-  def rejectAssignment(rejectAssignmentRequest: RejectAssignmentRequest): RejectAssignmentResult = ???
-
-  def rejectQualificationRequest(rejectQualificationRequestRequest: RejectQualificationRequestRequest): RejectQualificationRequestResult = ???
-
-  def sendBonus(sendBonusRequest: SendBonusRequest): SendBonusResult = ???
-
-  def sendTestEventNotification(sendTestEventNotificationRequest: SendTestEventNotificationRequest): SendTestEventNotificationResult = ???
-
-  def updateExpirationForHIT(updateExpirationForHITRequest: UpdateExpirationForHITRequest): UpdateExpirationForHITResult = ???
-
-  def updateHITReviewStatus(updateHITReviewStatusRequest: UpdateHITReviewStatusRequest): UpdateHITReviewStatusResult = ???
-
-  def updateHITTypeOfHIT(updateHITTypeOfHITRequest: UpdateHITTypeOfHITRequest): UpdateHITTypeOfHITResult = ???
-
-  def updateNotificationSettings(updateNotificationSettingsRequest: UpdateNotificationSettingsRequest): UpdateNotificationSettingsResult = ???
-
-  def updateQualificationType(updateQualificationTypeRequest: UpdateQualificationTypeRequest): UpdateQualificationTypeResult = ???
-
-  def shutdown(): Unit = ???
-
-  def getCachedResponseMetadata(request: AmazonWebServiceRequest): ResponseMetadata = ???
 }
