@@ -132,3 +132,5 @@ pomExtra := (
       <url>http://people.cs.umass.edu/~dbarowy</url>
     </developer>
   </developers>)
+
+trapExit := false

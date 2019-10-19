@@ -383,7 +383,7 @@ class Scheduler(val question: Question,
     }._2
   }
 
-  def failUnWrap(tso: Option[List[Task]]) : List[Task] = {
+  def failUnWrap(tso: Option[List[Task]]) : List[Task] = { // TODO: triggering
     tso match {
       case Some(ts) => ts
       case None => throw BackendFailureException()

@@ -41,6 +41,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
         .withAutoApprovalTime(this.autoApprovalTime.orNull.getTime())
         .withAcceptTime(this.acceptTime.orNull.getTime())
         .withSubmitTime(this.submitTime.orNull.getTime())
+        //.withApprovalTime(this.approvalTime.orNull.getTime())
         .withApprovalTime(this.approvalTime.orNull.getTime())
         .withRejectionTime(this.rejectionTime.orNull.getTime())
         .withDeadline(this.deadline.orNull.getTime())
@@ -219,7 +220,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
     dbTaskHIT ++= HITState2TaskHITTuples(hit_inserts.map { hitid => hit_states(hitid)})
 
     // insert new Assignments
-    val a_inserts = Assignment2AssignmentTuple(assignment_inserts)
+    val a_inserts = Assignment2AssignmentTuple(assignment_inserts) //TODO: throwing null pointer
     dbAssignment ++= a_inserts
 
     // update existing Assignments
@@ -262,8 +263,8 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
         AssignmentStatus.fromValue(assignment.getAssignmentStatus),
         Option(toCal(assignment.getAutoApprovalTime)),
         Option(toCal(assignment.getAcceptTime)),
-        Option(toCal(assignment.getSubmitTime)),
-        Option(toCal(assignment.getApprovalTime)),
+        Option(toCal(Some(assignment.getSubmitTime).orNull)), // TODO: or this one?
+        Option(toCal(Some(assignment.getApprovalTime).orNull)), //TODO: throwing NPE
         Option(toCal(assignment.getRejectionTime)),
         Option(toCal(assignment.getDeadline)),
         assignment.getAnswer,

@@ -2,7 +2,7 @@ package edu.umass.cs.automan.adapters.mturk.worker
 
 import java.text.SimpleDateFormat
 import java.util
-import java.util.{Date, UUID}
+import java.util.{Calendar, Date, UUID}
 
 import scala.collection.JavaConverters._
 import com.amazonaws.services.mturk.{AmazonMTurk, model}
@@ -116,12 +116,15 @@ object MTurkMethods {
     val qualtxt = s"AutoMan automatically generated Disqualification (title: $title, date: $datestr, batchKey: $batchKey, batch_no: $batch_no)"
     //val qualRequest = new CreateQualificationTypeRequest()()
     //qualRequest.setName("AutoMan").setKeywords()
+    val id = UUID.randomUUID()
     val qual = backend.createQualificationType(new CreateQualificationTypeRequest()
-        .withName("AutoMan")
+        //.withName("AutoMan")
+        .withName("Automan" + id.toString)
         //.setDescription(UUID.randomUUID())
         .withKeywords("automan")
         .withDescription(qualtxt)
-        .withQualificationTypeStatus(QualificationTypeStatus.Inactive)
+        //.withQualificationTypeStatus(QualificationTypeStatus.Inactive)
+        .withQualificationTypeStatus(QualificationTypeStatus.Active)
     ) : CreateQualificationTypeResult //UUID keyword?
       //"AutoMan " + UUID.randomUUID(), "automan", qualtxt)
 
@@ -146,6 +149,10 @@ object MTurkMethods {
       .withAssignmentId(assignment.getAssignmentId)
       .withRequesterFeedback(text)
     )
+    assignment.setApprovalTime(Calendar.getInstance.getTime)
+//    backend.getAssignment(new GetAssignmentRequest()
+//        .withAssignmentId()
+//    )
   }
 
   private[worker] def mturk_rejectAssignment(assignment: Assignment, reason: String, backend: AmazonMTurk) : Unit = {

@@ -104,7 +104,8 @@ class WorkerRunnable(tw: TurkWorker,
             case req: DisposeQualsReq => do_sync_action(req, () => scheduled_cleanup_qualifications())
             case req: CreateHITReq => do_sync_action(req, () => scheduled_post(req.ts, req.exclude_worker_ids))
             case req: RejectReq => do_sync_action(req, () => scheduled_reject(req.ts_reasons))
-            case req: RetrieveReq => do_sync_action(req, () => scheduled_retrieve(req.ts, req.current_time))
+            case req: RetrieveReq => do_sync_action(req, () => scheduled_retrieve(req.ts, req.current_time)) //TODO: NPE
+            //case req: ApproveReq =>
           }
         } catch {
           case t: Throwable => {
@@ -278,7 +279,7 @@ class WorkerRunnable(tw: TurkWorker,
               LogType.ADAPTER,
               t.question.id)
             WorkerRunnable.turkRetry(() => MTurkMethods.mturk_approveAssignment(assignment, "Thanks!", tw.backend), timeoutState)
-            //TODO: why is it getting the sdk Assignment?
+            //TODO: why is it getting the sdk Assignment? why throwing NPE?
             t.copy_as_accepted()
           case None =>
             throw new Exception("Cannot accept non-existent assignment.")
