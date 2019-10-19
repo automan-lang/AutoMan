@@ -58,7 +58,7 @@ object Utilities {
   }
   def dateToCalendar(d: Date) = {
     val c = Calendar.getInstance()
-    c.setTime(d)
+    if(d != null) c.setTime(d)
     c
   }
   def thirty_minutes_from_now = {

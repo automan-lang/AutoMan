@@ -263,7 +263,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
         AssignmentStatus.fromValue(assignment.getAssignmentStatus),
         Option(toCal(assignment.getAutoApprovalTime)),
         Option(toCal(assignment.getAcceptTime)),
-        Option(toCal(Some(assignment.getSubmitTime).orNull)), // TODO: or this one?
+        Option(toCal(Some(assignment.getSubmitTime).orNull)),
         Option(toCal(Some(assignment.getApprovalTime).orNull)), //TODO: throwing NPE
         Option(toCal(assignment.getRejectionTime)),
         Option(toCal(assignment.getDeadline)),
@@ -274,9 +274,10 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
     }
   }
 
-  private def toCal(date: Date): Calendar = {
+  private def toCal(date: Date): Calendar = { //Option[Date]?
     val cal = Calendar.getInstance()
-    cal.setTime(date)
+    //cal.setTime(date.asInstanceOf[Date]) //if(date.isDefined)
+    if(date != null) cal.setTime(date);
     cal
   }
 
