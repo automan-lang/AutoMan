@@ -119,7 +119,7 @@ object MTurkMethods {
     val id = UUID.randomUUID()
     val qual = backend.createQualificationType(new CreateQualificationTypeRequest()
         //.withName("AutoMan")
-        .withName("Automan" + id.toString)
+        .withName("Automan " + id.toString)
         //.setDescription(UUID.randomUUID())
         .withKeywords("automan")
         .withDescription(qualtxt)
