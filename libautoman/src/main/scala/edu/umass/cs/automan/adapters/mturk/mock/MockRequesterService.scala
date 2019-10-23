@@ -40,8 +40,7 @@ import com.amazonaws.services.mturk.model.{QualificationRequirement, ServiceExce
  */
 
 //private[mturk] abstract class MockRequesterService(initial_state: MockServiceState, config: ClientConfiguration) extends AmazonMTurk { //TODO: what about config? (originally RequestorService(config))
-private[mturk] class MockRequesterService(initial_state: MockServiceState) {
-//extends AmazonMTurk {
+private[mturk] class MockRequesterService(initial_state: MockServiceState) extends AmazonMTurk {
   private var _state = initial_state
   private var _transaction_count = 0
   private val TRANSACTION_THRESHOLD = WorkerRunnable.OK_THRESHOLD + 1
@@ -363,83 +362,83 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState) {
     _state.qualification_types.toArray
   }
 
-//  override def acceptQualificationRequest(acceptQualificationRequestRequest: AcceptQualificationRequestRequest): AcceptQualificationRequestResult = ???
-//
-//  override def approveAssignment(approveAssignmentRequest: ApproveAssignmentRequest): ApproveAssignmentResult = ???
-//
-//  override def associateQualificationWithWorker(associateQualificationWithWorkerRequest: AssociateQualificationWithWorkerRequest): AssociateQualificationWithWorkerResult = ???
-//
-//  override def createAdditionalAssignmentsForHIT(createAdditionalAssignmentsForHITRequest: CreateAdditionalAssignmentsForHITRequest): CreateAdditionalAssignmentsForHITResult = ???
-//
-//  override def createHIT(createHITRequest: CreateHITRequest): CreateHITResult = ???
-//
-//  override def createHITType(createHITTypeRequest: CreateHITTypeRequest): CreateHITTypeResult = ???
-//
-//  override def createHITWithHITType(createHITWithHITTypeRequest: CreateHITWithHITTypeRequest): CreateHITWithHITTypeResult = ???
-//
-//  override def createQualificationType(createQualificationTypeRequest: CreateQualificationTypeRequest): CreateQualificationTypeResult = ???
-//
-//  override def createWorkerBlock(createWorkerBlockRequest: CreateWorkerBlockRequest): CreateWorkerBlockResult = ???
-//
-//  override def deleteHIT(deleteHITRequest: DeleteHITRequest): DeleteHITResult = ???
-//
-//  override def deleteQualificationType(deleteQualificationTypeRequest: DeleteQualificationTypeRequest): DeleteQualificationTypeResult = ???
-//
-//  override def deleteWorkerBlock(deleteWorkerBlockRequest: DeleteWorkerBlockRequest): DeleteWorkerBlockResult = ???
-//
-//  override def disassociateQualificationFromWorker(disassociateQualificationFromWorkerRequest: DisassociateQualificationFromWorkerRequest): DisassociateQualificationFromWorkerResult = ???
-//
-//  override def getAccountBalance(getAccountBalanceRequest: GetAccountBalanceRequest): GetAccountBalanceResult = ???
-//
-//  override def getAssignment(getAssignmentRequest: GetAssignmentRequest): GetAssignmentResult = ???
-//
-//  override def getFileUploadURL(getFileUploadURLRequest: GetFileUploadURLRequest): GetFileUploadURLResult = ???
-//
-//  override def getHIT(getHITRequest: GetHITRequest): GetHITResult = ???
-//
-//  override def getQualificationScore(getQualificationScoreRequest: GetQualificationScoreRequest): GetQualificationScoreResult = ???
-//
-//  override def getQualificationType(getQualificationTypeRequest: GetQualificationTypeRequest): GetQualificationTypeResult = ???
-//
-//  override def listAssignmentsForHIT(listAssignmentsForHITRequest: ListAssignmentsForHITRequest): ListAssignmentsForHITResult = ???
-//
-//  override def listBonusPayments(listBonusPaymentsRequest: ListBonusPaymentsRequest): ListBonusPaymentsResult = ???
-//
-//  override def listHITs(listHITsRequest: ListHITsRequest): ListHITsResult = ???
-//
-//  override def listHITsForQualificationType(listHITsForQualificationTypeRequest: ListHITsForQualificationTypeRequest): ListHITsForQualificationTypeResult = ???
-//
-//  override def listQualificationRequests(listQualificationRequestsRequest: ListQualificationRequestsRequest): ListQualificationRequestsResult = ???
-//
-//  override def listQualificationTypes(listQualificationTypesRequest: ListQualificationTypesRequest): ListQualificationTypesResult = ???
-//
-//  override def listReviewPolicyResultsForHIT(listReviewPolicyResultsForHITRequest: ListReviewPolicyResultsForHITRequest): ListReviewPolicyResultsForHITResult = ???
-//
-//  override def listReviewableHITs(listReviewableHITsRequest: ListReviewableHITsRequest): ListReviewableHITsResult = ???
-//
-//  override def listWorkerBlocks(listWorkerBlocksRequest: ListWorkerBlocksRequest): ListWorkerBlocksResult = ???
-//
-//  override def listWorkersWithQualificationType(listWorkersWithQualificationTypeRequest: ListWorkersWithQualificationTypeRequest): ListWorkersWithQualificationTypeResult = ???
-//
-//  override def notifyWorkers(notifyWorkersRequest: NotifyWorkersRequest): NotifyWorkersResult = ???
-//
-//  override def rejectQualificationRequest(rejectQualificationRequestRequest: RejectQualificationRequestRequest): RejectQualificationRequestResult = ???
-//
-//  override def sendBonus(sendBonusRequest: SendBonusRequest): SendBonusResult = ???
-//
-//  override def sendTestEventNotification(sendTestEventNotificationRequest: SendTestEventNotificationRequest): SendTestEventNotificationResult = ???
-//
-//  override def updateExpirationForHIT(updateExpirationForHITRequest: UpdateExpirationForHITRequest): UpdateExpirationForHITResult = ???
-//
-//  override def updateHITReviewStatus(updateHITReviewStatusRequest: UpdateHITReviewStatusRequest): UpdateHITReviewStatusResult = ???
-//
-//  override def updateHITTypeOfHIT(updateHITTypeOfHITRequest: UpdateHITTypeOfHITRequest): UpdateHITTypeOfHITResult = ???
-//
-//  override def updateNotificationSettings(updateNotificationSettingsRequest: UpdateNotificationSettingsRequest): UpdateNotificationSettingsResult = ???
-//
-//  override def updateQualificationType(updateQualificationTypeRequest: UpdateQualificationTypeRequest): UpdateQualificationTypeResult = ???
-//
-//  override def shutdown(): Unit = ???
-//
-//  override def getCachedResponseMetadata(request: AmazonWebServiceRequest): ResponseMetadata = ???
+  override def acceptQualificationRequest(acceptQualificationRequestRequest: AcceptQualificationRequestRequest): AcceptQualificationRequestResult = ???
+
+  override def approveAssignment(approveAssignmentRequest: ApproveAssignmentRequest): ApproveAssignmentResult = ???
+
+  override def associateQualificationWithWorker(associateQualificationWithWorkerRequest: AssociateQualificationWithWorkerRequest): AssociateQualificationWithWorkerResult = ???
+
+  override def createAdditionalAssignmentsForHIT(createAdditionalAssignmentsForHITRequest: CreateAdditionalAssignmentsForHITRequest): CreateAdditionalAssignmentsForHITResult = ???
+
+  override def createHIT(createHITRequest: CreateHITRequest): CreateHITResult = ???
+
+  override def createHITType(createHITTypeRequest: CreateHITTypeRequest): CreateHITTypeResult = ???
+
+  override def createHITWithHITType(createHITWithHITTypeRequest: CreateHITWithHITTypeRequest): CreateHITWithHITTypeResult = ???
+
+  override def createQualificationType(createQualificationTypeRequest: CreateQualificationTypeRequest): CreateQualificationTypeResult = ???
+
+  override def createWorkerBlock(createWorkerBlockRequest: CreateWorkerBlockRequest): CreateWorkerBlockResult = ???
+
+  override def deleteHIT(deleteHITRequest: DeleteHITRequest): DeleteHITResult = ???
+
+  override def deleteQualificationType(deleteQualificationTypeRequest: DeleteQualificationTypeRequest): DeleteQualificationTypeResult = ???
+
+  override def deleteWorkerBlock(deleteWorkerBlockRequest: DeleteWorkerBlockRequest): DeleteWorkerBlockResult = ???
+
+  override def disassociateQualificationFromWorker(disassociateQualificationFromWorkerRequest: DisassociateQualificationFromWorkerRequest): DisassociateQualificationFromWorkerResult = ???
+
+  override def getAccountBalance(getAccountBalanceRequest: GetAccountBalanceRequest): GetAccountBalanceResult = ???
+
+  override def getAssignment(getAssignmentRequest: GetAssignmentRequest): GetAssignmentResult = ???
+
+  override def getFileUploadURL(getFileUploadURLRequest: GetFileUploadURLRequest): GetFileUploadURLResult = ???
+
+  override def getHIT(getHITRequest: GetHITRequest): GetHITResult = ???
+
+  override def getQualificationScore(getQualificationScoreRequest: GetQualificationScoreRequest): GetQualificationScoreResult = ???
+
+  override def getQualificationType(getQualificationTypeRequest: GetQualificationTypeRequest): GetQualificationTypeResult = ???
+
+  override def listAssignmentsForHIT(listAssignmentsForHITRequest: ListAssignmentsForHITRequest): ListAssignmentsForHITResult = ???
+
+  override def listBonusPayments(listBonusPaymentsRequest: ListBonusPaymentsRequest): ListBonusPaymentsResult = ???
+
+  override def listHITs(listHITsRequest: ListHITsRequest): ListHITsResult = ???
+
+  override def listHITsForQualificationType(listHITsForQualificationTypeRequest: ListHITsForQualificationTypeRequest): ListHITsForQualificationTypeResult = ???
+
+  override def listQualificationRequests(listQualificationRequestsRequest: ListQualificationRequestsRequest): ListQualificationRequestsResult = ???
+
+  override def listQualificationTypes(listQualificationTypesRequest: ListQualificationTypesRequest): ListQualificationTypesResult = ???
+
+  override def listReviewPolicyResultsForHIT(listReviewPolicyResultsForHITRequest: ListReviewPolicyResultsForHITRequest): ListReviewPolicyResultsForHITResult = ???
+
+  override def listReviewableHITs(listReviewableHITsRequest: ListReviewableHITsRequest): ListReviewableHITsResult = ???
+
+  override def listWorkerBlocks(listWorkerBlocksRequest: ListWorkerBlocksRequest): ListWorkerBlocksResult = ???
+
+  override def listWorkersWithQualificationType(listWorkersWithQualificationTypeRequest: ListWorkersWithQualificationTypeRequest): ListWorkersWithQualificationTypeResult = ???
+
+  override def notifyWorkers(notifyWorkersRequest: NotifyWorkersRequest): NotifyWorkersResult = ???
+
+  override def rejectQualificationRequest(rejectQualificationRequestRequest: RejectQualificationRequestRequest): RejectQualificationRequestResult = ???
+
+  override def sendBonus(sendBonusRequest: SendBonusRequest): SendBonusResult = ???
+
+  override def sendTestEventNotification(sendTestEventNotificationRequest: SendTestEventNotificationRequest): SendTestEventNotificationResult = ???
+
+  override def updateExpirationForHIT(updateExpirationForHITRequest: UpdateExpirationForHITRequest): UpdateExpirationForHITResult = ???
+
+  override def updateHITReviewStatus(updateHITReviewStatusRequest: UpdateHITReviewStatusRequest): UpdateHITReviewStatusResult = ???
+
+  override def updateHITTypeOfHIT(updateHITTypeOfHITRequest: UpdateHITTypeOfHITRequest): UpdateHITTypeOfHITResult = ???
+
+  override def updateNotificationSettings(updateNotificationSettingsRequest: UpdateNotificationSettingsRequest): UpdateNotificationSettingsResult = ???
+
+  override def updateQualificationType(updateQualificationTypeRequest: UpdateQualificationTypeRequest): UpdateQualificationTypeResult = ???
+
+  override def shutdown(): Unit = ???
+
+  override def getCachedResponseMetadata(request: AmazonWebServiceRequest): ResponseMetadata = ???
 }

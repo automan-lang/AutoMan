@@ -116,10 +116,10 @@ object MTurkMethods {
     val qualtxt = s"AutoMan automatically generated Disqualification (title: $title, date: $datestr, batchKey: $batchKey, batch_no: $batch_no)"
     //val qualRequest = new CreateQualificationTypeRequest()()
     //qualRequest.setName("AutoMan").setKeywords()
-    val id = UUID.randomUUID()
+    //val id : UUID = UUID.randomUUID()
     val qual = backend.createQualificationType(new CreateQualificationTypeRequest()
         //.withName("AutoMan")
-        .withName("Automan " + id.toString)
+        .withName("Automan " + UUID.randomUUID().toString)
         //.setDescription(UUID.randomUUID())
         .withKeywords("automan")
         .withDescription(qualtxt)

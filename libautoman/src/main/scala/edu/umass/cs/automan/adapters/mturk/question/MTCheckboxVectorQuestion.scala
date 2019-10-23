@@ -70,7 +70,13 @@ class MTCheckboxVectorQuestion extends CheckboxVectorQuestion with MTurkQuestion
         <AnswerSpecification>
           <SelectionAnswer>
             <StyleSuggestion>checkbox</StyleSuggestion>
-            <Selections>{ if(randomize) randomized_options.map { _.toXML } else options.map { _.toXML } }</Selections>
+            <Selections>{
+              if(randomize) randomized_options.map {
+                _.toXML
+              } else options.map {
+                _.toXML
+              } }
+            </Selections>
           </SelectionAnswer>
         </AnswerSpecification>
       </Question>
