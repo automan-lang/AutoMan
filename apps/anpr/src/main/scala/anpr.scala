@@ -4,13 +4,13 @@ import anprlib._
 object anpr extends App {
   val opts = my_optparse(args, "anpr.jar")
 
-  implicit val a = mturk (
+  implicit val mt = mturk (
     access_key_id = opts('key),
     secret_access_key = opts('secret),
     sandbox_mode = opts('sandbox).toBoolean
   )
 
-  automan(a) {
+  automan(mt) {
     // get plate texts from image URLs
     val urls = getURLsFromDisk
     val plate_texts = urls.map { url =>

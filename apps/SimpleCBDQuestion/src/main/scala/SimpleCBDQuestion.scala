@@ -1,5 +1,6 @@
 import edu.umass.cs.automan.adapters.mturk.DSL._
 import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
+import edu.umass.cs.automan.core.question.QuestionOption
 
 object SimpleCBDQuestion extends App {
   val sample_size = 3
@@ -15,7 +16,12 @@ object SimpleCBDQuestion extends App {
   def AskIt(question: String) = checkboxes (
     sample_size = sample_size,
     text = question,
-    options = List(
+    options = List[QuestionOption](
+//      new MTQuestionOption(null, "Oscar the Grouch", "http://tinyurl.com/qfwlx56"),
+//      new MTQuestionOption(null, "Kermit the Frog", "http://tinyurl.com/nuwyz3u"),
+//      new MTQuestionOption(null, "Spongebob Squarepants", "http://tinyurl.com/oj6wzx6"),
+//      new MTQuestionOption(null, "Cookie Monster", "http://tinyurl.com/otb6thl"),
+//      new MTQuestionOption(null, "The Count", "http://tinyurl.com/nfdbyxa")
       "Oscar the Grouch" -> "http://tinyurl.com/qfwlx56",
       "Kermit the Frog" -> "http://tinyurl.com/nuwyz3u",
       "Spongebob Squarepants" -> "http://tinyurl.com/oj6wzx6",

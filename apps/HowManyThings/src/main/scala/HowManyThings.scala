@@ -1,6 +1,11 @@
+import java.awt.image.BufferedImage
+import java.io.File
+
 import edu.umass.cs.automan.adapters.mturk.DSL._
-import net.ettinsmoor.Bingerator
+import net.ettinsmoor.{Bingerator, ImageResult}
 import java.util.UUID
+
+import scala.slick.driver.PostgresDriver.simple._
 import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
 import hmtlib._
 
@@ -34,13 +39,16 @@ object HowManyThings extends App {
   )
 
   // search for a bunch of images
-  val results = new Bingerator(opts('bingkey)).SearchImages(args(0)).take(10).toList
+  val results: List[ImageResult] = new Bingerator(opts('bingkey)).SearchImages(args(0)).take(10).toList
 
   // download each image
-  val images = results.flatMap(_.getImage)
+  val images: List[Option[BufferedImage]] = results.map(_.getImage) //[ImageResult, BufferedImage]
+
+  val image_results: List[BufferedImage] = for (im <- images) yield im.getOrElse(new BufferedImage(0,0,0))
 
   // resize each image
-  val scaled = images.map(resize(_))
+  val scaled = image_results.map(resize(_))
+  //z
 
   // store each image in S3
   val s3client = init_s3(opts('key), opts('secret), bucketname)

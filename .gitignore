@@ -1,6 +1,10 @@
 .idea
 .javaccheck
 .patchcheck
+.DS_Store
+**/*.properties
+*~
+*#
 .svncheck
 .unzipcheck
 .jarcheck

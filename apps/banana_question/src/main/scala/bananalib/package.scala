@@ -1,7 +1,9 @@
-import com.amazonaws.services.s3.AmazonS3Client
+import com.amazonaws.services.s3.{AmazonS3, AmazonS3Client, AmazonS3ClientBuilder}
 import java.io.File
 import java.util.UUID
 import java.awt.image.BufferedImage
+
+import com.amazonaws.client.builder.{AwsClientBuilder, AwsSyncClientBuilder}
 import edu.umass.cs.automan.core.util.Utilities
 
 package object bananalib {
@@ -36,23 +38,25 @@ package object bananalib {
     buf.toString()
   }
 
-  def store_in_s3(si: File, s3: AmazonS3Client, bucketname: String) : String = {
+  def store_in_s3(si: File, s3: AmazonS3, bucketname: String) : String = {
     import java.util.Calendar
     import com.amazonaws.services.s3.model.{PutObjectRequest, CannedAccessControlList}
 
     s3.putObject(new PutObjectRequest(bucketname, si.getName, si).withCannedAcl(CannedAccessControlList.PublicRead))
     val cal = Calendar.getInstance()
-    cal.add(Calendar.WEEK_OF_YEAR, 2)
+    cal.add(Calendar.WEEK_OF_YEAR, 1)
     s3.generatePresignedUrl(bucketname, si.getName, cal.getTime).toString
   }
 
-  def init_s3(key: String, secret: String, bucketname: String) : AmazonS3Client = {
+  def init_s3(key: String, secret: String, bucketname: String) : AmazonS3 = { // changed from AmazonS3Client
     import com.amazonaws.auth.BasicAWSCredentials
 
     val awsAccessKey = key
     val awsSecretKey = secret
     val c = new BasicAWSCredentials(awsAccessKey, awsSecretKey)
-    val s3 = new AmazonS3Client(c)
+    //val s3 = new AmazonS3Client(c)
+    val s3 = AmazonS3ClientBuilder.defaultClient() //.standard()
+    // new AmazonS3ClientBuilder.defaultClient() //TODO: or async?
     s3.createBucket(bucketname)
     s3
   }

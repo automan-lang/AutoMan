@@ -15,7 +15,7 @@ object simple_checkbox_program extends App {
   def which_one(text: String) = checkbox (
     budget = 8.00,
     text = text,
-    options = List(
+    options = List[MTQuestionOption](
       "Oscar the Grouch" -> "http://tinyurl.com/qfwlx56",
       "Kermit the Frog" -> "http://tinyurl.com/nuwyz3u",
       "Spongebob Squarepants" -> "http://tinyurl.com/oj6wzx6",
