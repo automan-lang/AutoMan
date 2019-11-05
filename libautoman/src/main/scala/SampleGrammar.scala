@@ -110,10 +110,10 @@ object SampleGrammar {
       )
     }
 
-    val startProd: Option[Production] = sample(grammar, true, null, null)
-    for(e <- G.getList()) print(e.sample())
+    val startProd: Option[Production] = sample(grammar, true, "Start", None)
+    //for(e <- G.getList()) print(e.sample())
     println()
-    //sample(grammar, false, startProd.asInstanceOf[Name].getName(), startProd)
+    sample(grammar, false, startProd.asInstanceOf[Name].getName(), startProd)
     //startProd.sample()
   }
 }
