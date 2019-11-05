@@ -24,6 +24,7 @@ class NonTerminal(sentence: List[Production]) extends Production {
     val ran = new Random()
     sentence(ran.nextInt(sentence.length)).sample()
   }
+  def getList(): List[Production] = sentence
 }
 
 class Name(n: String, nameMap: Map[String, Production]) extends Production {
@@ -34,28 +35,41 @@ class Name(n: String, nameMap: Map[String, Production]) extends Production {
 
 
 object SampleGrammar {
-  def sample(g: Map[String,Production], isFirst: Boolean): Production = {
+  def sample(g: Map[String,Production], isFirst: Boolean, startSymbol: String, curProd: Option[Production]): Option[Production] = {
     // find start
     // sample symbol associated with it
     // build string by sampling each symbol
+
     if(isFirst) {
       val firstSamp: Option[Production] = g get "Start"
-      firstSamp match {
-        case Some(prod) => {
-          //println(prod.sample()) // Sampling G, a nonterminal
-          prod
-        }
-        case None => throw new Exception("Need a start indicator")
-      }
+      firstSamp
+//      firstSamp match {
+//        case Some(firstSamp) => {
+//          //println(prod.sample()) // Sampling G, a nonterminal
+//          firstSamp
+//        }
+//        case None => throw new Exception("Need a start indicator")
+//      }
       //println(firstSamp.sample())
-    } else null
+    } else if(curProd.isInstanceOf[Name]){
+      val prodMap = curProd.asInstanceOf[Name].getMap()
+      val nonTerm = prodMap(startSymbol)
+
+      for (e <- nonTerm.asInstanceOf[NonTerminal].getList()) {
+        print(e.sample)
+      }
+      Some(nonTerm)
+    } else {
+        None
+      }
+    }
+    //curProd
       //    else {
 //      for(item <- g){
 //        item.sample()
 //      }
 //    }
 
-  }
   def main(args: Array[String]): Unit = {
     var nameMap = new HashMap[String, Production]
     val A = new Choices(
@@ -96,7 +110,10 @@ object SampleGrammar {
       )
     }
 
-    val startProd = sample(grammar, true)
-    startProd.sample()
+    val startProd: Option[Production] = sample(grammar, true, null, null)
+    for(e <- G.getList()) print(e.sample())
+    println()
+    //sample(grammar, false, startProd.asInstanceOf[Name].getName(), startProd)
+    //startProd.sample()
   }
 }
