@@ -3,6 +3,7 @@ import scala.util.Random
 
 trait Production {
   def sample(): String
+  def count(): Int
 }
 
 class Choices(options: List[Production]) extends Production {
@@ -10,13 +11,18 @@ class Choices(options: List[Production]) extends Production {
     val ran = new Random()
     options(ran.nextInt(options.length)).sample()
   }
+  override def count(): Int = {
+    var c = 0
+    for (e <- options) c += e.count() // choices are additive
+    c
+  }
 }
 
 class Terminal(word: String) extends Production {
   override def sample(): String = {
-    //print(word)
     word
   }
+  override def count(): Int = 1
 }
 
 class NonTerminal(sentence: List[Production]) extends Production {
@@ -24,14 +30,17 @@ class NonTerminal(sentence: List[Production]) extends Production {
     val ran = new Random()
     sentence(ran.nextInt(sentence.length)).sample()
   }
+  override def count(): Int = {
+    var c = 0
+    for (e <- sentence) c *= e.count() // nonterminals are multiplicative
+    c
+  }
   def getList(): List[Production] = sentence
 }
 
 class Name(n: String) extends Production {
   override def sample(): String = n // sample returns name for further lookup
-  //override def sample(): String = nameMap(n).sample() // or sample(p)?
-  //def getName(): String = n
-  //def getMap(): Map[String, Production] = nameMap
+  override def count(): Int = 0 //count() // want to look up what it's associated with but how?
 }
 
 
@@ -53,45 +62,27 @@ object SampleGrammar {
                 case name: Name => sample(g, name.sample())
                 case p: Production => print(p.sample())
               }
-              //sample(g, n)
-              //print(n.sample())
             }
           }
         }
       }
       case None => throw new Exception("Symbol could not be found")
     }
+  }
 
-    //    //if(isFirst) {
-    //      val firstSamp: Option[Production] = g get "Start"
-    //      firstSamp
-    ////      firstSamp match {
-    ////        case Some(firstSamp) => {
-    ////          //println(prod.sample()) // Sampling G, a nonterminal
-    ////          firstSamp
-    ////        }
-    ////        case None => throw new Exception("Need a start indicator")
-    ////      }
-    //      //println(firstSamp.sample())
-    //    } else if(curProd.isInstanceOf[Name]){
-    //      val prodMap = curProd.asInstanceOf[Name].getMap()
-    //      val nonTerm = prodMap(startSymbol)
-    //
-    //      for (e <- nonTerm.asInstanceOf[NonTerminal].getList()) {
-    //        print(e.sample)
-    //      }
-    //      Some(nonTerm)
-    //    } else {
-    //        None
-    //      }
-    //    }
-    //curProd
-    //    else {
-    //      for(item <- g){
-    //        item.sample()
-    //      }
-    //    }
-
+  def count(g: Map[String, Production], startSymbol: String, soFar: Int): Int = {
+    val samp: Option[Production] = g get startSymbol // get Production associated with symbol from grammar
+    samp match {
+      case Some(samp) => {
+        samp match {
+          case name: Name => count(g, name.sample(), soFar) // Name becomes start symbol, no count incremented
+          case term: Terminal => term.count()
+          case choice: Choices => choice.count()
+          case nonterm: NonTerminal => nonterm.count()
+        }
+      }
+      case None => throw new Exception("Symbol could not be found")
+    }
   }
 
   def main(args: Array[String]): Unit = {
@@ -131,6 +122,8 @@ object SampleGrammar {
 
     sample(grammar, "Start")
     println()
+    println("Count: " + G.count())
+    println("count method: " + count(grammar, "Start", 0))
     //print(sample(grammar, "Start"))
 
     //val startProd: Option[Production] = sample(grammar, "Start")
