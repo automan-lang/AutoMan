@@ -6,6 +6,7 @@ trait Production {
   def count(g: Map[String,Production]): Int
 }
 
+// A set of choices, options for a value
 class Choices(options: List[Production]) extends Production {
   override def sample(): String = {
     val ran = new Random()
@@ -20,6 +21,7 @@ class Choices(options: List[Production]) extends Production {
   }
 }
 
+// A terminal production
 class Terminal(word: String) extends Production {
   override def sample(): String = {
     word
@@ -27,6 +29,7 @@ class Terminal(word: String) extends Production {
   override def count(g: Map[String,Production]): Int = 1
 }
 
+// A nonterminal, aka a combination of other terminals
 class NonTerminal(sentence: List[Production]) extends Production {
   override def sample(): String = {
     val ran = new Random()
@@ -42,6 +45,7 @@ class NonTerminal(sentence: List[Production]) extends Production {
   def getList(): List[Production] = sentence
 }
 
+// A name associated with a Production
 class Name(n: String) extends Production {
   override def sample(): String = n // sample returns name for further lookup
   def count(g: Map[String,Production]): Int = {
@@ -74,7 +78,7 @@ object SampleGrammar {
           }
         }
       }
-      case None => throw new Exception("Symbol could not be found")
+      case None => throw new Exception(s"Symbol ${startSymbol} could not be found")
     }
   }
 
@@ -123,9 +127,121 @@ object SampleGrammar {
         )
       )
     }
+
+    val lindaG = new NonTerminal(
+      List(
+        new Name("Name"),
+        new Terminal(" is "),
+        new Name("Age"),
+        new Terminal(" years old, single, outspoken, and very bright. They majored in "),
+        new Name("Major"),
+        new Terminal(". As a student, they were deeply concerned with issues of "),
+        new Name("Issue"),
+        new Terminal(", and also participated in "),
+        new Name("Demonstration"),
+        new Terminal(" demonstrations.\nWhich is more probable?\n1. "),
+        new Name("Name"),
+        new Terminal(" is a "),
+        new Name("Job"),
+        new Terminal("\n2. "),
+        new Name("Name"),
+        new Terminal(" is a "),
+        new Name("Job"),
+        new Terminal(" and is active in the "),
+        new Name("Movement"),
+        new Terminal(" movement.")
+      )
+    )
+    val Linda = {
+      Map(
+        "Start" -> new Name("lindaG"),
+        "lindaG" -> lindaG,
+        "Name" -> new Choices(
+          List(
+            new Terminal("Linda"),
+            new Terminal("Dan"),
+            new Terminal("Emmie"),
+            new Terminal("Xavier the bloodsucking spider")
+          )
+        ),
+        "Age" -> new Choices(
+          List(
+            new Terminal("21"),
+            new Terminal("31"),
+            new Terminal("41"),
+            new Terminal("51"),
+            new Terminal("61")
+          )
+        ),
+        "Major" -> new Choices(
+          List(
+            new Terminal("chemistry"),
+            new Terminal("psychology"),
+            new Terminal("english literature"),
+            new Terminal("philosophy"),
+            new Terminal("women's studies"),
+            new Terminal("underwater basket weaving")
+          )
+        ),
+        "Issue" -> new Choices(
+          List(
+            new Terminal("discrimination and social justice"),
+            new Terminal("fair wages"),
+            new Terminal("animal rights"),
+            new Terminal("white collar crime"),
+            new Terminal("unemployed circus workers")
+          )
+        ),
+        "Demonstration" -> new Choices(
+          List(
+            new Terminal("anti-nuclear"),
+            new Terminal("anti-war"),
+            new Terminal("pro-choice"),
+            new Terminal("anti-abortion"),
+            new Terminal("anti-animal testing")
+          )
+        ),
+        "Job" -> new Choices(
+          List(
+            new Terminal("bank teller"),
+            new Terminal("almond paste mixer"),
+            new Terminal("tennis scout"),
+            new Terminal("lawyer"),
+            new Terminal("professor")
+          )
+        ),
+        "Movement" -> new Choices(
+          List(
+            new Terminal("feminist"),
+            new Terminal("anti-plastic water bottle"),
+            new Terminal("pro-pretzel crisp"),
+            new Terminal("pro-metal straw"),
+            new Terminal("environmental justice")
+          )
+        )
+      )
+    }
+
     sample(grammar, "Start")
+    println()
+    sample(Linda, "Start")
 
     println()
     println("Count: " + G.count(grammar))
+    println("Linda count: " + lindaG.count(Linda)) //TODO: make sure this is how we want to call count
   }
 }
+
+//val linda = new Experiment(
+//  'name +  " is " + 'age + "years old, single, outspoken, and very bright. " + 'name_gender + " majored in " + 'major  +
+//    ". As a student,  " + 'name_gender + " was deeply concerned with issues of " + 'issues + ", and also participated in " + 'demonstrations + "demonstrations.\n\nWhich is more probable?",
+//  List('name + " is a " + 'job + ".", 'name + " is a " + 'job + " and is active in the " +  'issues + " movement."),
+//  Map(
+//    'name -> nameList,
+//    //'name_gender -> genderMap(nameList),//genderMap(Symbol.valueFromKey("name")),
+//    'age -> List("21", "31", "41", "51", "61"),
+//    'major -> List("chemistry", "psychology", "english literature", "philosophy", "women's studies"),
+//    'issues -> List("discrimination and social justice", "fair wages", "animal rights", "white collar crime", "unemployed circus workers"),
+//    'demonstrations -> List("anti-nuclear", "anti-war", "pro-choice", "anti-abortion", "anti-animal testing"),
+//    'jobs -> List("bank teller", "almond paste mixer", "tennis scout", "lawyer", "professor")
+//  ),
