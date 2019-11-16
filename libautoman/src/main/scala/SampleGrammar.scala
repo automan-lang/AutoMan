@@ -49,7 +49,7 @@ class NonTerminal(sentence: List[Production]) extends Production {
 class Name(n: String) extends Production {
   override def sample(): String = n // sample returns name for further lookup
   def count(g: Map[String,Production]): Int = {
-    g(this.sample()).count(g)
+    g(this.sample()).count(g) // TODO: will null cause issues?
   }
 }
 
@@ -57,7 +57,7 @@ class Name(n: String) extends Production {
 object SampleGrammar {
 
   // Sample a string from the grammar
-  def sample(g: Map[String,Production], startSymbol: String): Unit = {
+  def sample(g: Map[String,Production], startSymbol: String, scope: Scope): Unit = {
     // find start
     // sample symbol associated with it
     // build string by sampling each symbol
@@ -65,14 +65,46 @@ object SampleGrammar {
     samp match {
       case Some(samp) => {
         samp match {
-          case name: Name => sample(g, name.sample()) // Name becomes start symbol
-          case term: Terminal => print(term.sample())
-          case choice: Choices => print(choice.sample())
+          case name: Name => sample(g, name.sample(), scope) // Name becomes start symbol
+          case term: Terminal => {
+            print(term.sample())
+//            if(scope.isBound(startSymbol)){
+//              println(s"${startSymbol} is bound, looking up")
+//              print(scope.lookup(startSymbol))
+//            } else {
+//              val binding = term.sample()
+//              scope.assign(startSymbol, binding)
+//              print(binding)
+//            }
+          }
+          case choice: Choices => {
+            if(scope.isBound(startSymbol)){
+              //println(s"${startSymbol} is bound, looking up")
+              print(scope.lookup(startSymbol))
+            } else {
+              val binding = choice.sample()
+              scope.assign(startSymbol, binding)
+              //println(s"Binding ${startSymbol} for first occurrence")
+              print(binding)
+              //println("\nScope: " + scope.toString())
+            }
+            //print(choice.sample(scope))
+          }
           case nonterm: NonTerminal => {
             for(n <- nonterm.getList()) {
               n match {
-                case name: Name => sample(g, name.sample())
-                case p: Production => print(p.sample())
+                case name: Name => sample(g, name.sample(), scope)
+                case p: Production => {
+//                  if(scope.isBound(startSymbol)){
+//                    print(scope.lookup(startSymbol))
+//                  } else {
+//                    val binding = p.sample()
+//                    scope.assign(startSymbol, binding)
+//                    print(binding)
+//                    //println("\nScope: " + scope.toString())
+//                  }
+                  print(p.sample())
+                }
               }
             }
           }
@@ -143,7 +175,7 @@ object SampleGrammar {
         new Name("Name"),
         new Terminal(" is a "),
         new Name("Job"),
-        new Terminal("\n2. "),
+        new Terminal(".\n2. "),
         new Name("Name"),
         new Terminal(" is a "),
         new Name("Job"),
@@ -221,10 +253,12 @@ object SampleGrammar {
         )
       )
     }
+    //var scopeMap: Map[String,String] = Map
+    val lindaScope = new Scope(Linda)
 
-    sample(grammar, "Start")
-    println()
-    sample(Linda, "Start")
+    //sample(grammar, "Start")
+    //println()
+    sample(Linda, "Start", lindaScope)
 
     println()
     println("Count: " + G.count(grammar))
