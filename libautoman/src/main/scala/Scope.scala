@@ -3,8 +3,9 @@ class Scope(val grammar: Map[String, Production]) { // or string -> string?
 
   def assign(name: String, value: String): Unit = {
     if (grammar contains name){
-      varBindings = varBindings + (name -> value)
-      //println(s"\nBinding ${name} to ${value}")
+      varBindings = varBindings + (name -> value) // TODO: recursive bindings
+    } else {
+      throw new Exception("")
     }
     //this.toString()
   }

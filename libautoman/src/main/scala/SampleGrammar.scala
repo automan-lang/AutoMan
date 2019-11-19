@@ -53,6 +53,18 @@ class Name(n: String) extends Production {
   }
 }
 
+// param is name of the Choices that this function applies to
+// fun maps those choices to the function results
+class Function(fun: Map[String,String], param: String) extends Production {
+  override def sample(): String = ???
+  override def count(g: Map[String, Production]): Int = 1
+  def runFun(s: String): String = { // "call" the function on the string
+    fun(s)
+  }
+  def getParam: String = {
+    param
+  }
+}
 
 object SampleGrammar {
 
@@ -68,25 +80,13 @@ object SampleGrammar {
           case name: Name => sample(g, name.sample(), scope) // Name becomes start symbol
           case term: Terminal => {
             print(term.sample())
-//            if(scope.isBound(startSymbol)){
-//              println(s"${startSymbol} is bound, looking up")
-//              print(scope.lookup(startSymbol))
-//            } else {
-//              val binding = term.sample()
-//              scope.assign(startSymbol, binding)
-//              print(binding)
-//            }
           }
           case choice: Choices => {
             if(scope.isBound(startSymbol)){
               //println(s"${startSymbol} is bound, looking up")
               print(scope.lookup(startSymbol))
             } else {
-              val binding = choice.sample()
-              scope.assign(startSymbol, binding)
-              //println(s"Binding ${startSymbol} for first occurrence")
-              print(binding)
-              //println("\nScope: " + scope.toString())
+              throw new Exception(s"Choice ${startSymbol} has not been bound")
             }
             //print(choice.sample(scope))
           }
@@ -95,17 +95,20 @@ object SampleGrammar {
               n match {
                 case name: Name => sample(g, name.sample(), scope)
                 case p: Production => {
-//                  if(scope.isBound(startSymbol)){
-//                    print(scope.lookup(startSymbol))
-//                  } else {
-//                    val binding = p.sample()
-//                    scope.assign(startSymbol, binding)
-//                    print(binding)
-//                    //println("\nScope: " + scope.toString())
-//                  }
-                  print(p.sample())
+                  if(scope.isBound(startSymbol)){
+                    print(scope.lookup(startSymbol))
+                  } else {
+                    print(p.sample())
+                  }
                 }
               }
+            }
+          }
+          case func: Function => { // need to look up element in grammar via getParam, find its binding, then use that in runFun
+            if(scope.isBound(startSymbol)){
+              print(func.runFun(scope.lookup(startSymbol)))
+            } else {
+              print("something's not right")
             }
           }
         }
@@ -114,7 +117,36 @@ object SampleGrammar {
     }
   }
 
+  // bind variables
+  def bind(grammar: Map[String, Production], startSymbol: String, scope: Scope): Unit ={
+    val samp: Option[Production] = grammar get startSymbol // get Production associated with symbol from grammar
+    samp match {
+      case Some(samp) => {
+        samp match {
+          case name: Name => bind(grammar, name.sample(), scope) // Name becomes start symbol
+          case choice: Choices => {
+            if(!(scope.isBound(startSymbol))){
+              val binding = choice.sample()
+              scope.assign(startSymbol, binding)
+              println(scope.toString())
+            }
+          }
+          case p: Production => {}
+//          case nonterm: NonTerminal => { // TODO: refactor
+//            for(n <- nonterm.getList()) {
+//              n match {
+//                case name: Name => sample(grammar, name.sample(), scope)
+//                }
+//              }
+//            }
+          }
+        }
+      case None => throw new Exception(s"Symbol ${startSymbol} could not be found")
+      }
+    }
+
   // Count the number of options possible in a given grammar
+  //TODO: keep track of which vars have been counted?
   def count(g: Map[String, Production], startSymbol: String, soFar: Int): Int = {
     val samp: Option[Production] = g get startSymbol // get Production associated with symbol from grammar
     var opts = 0
@@ -137,6 +169,23 @@ object SampleGrammar {
       )
     )
 
+    val pronouns = Map[String, String](
+      "Linda" -> "she",
+      "Dan" -> "he",
+      "Emmie" -> "she",
+      "Xavier the bloodsucking spider" -> "it"
+    )
+
+    // TODO: what if multiple params need same function?
+    val articles = Map[String,String](
+      "bank teller" -> "a",
+      "almond paste mixer" -> "an",
+      "tennis scout" -> "a",
+      "lawyer" -> "a",
+      "professor" -> "a"
+    )
+
+    // simple grammar
     val grammar = {
       Map(
         "Start" -> new Name("G"),
@@ -160,24 +209,33 @@ object SampleGrammar {
       )
     }
 
+    // new, complex grammar for the Linda Problem
     val lindaG = new NonTerminal(
       List(
         new Name("Name"),
         new Terminal(" is "),
         new Name("Age"),
-        new Terminal(" years old, single, outspoken, and very bright. They majored in "),
+        new Terminal(" years old, single, outspoken, and very bright. "),
+        new Function(pronouns, "Name"),
+        new Terminal(" majored in "),
         new Name("Major"),
-        new Terminal(". As a student, they were deeply concerned with issues of "),
+        new Terminal(". As a student, "),
+        new Function(pronouns, "Name"),
+        new Terminal(" was deeply concerned with issues of "),
         new Name("Issue"),
         new Terminal(", and also participated in "),
         new Name("Demonstration"),
         new Terminal(" demonstrations.\nWhich is more probable?\n1. "),
         new Name("Name"),
-        new Terminal(" is a "),
+        new Terminal(" is "),
+        new Function(articles, "Job"),
+        new Terminal(" "),
         new Name("Job"),
         new Terminal(".\n2. "),
         new Name("Name"),
-        new Terminal(" is a "),
+        new Terminal(" is "),
+        new Function(articles, "Job"),
+        new Terminal(" "),
         new Name("Job"),
         new Terminal(" and is active in the "),
         new Name("Movement"),
@@ -250,7 +308,10 @@ object SampleGrammar {
             new Terminal("pro-metal straw"),
             new Terminal("environmental justice")
           )
-        )
+        )//,
+//        "Article" -> new Function(
+//
+//        )
       )
     }
     //var scopeMap: Map[String,String] = Map
@@ -258,7 +319,9 @@ object SampleGrammar {
 
     //sample(grammar, "Start")
     //println()
-    sample(Linda, "Start", lindaScope)
+    bind(Linda, "Start", lindaScope)
+    //sample(Linda, "Start", lindaScope)
+    //functions(Linda, lindaScope)
 
     println()
     println("Count: " + G.count(grammar))
