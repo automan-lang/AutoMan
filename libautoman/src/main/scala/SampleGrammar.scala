@@ -20,6 +20,10 @@ class Choices(options: List[Production]) extends Production {
     } // choices are additive
     c
   }
+  // return specific terminal given by index i
+  def sampleSpec(i: Int): String = {
+    options(i).sample() //TODO: should probably ensure array bounds
+  }
 }
 
 // A terminal production
@@ -43,6 +47,10 @@ class NonTerminal(sentence: List[Production]) extends Production {
     } // nonterminals are multiplicative
     c
   }
+  // return specific terminal given by index i
+  def sampleSpec(i: Int): String = {
+    sentence(i).sample()
+  }
   def getList(): List[Production] = sentence
 }
 
@@ -54,6 +62,21 @@ class Name(n: String) extends Production {
       counted += n
       g(this.sample()).count(g, counted) // TODO: will null cause issues?
     } else 1
+  }
+}
+
+// A nonterminal that expands only into terminals
+class LeafNonterminal(terminals: List[Terminal]) extends Production {
+  override def sample(): String = {
+    val ran = new Random()
+    terminals(ran.nextInt(terminals.length)).sample()
+  }
+  override def count(g: Map[String, Production], counted: mutable.HashSet[String]): Int = {
+    terminals.length
+  }
+  // return specific terminal given by index i
+  def sampleSpec(i: Int): String = {
+    terminals(i).sample()
   }
 }
 
