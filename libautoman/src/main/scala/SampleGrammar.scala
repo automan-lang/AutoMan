@@ -58,8 +58,11 @@ class Name(n: String) extends Production {
 class Function(fun: Map[String,String], param: String) extends Production {
   override def sample(): String = ???
   override def count(g: Map[String, Production]): Int = 1
-  def runFun(s: String): String = { // "call" the function on the string
-    fun(s)
+  def runFun(s: String, grammar: Map[String, Production], scope: Scope): String = { // "call" the function on the string
+    //fun(grammar get s)
+    if(scope.isBound(s)) {
+      fun(scope.lookup(s)) // TODO: do we want to do this here or in sample? (see 113)
+    } else "" //TODO: figure out what this should actually do
   }
   def getParam: String = {
     param
@@ -94,6 +97,7 @@ object SampleGrammar {
             for(n <- nonterm.getList()) {
               n match {
                 case name: Name => sample(g, name.sample(), scope)
+                case fun: Function => print(fun.runFun(fun.getParam, g, scope))
                 case p: Production => {
                   if(scope.isBound(startSymbol)){
                     print(scope.lookup(startSymbol))
@@ -106,7 +110,8 @@ object SampleGrammar {
           }
           case func: Function => { // need to look up element in grammar via getParam, find its binding, then use that in runFun
             if(scope.isBound(startSymbol)){
-              print(func.runFun(scope.lookup(startSymbol)))
+              //print(func.runFun(scope.lookup(startSymbol), g, scope))
+              print(func.runFun(startSymbol, g, scope))
             } else {
               print("something's not right")
             }
@@ -117,7 +122,7 @@ object SampleGrammar {
     }
   }
 
-  // bind variables
+  // bind variables. Doesn't deal with functions; those are handled by Sample
   def bind(grammar: Map[String, Production], startSymbol: String, scope: Scope): Unit ={
     val samp: Option[Production] = grammar get startSymbol // get Production associated with symbol from grammar
     samp match {
@@ -129,6 +134,14 @@ object SampleGrammar {
               val binding = choice.sample()
               scope.assign(startSymbol, binding)
               println(scope.toString())
+            }
+          }
+          case nt: NonTerminal => {
+            for(n <- nt.getList()) {
+              n match {
+                case name: Name => bind(grammar, name.sample(), scope)
+                case p: Production => { }
+              }
             }
           }
           case p: Production => {}
@@ -320,7 +333,7 @@ object SampleGrammar {
     //sample(grammar, "Start")
     //println()
     bind(Linda, "Start", lindaScope)
-    //sample(Linda, "Start", lindaScope)
+    sample(Linda, "Start", lindaScope)
     //functions(Linda, lindaScope)
 
     println()
