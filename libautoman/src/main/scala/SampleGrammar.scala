@@ -59,15 +59,16 @@ class Name(n: String) extends Production {
 
 // param is name of the Choices that this function applies to
 // fun maps those choices to the function results
-class Function(fun: Map[String,String], param: String) extends Production {
-  override def sample(): String = ???
+class Function(fun: Map[String,String], param: String, capitalize: Boolean) extends Production {
+  override def sample(): String = param
   override def count(g: Map[String, Production], counted: mutable.HashSet[String]): Int = 1
   def runFun(s: String): String = { // "call" the function on the string
-    fun(s)
+    if(capitalize) fun(s).capitalize
+    else fun(s)
   }
-  def getParam: String = {
-    param
-  }
+//  def getParam: String = {
+//    param
+//  }
 }
 
 object SampleGrammar {
@@ -97,7 +98,7 @@ object SampleGrammar {
             for(n <- nonterm.getList()) {
               n match {
                 case name: Name => sample(g, name.sample(), scope)
-                case fun: Function => print(fun.runFun(scope.lookup(fun.getParam)))
+                case fun: Function => print(fun.runFun(scope.lookup(fun.sample())))
                 case p: Production => {
                   if(scope.isBound(startSymbol)){
                     print(scope.lookup(startSymbol))
@@ -109,8 +110,8 @@ object SampleGrammar {
             }
           }
           case fun: Function => { // need to look up element in grammar via getParam, find its binding, then use that in runFun
-            if(scope.isBound(fun.getParam)){ // TODO: is this right?
-              print(fun.runFun(scope.lookup(fun.getParam)))
+            if(scope.isBound(fun.sample())){ // TODO: is this right?
+              print(fun.runFun(scope.lookup(fun.sample())))
             } else {
               print("something's not right")
             }
@@ -220,11 +221,11 @@ object SampleGrammar {
         new Terminal(" is "),
         new Name("Age"),
         new Terminal(" years old, single, outspoken, and very bright. "),
-        new Function(pronouns, "Name"),
+        new Function(pronouns, "Name", true),
         new Terminal(" majored in "),
         new Name("Major"),
         new Terminal(". As a student, "),
-        new Function(pronouns, "Name"),
+        new Function(pronouns, "Name", false),
         new Terminal(" was deeply concerned with issues of "),
         new Name("Issue"),
         new Terminal(", and also participated in "),
@@ -232,13 +233,13 @@ object SampleGrammar {
         new Terminal(" demonstrations.\nWhich is more probable?\n1. "),
         new Name("Name"),
         new Terminal(" is "),
-        new Function(articles, "Job"),
+        new Function(articles, "Job", false),
         new Terminal(" "),
         new Name("Job"),
         new Terminal(".\n2. "),
         new Name("Name"),
         new Terminal(" is "),
-        new Function(articles, "Job"),
+        new Function(articles, "Job", false),
         new Terminal(" "),
         new Name("Job"),
         new Terminal(" and is active in the "),
@@ -312,10 +313,7 @@ object SampleGrammar {
             new Terminal("pro-metal straw"),
             new Terminal("environmental justice")
           )
-        )//,
-//        "Article" -> new Function(
-//
-//        )
+        )
       )
     }
     val lindaScope = new Scope(Linda)
