@@ -1,9 +1,10 @@
 import scala.collection.immutable.HashMap
+import scala.collection.mutable
 import scala.util.Random
 
 trait Production {
   def sample(): String
-  def count(g: Map[String,Production]): Int
+  def count(g: Map[String,Production], counted: mutable.HashSet[String]): Int
 }
 
 // A set of choices, options for a value
@@ -12,10 +13,10 @@ class Choices(options: List[Production]) extends Production {
     val ran = new Random()
     options(ran.nextInt(options.length)).sample()
   }
-  override def count(g: Map[String,Production]): Int = {
+  override def count(g: Map[String,Production], counted: mutable.HashSet[String]): Int = {
     var c: Int = 0
     for (e <- options) {
-      c = c + e.count(g)
+      c = c + e.count(g, counted)
     } // choices are additive
     c
   }
@@ -26,7 +27,7 @@ class Terminal(word: String) extends Production {
   override def sample(): String = {
     word
   }
-  override def count(g: Map[String,Production]): Int = 1
+  override def count(g: Map[String,Production], counted: mutable.HashSet[String]): Int = 1
 }
 
 // A nonterminal, aka a combination of other terminals
@@ -35,10 +36,10 @@ class NonTerminal(sentence: List[Production]) extends Production {
     val ran = new Random()
     sentence(ran.nextInt(sentence.length)).sample()
   }
-  override def count(g: Map[String,Production]): Int = {
+  override def count(g: Map[String,Production], counted: mutable.HashSet[String]): Int = {
     var c: Int = 1 // TODO: is this ok?
     for (e <- sentence){
-      c = c*e.count(g)
+      c = c*e.count(g, counted)
     } // nonterminals are multiplicative
     c
   }
@@ -48,8 +49,11 @@ class NonTerminal(sentence: List[Production]) extends Production {
 // A name associated with a Production
 class Name(n: String) extends Production {
   override def sample(): String = n // sample returns name for further lookup
-  def count(g: Map[String,Production]): Int = {
-    g(this.sample()).count(g) // TODO: will null cause issues?
+  def count(g: Map[String,Production], counted: mutable.HashSet[String]): Int = {
+    if(!counted.contains(n)){
+      counted += n
+      g(this.sample()).count(g, counted) // TODO: will null cause issues?
+    } else 1
   }
 }
 
@@ -57,12 +61,13 @@ class Name(n: String) extends Production {
 // fun maps those choices to the function results
 class Function(fun: Map[String,String], param: String) extends Production {
   override def sample(): String = ???
-  override def count(g: Map[String, Production]): Int = 1
-  def runFun(s: String, grammar: Map[String, Production], scope: Scope): String = { // "call" the function on the string
+  override def count(g: Map[String, Production], counted: mutable.HashSet[String]): Int = 1
+  def runFun(s: String): String = { // "call" the function on the string
     //fun(grammar get s)
-    if(scope.isBound(s)) {
-      fun(scope.lookup(s)) // TODO: do we want to do this here or in sample? (see 113)
-    } else "" //TODO: figure out what this should actually do
+    fun(s)
+//    if(scope.isBound(s)) {
+//      fun(scope.lookup(s)) // TODO: do we want to do this here or in sample? (see 113)
+//    } else "" //TODO: figure out what this should actually do
   }
   def getParam: String = {
     param
@@ -97,7 +102,7 @@ object SampleGrammar {
             for(n <- nonterm.getList()) {
               n match {
                 case name: Name => sample(g, name.sample(), scope)
-                case fun: Function => print(fun.runFun(fun.getParam, g, scope))
+                case fun: Function => print(fun.runFun(scope.lookup(fun.getParam)))//print(fun.runFun(fun.getParam, g, scope))
                 case p: Production => {
                   if(scope.isBound(startSymbol)){
                     print(scope.lookup(startSymbol))
@@ -108,10 +113,10 @@ object SampleGrammar {
               }
             }
           }
-          case func: Function => { // need to look up element in grammar via getParam, find its binding, then use that in runFun
-            if(scope.isBound(startSymbol)){
-              //print(func.runFun(scope.lookup(startSymbol), g, scope))
-              print(func.runFun(startSymbol, g, scope))
+          case fun: Function => { // need to look up element in grammar via getParam, find its binding, then use that in runFun
+            if(scope.isBound(fun.getParam)){ // TODO: is this right?
+              print(fun.runFun(scope.lookup(fun.getParam)))
+              //print(func.runFun(startSymbol, g, scope))
             } else {
               print("something's not right")
             }
@@ -140,7 +145,7 @@ object SampleGrammar {
             for(n <- nt.getList()) {
               n match {
                 case name: Name => bind(grammar, name.sample(), scope)
-                case p: Production => { }
+                case p: Production => {}
               }
             }
           }
@@ -159,13 +164,12 @@ object SampleGrammar {
     }
 
   // Count the number of options possible in a given grammar
-  //TODO: keep track of which vars have been counted?
-  def count(g: Map[String, Production], startSymbol: String, soFar: Int): Int = {
-    val samp: Option[Production] = g get startSymbol // get Production associated with symbol from grammar
+  def count(grammar: Map[String, Production], startSymbol: String, soFar: Int, counted: mutable.HashSet[String]): Int = {
+    val samp: Option[Production] = grammar get startSymbol // get Production associated with symbol from grammar
     var opts = 0
     samp match {
       case Some(samp) => {
-        opts = soFar + samp.count(g)
+        opts = soFar + samp.count(grammar, counted)
       }
       case None => throw new Exception("Symbol could not be found")
     }
@@ -337,8 +341,10 @@ object SampleGrammar {
     //functions(Linda, lindaScope)
 
     println()
-    println("Count: " + G.count(grammar))
-    println("Linda count: " + lindaG.count(Linda)) //TODO: make sure this is how we want to call count
+    //println("Count: " + G.count(grammar))
+    //println("Linda count: " + lindaG.count(Linda)) //TODO: make sure this is how we want to call count
+    //println("Simple count: " + count(grammar, "Start", 0 , new mutable.HashSet[String]()))
+    println("Linda count: "  + count(Linda, "Start", 0, new mutable.HashSet[String]()))
   }
 }
 
