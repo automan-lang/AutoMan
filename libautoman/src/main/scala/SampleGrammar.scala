@@ -63,11 +63,7 @@ class Function(fun: Map[String,String], param: String) extends Production {
   override def sample(): String = ???
   override def count(g: Map[String, Production], counted: mutable.HashSet[String]): Int = 1
   def runFun(s: String): String = { // "call" the function on the string
-    //fun(grammar get s)
     fun(s)
-//    if(scope.isBound(s)) {
-//      fun(scope.lookup(s)) // TODO: do we want to do this here or in sample? (see 113)
-//    } else "" //TODO: figure out what this should actually do
   }
   def getParam: String = {
     param
@@ -96,13 +92,12 @@ object SampleGrammar {
             } else {
               throw new Exception(s"Choice ${startSymbol} has not been bound")
             }
-            //print(choice.sample(scope))
           }
           case nonterm: NonTerminal => {
             for(n <- nonterm.getList()) {
               n match {
                 case name: Name => sample(g, name.sample(), scope)
-                case fun: Function => print(fun.runFun(scope.lookup(fun.getParam)))//print(fun.runFun(fun.getParam, g, scope))
+                case fun: Function => print(fun.runFun(scope.lookup(fun.getParam)))
                 case p: Production => {
                   if(scope.isBound(startSymbol)){
                     print(scope.lookup(startSymbol))
@@ -116,7 +111,6 @@ object SampleGrammar {
           case fun: Function => { // need to look up element in grammar via getParam, find its binding, then use that in runFun
             if(scope.isBound(fun.getParam)){ // TODO: is this right?
               print(fun.runFun(scope.lookup(fun.getParam)))
-              //print(func.runFun(startSymbol, g, scope))
             } else {
               print("something's not right")
             }
@@ -138,7 +132,7 @@ object SampleGrammar {
             if(!(scope.isBound(startSymbol))){
               val binding = choice.sample()
               scope.assign(startSymbol, binding)
-              println(scope.toString())
+              //println(scope.toString())
             }
           }
           case nt: NonTerminal => {
@@ -150,13 +144,6 @@ object SampleGrammar {
             }
           }
           case p: Production => {}
-//          case nonterm: NonTerminal => { // TODO: refactor
-//            for(n <- nonterm.getList()) {
-//              n match {
-//                case name: Name => sample(grammar, name.sample(), scope)
-//                }
-//              }
-//            }
           }
         }
       case None => throw new Exception(s"Symbol ${startSymbol} could not be found")
@@ -179,9 +166,9 @@ object SampleGrammar {
   def main(args: Array[String]): Unit = {
     val G = new NonTerminal(
       List(
-        new Name("A"),//, nameMap = nameMap + ("A" -> A)),
+        new Name("A"),
         new Terminal(" is "),
-        new Name("B"),// nameMap = nameMap + ("B" -> B)),
+        new Name("B"),
         new Terminal(" years old.")
       )
     )
@@ -331,19 +318,14 @@ object SampleGrammar {
 //        )
       )
     }
-    //var scopeMap: Map[String,String] = Map
     val lindaScope = new Scope(Linda)
 
     //sample(grammar, "Start")
     //println()
     bind(Linda, "Start", lindaScope)
     sample(Linda, "Start", lindaScope)
-    //functions(Linda, lindaScope)
 
     println()
-    //println("Count: " + G.count(grammar))
-    //println("Linda count: " + lindaG.count(Linda)) //TODO: make sure this is how we want to call count
-    //println("Simple count: " + count(grammar, "Start", 0 , new mutable.HashSet[String]()))
     println("Linda count: "  + count(Linda, "Start", 0, new mutable.HashSet[String]()))
   }
 }
