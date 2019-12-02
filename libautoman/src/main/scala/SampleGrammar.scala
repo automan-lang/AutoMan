@@ -5,6 +5,8 @@ import scala.util.Random
 trait Production {
   def sample(): String
   def count(g: Map[String,Production], counted: mutable.HashSet[String]): Int
+  def isLeafNT(): Boolean
+  def toChoiceArr(g: Map[String,Production]): Option[Array[Range]]
 }
 
 // A set of choices, options for a value
@@ -13,6 +15,7 @@ class Choices(options: List[Production]) extends Production {
     val ran = new Random()
     options(ran.nextInt(options.length)).sample()
   }
+
   override def count(g: Map[String,Production], counted: mutable.HashSet[String]): Int = {
     var c: Int = 0
     for (e <- options) {
@@ -20,10 +23,37 @@ class Choices(options: List[Production]) extends Production {
     } // choices are additive
     c
   }
+
   // return specific terminal given by index i
   def sampleSpec(i: Int): String = {
     options(i).sample() //TODO: should probably ensure array bounds
   }
+
+  // A leafNonTerminal must have at least one terminal, and other elements must also be LNTs
+  override def isLeafNT(): Boolean = {
+    var containsTerm = false
+    var allNT = true
+
+    for(e <- options) {
+      if (e.isInstanceOf[Terminal]) containsTerm = true
+      else if(!e.isLeafNT()) allNT = false
+    }
+    containsTerm && allNT
+  }
+
+  override def toChoiceArr(g: Map[String,Production]): Option[Array[Range]] = {
+    var n: Int = 0
+    for (e <- options) {
+      e.toChoiceArr(g) match {
+        case Some(arr) => n += arr.length
+        case None => {}
+        //case Some(e) => n = n + (e.asInstanceOf[Array[Range]]).toChoiceArr(g).length // counting ranges
+      }
+    }
+    Some(Array(0 to n - 1))
+  }
+
+  def getOptions(): List[Production] = options
 }
 
 // A terminal production
@@ -32,10 +62,17 @@ class Terminal(word: String) extends Production {
     word
   }
   override def count(g: Map[String,Production], counted: mutable.HashSet[String]): Int = 1
+
+  override def isLeafNT(): Boolean = true
+
+  override def toChoiceArr(g: Map[String,Production]): Option[Array[Range]] = {
+    Some(Array(0 to 0))
+    //toRet = toRet + (0 to 0)
+  }
 }
 
-// A nonterminal, aka a combination of other terminals
-class NonTerminal(sentence: List[Production]) extends Production {
+// A sequence, aka a combination of other terminals/choices and the ordering structure of each problem
+class Sequence(sentence: List[Production]) extends Production {
   override def sample(): String = {
     val ran = new Random()
     sentence(ran.nextInt(sentence.length)).sample()
@@ -47,11 +84,29 @@ class NonTerminal(sentence: List[Production]) extends Production {
     } // nonterminals are multiplicative
     c
   }
+
+  override def isLeafNT(): Boolean = false // should be irrelevant
+
   // return specific terminal given by index i
   def sampleSpec(i: Int): String = {
     sentence(i).sample()
   }
   def getList(): List[Production] = sentence
+
+  override def toChoiceArr(g: Map[String,Production]): Option[Array[Range]] = {
+    var choiceArr: Array[Range] = new Array[Range](sentence.length)
+    for (e <- sentence) {
+      e.toChoiceArr(g) match {
+        case Some(arr) => {
+          val newArr: Array[Range] = choiceArr ++ arr
+          choiceArr = newArr
+        }
+        case None => {}
+      }
+      //choiceArr ++ newArr
+    }
+    Some(choiceArr)
+  }
 }
 
 // A name associated with a Production
@@ -63,22 +118,28 @@ class Name(n: String) extends Production {
       g(this.sample()).count(g, counted) // TODO: will null cause issues?
     } else 1
   }
+
+  override def isLeafNT(): Boolean = false
+
+  override def toChoiceArr(g: Map[String,Production]): Option[Array[Range]] = {
+    g(this.sample()).toChoiceArr(g)
+  }
 }
 
 // A nonterminal that expands only into terminals
-class LeafNonterminal(terminals: List[Terminal]) extends Production {
-  override def sample(): String = {
-    val ran = new Random()
-    terminals(ran.nextInt(terminals.length)).sample()
-  }
-  override def count(g: Map[String, Production], counted: mutable.HashSet[String]): Int = {
-    terminals.length
-  }
-  // return specific terminal given by index i
-  def sampleSpec(i: Int): String = {
-    terminals(i).sample()
-  }
-}
+//class LeafNonterminal(terminals: List[Terminal]) extends Production {
+//  override def sample(): String = {
+//    val ran = new Random()
+//    terminals(ran.nextInt(terminals.length)).sample()
+//  }
+//  override def count(g: Map[String, Production], counted: mutable.HashSet[String]): Int = {
+//    terminals.length
+//  }
+//  // return specific terminal given by index i
+//  def sampleSpec(i: Int): String = {
+//    terminals(i).sample()
+//  }
+//}
 
 // param is name of the Choices that this function applies to
 // fun maps those choices to the function results
@@ -92,6 +153,9 @@ class Function(fun: Map[String,String], param: String, capitalize: Boolean) exte
 //  def getParam: String = {
 //    param
 //  }
+  override def isLeafNT(): Boolean = false
+
+  override def toChoiceArr(g: Map[String,Production]): Option[Array[Range]] = Some(Array(0 to 0)) //None //Option[Array[Range]()] //Array(null) //TODO: right?
 }
 
 object SampleGrammar {
@@ -104,6 +168,7 @@ object SampleGrammar {
     val samp: Option[Production] = g get startSymbol // get Production associated with symbol from grammar
     samp match {
       case Some(samp) => {
+        //println(s"${samp} is a LNT ${samp.isLeafNT()}")
         samp match {
           case name: Name => sample(g, name.sample(), scope) // Name becomes start symbol
           case term: Terminal => {
@@ -117,7 +182,7 @@ object SampleGrammar {
               throw new Exception(s"Choice ${startSymbol} has not been bound")
             }
           }
-          case nonterm: NonTerminal => {
+          case nonterm: Sequence => {
             for(n <- nonterm.getList()) {
               n match {
                 case name: Name => sample(g, name.sample(), scope)
@@ -136,7 +201,7 @@ object SampleGrammar {
             if(scope.isBound(fun.sample())){ // TODO: is this right?
               print(fun.runFun(scope.lookup(fun.sample())))
             } else {
-              print("something's not right")
+              print("Variable not bound")
             }
           }
         }
@@ -159,7 +224,7 @@ object SampleGrammar {
               //println(scope.toString())
             }
           }
-          case nt: NonTerminal => {
+          case nt: Sequence => {
             for(n <- nt.getList()) {
               n match {
                 case name: Name => bind(grammar, name.sample(), scope)
@@ -173,6 +238,66 @@ object SampleGrammar {
       case None => throw new Exception(s"Symbol ${startSymbol} could not be found")
       }
     }
+
+
+  /** Working here  */
+    // Gets an instance of an experiment via an array of ints
+  def getInstance(grammar: Map[String, Production], choiceArr: Option[Array[Range]], scope: Scope, params: Array[Int]): Array[String] = {
+    // walk through grammar and choicearr and match up values with params passed in
+    //assert(grammar.size == params.length)
+    var toGet: String = ""
+      val init = grammar get "Start"
+      init match {
+        case Some(name) => {
+          toGet = name.sample()
+          //val seq = grammar get name.sample()
+        }
+        case None => {
+          throw new Error("ya done goofed")
+        }
+      }
+    //var gIndex = 0
+    val seq = grammar get toGet
+    var choiceIndex = 0
+    var instance = new Array[String](params.length) //TODO: make arraybuffer
+
+      seq match {
+        case Some(s) => {
+          for(e <- s.asInstanceOf[Sequence].getList()){ //TODO: this feels janky
+            e match {
+              case choice: Choices => { // will this ever trigger?
+                instance +: choice.getOptions()(choiceIndex).sample()
+              }
+              case terminal: Terminal => {
+                instance +: terminal.sample()
+              }
+              case name: Name => {
+                val choice = grammar get name.sample()
+                choice match { // will a name ever go to anything but a choice?
+                  case Some(prod) => {
+                    prod match {
+                      case choice: Choices => {
+                        instance +: choice.getOptions()(choiceIndex).sample() //TODO: make sure array isn't out of bounds
+                      }
+                    }
+                  }
+                }
+              }
+              case fun: Function => {
+                instance +: fun.runFun(scope.lookup(fun.sample()))
+              }
+            }
+            choiceIndex += 1
+          }
+        }
+        case None => {
+          throw new Error("There should be a sequence here")
+        }
+      }
+
+    instance
+    //Array[String]()
+  }
 
   // Count the number of options possible in a given grammar
   def count(grammar: Map[String, Production], startSymbol: String, soFar: Int, counted: mutable.HashSet[String]): Int = {
@@ -188,7 +313,7 @@ object SampleGrammar {
   }
 
   def main(args: Array[String]): Unit = {
-    val G = new NonTerminal(
+    val G = new Sequence(
       List(
         new Name("A"),
         new Terminal(" is "),
@@ -237,8 +362,8 @@ object SampleGrammar {
       )
     }
 
-    // new, complex grammar for the Linda Problem
-    val lindaG = new NonTerminal(
+    // The problem statement
+    val lindaS = new Sequence(
       List(
         new Name("Name"),
         new Terminal(" is "),
@@ -270,10 +395,10 @@ object SampleGrammar {
         new Terminal(" movement.")
       )
     )
-    val Linda = {
+    val Linda = { // The grammar
       Map(
-        "Start" -> new Name("lindaG"),
-        "lindaG" -> lindaG,
+        "Start" -> new Name("lindaS"),
+        "lindaS" -> lindaS,
         "Name" -> new Choices(
           List(
             new Terminal("Linda"),
@@ -345,9 +470,31 @@ object SampleGrammar {
     //println()
     bind(Linda, "Start", lindaScope)
     sample(Linda, "Start", lindaScope)
+    println()
+    val choiceArr: Option[Array[Range]] = lindaS.toChoiceArr(Linda) // acting on the sequence
+    //if(choiceArr.length > 0) {
+    var newCount: Int = 1
+    choiceArr match {
+      case Some(arr) => {
+        for (e <- arr) {//choiceArr(0)) { // where are these null elements coming from?
+          e match {
+            case e: Range => {
+              println(e)
+              newCount *= e.length
+            }
+            case _ => {}
+          }
+        }
+      }
+    }
+
+    //}
+    //println(lindaS.toChoiceArr(Linda).toString)
 
     println()
     println("Linda count: "  + count(Linda, "Start", 0, new mutable.HashSet[String]()))
+    println(s"New count: ${newCount}")
+    println("Instance: " + getInstance(Linda, choiceArr, lindaScope,  Array(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)))
   }
 }
 
