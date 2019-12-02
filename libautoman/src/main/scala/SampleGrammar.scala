@@ -286,6 +286,9 @@ object SampleGrammar {
                       }
                     }
                   }
+                  case None => {
+                    throw new Error("Name is invalid; there should be a choice here.")
+                  }
                 }
               }
               case fun: Function => {
@@ -480,7 +483,7 @@ object SampleGrammar {
     var newCount: Int = 1
     choiceArr match {
       case Some(arr) => {
-        for (e <- arr) {//choiceArr(0)) { // where are these null elements coming from?
+        for (e <- arr) {
           e match {
             case e: Range => {
               println(e)
