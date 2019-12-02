@@ -1,5 +1,6 @@
 import scala.collection.immutable.HashMap
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 trait Production {
@@ -242,10 +243,12 @@ object SampleGrammar {
 
   /** Working here  */
     // Gets an instance of an experiment via an array of ints
-  def getInstance(grammar: Map[String, Production], choiceArr: Option[Array[Range]], scope: Scope, params: Array[Int]): Array[String] = {
-    // walk through grammar and choicearr and match up values with params passed in
-    //assert(grammar.size == params.length)
-    var toGet: String = ""
+  def getInstance(grammar: Map[String, Production], choiceArr: Option[Array[Range]], scope: Scope, params: Array[Int]): ArrayBuffer[String] = {
+      // walk through grammar and choicearr and match up values with params passed in
+      //assert(grammar.size == params.length)
+
+      var toGet: String = ""
+
       val init = grammar get "Start"
       init match {
         case Some(name) => {
@@ -259,17 +262,18 @@ object SampleGrammar {
     //var gIndex = 0
     val seq = grammar get toGet
     var choiceIndex = 0
-    var instance = new Array[String](params.length) //TODO: make arraybuffer
+    var instance = new ArrayBuffer[String](params.length)
 
       seq match {
         case Some(s) => {
           for(e <- s.asInstanceOf[Sequence].getList()){ //TODO: this feels janky
             e match {
               case choice: Choices => { // will this ever trigger?
-                instance +: choice.getOptions()(choiceIndex).sample()
+                instance += choice.getOptions()(choiceIndex).sample()
+                choiceIndex += 1
               }
               case terminal: Terminal => {
-                instance +: terminal.sample()
+                instance += terminal.sample()
               }
               case name: Name => {
                 val choice = grammar get name.sample()
@@ -277,17 +281,17 @@ object SampleGrammar {
                   case Some(prod) => {
                     prod match {
                       case choice: Choices => {
-                        instance +: choice.getOptions()(choiceIndex).sample() //TODO: make sure array isn't out of bounds
+                        instance += choice.getOptions()(params(choiceIndex)).sample() //TODO: make sure array isn't out of bounds
+                        choiceIndex += 1
                       }
                     }
                   }
                 }
               }
               case fun: Function => {
-                instance +: fun.runFun(scope.lookup(fun.sample()))
+                instance += fun.runFun(scope.lookup(fun.sample()))
               }
             }
-            choiceIndex += 1
           }
         }
         case None => {
@@ -494,7 +498,14 @@ object SampleGrammar {
     println()
     println("Linda count: "  + count(Linda, "Start", 0, new mutable.HashSet[String]()))
     println(s"New count: ${newCount}")
-    println("Instance: " + getInstance(Linda, choiceArr, lindaScope,  Array(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)))
+    val instance = getInstance(Linda, choiceArr, lindaScope,  Array(0,1,3,0,0,0,0,0,0,0))//,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0))
+    println("Classic instance: ")
+    for(s <- instance) print(s)
+
+    val newInstance = getInstance(Linda, choiceArr, lindaScope,  Array(3,0,5,4,2,3,1,3,1,3))
+    println("New instance: ")
+    for(s <- newInstance) print(s)
+    //println("Instance: " + getInstance(Linda, choiceArr, lindaScope,  Array(0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)).toString)
   }
 }
 
