@@ -269,7 +269,7 @@ object SampleGrammar {
           for(e <- s.asInstanceOf[Sequence].getList()){ //TODO: this feels janky
             e match {
               case choice: Choices => { // will this ever trigger?
-                instance += choice.getOptions()(choiceIndex).sample()
+                instance += choice.getOptions()(params(choiceIndex)).sample()
                 choiceIndex += 1
               }
               case terminal: Terminal => {
