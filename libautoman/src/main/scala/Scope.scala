@@ -1,5 +1,8 @@
-class Scope(val grammar: Map[String, Production]) { // or string -> string?
+class Scope(val grammar: Map[String, Production], val curPos: Int) { // or string -> string?
+  // grammar is grammar scope is associated with
+  // curPos is the position in assignment array at which this production was assigned
   var varBindings: Map[String,String] = Map[String, String]()
+  var pos: Int = curPos
 
   def assign(name: String, value: String): Unit = {
     if (grammar contains name){
@@ -21,6 +24,11 @@ class Scope(val grammar: Map[String, Production]) { // or string -> string?
     varBindings contains name
   }
 
+  def combineScope(other: Scope): Scope = {
+    for(e <- other.getBindings()) varBindings = varBindings + e
+    this
+  }
+
 //  def getBindings(): Map[String, String] = {
 //    varBindings
 //  }
@@ -35,5 +43,13 @@ class Scope(val grammar: Map[String, Production]) { // or string -> string?
     toRet
     //varBindings.toString()
   }
+
+  def setPos(newPos: Int) = {
+    pos = newPos
+  }
+
+  def getBindings(): Map[String,String] = varBindings
+
+  def getPos(): Int = pos
 
 }

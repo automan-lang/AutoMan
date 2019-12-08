@@ -127,21 +127,6 @@ class Name(n: String) extends Production {
   }
 }
 
-// A nonterminal that expands only into terminals
-//class LeafNonterminal(terminals: List[Terminal]) extends Production {
-//  override def sample(): String = {
-//    val ran = new Random()
-//    terminals(ran.nextInt(terminals.length)).sample()
-//  }
-//  override def count(g: Map[String, Production], counted: mutable.HashSet[String]): Int = {
-//    terminals.length
-//  }
-//  // return specific terminal given by index i
-//  def sampleSpec(i: Int): String = {
-//    terminals(i).sample()
-//  }
-//}
-
 // param is name of the Choices that this function applies to
 // fun maps those choices to the function results
 class Function(fun: Map[String,String], param: String, capitalize: Boolean) extends Production {
@@ -151,9 +136,6 @@ class Function(fun: Map[String,String], param: String, capitalize: Boolean) exte
     if(capitalize) fun(s).capitalize
     else fun(s)
   }
-//  def getParam: String = {
-//    param
-//  }
   override def isLeafNT(): Boolean = false
 
   override def toChoiceArr(g: Map[String,Production]): Option[Array[Range]] = Some(Array(0 to 0)) //None //Option[Array[Range]()] //Array(null) //TODO: right?
@@ -161,6 +143,7 @@ class Function(fun: Map[String,String], param: String, capitalize: Boolean) exte
 
 object SampleGrammar {
 
+  /*
   // Sample a string from the grammar
   def sample(g: Map[String,Production], startSymbol: String, scope: Scope): Unit = {
     // find start
@@ -305,7 +288,7 @@ object SampleGrammar {
     instance
     //Array[String]()
   }
-
+*/
   // Count the number of options possible in a given grammar
   def count(grammar: Map[String, Production], startSymbol: String, soFar: Int, counted: mutable.HashSet[String]): Int = {
     val samp: Option[Production] = grammar get startSymbol // get Production associated with symbol from grammar
@@ -319,15 +302,59 @@ object SampleGrammar {
     opts
   }
 
+  def bind(grammar: Map[String, Production], startSymbol: String, assignment: Array[Int], assignmentPos: Int): Scope = {
+    var curPos = assignmentPos
+
+    val samp: Option[Production] = grammar get startSymbol // get Production associated with symbol from grammar
+    samp match {
+      case Some(samp) => {
+        samp match {
+          case name: Name => bind(grammar, name.sample(), assignment, curPos)//bind(grammar, name.sample(), scope) // Name becomes start symbol
+          case choice: Choices => { // bind choicename to specified choice
+            val choice = grammar get startSymbol // redundant?
+            choice match { // will a name ever go to anything but a choice?
+              case Some(prod) => {
+                prod match {
+                  case choice: Choices => {
+                    val newScope = new Scope(grammar, curPos)
+                    newScope.assign(startSymbol, choice.getOptions()(assignment(curPos)).sample())
+//                    curPos += 1
+//                    newScope.setPos(curPos)
+                    newScope
+                  }
+                  //                    instance += choice.getOptions()(params(choiceIndex)).sample() //TODO: make sure array isn't out of bounds
+                  //                    choiceIndex += 1
+                }
+              }
+              case None => {
+                throw new Error("Name is invalid; there should be a choice here.")
+              }
+            }
+          }
+          case nt: Sequence => {
+            val newScope = new Scope(grammar, curPos)
+            for(n <- nt.getList()) {
+              n match {
+                case name: Name => {
+                  val toCombine = bind(grammar, name.sample(), assignment, curPos)
+
+                  curPos += 1
+                  newScope.combineScope(toCombine)
+                  newScope.setPos(curPos + 1)
+                }
+                case p: Production => {}
+              }
+            }
+            newScope
+          }
+          //case p: Production => {}
+        }
+      }
+      case None => throw new Exception(s"Symbol ${startSymbol} could not be found")
+    }
+  }
+
   def main(args: Array[String]): Unit = {
-    val G = new Sequence(
-      List(
-        new Name("A"),
-        new Terminal(" is "),
-        new Name("B"),
-        new Terminal(" years old.")
-      )
-    )
 
     val pronouns = Map[String, String](
       "Linda" -> "she",
@@ -344,30 +371,6 @@ object SampleGrammar {
       "lawyer" -> "a",
       "professor" -> "a"
     )
-
-    // simple grammar
-    val grammar = {
-      Map(
-        "Start" -> new Name("G"),
-        "G" -> G,
-        "A" -> new Choices(
-          List(
-            new Terminal("Linda"),
-            new Terminal("Dan"),
-            new Terminal("Emmie")
-          )
-      ),
-        "B" -> new Choices(
-          List(
-            new Terminal("21"),
-            new Terminal("31"),
-            new Terminal("41"),
-            new Terminal("51"),
-            new Terminal("61")
-          )
-        )
-      )
-    }
 
     // The problem statement
     val lindaS = new Sequence(
@@ -471,12 +474,13 @@ object SampleGrammar {
         )
       )
     }
-    val lindaScope = new Scope(Linda)
+    //val lindaScope = new Scope(Linda, 0)
 
     //sample(grammar, "Start")
     //println()
-    bind(Linda, "Start", lindaScope)
-    sample(Linda, "Start", lindaScope)
+    val scope = bind(Linda, "Start", Array(0,1,3,0,0,0,0,0,0,0), 0)
+    for(e <- scope.getBindings()) println(e)
+    //sample(Linda, "Start", lindaScope)
     println()
     val choiceArr: Option[Array[Range]] = lindaS.toChoiceArr(Linda) // acting on the sequence
     //if(choiceArr.length > 0) {
@@ -501,13 +505,13 @@ object SampleGrammar {
     println()
     println("Linda count: "  + count(Linda, "Start", 0, new mutable.HashSet[String]()))
     println(s"New count: ${newCount}")
-    val instance = getInstance(Linda, choiceArr, lindaScope,  Array(0,1,3,0,0,0,0,0,0,0))//,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0))
-    println("Classic instance: ")
-    for(s <- instance) print(s)
-
-    val newInstance = getInstance(Linda, choiceArr, lindaScope,  Array(3,0,5,4,2,3,1,3,1,3))
-    println("New instance: ")
-    for(s <- newInstance) print(s)
+//    val instance = getInstance(Linda, choiceArr, lindaScope,  Array(0,1,3,0,0,0,0,0,0,0))//,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0))
+//    println("Classic instance: ")
+//    for(s <- instance) print(s)
+//
+//    val newInstance = getInstance(Linda, choiceArr, lindaScope,  Array(3,0,5,4,2,3,1,3,1,3))
+//    println("New instance: ")
+//    for(s <- newInstance) print(s)
     //println("Instance: " + getInstance(Linda, choiceArr, lindaScope,  Array(0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)).toString)
   }
 }
