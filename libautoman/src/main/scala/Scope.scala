@@ -24,6 +24,7 @@ class Scope(val grammar: Map[String, Production], val curPos: Int) { // or strin
     varBindings contains name
   }
 
+  // Combine two scopes by adding the bindings from the other scope to this scope
   def combineScope(other: Scope): Scope = {
     for(e <- other.getBindings()) varBindings = varBindings + e
     this

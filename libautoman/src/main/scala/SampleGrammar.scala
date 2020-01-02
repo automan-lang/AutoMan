@@ -156,45 +156,56 @@ object SampleGrammar {
     opts
   }
 
-  def bind(grammar: Map[String, Production], startSymbol: String, assignment: Array[Int], assignmentPos: Int): Scope = {
+  def bind(grammar: Map[String, Production], startSymbol: String, assignment: Array[Int], assignmentPos: Int, alreadyBound: Set[String]): Scope = {
     var curPos = assignmentPos
+    var assigned = alreadyBound
 
     val samp: Option[Production] = grammar get startSymbol // get Production associated with symbol from grammar
     samp match {
       case Some(samp) => {
         samp match {
-          case name: Name => bind(grammar, name.sample(), assignment, curPos)//bind(grammar, name.sample(), scope) // Name becomes start symbol
+          case name: Name => bind(grammar, name.sample(), assignment, curPos, alreadyBound)//bind(grammar, name.sample(), scope) // Name becomes start symbol // assigned or AlreadyBound?
           case choice: Choices => { // bind choicename to specified choice
-            val choice = grammar get startSymbol // redundant?
-            choice match { // will a name ever go to anything but a choice?
-              case Some(prod) => {
-                prod match {
-                  case choice: Choices => {
-                    val newScope = new Scope(grammar, curPos)
-                    newScope.assign(startSymbol, choice.getOptions()(assignment(curPos)).sample())
-//                    curPos += 1
-//                    newScope.setPos(curPos)
-                    newScope
+            if(!alreadyBound.contains(startSymbol)) {
+              val choice = grammar get startSymbol // redundant?
+              choice match { // will a name ever go to anything but a choice?
+                case Some(prod) => {
+                  prod match {
+                    case choice: Choices => {
+                      val newScope = new Scope(grammar, curPos)
+                      newScope.assign(startSymbol, choice.getOptions()(assignment(curPos)).sample())
+                      //curPos += 1
+                      //                    curPos += 1
+                      //                    newScope.setPos(curPos)
+                      newScope
+                    }
+                    //                    instance += choice.getOptions()(params(choiceIndex)).sample() //TODO: make sure array isn't out of bounds
+                    //                    choiceIndex += 1
                   }
-                  //                    instance += choice.getOptions()(params(choiceIndex)).sample() //TODO: make sure array isn't out of bounds
-                  //                    choiceIndex += 1
+                }
+                case None => {
+                  throw new Error("Name is invalid; there should be a choice here.")
                 }
               }
-              case None => {
-                throw new Error("Name is invalid; there should be a choice here.")
-              }
+            } else {
+              val newScope = new Scope(grammar, curPos)
+              newScope // return empty scope
             }
           }
-          case nt: Sequence => {
+          case nt: Sequence => { // The first case; combines all the bindings into one scope
             val newScope = new Scope(grammar, curPos)
             for(n <- nt.getList()) {
               n match {
-                case name: Name => {
-                  val toCombine = bind(grammar, name.sample(), assignment, curPos)
+                case name: Name => { // combine
+                  val toCombine = bind(grammar, name.sample(), assignment, curPos, assigned)
+                  if(toCombine.getBindings().size == 1) { // indicates that we bound something
+                    assigned = assigned + name.sample()
+                    curPos += 1
+                    newScope.combineScope(toCombine)
+                    newScope.setPos(curPos + 1)
+                  }
 
-                  curPos += 1
-                  newScope.combineScope(toCombine)
-                  newScope.setPos(curPos + 1)
+                  //curPos += 1
                 }
                 case p: Production => {}
               }
@@ -381,33 +392,35 @@ object SampleGrammar {
 
     //sample(grammar, "Start")
     //println()
-    val scope = bind(Linda, "Start", Array(0,1,3,0,0,0,0,0,0,0), 0)
+    //val scope = bind(Linda, "Start", Array(1,2,1,0,0,1,0,1,0,0), 0)
+    val sSet: Set[String] = Set()
+    val scope = bind(Linda, "Start", Array(1,2,5,0,0,1,2), 0, sSet)
     for(e <- scope.getBindings()) println(e)
     render(Linda, "Start", scope)
     println()
-    val choiceArr: Option[Array[Range]] = lindaS.toChoiceArr(Linda) // acting on the sequence
-    //if(choiceArr.length > 0) {
-    var newCount: Int = 1
-    choiceArr match {
-      case Some(arr) => {
-        for (e <- arr) {
-          e match {
-            case e: Range => {
-              println(e)
-              newCount *= e.length
-            }
-            case _ => {}
-          }
-        }
-      }
-    }
+//    val choiceArr: Option[Array[Range]] = lindaS.toChoiceArr(Linda) // acting on the sequence
+//    //if(choiceArr.length > 0) {
+//    var newCount: Int = 1
+//    choiceArr match {
+//      case Some(arr) => {
+//        for (e <- arr) {
+//          e match {
+//            case e: Range => {
+//              println(e)
+//              newCount *= e.length
+//            }
+//            case _ => {}
+//          }
+//        }
+//      }
+//    }
 
     //}
     //println(lindaS.toChoiceArr(Linda).toString)
 
     println()
     println("Linda count: "  + count(Linda, "Start", 0, new mutable.HashSet[String]()))
-    println(s"New count: ${newCount}")
+    //println(s"New count: ${newCount}")
 //    val instance = getInstance(Linda, choiceArr, lindaScope,  Array(0,1,3,0,0,0,0,0,0,0))//,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0))
 //    println("Classic instance: ")
 //    for(s <- instance) print(s)
