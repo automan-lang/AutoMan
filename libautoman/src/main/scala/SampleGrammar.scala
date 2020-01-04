@@ -268,6 +268,28 @@ object SampleGrammar {
     }
   }
 
+  // Product of list l. If l is empty, product is 1
+  def product(l: Array[Int]): Int = {
+    if(l.length == 1) 1
+    else l(0) * product(l.slice(1, l.length - 1))
+  }
+
+  def rank(vals: Array[Int], bases: Array[Int]): Int = {
+    var toRet = 0
+    for(i <- 1 to vals.length - 1){
+      toRet += vals(i)*product(bases.slice(i+1,bases.length - 1))
+    }
+    toRet
+  }
+
+  def unrank(rank: Int, bases: Array[Int]): ArrayBuffer[Int] = {
+    var toRet: ArrayBuffer[Int] = new ArrayBuffer[Int]()
+    for(i <- 1 to bases.length - 1){
+      toRet += rank/product(bases.slice(i+1, bases.length - 1))%bases(i) // todo: make sure order of operations ok
+    }
+    toRet
+  }
+
   def main(args: Array[String]): Unit = {
 
     val pronouns = Map[String, String](
