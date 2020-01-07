@@ -172,7 +172,7 @@ object SampleGrammar {
                 case Some(prod) => {
                   prod match {
                     case choice: Choices => {
-                      val newScope = new Scope(grammar, curPos)
+                      val newScope: Scope = new Scope(grammar, curPos)
                       newScope.assign(startSymbol, choice.getOptions()(assignment(curPos)).sample())
                       //curPos += 1
                       //                    curPos += 1
@@ -260,6 +260,60 @@ object SampleGrammar {
               print(fun.runFun(scope.lookup(fun.sample())))
             } else {
               print("Variable not bound")
+            }
+          }
+        }
+      }
+      case None => throw new Exception(s"Symbol ${startSymbol} could not be found")
+    }
+  }
+
+  def buildString(g: Map[String,Production], startSymbol: String, scope: Scope, soFar: StringBuilder): StringBuilder = {
+    // find start
+    // sample symbol associated with it
+    // build string by sampling each symbol
+    var generating: StringBuilder = soFar
+
+    val samp: Option[Production] = g get startSymbol // get Production associated with symbol from grammar
+    samp match {
+      case Some(samp) => {
+        //println(s"${samp} is a LNT ${samp.isLeafNT()}")
+        samp match {
+          case name: Name => buildString(g, name.sample(), scope, generating)//render(g, name.sample(), scope) // Name becomes start symbol
+          case term: Terminal => {
+            generating.append(term.sample())
+            //print(term.sample())
+          }
+          case choice: Choices => {
+            if(scope.isBound(startSymbol)){
+              //println(s"${startSymbol} is bound, looking up")
+              //print(scope.lookup(startSymbol))
+              generating.append(scope.lookup(startSymbol))
+            } else {
+              throw new Exception(s"Choice ${startSymbol} has not been bound")
+            }
+          }
+          case nonterm: Sequence => {
+            for(n <- nonterm.getList()) {
+              n match {
+                case name: Name => buildString(g, name.sample(), scope, generating)
+                case fun: Function => generating.append(fun.runFun(scope.lookup(fun.sample())))
+                case p: Production => {
+                  if(scope.isBound(startSymbol)){
+                    generating.append(scope.lookup(startSymbol))
+                  } else {
+                    generating.append(p.sample())
+                  }
+                }
+              }
+            }
+            generating
+          }
+          case fun: Function => { // need to look up element in grammar via getParam, find its binding, then use that in runFun
+            if(scope.isBound(fun.sample())){ // TODO: is this right?
+              generating.append(fun.runFun(scope.lookup(fun.sample())))
+            } else {
+              throw new Exception("Variable not bound")
             }
           }
         }
@@ -394,10 +448,17 @@ object SampleGrammar {
     //println()
     //val scope = bind(Linda, "Start", Array(1,2,1,0,0,1,0,1,0,0), 0)
     val sSet: Set[String] = Set()
-    val scope = bind(Linda, "Start", Array(1,2,5,0,0,1,2), 0, sSet)
+    val scope = bind(Linda, "Start", Array(3,3,4,4,2,2,3), 0, sSet)
     for(e <- scope.getBindings()) println(e)
     render(Linda, "Start", scope)
     println()
+
+    val scope2 = bind(Linda, "Start", Array(0,1,1,0,0,0,0), 0, sSet)
+    for(e <- scope2.getBindings()) println(e)
+    render(Linda, "Start", scope2)
+
+    println("\nmakeString version: ")
+    println(buildString(Linda, "Start", scope2, new StringBuilder))
 //    val choiceArr: Option[Array[Range]] = lindaS.toChoiceArr(Linda) // acting on the sequence
 //    //if(choiceArr.length > 0) {
 //    var newCount: Int = 1
