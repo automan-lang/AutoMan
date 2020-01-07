@@ -18,7 +18,7 @@ object Ranking {
   def rank(vals: Array[Int], bases: Array[Int]): Int = {
     var toRet = 0
     for(i <- 0 to vals.length - 1){
-      toRet += vals(i)*product(bases.slice(i+1,bases.length - 1))
+      toRet += vals(i)*product(bases.slice(i+1,bases.length))
     }
     toRet
   }
@@ -27,7 +27,7 @@ object Ranking {
   def unrank(rank: Int, bases: Array[Int]): ArrayBuffer[Int] = {
     var toRet: ArrayBuffer[Int] = new ArrayBuffer[Int]()
     for(i <- 0 to bases.length - 1){
-      toRet += rank/product(bases.slice(i+1, bases.length - 1))%bases(i) // todo: make sure order of operations ok
+      toRet += rank/product(bases.slice(i+1, bases.length))%bases(i) // todo: make sure order of operations ok
     }
     toRet
   }
