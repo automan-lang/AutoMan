@@ -1,8 +1,6 @@
 import scala.collection.mutable.ArrayBuffer
 
-class Ranking {
-
-  // Product of list l. If l is empty, product is 1
+object Ranking {
   def product(l: Array[Int]): Int = {
     var toRet = 1
     if (l.length != 0) { //todo redundant?
@@ -26,23 +24,23 @@ class Ranking {
   }
 
   //todo something funky happening here
-  def unrank(rank: Int, bases: Array[Int]): Array[Int] = {
+  def unrank(rank: Int, bases: Array[Int]): ArrayBuffer[Int] = {
     var toRet: ArrayBuffer[Int] = new ArrayBuffer[Int]()
     for(i <- 0 to bases.length - 1){
       toRet += rank/product(bases.slice(i+1, bases.length - 1))%bases(i) // todo: make sure order of operations ok
     }
-    toRet.toArray
+    toRet
   }
 
   def main(args: Array[String]): Unit = {
-    val bases = Array(1,2,3,4)
+    val bases = Array(1, 2, 3, 4)
     val total = product(bases)
 
     println(s"total: ${total}")
 
-    for(i <- 0 to total){
-      var values = unrank(i,bases)
-      var r = rank(values, bases)
+    for (i <- 0 to total) {
+      var values = unrank(i, bases)
+      var r = rank(values.toArray, bases)
       //assert(i == r)
       println(s"${values} ${r}")
     }
