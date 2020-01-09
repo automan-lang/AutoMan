@@ -16,12 +16,12 @@ import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 trait Question {
-  type A <: Any
-  type AA <: AbstractAnswer[A]
-  type O <: Outcome[A]
-  type AP <: AggregationPolicy
-  type PP <: PricePolicy
-  type TP <: TimeoutPolicy
+  type A <: Any			// return type of the function (what you get when you call .value)
+  type AA <: AbstractAnswer[A]	// an instance of scheduler
+  type O <: Outcome[A]		// outcome is value returned by the scheduler
+  type AP <: AggregationPolicy	// how to derive a scalar value of type A from the distribution of values
+  type PP <: PricePolicy	// how to determine reward
+  type TP <: TimeoutPolicy	// how long to run the job
 
   class QuestionStillExecutingException extends Exception
 
