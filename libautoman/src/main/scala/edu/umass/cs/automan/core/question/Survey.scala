@@ -11,12 +11,12 @@ import edu.umass.cs.automan.core.policy.timeout.DoublingTimeoutPolicy
 
 // abstract Survey class (will implement in adapters)
 abstract class Survey extends Question {
-  override type A = Array[Any] // the return type (.value)
-  override type O <: SurveyOutcome
-  override type AP = SimpleSurveyPolicy
-  override type PP = MLEPricePolicy
-  override type TP = DoublingTimeoutPolicy
-  override type AA <: AbstractSurveyAnswer // TODO should these be overriding?
+  type A = Array[Any] // the return type (.value)
+  type AA <: AbstractSurveyAnswer // TODO should these be overriding?
+  type O <: SurveyOutcome
+  type AP = SimpleSurveyPolicy
+  type PP = MLEPricePolicy
+  type TP = DoublingTimeoutPolicy
 
   private var _sample_size: Int = 30 // TODO necessary?
   def sample_size_=(n: Int) { _sample_size = n }
