@@ -15,15 +15,6 @@ class SimpleSurveyPolicy(survey: Survey)
   }
 
   /**
-    * Returns the top answer.
-    *
-    * @param tasks           The complete list of tasks.
-    * @param num_comparisons The number of times is_done has been called.
-    * @return Top answer
-    */
-  override def select_answer(tasks: List[Task], num_comparisons: Int): Question#AA = ???
-
-  /**
     * Returns an appropriate response for when the computation ran out of money.
     *
     * @param tasks           The complete list of tasks.

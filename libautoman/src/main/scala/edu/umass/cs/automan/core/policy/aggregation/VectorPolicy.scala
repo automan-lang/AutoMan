@@ -18,9 +18,9 @@ abstract class VectorPolicy(question: VectorQuestion)
   }
   def select_answer(tasks: List[Task], num_comparisons: Int) : Question#AA = {
     val valid_tasks: List[Task] = completed_workerunique_tasks(tasks)
-    // TODO: remove; this is now unnecessary
+    // filtered dist
     val distribution: Set[(String,Question#A)] = valid_tasks.map { t => (t.worker_id.get, t.answer.get) }.toSet
-    // distribution
+    // raw distribution
     val dist = getDistribution(tasks)
     val cost: BigDecimal = valid_tasks.filterNot(_.from_memo).foldLeft(BigDecimal(0)){ case (acc,t) => acc + t.cost }
     Answers(distribution, cost, question, dist).asInstanceOf[Question#AA]

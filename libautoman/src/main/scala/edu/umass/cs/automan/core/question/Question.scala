@@ -27,24 +27,26 @@ trait Question {
 
   protected var _before_filter: A => A = (a: A) => a
   protected var _budget: Option[BigDecimal] = None
+  protected var _blacklisted_workers = List[String]()
+  protected var _dry_run: Boolean = false
+  protected var _dont_reject: Boolean = false
+  protected var _dont_randomize_options: Boolean = false
   protected var _id: UUID = UUID.randomUUID()
   protected var _image: Option[File] = None
   protected var _image_alt_text: Option[String] = None
   protected var _image_url: Option[String] = None
   protected var _initial_worker_timeout_in_s: Int = 30
+  protected var _max_replicas: Option[Int] = None
+  protected var _mock_answers = Iterable[MockAnswer[A]]()
+  protected var _name: String = "" // name of question (default title?)
   protected var _payOnFailure: Boolean = true
   protected var _question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier
   protected var _text: Option[String] = None
   protected var _title: Option[String] = None
   protected var _time_value_per_hour: Option[BigDecimal] = None
   protected var _update_frequency_ms: Int = MagicNumbers.UpdateFrequencyMs
-  protected var _max_replicas: Option[Int] = None
-  protected var _mock_answers = Iterable[MockAnswer[A]]()
   protected var _wage: BigDecimal = MagicNumbers.USFederalMinimumWage
-  protected var _blacklisted_workers = List[String]()
-  protected var _dry_run: Boolean = false
-  protected var _dont_reject: Boolean = false
-  protected var _dont_randomize_options: Boolean = false
+
 
   protected[automan] var _price_policy: Option[Class[PP]] = None
   protected[automan] var _price_policy_instance: PP = _
@@ -71,6 +73,8 @@ trait Question {
   def image_alt_text_=(s: String) { _image_alt_text = Some(s) }
   def image_url: String = _image_url match { case Some(x) => x; case None => "" }
   def image_url_=(s: String) { _image_url = Some(s) }
+  def initial_worker_timeout_in_s_=(t: Int) { _initial_worker_timeout_in_s = t }
+  def initial_worker_timeout_in_s: Int = _initial_worker_timeout_in_s
   def max_replicas: Option[Int] = _max_replicas
   def max_replicas_=(m: Int) { _max_replicas = Some(m) }
   def memo_hash: String
@@ -78,6 +82,8 @@ trait Question {
   def minimum_spawn_policy: MinimumSpawnPolicy = _minimum_spawn_policy
   def mock_answers_=(answers: Iterable[MockAnswer[A]]) { _mock_answers = answers }
   def mock_answers: Iterable[MockAnswer[A]] = _mock_answers
+  def name: String = _name
+  def name_=(name: String) { _name = name }
   def pay_all_on_failure_=(pay: Boolean) { _payOnFailure = pay }
   def pay_all_on_failure: Boolean = _payOnFailure
   def question_timeout_multiplier_=(t: Double) { _question_timeout_multiplier = t }
@@ -94,8 +100,6 @@ trait Question {
   def update_frequency_ms_=(ms: Int) { _update_frequency_ms = ms }
   def wage: BigDecimal = _wage
   def wage_=(w: BigDecimal) { _wage = w }
-  def initial_worker_timeout_in_s_=(t: Int) { _initial_worker_timeout_in_s = t }
-  def initial_worker_timeout_in_s: Int = _initial_worker_timeout_in_s
 
   // private methods
   private[automan] def init_validation_policy(): Unit

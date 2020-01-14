@@ -208,6 +208,7 @@ abstract class AggregationPolicy(question: Question) {
     }
   }
 
+  // takes tasks, creates array of Responses with optional answer and worker ID
   def getDistribution(tasks: List[Task]) : Array[Response[Question#A]] = {
     // distribution
     tasks.flatMap { t =>

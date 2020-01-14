@@ -2,7 +2,7 @@ package edu.umass.cs.automan.core.question
 import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.core.AutomanAdapter
-import edu.umass.cs.automan.core.answer.{AbstractSurveyAnswer, Answers, SurveyOutcome}
+import edu.umass.cs.automan.core.answer.{AbstractSurveyAnswer, Answers, SurveyAnswers, SurveyOutcome}
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.policy.aggregation.{SimpleSurveyPolicy, SurveyPolicy, VectorPolicy}
@@ -11,14 +11,16 @@ import edu.umass.cs.automan.core.policy.timeout.DoublingTimeoutPolicy
 
 // abstract Survey class (will implement in adapters)
 abstract class Survey extends Question {
-  type A = Array[Any] // the return type (.value)
-  type AA <: AbstractSurveyAnswer // TODO should these be overriding?
-  type O <: SurveyOutcome
+  type A = (String,Question#A) //Set[Map[String, String]] or String? // the return type (.value) TODO: maybe refine String
+  type AA = SurveyAnswers
+  type O <: SurveyOutcome // outcome type
   type AP = SimpleSurveyPolicy
   type PP = MLEPricePolicy
   type TP = DoublingTimeoutPolicy
 
+  protected var _question_list: List[Question] = List() // the list of questions in the survey
   private var _sample_size: Int = 30 // TODO necessary?
+
   def sample_size_=(n: Int) { _sample_size = n }
   def sample_size : Int = _sample_size
 
@@ -28,7 +30,7 @@ abstract class Survey extends Question {
   // TODO: AP SurveyPolicy? (Will just accept answers for now; later may reject/mark outliers)
   override private[automan] def init_validation_policy(): Unit = {
     _validation_policy_instance = _validation_policy match {
-      case None => new AP(this) // why isn't this working?
+      case None => new AP(this)
       case Some(policy) => policy.getConstructor(classOf[Question]).newInstance(this)
     }
   }
@@ -52,7 +54,8 @@ abstract class Survey extends Question {
   }
 
   // TODO: Do we need?
-//  protected[automan] def composeOutcome(o: O, adapter: AutomanAdapter): O = {
+protected[automan] def composeOutcome(o: O, adapter: AutomanAdapter): O = ???
+  //{
 //    // unwrap future from previous Outcome
 //    val f = o.f map {
 //      case Answers(values, _, id, dist) =>
@@ -69,5 +72,5 @@ abstract class Survey extends Question {
 //  }
 
   //TODO: What will this look like for survey?
-  //protected[automan] def getQuestionType: QuestionType = ???
+  protected[automan] def getQuestionType: QuestionType = ???
 }
