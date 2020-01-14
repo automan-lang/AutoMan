@@ -1,6 +1,7 @@
 package edu.umass.cs.automan.adapters.mturk.question
 
 import java.util.{Date, UUID}
+
 import edu.umass.cs.automan.adapters.mturk.mock.CheckboxMockResponse
 import edu.umass.cs.automan.adapters.mturk.policy.aggregation.MTurkMinimumSpawnPolicy
 import edu.umass.cs.automan.core.logging._
@@ -8,7 +9,10 @@ import edu.umass.cs.automan.core.policy.aggregation.MinimumSpawnPolicy
 import edu.umass.cs.automan.core.question.CheckboxQuestion
 import edu.umass.cs.automan.core.util.Utilities
 import java.security.MessageDigest
+
 import org.apache.commons.codec.binary.Hex
+
+import scala.xml.Node
 
 class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
   type QuestionOptionType = MTQuestionOption
@@ -43,39 +47,52 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
   // TODO: random checkbox fill
   override protected[mturk] def toXML(randomize: Boolean) : scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
-      <Question>
-        <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
-        <QuestionContent>
-          {
-            _image_url match {
-              case Some(url) => {
-                <Binary>
-                  <MimeType>
-                    <Type>image</Type>
-                    <SubType>png</SubType>
-                  </MimeType>
-                  <DataURL>{ url }</DataURL>
-                  <AltText>{ image_alt_text }</AltText>
-                </Binary>
-              }
-              case None => {}
-            }
-          }
-          {
-            // if formatted content is specified, use that instead of text field
-            _formatted_content match {
-              case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString) }</FormattedContent>
-              case None => <Text>{ text }</Text>
-            }
-          }
-        </QuestionContent>
-        <AnswerSpecification>
-          <SelectionAnswer>
-            <StyleSuggestion>checkbox</StyleSuggestion>
-            <Selections>{ if(randomize) randomized_options.map { _.toXML } else options.map { _.toXML } }</Selections>
-          </SelectionAnswer>
-        </AnswerSpecification>
-      </Question>
+      XMLBody(randomize)
     </QuestionForm>
+  }
+
+  /**
+    * Helper function to convert question into XML Question
+    * Not usually called directly
+    *
+    * @param randomize Randomize option order?
+    * @return XML
+    */
+  override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = {
+    Seq(
+    <Question>
+      <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
+      <QuestionContent>
+        {
+        _image_url match {
+          case Some(url) => {
+            <Binary>
+              <MimeType>
+                <Type>image</Type>
+                <SubType>png</SubType>
+              </MimeType>
+              <DataURL>{ url }</DataURL>
+              <AltText>{ image_alt_text }</AltText>
+            </Binary>
+          }
+          case None => {}
+        }
+        }
+        {
+        // if formatted content is specified, use that instead of text field
+        _formatted_content match {
+          case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString) }</FormattedContent>
+          case None => <Text>{ text }</Text>
+        }
+        }
+      </QuestionContent>
+      <AnswerSpecification>
+        <SelectionAnswer>
+          <StyleSuggestion>checkbox</StyleSuggestion>
+          <Selections>{ if(randomize) randomized_options.map { _.toXML } else options.map { _.toXML } }</Selections>
+        </SelectionAnswer>
+      </AnswerSpecification>
+    </Question>
+    )
   }
 }

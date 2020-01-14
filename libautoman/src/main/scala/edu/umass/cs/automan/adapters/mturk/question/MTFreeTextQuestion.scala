@@ -1,12 +1,16 @@
 package edu.umass.cs.automan.adapters.mturk.question
 
 import java.util.{Date, UUID}
+
 import edu.umass.cs.automan.adapters.mturk.mock.FreeTextMockResponse
 import edu.umass.cs.automan.adapters.mturk.policy.aggregation.MTurkMinimumSpawnPolicy
 import edu.umass.cs.automan.core.logging._
 import edu.umass.cs.automan.core.question.FreeTextQuestion
 import java.security.MessageDigest
+
 import org.apache.commons.codec.binary.Hex
+
+import scala.xml.Node
 
 class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
   override type A = FreeTextQuestion#A
@@ -34,42 +38,57 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
 
     (x \\ "Answer" \ "FreeText").text
   }
-  def toXML(randomize: Boolean) = {
+  def toXML(randomize: Boolean): scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
-      <Question>
-        <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
-        <QuestionContent>
-          {
-          _image_url match {
-            case Some(url) => {
-              <Binary>
-                <MimeType>
-                  <Type>image</Type>
-                  <SubType>png</SubType>
-                </MimeType>
-                <DataURL>{ url }</DataURL>
-                <AltText>{ image_alt_text }</AltText>
-              </Binary>
-            }
-            case None => {}
-          }
-          }
-          {
-          // if formatted content is specified, use that instead of text field
-          _formatted_content match {
-            case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString()) }</FormattedContent>
-            case None => <Text>{ text }</Text>
-          }
-          }
-        </QuestionContent>
-        <AnswerSpecification>
-          <FreeTextAnswer>
-            <Constraints>
-              <AnswerFormatRegex regex={ regex } errorText={ pattern_error_text } />
-            </Constraints>
-          </FreeTextAnswer>
-        </AnswerSpecification>
-      </Question>
+      XMLBody(randomize)
     </QuestionForm>
+  }
+
+  //override type QuestionOptionType = this.type
+
+  /**
+    * Helper function to convert question into XML Question
+    * Not usually called directly
+    *
+    * @param randomize Randomize option order?
+    * @return XML
+    */
+  override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = {
+    Seq(
+    <Question>
+      <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
+      <QuestionContent>
+        {
+        _image_url match {
+          case Some(url) => {
+            <Binary>
+              <MimeType>
+                <Type>image</Type>
+                <SubType>png</SubType>
+              </MimeType>
+              <DataURL>{ url }</DataURL>
+              <AltText>{ image_alt_text }</AltText>
+            </Binary>
+          }
+          case None => {}
+        }
+        }
+        {
+        // if formatted content is specified, use that instead of text field
+        _formatted_content match {
+          case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString()) }</FormattedContent>
+          case None => <Text>{ text }</Text>
+        }
+        }
+      </QuestionContent>
+      <AnswerSpecification>
+        <FreeTextAnswer>
+          <Constraints>
+            <AnswerFormatRegex regex={ regex } errorText={ pattern_error_text } />
+          </Constraints>
+        </FreeTextAnswer>
+      </AnswerSpecification>
+    </Question>
+    )
   }
 }

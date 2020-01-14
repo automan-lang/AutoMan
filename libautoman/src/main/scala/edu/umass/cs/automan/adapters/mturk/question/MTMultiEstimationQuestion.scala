@@ -2,13 +2,14 @@ package edu.umass.cs.automan.adapters.mturk.question
 
 import java.security.MessageDigest
 import java.util.{Date, UUID}
+
 import edu.umass.cs.automan.adapters.mturk.mock.MultiEstimationMockResponse
 import edu.umass.cs.automan.adapters.mturk.policy.aggregation.MTurkMinimumSpawnPolicy
-import edu.umass.cs.automan.core.logging.{LogType, LogLevelDebug, DebugLog}
+import edu.umass.cs.automan.core.logging.{DebugLog, LogLevelDebug, LogType}
 import edu.umass.cs.automan.core.question.{Dimension, MultiEstimationQuestion}
 import org.apache.commons.codec.binary.Hex
 
-import scala.xml.NodeSeq
+import scala.xml.{Node, NodeSeq}
 
 class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestion with MTurkQuestion {
   override type A = Array[Double]
@@ -125,11 +126,24 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
       }.toString()
   }
 
-  def toXML(randomize: Boolean) = {
+  def toXML(randomize: Boolean): scala.xml.Node = {
     <HTMLQuestion xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2011-11-11/HTMLQuestion.xsd">
-      <HTMLContent> { scala.xml.PCData(html()) }
-      </HTMLContent>
-      <FrameHeight>{ _iframe_height.toString }</FrameHeight>
+    XMLBody(randomize)
     </HTMLQuestion>
+  }
+
+  /**
+    * Helper function to convert question into XML Question
+    * Not usually called directly
+    *
+    * @param randomize Randomize option order?
+    * @return XML
+    */
+  override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = {
+    {
+        <HTMLContent> { scala.xml.PCData(html()) }
+        </HTMLContent>
+        <FrameHeight>{ _iframe_height.toString }</FrameHeight>
+    }
   }
 }
