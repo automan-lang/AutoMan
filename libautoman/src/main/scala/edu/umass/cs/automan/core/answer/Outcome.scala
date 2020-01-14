@@ -34,3 +34,7 @@ case class ScalarOutcome[T](question: DiscreteScalarQuestion,
 case class VectorOutcome[T](question: VectorQuestion,
                             override protected[automan] val f: Future[AbstractVectorAnswer[T]])
   extends Outcome[T](question, f)
+
+case class SurveyOutcome(survey: Survey,
+                              override protected[automan] val f: Future[AbstractSurveyAnswer])
+  extends Outcome[Any](survey, f)

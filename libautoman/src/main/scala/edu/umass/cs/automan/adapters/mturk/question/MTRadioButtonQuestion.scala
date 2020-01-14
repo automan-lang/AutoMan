@@ -11,7 +11,7 @@ import org.apache.commons.codec.binary.Hex
 
 class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
   type QuestionOptionType = MTQuestionOption
-  override type A = RadioButtonQuestion#A
+  override type A = RadioButtonQuestion#A // need this to be an array
 
   // public API
   def memo_hash: String = {

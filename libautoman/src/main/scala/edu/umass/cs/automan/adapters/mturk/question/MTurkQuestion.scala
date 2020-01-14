@@ -7,8 +7,8 @@ import com.amazonaws.services.mturk.model.{QualificationRequirement, Assignment}
 import xml.XML
 
 trait MTurkQuestion {
-  type R
-  type A
+  type R // TODO: Figure out what this is for
+  type A // answer type for backend result
 
   protected var _description: Option[String] = None
   protected var _qualified_workers = Map[String,Set[String]]() // (QualificationTypeId -> Set[worker_id])

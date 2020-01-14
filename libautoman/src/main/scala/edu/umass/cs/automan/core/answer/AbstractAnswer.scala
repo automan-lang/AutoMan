@@ -24,6 +24,8 @@ sealed abstract class AbstractScalarAnswer[T](cost: BigDecimal, question: Discre
   extends AbstractAnswer[T](cost, question, distribution)
 sealed abstract class AbstractVectorAnswer[T](cost: BigDecimal, question: VectorQuestion, distribution: Array[Response[T]])
   extends AbstractAnswer[T](cost, question, distribution)
+sealed abstract class AbstractSurveyAnswer(cost: BigDecimal, survey: Survey, distribution: Array[Response[Any]])
+  extends AbstractAnswer[Any](cost, survey, distribution)
 
 case class MultiEstimate(values: Array[Double],
                          lows: Array[Double],
