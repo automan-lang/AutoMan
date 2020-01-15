@@ -20,6 +20,7 @@ abstract class AutomanAdapter {
   type RBQ    <: RadioButtonQuestion        // answer scalar
   type RBDQ   <: RadioButtonVectorQuestion  // answer vector
   type MemoDB <: Memo
+  type S      <: Survey
 
   protected var _database_path: String = "AutoManMemoDB_" + UUID.randomUUID()
   protected var _default_confidence: Double = 0.95
@@ -131,6 +132,7 @@ abstract class AutomanAdapter {
   def RadioButtonQuestion(init: RBQ => Unit) = schedule(RBQFactory(), init)
   def RadioButtonDistributionQuestion(init: RBDQ => Unit) = schedule(RBDQFactory(), init)
   def Option(id: Symbol, text: String) : QuestionOption
+  def Survey(init: Survey => Unit) = schedule(SFactory(), init)
 
   // state management
   protected[automan] def close() = {
@@ -218,4 +220,5 @@ abstract class AutomanAdapter {
   protected def RBQFactory() : RBQ
   protected def RBDQFactory() : RBDQ
   protected def MemoDBFactory() : MemoDB
+  protected def SFactory(): S
 }

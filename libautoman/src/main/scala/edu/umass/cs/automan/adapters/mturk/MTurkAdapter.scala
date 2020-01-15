@@ -52,6 +52,8 @@ class MTurkAdapter extends AutomanAdapter {
   override type RBQ     = MTRadioButtonQuestion
   override type RBDQ    = MTRadioButtonVectorQuestion
   override type MemoDB  = MTMemo
+  override type S       = MTSurvey
+
   private val SANDBOX_ENDPOINT = "mturk-requester-sandbox.us-east-1.amazonaws.com"
   private val PROD_ENDPOINT = "https://mturk-requester.us-east-1.amazonaws.com"
   private val SIGNING_REGION = "us-east-1"
@@ -91,6 +93,7 @@ class MTurkAdapter extends AutomanAdapter {
   protected def FTDQFactory() = new MTFreeTextVectorQuestion
   protected def RBQFactory()  = new MTRadioButtonQuestion
   protected def RBDQFactory() = new MTRadioButtonVectorQuestion
+  protected def SFactory()    = new MTSurvey
 
   def Option(id: Symbol, text: String) = new MTQuestionOption(id, text, "")
   def Option(id: Symbol, text: String, image_url: String) = new MTQuestionOption(id, text, image_url)
