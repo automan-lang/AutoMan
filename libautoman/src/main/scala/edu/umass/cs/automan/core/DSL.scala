@@ -413,8 +413,12 @@ trait DSL {
                                       max_value: Double = Double.MaxValue,
                                       minimum_spawn_policy: MinimumSpawnPolicy = null,
                                       min_value: Double = Double.MinValue,
-                                      mock_answers: Iterable[MockAnswer[Symbol]] = null,
-                                      options: List[AnyRef],
+                                      d_mock_answers: Iterable[MockAnswer[Double]] = null,
+                                      darr_mock_answers: Iterable[MockAnswer[Array[Double]]] = null,
+                                      str_mock_answers: Iterable[MockAnswer[String]] = null,
+                                      sym_mock_answers: Iterable[MockAnswer[Symbol]] = null,
+                                      symset_mock_answers: Iterable[MockAnswer[Set[Symbol]]] = null,
+                                      options: List[AnyRef], // these def need to be in questions
                                       pattern: String,
                                       pattern_error_text: String = null,
                                       pay_all_on_failure: Boolean = true,
@@ -427,6 +431,7 @@ trait DSL {
     def initf[Q <: Survey](rvq: Q) = {
       // mandatory parameters
       rvq.text = text
+      // need survey-specific text, etc
       //q.question_list.foreach()
       for(qu: Question <- rvq.question_list){
         qu match {
@@ -452,7 +457,7 @@ trait DSL {
             if (max_value != Double.MaxValue) { e.max_value = max_value }
             if (min_value != Double.MinValue) { e.min_value = min_value }
             if (title != null) { e.title = title }
-            if (mock_answers != null ) { e.mock_answers = mock_answers }
+            if (d_mock_answers != null ) { e.mock_answers = d_mock_answers }
             if (minimum_spawn_policy != null) { e.minimum_spawn_policy = minimum_spawn_policy }
           }
           case me: MultiEstimationQuestion => {
@@ -474,7 +479,7 @@ trait DSL {
             if (image_alt_text != null) { me.image_alt_text = image_alt_text }
             if (image_url != null) { me.image_url = image_url }
             if (title != null) { me.title = title }
-            if (mock_answers != null ) { me.mock_answers = mock_answers }
+            if (darr_mock_answers != null ) { me.mock_answers = darr_mock_answers }
             if (minimum_spawn_policy != null) { me.minimum_spawn_policy = minimum_spawn_policy }
           }
           case f: FreeTextQuestion => {
@@ -505,8 +510,8 @@ trait DSL {
             if (title != null) {
               f.title = title
             }
-            if (mock_answers != null) {
-              f.mock_answers = mock_answers
+            if (str_mock_answers != null) {
+              f.mock_answers = str_mock_answers
             }
             if (minimum_spawn_policy != null) {
               f.minimum_spawn_policy = minimum_spawn_policy
@@ -532,7 +537,7 @@ trait DSL {
             if (pattern != null) { fv.pattern = pattern }
             if (pattern_error_text != null) { fv.pattern_error_text = pattern_error_text }
             if (title != null) { fv.title = title }
-            if (mock_answers != null ) { fv.mock_answers = mock_answers }
+            if (str_mock_answers != null ) { fv.mock_answers = str_mock_answers }
             if (minimum_spawn_policy != null) { fv.minimum_spawn_policy = minimum_spawn_policy }
           }
           case cbq: CheckboxQuestion => {
@@ -553,7 +558,7 @@ trait DSL {
             if (image_alt_text != null) { cbq.image_alt_text = image_alt_text }
             if (image_url != null) { cbq.image_url = image_url }
             if (title != null) { cbq.title = title }
-            if (mock_answers != null ) { cbq.mock_answers = mock_answers }
+            if (symset_mock_answers != null ) { cbq.mock_answers = symset_mock_answers }
             if (minimum_spawn_policy != null) { cbq.minimum_spawn_policy = minimum_spawn_policy }
           }
           case cbvq: CheckboxVectorQuestion => {
@@ -574,8 +579,8 @@ trait DSL {
             if (image_alt_text != null) { cbvq.image_alt_text = image_alt_text }
             if (image_url != null) { cbvq.image_url = image_url }
             if (title != null) { cbvq.title = title }
-            if (mock_answers != null ) { cbvq.mock_answers = mock_answers }
-            if (minimum_spawn_policy != null) { cbvq.minimum_spawn_policy = minimum_spawn_policy }.text = text
+            if (symset_mock_answers != null ) { cbvq.mock_answers = symset_mock_answers }
+            if (minimum_spawn_policy != null) { cbvq.minimum_spawn_policy = minimum_spawn_policy }
             cbvq.options = options.asInstanceOf[List[cbvq.QuestionOptionType]]  // yeah... ugly
 
             // mandatory parameters with sane defaults
@@ -591,29 +596,29 @@ trait DSL {
             if (image_alt_text != null) { cbvq.image_alt_text = image_alt_text }
             if (image_url != null) { cbvq.image_url = image_url }
             if (title != null) { cbvq.title = title }
-            if (mock_answers != null ) { cbvq.mock_answers = mock_answers }
+            if (symset_mock_answers != null ) { cbvq.mock_answers = symset_mock_answers }
             if (minimum_spawn_policy != null) { cbvq.minimum_spawn_policy = minimum_spawn_policy }
           }
-          case vq: RadioButtonQuestion => {
+          case rq: RadioButtonQuestion => {
             // mandatory parameters
-            vq.text = text
-            vq.options = options.asInstanceOf[List[vq.QuestionOptionType]]  // yeah... ugly
+            rq.text = text
+            rq.options = options.asInstanceOf[List[rq.QuestionOptionType]]  // yeah... ugly
 
             // mandatory parameters with sane defaults
-            vq.confidence = confidence
-            vq.budget = budget
-            vq.dont_reject = dont_reject
-            vq.dry_run = dry_run
-            vq.initial_worker_timeout_in_s = initial_worker_timeout_in_s
-            vq.pay_all_on_failure = pay_all_on_failure
-            vq.question_timeout_multiplier = question_timeout_multiplier
+            rq.confidence = confidence
+            rq.budget = budget
+            rq.dont_reject = dont_reject
+            rq.dry_run = dry_run
+            rq.initial_worker_timeout_in_s = initial_worker_timeout_in_s
+            rq.pay_all_on_failure = pay_all_on_failure
+            rq.question_timeout_multiplier = question_timeout_multiplier
 
             // optional parameters
-            if (image_alt_text != null) { vq.image_alt_text = image_alt_text }
-            if (image_url != null) { vq.image_url = image_url }
-            if (title != null) { vq.title = title }
-            if (mock_answers != null ) { vq.mock_answers = mock_answers }
-            if (minimum_spawn_policy != null) { vq.minimum_spawn_policy = minimum_spawn_policy }
+            if (image_alt_text != null) { rq.image_alt_text = image_alt_text }
+            if (image_url != null) { rq.image_url = image_url }
+            if (title != null) { rq.title = title }
+            if (sym_mock_answers != null ) { rq.mock_answers = sym_mock_answers }
+            if (minimum_spawn_policy != null) { rq.minimum_spawn_policy = minimum_spawn_policy }
           }
           case rvq: RadioButtonVectorQuestion => {
             // mandatory parameters
@@ -633,9 +638,8 @@ trait DSL {
             if (image_alt_text != null) { rvq.image_alt_text = image_alt_text }
             if (image_url != null) { rvq.image_url = image_url }
             if (title != null) { rvq.title = title }
-            if (mock_answers != null ) { rvq.mock_answers = mock_answers }
+            if (sym_mock_answers != null ) { rvq.mock_answers = sym_mock_answers }
             if (minimum_spawn_policy != null) { rvq.minimum_spawn_policy = minimum_spawn_policy }
-
           }
         }
 
