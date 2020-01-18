@@ -2,7 +2,8 @@ package edu.umass.cs.automan.core.question
 import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.core.AutomanAdapter
-import edu.umass.cs.automan.core.answer.{AbstractSurveyAnswer, Answers, SurveyAnswers, SurveyOutcome}
+import edu.umass.cs.automan.core.answer.{AbstractSurveyAnswer, Answers, Outcome, SurveyAnswers, SurveyOutcome}
+import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.policy.aggregation.{SimpleSurveyPolicy, SurveyPolicy, VectorPolicy}
@@ -18,11 +19,11 @@ abstract class Survey extends Question {
   type PP = MLEPricePolicy
   type TP = DoublingTimeoutPolicy
 
-  protected var _question_list: List[Question] = List() // the list of questions in the survey // TODO DSL
+  protected var _question_list: List[Outcome[_]] = List() // the list of questions in the survey // TODO DSL
   private var _sample_size: Int = 30
 
-  def question_list_=(l: List[Question]) { _question_list = l }
-  def question_list: List[Question] = _question_list
+  def question_list_=(l: List[Outcome[_]]) { _question_list = l }
+  def question_list: List[Outcome[_]] = _question_list
   def sample_size_=(n: Int) { _sample_size = n }
   def sample_size : Int = _sample_size
 
@@ -74,5 +75,5 @@ protected[automan] def composeOutcome(o: O, adapter: AutomanAdapter): O = ???
 //  }
 
   //TODO: What will this look like for survey?
-  protected[automan] def getQuestionType: QuestionType = ???
+  protected[automan] def getQuestionType: QuestionType = QuestionType.Survey
 }

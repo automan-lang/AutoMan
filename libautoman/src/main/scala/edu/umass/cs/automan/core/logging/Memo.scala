@@ -61,6 +61,7 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
   type DBFreeTextAnswer = (Int, String, String)
   type DBMultiEstimationAnswer = (Int, Array[Double], String)
   type DBSession = H2Driver.backend.Session
+  //type DBSurvey = ()
 
   // canonical path
   val path = new File(database_name.replace(".mv.db","")).getCanonicalPath
@@ -77,6 +78,7 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
   protected[automan] val dbFreeTextAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBFreeTextAnswer]
   protected[automan] val dbMultiEstimationAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBMultiEstimationAnswer]
   protected[automan] val dbRadioButtonAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBRadioButtonAnswer]
+  protected[automan] val dbSurvey = null
 
   // registered plugins
   protected var _plugins = List[Plugin]()
@@ -137,6 +139,7 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
       dbEstimationAnswer.ddl ++
       dbFreeTextAnswer.ddl ++
       dbRadioButtonAnswer.ddl ++
+      //dbSurvey.ddl ++
       dbMultiEstimationAnswer.ddl
 
     val all_ddls: H2Driver.DDL = if (ddls.nonEmpty) {
@@ -326,6 +329,10 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
             QuestionType.RadioButtonDistributionQuestion)
         }.list.distinct
         ts.map { t => new TaskSnapshot(t) }
+      case QuestionType.Survey =>
+        //val ts = null
+        //ts.map { t => null }
+        List[TaskSnapshot[_]]()
     }
   }
 
@@ -344,7 +351,8 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
           restore_task_snapshots_of_type(QuestionType.FreeTextDistributionQuestion)(s) :::
           restore_task_snapshots_of_type(QuestionType.RadioButtonQuestion)(s) :::
           restore_task_snapshots_of_type(QuestionType.RadioButtonDistributionQuestion)(s) :::
-          restore_task_snapshots_of_type(QuestionType.MultiEstimationQuestion)(s)
+          restore_task_snapshots_of_type(QuestionType.MultiEstimationQuestion)(s) :::
+          restore_task_snapshots_of_type(QuestionType.Survey)(s)
         }
 
       }
@@ -538,6 +546,23 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
                   )
             }
           }
+          case Survey => {
+            (fQS_TS_THS leftJoin dbRadioButtonAnswer on (_._2._2.history_id === _.history_id)).map {
+              case ((dbquestion, (dbtask, dbtaskhistory)), dbsurvey) =>
+                (dbtask.task_id,
+                  dbtask.round,
+                  dbtask.timeout_in_s,
+                  dbtask.worker_timeout_in_s,
+                  dbtask.cost,
+                  dbtask.creation_time,
+                  dbtaskhistory.scheduler_state,
+                  true,
+                  dbsurvey.worker_id.?,
+                  dbsurvey.answer.?,
+                  dbtaskhistory.state_change_time
+                )
+            }
+          }
         }
 
         // execute query
@@ -640,6 +665,8 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
         dbRadioButtonAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBRadioButtonAnswer]]
       case RadioButtonDistributionQuestion =>
         dbRadioButtonAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBRadioButtonAnswer]]
+      case Survey =>
+        dbSurvey //++= null
     }
   }
 

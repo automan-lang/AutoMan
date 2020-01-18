@@ -3,6 +3,7 @@ package edu.umass.cs.automan.adapters.mturk.question
 import java.security.MessageDigest
 import java.util.{Date, UUID}
 
+import edu.umass.cs.automan.core.answer.Outcome
 import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.question.{Question, Survey}
 import org.apache.commons.codec.binary.Hex
@@ -24,8 +25,8 @@ class MTSurvey extends Survey with MTurkQuestion {
 
   override def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
-    val concat = _question_list.foldLeft("")((acc, q) => {
-      acc + q.memo_hash
+    val concat = _question_list.foldLeft("")((acc, o: Outcome[_]) => {
+      acc + o.question.memo_hash
     })
     new String(Hex.encodeHex(md.digest(concat.getBytes)))
   }
