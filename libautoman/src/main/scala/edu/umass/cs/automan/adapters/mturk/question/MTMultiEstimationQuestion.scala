@@ -128,7 +128,7 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
 
   def toXML(randomize: Boolean): scala.xml.Node = {
     <HTMLQuestion xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2011-11-11/HTMLQuestion.xsd">
-    XMLBody(randomize)
+      { XMLBody(randomize) }
     </HTMLQuestion>
   }
 
@@ -146,4 +146,6 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
         <FrameHeight>{ _iframe_height.toString }</FrameHeight>
     }
   }
+
+  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = ???
 }

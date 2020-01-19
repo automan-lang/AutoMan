@@ -40,7 +40,7 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
   }
   def toXML(randomize: Boolean): scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
-      XMLBody(randomize)
+      { XMLBody(randomize) }
     </QuestionForm>
   }
 
@@ -91,4 +91,8 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
     </Question>
     )
   }
+
+  //override type QuestionOptionType = this.type
+
+  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = ???
 }

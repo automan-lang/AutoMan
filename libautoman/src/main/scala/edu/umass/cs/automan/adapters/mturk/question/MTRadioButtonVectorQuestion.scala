@@ -43,7 +43,7 @@ class MTRadioButtonVectorQuestion extends RadioButtonVectorQuestion with MTurkQu
   }
   def toXML(randomize: Boolean) : scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
-      XMLBody(randomize)
+      { XMLBody(randomize) }
     </QuestionForm>
   }
 
@@ -92,4 +92,6 @@ class MTRadioButtonVectorQuestion extends RadioButtonVectorQuestion with MTurkQu
     </Question>
     )
   }
+
+  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = ???
 }

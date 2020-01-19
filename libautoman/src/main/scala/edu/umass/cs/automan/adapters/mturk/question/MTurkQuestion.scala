@@ -69,4 +69,6 @@ trait MTurkQuestion {
     * @return XML
     */
   protected[mturk] def XMLBody(randomize: Boolean) : Seq[scala.xml.Node]
+
+  protected[mturk] def toSurveyXML(randomize: Boolean) : scala.xml.Node
 }

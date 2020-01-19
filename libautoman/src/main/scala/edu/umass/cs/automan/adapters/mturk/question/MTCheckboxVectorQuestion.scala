@@ -45,7 +45,7 @@ class MTCheckboxVectorQuestion extends CheckboxVectorQuestion with MTurkQuestion
   }
   override protected[mturk] def toXML(randomize: Boolean) : scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
-      XMLBody(randomize)
+      { XMLBody(randomize) }
     </QuestionForm>
   }
 
@@ -99,4 +99,6 @@ class MTCheckboxVectorQuestion extends CheckboxVectorQuestion with MTurkQuestion
     </Question>
     )
   }
+
+  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = ???
 }

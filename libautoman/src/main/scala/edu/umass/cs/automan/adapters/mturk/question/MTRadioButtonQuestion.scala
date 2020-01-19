@@ -11,7 +11,7 @@ import java.security.MessageDigest
 
 import org.apache.commons.codec.binary.Hex
 
-import scala.xml.Node
+import scala.xml.{Elem, Node}
 
 class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
   type QuestionOptionType = MTQuestionOption
@@ -44,7 +44,7 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
   // TODO: random checkbox fill
   override protected[mturk]def toXML(randomize: Boolean) : scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
-      XMLBody(randomize)
+      { XMLBody(randomize) }
     </QuestionForm>
   }
 
@@ -92,5 +92,44 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
       </AnswerSpecification>
     </Question>
     )
+  }
+
+  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
+    //Seq(
+      <Question>
+        <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
+        <IsRequired>true</IsRequired>
+        <QuestionContent>
+          {
+          _image_url match {
+            case Some(url) => {
+              <Binary>
+                <MimeType>
+                  <Type>image</Type>
+                  <SubType>png</SubType>
+                </MimeType>
+                <DataURL>{ url }</DataURL>
+                <AltText>{ image_alt_text }</AltText>
+              </Binary>
+            }
+            case None => {}
+          }
+          }
+          {
+          // if formatted content is specified, use that instead of text field
+          _formatted_content match {
+            case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString()) }</FormattedContent>
+            case None => <Text>{ text }</Text>
+          }
+          }
+        </QuestionContent>
+        <AnswerSpecification>
+          <SelectionAnswer>
+            <StyleSuggestion>radiobutton</StyleSuggestion>
+            <Selections>{ if(randomize) randomized_options.map { _.toXML } else options.map { _.toXML } }</Selections>
+          </SelectionAnswer>
+        </AnswerSpecification>
+      </Question>
+    //)
   }
 }

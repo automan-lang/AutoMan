@@ -4,6 +4,7 @@ import java.security.MessageDigest
 import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.core.answer.Outcome
+import edu.umass.cs.automan.core.logging.{DebugLog, LogLevelDebug, LogType}
 import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.question.{Question, Survey}
 import org.apache.commons.codec.binary.Hex
@@ -15,11 +16,16 @@ class MTSurvey extends Survey with MTurkQuestion {
   override def description: String = _description match { case Some(d) => d; case None => this.title }
   override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
 
-  override protected[mturk] def fromXML(x: Node): (String, Question#A) = ???
+  override protected[mturk] def fromXML(x: Node): A = { // (String, Question#A)
+    ???
+//    DebugLog("MTRadioButtonQuestion: fromXML:\n" + x.toString,LogLevelDebug(),LogType.ADAPTER,id)
+//
+//  ((x \\ "Answer" \\ "SelectionIdentifier").text, )
+  }
 
   override protected[mturk] def toXML(randomize: Boolean): Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
-      XMLBody(randomize)
+      { XMLBody(randomize) }
     </QuestionForm>
   }
 
@@ -47,7 +53,9 @@ class MTSurvey extends Survey with MTurkQuestion {
     * @return XML
     */
   override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = {
-    _question_list.asInstanceOf[List[MTurkQuestion]].map(_.toXML(randomize))
+    //_question_list.asInstanceOf[List[MTurkQuestion]].map(_.toXML(randomize))
+    _question_list.map(_.question.asInstanceOf[MTurkQuestion].toSurveyXML(randomize))
   }
 
+  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = ???
 }
