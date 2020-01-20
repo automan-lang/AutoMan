@@ -16,6 +16,7 @@ object DBQuestion {
       case RadioButtonQuestion => 5
       case RadioButtonDistributionQuestion => 6
       case MultiEstimationQuestion => 7
+      case Survey => 8
     },
     {
       case 0 => CheckboxQuestion
@@ -26,6 +27,7 @@ object DBQuestion {
       case 5 => RadioButtonQuestion
       case 6 => RadioButtonDistributionQuestion
       case 7 => MultiEstimationQuestion
+      case 8 => Survey
     }
     )
 }
