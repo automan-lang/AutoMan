@@ -32,7 +32,7 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
   override def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID) : CheckboxMockResponse = {
     CheckboxMockResponse(question_id, response_time, a, worker_id)
   }
-  override protected[mturk] def fromXML(x: scala.xml.Node) : A = {
+  override protected[mturk] def fromXML(x: scala.xml.Node) : A = { // CheckboxQuestion#A
     // There may be MULTIPLE answers here, like this:
     //    <Answer>
     //      <QuestionIdentifier>721be9fc-c867-42ce-8acd-829e64ae62dd</QuestionIdentifier>
@@ -42,6 +42,7 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
     //    </Answer>
     DebugLog("MTCheckboxQuestion: fromXML:\n" + x.toString,LogLevelDebug(),LogType.ADAPTER,id)
 
+    println("PRINTING STUFF: " + ((x \\ "Answer" \\ "SelectionIdentifier").map{si => Symbol(si.text)}.toSet).toString)
     (x \\ "Answer" \\ "SelectionIdentifier").map{si => Symbol(si.text)}.toSet
   }
   // TODO: random checkbox fill

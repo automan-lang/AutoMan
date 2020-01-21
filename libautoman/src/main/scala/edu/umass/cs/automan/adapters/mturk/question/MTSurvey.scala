@@ -17,10 +17,13 @@ class MTSurvey extends Survey with MTurkQuestion {
   override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
 
   override protected[mturk] def fromXML(x: Node): A = { // (String, Question#A)
-    ???
 //    DebugLog("MTRadioButtonQuestion: fromXML:\n" + x.toString,LogLevelDebug(),LogType.ADAPTER,id)
 //
 //  ((x \\ "Answer" \\ "SelectionIdentifier").text, )
+
+//    DebugLog("MTSurvey: fromXML:\n" + x.toString,LogLevelDebug(),LogType.ADAPTER,id)
+//    ((x \\ "Answer" \\ "SelectionIdentifier").text,(x \\ "QuestionIdentifier"))
+???
   }
 
   override protected[mturk] def toXML(randomize: Boolean): Node = {
