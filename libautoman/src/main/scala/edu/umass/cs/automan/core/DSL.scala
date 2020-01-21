@@ -396,7 +396,7 @@ trait DSL {
     a.RadioButtonDistributionQuestion(initf)
   }
 
-  def survey[A <: AutomanAdapter, O](
+  def survey[A <: AutomanAdapter, O]( // abstract
                                       budget: BigDecimal = MagicNumbers.DefaultBudget,
                                       dont_reject: Boolean = true,
                                       dry_run: Boolean = false,
@@ -405,34 +405,12 @@ trait DSL {
                                       initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
                                       minimum_spawn_policy: MinimumSpawnPolicy = null,
                                       pay_all_on_failure: Boolean = true,
-                                      questions: List[Outcome[_]],
+                                      questions: List[AutomanAdapter => Outcome[_]],
                                       sample_size: Int = MagicNumbers.DefaultSampleSizeForDistrib,
                                       survey_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
                                       text: String,
                                       title: String = null,
                                       wage: BigDecimal = MagicNumbers.USFederalMinimumWage
-                                    )(implicit a: A) : SurveyOutcome = {
-    def initf[S <: Survey](s: S) = {
-      // mandatory parameters
-      s.text = text
-      s.question_list = questions
-
-      // mandatory parameters with sane defaults
-      s.budget = budget
-      s.dont_reject = dont_reject
-      s.dry_run = dry_run
-      s.initial_worker_timeout_in_s = initial_worker_timeout_in_s
-      s.pay_all_on_failure = pay_all_on_failure
-      s.question_timeout_multiplier = survey_timeout_multiplier
-
-      // optional parameters
-      if (image_alt_text != null) { s.image_alt_text = image_alt_text }
-      if (image_url != null) { s.image_url = image_url }
-      if (title != null) { s.title = title }
-      if (minimum_spawn_policy != null) { s.minimum_spawn_policy = minimum_spawn_policy }
-
-    }
-    a.Survey(initf)
-  }
+                                    )(implicit a: A) : SurveyOutcome
 
 }
