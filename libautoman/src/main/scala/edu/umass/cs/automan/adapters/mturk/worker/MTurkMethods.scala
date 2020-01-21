@@ -270,6 +270,7 @@ object MTurkMethods {
     internal_state = state2
 
     // render XML
+    // TODO special survey case?
     val xml = question.asInstanceOf[MTurkQuestion].toXML(randomize = true).toString()
     DebugLog("Posting task XML:\n" + xml.toString, LogLevelDebug(), LogType.ADAPTER, question.id)
 

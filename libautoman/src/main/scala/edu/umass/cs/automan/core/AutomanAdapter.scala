@@ -177,7 +177,7 @@ abstract class AutomanAdapter {
   protected[automan] def schedule[Q <: Question](q: Q, init: Q => Unit): Q#O = {
     // initialize question with end-user lambda
     // memo hash cannot be calculated correctly until Question has been initialized
-    init(q)
+    init(q) // TODO slightly problematic because we don't want survey questions posted independently
 
     val memo_hash = q.memo_hash
 

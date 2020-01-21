@@ -254,6 +254,7 @@ class Scheduler(val question: Question,
    * @param num_comparisons The number of times we've called is_done, inclusive
    * @return A list of newly-created tasks, the number of comparisons, and whether we're done
    */
+    //TODO this is where tasks are being made
   def post_as_needed(tasks: List[Task],
                      backend: AutomanAdapter,
                      question: Question,

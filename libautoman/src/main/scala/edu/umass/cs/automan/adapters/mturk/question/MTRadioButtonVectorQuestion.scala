@@ -93,5 +93,40 @@ class MTRadioButtonVectorQuestion extends RadioButtonVectorQuestion with MTurkQu
     )
   }
 
-  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = ???
+  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
+    <Question>
+      <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
+      <IsRequired>true</IsRequired>
+      <QuestionContent>
+        {
+        _image_url match {
+          case Some(url) => {
+            <Binary>
+              <MimeType>
+                <Type>image</Type>
+                <SubType>png</SubType>
+              </MimeType>
+              <DataURL>{ url }</DataURL>
+              <AltText>{ image_alt_text }</AltText>
+            </Binary>
+          }
+          case None => {}
+        }
+        }
+        {
+        // if formatted content is specified, use that instead of text field
+        _formatted_content match {
+          case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString) }</FormattedContent>
+          case None => <Text>{ text }</Text>
+        }
+        }
+      </QuestionContent>
+      <AnswerSpecification>
+        <SelectionAnswer>
+          <StyleSuggestion>radiobutton</StyleSuggestion>
+          <Selections>{ if(randomize) randomized_options.map { _.toXML } else options.map { _.toXML } }</Selections>
+        </SelectionAnswer>
+      </AnswerSpecification>
+    </Question>
+  }
 }

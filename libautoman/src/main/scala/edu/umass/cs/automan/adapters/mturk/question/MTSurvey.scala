@@ -60,5 +60,7 @@ class MTSurvey extends Survey with MTurkQuestion {
     _question_list.map(_.question.asInstanceOf[MTurkQuestion].toSurveyXML(randomize))
   }
 
-  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = ???
+  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
+    throw new Exception("Why are you calling this?")
+  }
 }

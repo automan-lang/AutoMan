@@ -91,5 +91,40 @@ class MTFreeTextVectorQuestion extends FreeTextVectorQuestion with MTurkQuestion
     )
   }
 
-  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = ???
+  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
+    <Question>
+      <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
+      <QuestionContent>
+        {
+        _image_url match {
+          case Some(url) => {
+            <Binary>
+              <MimeType>
+                <Type>image</Type>
+                <SubType>png</SubType>
+              </MimeType>
+              <DataURL>{ url }</DataURL>
+              <AltText>{ image_alt_text }</AltText>
+            </Binary>
+          }
+          case None => {}
+        }
+        }
+        {
+        // if formatted content is specified, use that instead of text field
+        _formatted_content match {
+          case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString()) }</FormattedContent>
+          case None => <Text>{ text }</Text>
+        }
+        }
+      </QuestionContent>
+      <AnswerSpecification>
+        <FreeTextAnswer>
+          <Constraints>
+            <AnswerFormatRegex regex={ this.regex } errorText={ pattern_error_text } />
+          </Constraints>
+        </FreeTextAnswer>
+      </AnswerSpecification>
+    </Question>
+  }
 }
