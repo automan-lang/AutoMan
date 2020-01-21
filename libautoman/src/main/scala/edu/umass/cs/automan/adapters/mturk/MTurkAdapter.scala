@@ -174,7 +174,7 @@ class MTurkAdapter extends AutomanAdapter {
         //throw new Exception("TODO: Mock setup")
       case None => {
         val builder: AmazonMTurkClientBuilder = AmazonMTurkClientBuilder.standard
-        builder.setEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(PROD_ENDPOINT, SIGNING_REGION))
+        builder.setEndpointConfiguration(_endpoint)
         builder.build()
       }
     }
