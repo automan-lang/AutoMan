@@ -55,10 +55,8 @@ class MTSurvey extends Survey with MTurkQuestion {
     * @param randomize Randomize option order?
     * @return XML
     */
-  override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = {
-    //_question_list.asInstanceOf[List[MTurkQuestion]].map(_.toXML(randomize))
+  override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] =
     _question_list.map(_.question.asInstanceOf[MTurkQuestion].toSurveyXML(randomize))
-  }
 
   override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
     throw new Exception("Why are you calling this?")

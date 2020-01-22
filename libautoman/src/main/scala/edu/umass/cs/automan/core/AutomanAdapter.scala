@@ -173,11 +173,34 @@ abstract class AutomanAdapter {
     _memoizer.snapshot()
   }
 
-  // thread management
+  /**
+    * This function initializes a Question object of the appropriate type
+    * and wraps it in an Outcome monad.  It does NOT schedule associated
+    * tasks; this function should be used for questions nested within
+    * a survey.
+    * @param q The question.
+    * @param init An initializer function for the question.
+    * @tparam Q The type of the question.
+    * @return An Outcome.
+    */
+  protected[automan] def noschedule[Q <: Question](q: Q, init: Q => Unit): Q#O = {
+    init(q)
+    q.getOutcome(this)
+  }
+
+  /**
+    * This function initializes a Question object of the appropriate type
+    * and wraps it in an Outcome monad.  As a side effect, it starts a
+    * scheduler and proceeds to marshal the task to the backend.
+    * @param q The question.
+    * @param init An initializer function for the question.
+    * @tparam Q The type of the question.
+    * @return An Outcome.
+    */
   protected[automan] def schedule[Q <: Question](q: Q, init: Q => Unit): Q#O = {
     // initialize question with end-user lambda
     // memo hash cannot be calculated correctly until Question has been initialized
-    init(q) // TODO slightly problematic because we don't want survey questions posted independently
+    init(q)
 
     val memo_hash = q.memo_hash
 

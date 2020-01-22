@@ -35,49 +35,13 @@ class MTurkNoOpAdapter extends NoOpAdapter {
 
   override protected def MemoDBFactory(): MTMemo = ???
 
-  override def CheckboxQuestion(init: MTCheckboxQuestion => Unit): ScalarOutcome[Set[Symbol]] = {
-    val q = CBQFactory()
-    new ScalarOutcome[Set[Symbol]](q, Future{new NoAnswer[Set[Symbol]](q)})
-  }
-
-  override def CheckboxDistributionQuestion(init: MTCheckboxVectorQuestion => Unit): VectorOutcome[Set[Symbol]] = {
-    val q = CBDQFactory()
-    new VectorOutcome[Set[Symbol]](q, Future{new NoAnswers[Set[Symbol]](q)})
-  }
-
-  override def MultiEstimationQuestion(init: MTMultiEstimationQuestion => Unit): MultiEstimationOutcome = {
-    val q = MEQFactory()
-    new MultiEstimationOutcome(q, Future{new NoMultiEstimate(q)})
-  }
-
-  override def EstimationQuestion(init: MTEstimationQuestion => Unit): EstimationOutcome = {
-    val q = EQFactory()
-    new EstimationOutcome(q, Future{new NoEstimate(q)})
-  }
-
-  override def FreeTextQuestion(init: MTFreeTextQuestion => Unit): ScalarOutcome[String] = {
-    val q = CBQFactory()
-    new ScalarOutcome[String](q, Future{new NoAnswer[String](q)})
-  }
-
-  override def FreeTextDistributionQuestion(init: MTFreeTextVectorQuestion => Unit): VectorOutcome[String] = {
-    val q = CBDQFactory()
-    new VectorOutcome[String](q, Future{new NoAnswers[String](q)})
-  }
-
-  override def RadioButtonQuestion(init: MTRadioButtonQuestion => Unit): ScalarOutcome[Symbol] = {
-    val q = CBQFactory()
-    new ScalarOutcome[Symbol](q, Future{new NoAnswer[Symbol](q)})
-  }
-
-  override def RadioButtonDistributionQuestion(init: MTRadioButtonVectorQuestion => Unit): VectorOutcome[Symbol] = {
-    val q = CBDQFactory()
-    new VectorOutcome[Symbol](q, Future{new NoAnswers[Symbol](q)})
-  }
-
-  override def Survey(init: Survey => Unit): SurveyOutcome = {
-    val q = SFactory()
-    new SurveyOutcome(q, Future{new NoSurveyAnswers(q)})
-  }
-
+  override def CheckboxQuestion(init: MTCheckboxQuestion => Unit) = noschedule(CBQFactory(), init)
+  override def CheckboxDistributionQuestion(init: MTCheckboxVectorQuestion => Unit) = noschedule(CBDQFactory(), init)
+  override def MultiEstimationQuestion(init: MTMultiEstimationQuestion => Unit) = noschedule(MEQFactory(), init)
+  override def EstimationQuestion(init: MTEstimationQuestion => Unit)= noschedule(EQFactory(), init)
+  override def FreeTextQuestion(init: MTFreeTextQuestion => Unit) = noschedule(FTQFactory(), init)
+  override def FreeTextDistributionQuestion(init: MTFreeTextVectorQuestion => Unit) = noschedule(FTDQFactory(), init)
+  override def RadioButtonQuestion(init: MTRadioButtonQuestion => Unit) = noschedule(RBQFactory(), init)
+  override def RadioButtonDistributionQuestion(init: MTRadioButtonVectorQuestion => Unit) = noschedule(RBDQFactory(), init)
+  override def Survey(init: Survey => Unit) = noschedule(SFactory(), init)
 }
