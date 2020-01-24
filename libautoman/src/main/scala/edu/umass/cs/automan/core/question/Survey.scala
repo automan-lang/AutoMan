@@ -12,7 +12,7 @@ import edu.umass.cs.automan.core.policy.timeout.DoublingTimeoutPolicy
 
 // abstract Survey class (will implement in adapters)
 abstract class Survey extends Question {
-  type A = (String,Question#A) //Set[Map[String, String]] or String? // the return type (.value) TODO: maybe refine String
+  type A = Set[(String,Question#A)] //Set[Map[String, String]] or String? // the return type (.value) TODO: maybe refine String
   type AA = SurveyAnswers
   type O = SurveyOutcome // outcome type
   type AP = SimpleSurveyPolicy
@@ -20,7 +20,7 @@ abstract class Survey extends Question {
   type TP = DoublingTimeoutPolicy
 
   protected var _question_list: List[Outcome[_]] = List() // the list of questions in the survey // TODO DSL
-  private var _sample_size: Int = 30
+  private var _sample_size: Int = 1
 
   def question_list_=(l: List[Outcome[_]]) { _question_list = l }
   def question_list: List[Outcome[_]] = _question_list

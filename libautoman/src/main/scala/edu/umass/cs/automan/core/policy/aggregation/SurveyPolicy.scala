@@ -36,11 +36,14 @@ abstract class SurveyPolicy(survey: Survey)
   }
 
   // takes tasks, creates array of Responses with worker id, (question name, answer string)
-  def getSurveyDistribution(tasks: List[Task]) : Array[Response[(String,Question#A)]] = {
+  def getSurveyDistribution(tasks: List[Task]) : Array[Response[Set[(String,Question#A)]]] = {
     // distribution
     tasks.flatMap { t =>
       (t.answer,t.worker_id) match {
-        case (Some(ans),Some(worker)) => Some(Response((t.question.name,ans),worker))
+        case (Some(ans),Some(worker)) => {
+          val toAdd: Set[(String,Question#A)] = Set((t.question.name,ans))
+          Some(Response(toAdd,worker))
+        }
         case _ => None
       }
     }.toArray

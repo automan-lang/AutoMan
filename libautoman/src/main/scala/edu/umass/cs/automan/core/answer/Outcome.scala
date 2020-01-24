@@ -38,4 +38,4 @@ case class VectorOutcome[T](_question: VectorQuestion,
 
 case class SurveyOutcome(survey: Survey,
                               override protected[automan] val f: Future[AbstractSurveyAnswer])
-  extends Outcome[(String,Question#A)](survey, f)
+  extends Outcome[Set[(String,Question#A)]](survey, f)

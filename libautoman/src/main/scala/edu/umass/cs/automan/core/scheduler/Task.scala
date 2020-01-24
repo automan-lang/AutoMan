@@ -23,6 +23,11 @@ case class Task(task_id: UUID,
     calendar.getTime
   }
 
+  // todo clean up getter and setter
+  var _answer: Option[Question#A] = answer
+
+  def answer(ans: Option[Question#A]) = {_answer = ans}
+
   if(state == SchedulerState.READY) {
     DebugLog("New Task " + task_id.toString + "; with cost: $" + cost.toString() + "; will expire at: " + expires_at.toString, LogLevelInfo(), LogType.SCHEDULER, question.id)
   }
@@ -32,7 +37,7 @@ case class Task(task_id: UUID,
   }
 
   def prettyPrintAnswer: String = {
-    answer match {
+    this._answer match { //TODO why is answer null?
       case Some(a) => question.prettyPrintAnswer(a.asInstanceOf[Task.this.question.A])
       case None => "n/a"
     }
@@ -47,6 +52,7 @@ case class Task(task_id: UUID,
     new Task(task_id, question, round, timeout_in_s, worker_timeout, cost, created_at, SchedulerState.RUNNING, from_memo, worker_id, answer, new Date())
   }
   def copy_with_answer(ans: Question#A, wrk_id: String) = {
+    _answer = Option(ans)
     DebugLog("Task " + task_id.toString +  " changed to ANSWERED state with answer \"" + prettyPrintAnswer + "\"", LogLevelInfo(), LogType.SCHEDULER, question.id)
     new Task(task_id, question, round, timeout_in_s, worker_timeout, cost, created_at, SchedulerState.ANSWERED, from_memo, Some(wrk_id), Some(ans), new Date())
   }

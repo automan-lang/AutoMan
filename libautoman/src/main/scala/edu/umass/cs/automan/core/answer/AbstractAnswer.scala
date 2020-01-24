@@ -22,8 +22,8 @@ sealed abstract class AbstractScalarAnswer[T](cost: BigDecimal, question: Discre
   extends AbstractAnswer[T](cost, question, distribution)
 sealed abstract class AbstractVectorAnswer[T](cost: BigDecimal, question: VectorQuestion, distribution: Array[Response[T]])
   extends AbstractAnswer[T](cost, question, distribution)
-sealed abstract class AbstractSurveyAnswer(cost: BigDecimal, survey: Survey, distribution: Array[Response[(String,Question#A)]])
-  extends AbstractAnswer[(String,Question#A)](cost, survey, distribution)
+sealed abstract class AbstractSurveyAnswer(cost: BigDecimal, survey: Survey, distribution: Array[Response[Set[(String,Question#A)]]])
+  extends AbstractAnswer[Set[(String,Question#A)]](cost, survey, distribution)
 
 /**
   * MULTI-ESTIMATES
@@ -119,12 +119,12 @@ case class OverBudgetAnswers[T](need: BigDecimal,
 case class SurveyAnswers(values: Set[Map[String,Question#A]], // final dist (no worker ids)
                          override val cost: BigDecimal,
                          override val question: Survey,
-                         override val distribution: Array[Response[(String,Question#A)]]) // raw dist
+                         override val distribution: Array[Response[Set[(String,Question#A)]]]) // raw dist
   extends AbstractSurveyAnswer(cost, question, distribution)
 case class NoSurveyAnswers(override val question: Survey) // raw dist
-  extends AbstractSurveyAnswer(0, question, Array[Response[(String,Question#A)]]())
+  extends AbstractSurveyAnswer(0, question, Array[Response[Set[(String,Question#A)]]]())
 case class IncompleteSurveyAnswers[T](values: Set[Map[String,Question#A]],
                                 override val cost: BigDecimal,
                                 override val question: Survey,
-                                override val distribution: Array[Response[(String,Question#A)]])
+                                override val distribution: Array[Response[Set[(String,Question#A)]]])
   extends AbstractSurveyAnswer(cost, question, distribution)

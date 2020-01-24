@@ -150,7 +150,7 @@ class WorkerRunnable(tw: TurkWorker,
               // get worker_id
               val worker_id = assignment.getWorkerId
 
-              // update the worker whitelist and grant qualification (disqualifiaction)
+              // update the worker whitelist and grant qualification (disqualification)
               // if this is the first time we've ever seen this worker
               if (!internal_state.worker_whitelist.contains(worker_id, group_id)) {
                 internal_state = internal_state.updateWorkerWhitelist(worker_id, group_id, hs.hittype.id)
@@ -169,7 +169,7 @@ class WorkerRunnable(tw: TurkWorker,
               // process answer
               val ans = assignment.getAnswer
               val xml = scala.xml.XML.loadString(ans)
-              val prelim_answer = t.question.asInstanceOf[MTurkQuestion].fromXML(xml)
+              val prelim_answer = t.question.asInstanceOf[MTurkQuestion].fromXML(xml) // set looks fine here
               val answer = t.question.before_filter(prelim_answer.asInstanceOf[t.question.A])
 
               // it is possible, although unlikely, that a worker could submit
@@ -270,7 +270,7 @@ class WorkerRunnable(tw: TurkWorker,
     ts.groupBy(_.question).flatMap { case (question, tasks) =>
       DebugLog(s"Accepting ${tasks.size} tasks.", LogLevelInfo(), LogType.ADAPTER, question.id)
 
-      val accepts = tasks.map { t =>
+      val accepts = tasks.map { t: Task =>
         internal_state.getAssignmentOption(t) match {
           case Some(assignment) =>
             DebugLog(
@@ -279,7 +279,6 @@ class WorkerRunnable(tw: TurkWorker,
               LogType.ADAPTER,
               t.question.id)
             WorkerRunnable.turkRetry(() => MTurkMethods.mturk_approveAssignment(assignment, "Thanks!", tw.backend), timeoutState)
-            //TODO: why is it getting the sdk Assignment? why throwing NPE?
             t.copy_as_accepted()
           case None =>
             throw new Exception("Cannot accept non-existent assignment.")
