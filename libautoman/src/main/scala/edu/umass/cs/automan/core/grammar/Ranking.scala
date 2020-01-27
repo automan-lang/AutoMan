@@ -1,9 +1,9 @@
+package edu.umass.cs.automan.core.grammar
+
 import edu.umass.cs.automan.core.grammar
-import edu.umass.cs.automan.core.grammar.{Choices, Grammar, Name, Sequence, Terminal}
+import edu.umass.cs.automan.core.grammar.SampleGrammar.{bind, buildString, render}
 
 import scala.collection.mutable.ArrayBuffer
-//import grammar._
-import edu.umass.cs.automan.core.grammar.SampleGrammar._
 
 object Ranking {
   def product(l: Array[Int]): Int = {
@@ -40,7 +40,9 @@ object Ranking {
   // given a grammar, an int, and the bases, prints an experiment instance
   def renderInstance(grammar: Grammar, choice: Int, bases: Array[Int]): Unit = {
     val assignment = unrank(choice, bases) // get the assignment from the number
+    grammar.curSymbol = grammar.startSymbol
     val scope = bind(grammar, assignment.toArray, 0, Set())
+    grammar.curSymbol = grammar.startSymbol // TODO make this less ugly
     render(grammar, scope)
     println()
   }
@@ -48,7 +50,9 @@ object Ranking {
   // given a grammar, an int, and the bases, creates a string of an experiment instance
   def buildInstance(grammar: Grammar, choice: Int, bases: Array[Int]): String = {
     val assignment = unrank(choice, bases) // get the assignment from the number
+    grammar.curSymbol = grammar.startSymbol
     val scope = bind(grammar, assignment.toArray, 0, Set())
+    grammar.curSymbol = grammar.startSymbol
     buildString(grammar, scope, new StringBuilder).toString()
   }
 
@@ -64,10 +68,15 @@ object Ranking {
     val lRank = rank(Array(0,1,1,0,0,0,0), lindaBases) // the ranking for the classic Linda problem
     println(lRank)
 
-    renderInstance(getGrammar(), lRank, lindaBases)
-    println(s"Build version:\n${buildInstance(getGrammar(), lRank, lindaBases)}")
-    renderInstance(getGrammar(), xRank, lindaBases)
-    println(s"Build version:\n${buildInstance(getGrammar(), xRank, lindaBases)}")
+    val grammar = getGrammar()
+    grammar.curSymbol = grammar.startSymbol
+    renderInstance(grammar, lRank, lindaBases)
+    //grammar.curSymbol = grammar.startSymbol
+    println(s"Build version:\n${buildInstance(grammar, lRank, lindaBases)}")
+    grammar.curSymbol = grammar.startSymbol
+    renderInstance(grammar, xRank, lindaBases)
+    //grammar.curSymbol = grammar.startSymbol
+    println(s"Build version:\n${buildInstance(grammar, xRank, lindaBases)}")
 //    for (i <- 0 to total - 1) {
 //      val values = unrank(i, lindaBases)
 //      val r = rank(values.toArray, lindaBases)
@@ -96,27 +105,27 @@ object Ranking {
     // The problem statement
     val lindaS = new Sequence(
       List(
-        new Name("edu.umass.cs.automan.core.grammar.Name"),
+        new Name("Name"),
         new Terminal(" is "),
         new Name("Age"),
         new Terminal(" years old, single, outspoken, and very bright. "),
-        new grammar.Function(pronouns, "edu.umass.cs.automan.core.grammar.Name", true),
+        new grammar.Function(pronouns, "Name", true),
         new Terminal(" majored in "),
         new Name("Major"),
         new Terminal(". As a student, "),
-        new grammar.Function(pronouns, "edu.umass.cs.automan.core.grammar.Name", false),
+        new grammar.Function(pronouns, "Name", false),
         new Terminal(" was deeply concerned with issues of "),
         new Name("Issue"),
         new Terminal(", and also participated in "),
         new Name("Demonstration"),
         new Terminal(" demonstrations.\nWhich is more probable?\n1. "),
-        new Name("edu.umass.cs.automan.core.grammar.Name"),
+        new Name("Name"),
         new Terminal(" is "),
         new grammar.Function(articles, "Job", false),
         new Terminal(" "),
         new Name("Job"),
         new Terminal(".\n2. "),
-        new Name("edu.umass.cs.automan.core.grammar.Name"),
+        new Name("Name"),
         new Terminal(" is "),
         new grammar.Function(articles, "Job", false),
         new Terminal(" "),
@@ -130,7 +139,7 @@ object Ranking {
       Map(
         "Start" -> new Name("lindaS"),
         "lindaS" -> lindaS,
-        "edu.umass.cs.automan.core.grammar.Name" -> new Choices(
+        "Name" -> new Choices(
           List(
             new Terminal("Linda"),
             new Terminal("Dan"),

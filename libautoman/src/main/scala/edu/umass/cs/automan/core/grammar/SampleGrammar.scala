@@ -187,7 +187,7 @@ object SampleGrammar {
                   }
                 }
                 case None => {
-                  throw new Error("edu.umass.cs.automan.core.grammar.Name is invalid; there should be a choice here.")
+                  throw new Error("Name is invalid; there should be a choice here.")
                 }
               }
             } else {
@@ -363,27 +363,27 @@ object SampleGrammar {
     // The problem statement
     val lindaS = new Sequence(
       List(
-        new Name("edu.umass.cs.automan.core.grammar.Name"),
+        new Name("Name"),
         new Terminal(" is "),
         new Name("Age"),
         new Terminal(" years old, single, outspoken, and very bright. "),
-        new Function(pronouns, "edu.umass.cs.automan.core.grammar.Name", true),
+        new Function(pronouns, "Name", true),
         new Terminal(" majored in "),
         new Name("Major"),
         new Terminal(". As a student, "),
-        new Function(pronouns, "edu.umass.cs.automan.core.grammar.Name", false),
+        new Function(pronouns, "Name", false),
         new Terminal(" was deeply concerned with issues of "),
         new Name("Issue"),
         new Terminal(", and also participated in "),
         new Name("Demonstration"),
         new Terminal(" demonstrations.\nWhich is more probable?\n1. "),
-        new Name("edu.umass.cs.automan.core.grammar.Name"),
+        new Name("Name"),
         new Terminal(" is "),
         new Function(articles, "Job", false),
         new Terminal(" "),
         new Name("Job"),
         new Terminal(".\n2. "),
-        new Name("edu.umass.cs.automan.core.grammar.Name"),
+        new Name("Name"),
         new Terminal(" is "),
         new Function(articles, "Job", false),
         new Terminal(" "),
@@ -397,7 +397,7 @@ object SampleGrammar {
       Map(
         "Start" -> new Name("lindaS"),
         "lindaS" -> lindaS,
-        "edu.umass.cs.automan.core.grammar.Name" -> new Choices(
+        "Name" -> new Choices(
           List(
             new Terminal("Linda"),
             new Terminal("Dan"),
