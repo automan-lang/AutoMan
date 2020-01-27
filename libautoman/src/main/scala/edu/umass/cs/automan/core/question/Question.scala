@@ -5,13 +5,13 @@ import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.core.{AutomanAdapter, MagicNumbers}
 import edu.umass.cs.automan.core.answer._
+import edu.umass.cs.automan.core.grammar.Grammar
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 import edu.umass.cs.automan.core.mock.{MockAnswer, MockResponse}
 import edu.umass.cs.automan.core.policy.price.PricePolicy
 import edu.umass.cs.automan.core.policy.timeout.TimeoutPolicy
 import edu.umass.cs.automan.core.policy.aggregation.{AggregationPolicy, MinimumSpawnPolicy, UserDefinableSpawnPolicy}
 import edu.umass.cs.automan.core.scheduler.Scheduler
-
 
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -37,7 +37,7 @@ trait Question {
   protected var _image_alt_text: Option[String] = None
   protected var _image_url: Option[String] = None
   protected var _initial_worker_timeout_in_s: Int = 30
-  //protected var _grammar: Option[edu.umass.cs.automan.core.grammar.Grammar] = None
+  protected var _grammar: Option[Grammar] = None
   protected var _max_replicas: Option[Int] = None
   protected var _mock_answers = Iterable[MockAnswer[A]]()
   protected var _name: String = "" // name of question (default title?)
@@ -68,6 +68,7 @@ trait Question {
   def dont_reject: Boolean = _dont_reject
   def dry_run_=(dr: Boolean) { _dry_run = dr }
   def dry_run: Boolean = _dry_run
+  def grammar: Option[Grammar] = _grammar
   def id: UUID = _id
   def id_=(id: UUID) { _id = id }
   def id_string: String = _id.toString
