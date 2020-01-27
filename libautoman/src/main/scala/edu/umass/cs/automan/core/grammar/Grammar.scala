@@ -1,3 +1,5 @@
+package edu.umass.cs.automan.core.grammar
+
 /**
   * A class representing a grammar
   * @param _rules a map from Strings to Productions
@@ -9,7 +11,7 @@ case class Grammar(_rules: Map[String, Production], _startSymbol: String){
   private var curSym = _startSymbol // the current symbol we're working with, which may change
 
   def rules = _rules
-  //def rules_=(newRules: Map[String, Production]) = rules = newRules
+  //def rules_=(newRules: Map[String, edu.umass.cs.automan.core.grammar.Production]) = rules = newRules
 
   def startSymbol = _startSymbol
 

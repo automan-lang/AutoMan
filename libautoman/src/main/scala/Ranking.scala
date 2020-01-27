@@ -1,6 +1,9 @@
+import edu.umass.cs.automan.core.grammar
+import edu.umass.cs.automan.core.grammar.{Choices, Grammar, Name, Sequence, Terminal}
+
 import scala.collection.mutable.ArrayBuffer
 //import grammar._
-import SampleGrammar._
+import edu.umass.cs.automan.core.grammar.SampleGrammar._
 
 object Ranking {
   def product(l: Array[Int]): Int = {
@@ -93,29 +96,29 @@ object Ranking {
     // The problem statement
     val lindaS = new Sequence(
       List(
-        new Name("Name"),
+        new Name("edu.umass.cs.automan.core.grammar.Name"),
         new Terminal(" is "),
         new Name("Age"),
         new Terminal(" years old, single, outspoken, and very bright. "),
-        new Function(pronouns, "Name", true),
+        new grammar.Function(pronouns, "edu.umass.cs.automan.core.grammar.Name", true),
         new Terminal(" majored in "),
         new Name("Major"),
         new Terminal(". As a student, "),
-        new Function(pronouns, "Name", false),
+        new grammar.Function(pronouns, "edu.umass.cs.automan.core.grammar.Name", false),
         new Terminal(" was deeply concerned with issues of "),
         new Name("Issue"),
         new Terminal(", and also participated in "),
         new Name("Demonstration"),
         new Terminal(" demonstrations.\nWhich is more probable?\n1. "),
-        new Name("Name"),
+        new Name("edu.umass.cs.automan.core.grammar.Name"),
         new Terminal(" is "),
-        new Function(articles, "Job", false),
+        new grammar.Function(articles, "Job", false),
         new Terminal(" "),
         new Name("Job"),
         new Terminal(".\n2. "),
-        new Name("Name"),
+        new Name("edu.umass.cs.automan.core.grammar.Name"),
         new Terminal(" is "),
-        new Function(articles, "Job", false),
+        new grammar.Function(articles, "Job", false),
         new Terminal(" "),
         new Name("Job"),
         new Terminal(" and is active in the "),
@@ -127,7 +130,7 @@ object Ranking {
       Map(
         "Start" -> new Name("lindaS"),
         "lindaS" -> lindaS,
-        "Name" -> new Choices(
+        "edu.umass.cs.automan.core.grammar.Name" -> new Choices(
           List(
             new Terminal("Linda"),
             new Terminal("Dan"),

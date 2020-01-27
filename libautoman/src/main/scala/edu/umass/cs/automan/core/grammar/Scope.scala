@@ -1,3 +1,5 @@
+package edu.umass.cs.automan.core.grammar
+
 class Scope(val grammar: Grammar, val curPos: Int) { // or string -> string?
   // grammar is grammar scope is associated with
   // curPos is the position in assignment array at which this production was assigned

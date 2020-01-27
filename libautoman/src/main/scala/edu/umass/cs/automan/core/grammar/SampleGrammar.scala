@@ -1,6 +1,6 @@
-import scala.collection.immutable.HashMap
+package edu.umass.cs.automan.core.grammar
+
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 trait Production {
@@ -110,7 +110,7 @@ class Sequence(sentence: List[Production]) extends Production {
   }
 }
 
-// A name associated with a Production
+// A name associated with a edu.umass.cs.automan.core.grammar.Production
 class Name(n: String) extends Production {
   override def sample(): String = n // sample returns name for further lookup
   def count(g: Grammar, counted: mutable.HashSet[String]): Int = {
@@ -127,7 +127,7 @@ class Name(n: String) extends Production {
   }
 }
 
-// param is name of the Choices that this function applies to
+// param is name of the edu.umass.cs.automan.core.grammar.Choices that this function applies to
 // fun maps those choices to the function results
 class Function(fun: Map[String,String], param: String, capitalize: Boolean) extends Production {
   override def sample(): String = param
@@ -145,7 +145,7 @@ object SampleGrammar {
 
   // Count the number of options possible in a given grammar
   def count(grammar: Grammar, soFar: Int, counted: mutable.HashSet[String]): Int = {
-    val samp: Option[Production] = grammar.rules.get(grammar.curSymbol) // get Production associated with symbol from grammar
+    val samp: Option[Production] = grammar.rules.get(grammar.curSymbol) // get edu.umass.cs.automan.core.grammar.Production associated with symbol from grammar
     var opts = 0
     samp match {
       case Some(samp) => {
@@ -160,14 +160,14 @@ object SampleGrammar {
     var curPos = assignmentPos
     var assigned = alreadyBound
 
-    val samp: Option[Production] = grammar.rules.get(grammar.curSymbol) // get Production associated with symbol from grammar
+    val samp: Option[Production] = grammar.rules.get(grammar.curSymbol) // get edu.umass.cs.automan.core.grammar.Production associated with symbol from grammar
     samp match {
       case Some(samp) => {
         samp match {
           case name: Name => {
             grammar.curSymbol = name.sample()
             bind(grammar, assignment, curPos, alreadyBound)
-          }//bind(grammar, name.sample(), scope) // Name becomes start symbol // assigned or AlreadyBound?
+          }//bind(grammar, name.sample(), scope) // edu.umass.cs.automan.core.grammar.Name becomes start symbol // assigned or AlreadyBound?
           case choice: Choices => { // bind choicename to specified choice
             if(!alreadyBound.contains(grammar.curSymbol)) {
               val choice = grammar.rules.get(grammar.curSymbol) // redundant?
@@ -187,7 +187,7 @@ object SampleGrammar {
                   }
                 }
                 case None => {
-                  throw new Error("Name is invalid; there should be a choice here.")
+                  throw new Error("edu.umass.cs.automan.core.grammar.Name is invalid; there should be a choice here.")
                 }
               }
             } else {
@@ -216,7 +216,7 @@ object SampleGrammar {
             }
             newScope
           }
-          //case p: Production => {}
+          //case p: edu.umass.cs.automan.core.grammar.Production => {}
         }
       }
       case None => throw new Exception(s"Symbol ${grammar.curSymbol} could not be found")
@@ -227,7 +227,7 @@ object SampleGrammar {
     // find start
     // sample symbol associated with it
     // build string by sampling each symbol
-    val samp: Option[Production] = g.rules.get(g.curSymbol) // get Production associated with symbol from grammar
+    val samp: Option[Production] = g.rules.get(g.curSymbol) // get edu.umass.cs.automan.core.grammar.Production associated with symbol from grammar
     samp match {
       case Some(samp) => {
         //println(s"${samp} is a LNT ${samp.isLeafNT()}")
@@ -235,7 +235,7 @@ object SampleGrammar {
           case name: Name => {
             g.curSymbol = name.sample()
             render(g, scope)
-          } // Name becomes start symbol
+          } // edu.umass.cs.automan.core.grammar.Name becomes start symbol
           case term: Terminal => {
             print(term.sample())
           }
@@ -287,7 +287,7 @@ object SampleGrammar {
     // build string by sampling each symbol
     var generating: StringBuilder = soFar
 
-    val samp: Option[Production] = g.rules.get(g.curSymbol) // get Production associated with symbol from grammar
+    val samp: Option[Production] = g.rules.get(g.curSymbol) // get edu.umass.cs.automan.core.grammar.Production associated with symbol from grammar
     samp match {
       case Some(samp) => {
         //println(s"${samp} is a LNT ${samp.isLeafNT()}")
@@ -295,7 +295,7 @@ object SampleGrammar {
           case name: Name => {
             g.curSymbol = name.sample()
             buildString(g,  scope, generating)
-          }//render(g, name.sample(), scope) // Name becomes start symbol
+          }//render(g, name.sample(), scope) // edu.umass.cs.automan.core.grammar.Name becomes start symbol
           case term: Terminal => {
             generating.append(term.sample())
             //print(term.sample())
@@ -363,27 +363,27 @@ object SampleGrammar {
     // The problem statement
     val lindaS = new Sequence(
       List(
-        new Name("Name"),
+        new Name("edu.umass.cs.automan.core.grammar.Name"),
         new Terminal(" is "),
         new Name("Age"),
         new Terminal(" years old, single, outspoken, and very bright. "),
-        new Function(pronouns, "Name", true),
+        new Function(pronouns, "edu.umass.cs.automan.core.grammar.Name", true),
         new Terminal(" majored in "),
         new Name("Major"),
         new Terminal(". As a student, "),
-        new Function(pronouns, "Name", false),
+        new Function(pronouns, "edu.umass.cs.automan.core.grammar.Name", false),
         new Terminal(" was deeply concerned with issues of "),
         new Name("Issue"),
         new Terminal(", and also participated in "),
         new Name("Demonstration"),
         new Terminal(" demonstrations.\nWhich is more probable?\n1. "),
-        new Name("Name"),
+        new Name("edu.umass.cs.automan.core.grammar.Name"),
         new Terminal(" is "),
         new Function(articles, "Job", false),
         new Terminal(" "),
         new Name("Job"),
         new Terminal(".\n2. "),
-        new Name("Name"),
+        new Name("edu.umass.cs.automan.core.grammar.Name"),
         new Terminal(" is "),
         new Function(articles, "Job", false),
         new Terminal(" "),
@@ -397,7 +397,7 @@ object SampleGrammar {
       Map(
         "Start" -> new Name("lindaS"),
         "lindaS" -> lindaS,
-        "Name" -> new Choices(
+        "edu.umass.cs.automan.core.grammar.Name" -> new Choices(
           List(
             new Terminal("Linda"),
             new Terminal("Dan"),
@@ -463,7 +463,7 @@ object SampleGrammar {
       ),
       "Start"
     )
-    //val lindaScope = new Scope(Linda, 0)
+    //val lindaScope = new edu.umass.cs.automan.core.grammar.Scope(Linda, 0)
 
     //sample(grammar, "Start")
     //println()
