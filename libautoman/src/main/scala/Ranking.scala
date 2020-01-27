@@ -35,18 +35,18 @@ object Ranking {
   }
 
   // given a grammar, an int, and the bases, prints an experiment instance
-  def renderInstance(grammar: Map[String, Production], choice: Int, bases: Array[Int]): Unit = {
+  def renderInstance(grammar: Grammar, choice: Int, bases: Array[Int]): Unit = {
     val assignment = unrank(choice, bases) // get the assignment from the number
-    val scope = bind(grammar, "Start", assignment.toArray, 0, Set())
-    render(grammar, "Start", scope)
+    val scope = bind(grammar, assignment.toArray, 0, Set())
+    render(grammar, scope)
     println()
   }
 
   // given a grammar, an int, and the bases, creates a string of an experiment instance
-  def buildInstance(grammar: Map[String, Production], choice: Int, bases: Array[Int]): String = {
+  def buildInstance(grammar: Grammar, choice: Int, bases: Array[Int]): String = {
     val assignment = unrank(choice, bases) // get the assignment from the number
-    val scope = bind(grammar, "Start", assignment.toArray, 0, Set())
-    buildString(grammar, "Start", scope, new StringBuilder).toString()
+    val scope = bind(grammar, assignment.toArray, 0, Set())
+    buildString(grammar, scope, new StringBuilder).toString()
   }
 
   def main(args: Array[String]): Unit = {
@@ -74,7 +74,7 @@ object Ranking {
   }
 
   // returns the Linda grammar
-  def getGrammar(): Map[String, Production] = {
+  def getGrammar(): Grammar = {
     val pronouns = Map[String, String](
       "Linda" -> "she",
       "Dan" -> "he",
@@ -123,7 +123,7 @@ object Ranking {
         new Terminal(" movement.")
       )
     )
-    val Linda = { // The grammar
+    val Linda = Grammar( // The grammar
       Map(
         "Start" -> new Name("lindaS"),
         "lindaS" -> lindaS,
@@ -190,8 +190,8 @@ object Ranking {
             new Terminal("environmental justice")
           )
         )
-      )
-    }
+      ), "Start"
+    )
     Linda
   }
 }

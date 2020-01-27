@@ -5,9 +5,9 @@ import scala.util.Random
 
 trait Production {
   def sample(): String
-  def count(g: Map[String,Production], counted: mutable.HashSet[String]): Int
+  def count(g: Grammar, counted: mutable.HashSet[String]): Int
   def isLeafNT(): Boolean
-  def toChoiceArr(g: Map[String,Production]): Option[Array[Range]]
+  def toChoiceArr(g: Grammar): Option[Array[Range]]
 }
 
 // A set of choices, options for a value
@@ -17,7 +17,7 @@ class Choices(options: List[Production]) extends Production {
     options(ran.nextInt(options.length)).sample()
   }
 
-  override def count(g: Map[String,Production], counted: mutable.HashSet[String]): Int = {
+  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = {
     var c: Int = 0
     for (e <- options) {
       c = c + e.count(g, counted)
@@ -42,7 +42,7 @@ class Choices(options: List[Production]) extends Production {
     containsTerm && allNT
   }
 
-  override def toChoiceArr(g: Map[String,Production]): Option[Array[Range]] = {
+  override def toChoiceArr(g: Grammar): Option[Array[Range]] = {
     var n: Int = 0
     for (e <- options) {
       e.toChoiceArr(g) match {
@@ -62,11 +62,11 @@ class Terminal(word: String) extends Production {
   override def sample(): String = {
     word
   }
-  override def count(g: Map[String,Production], counted: mutable.HashSet[String]): Int = 1
+  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = 1
 
   override def isLeafNT(): Boolean = true
 
-  override def toChoiceArr(g: Map[String,Production]): Option[Array[Range]] = {
+  override def toChoiceArr(g: Grammar): Option[Array[Range]] = {
     Some(Array(0 to 0))
     //toRet = toRet + (0 to 0)
   }
@@ -78,7 +78,7 @@ class Sequence(sentence: List[Production]) extends Production {
     val ran = new Random()
     sentence(ran.nextInt(sentence.length)).sample()
   }
-  override def count(g: Map[String,Production], counted: mutable.HashSet[String]): Int = {
+  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = {
     var c: Int = 1 // TODO: is this ok?
     for (e <- sentence){
       c = c*e.count(g, counted)
@@ -94,7 +94,7 @@ class Sequence(sentence: List[Production]) extends Production {
   }
   def getList(): List[Production] = sentence
 
-  override def toChoiceArr(g: Map[String,Production]): Option[Array[Range]] = {
+  override def toChoiceArr(g: Grammar): Option[Array[Range]] = {
     var choiceArr: Array[Range] = new Array[Range](sentence.length)
     for (e <- sentence) {
       e.toChoiceArr(g) match {
@@ -113,17 +113,17 @@ class Sequence(sentence: List[Production]) extends Production {
 // A name associated with a Production
 class Name(n: String) extends Production {
   override def sample(): String = n // sample returns name for further lookup
-  def count(g: Map[String,Production], counted: mutable.HashSet[String]): Int = {
+  def count(g: Grammar, counted: mutable.HashSet[String]): Int = {
     if(!counted.contains(n)){
       counted += n
-      g(this.sample()).count(g, counted) // TODO: will null cause issues?
+      g.rules(this.sample()).count(g, counted) // TODO: get rid of this? null issues?
     } else 1
   }
 
   override def isLeafNT(): Boolean = false
 
-  override def toChoiceArr(g: Map[String,Production]): Option[Array[Range]] = {
-    g(this.sample()).toChoiceArr(g)
+  override def toChoiceArr(g: Grammar): Option[Array[Range]] = {
+    g.rules(this.sample()).toChoiceArr(g)
   }
 }
 
@@ -131,21 +131,21 @@ class Name(n: String) extends Production {
 // fun maps those choices to the function results
 class Function(fun: Map[String,String], param: String, capitalize: Boolean) extends Production {
   override def sample(): String = param
-  override def count(g: Map[String, Production], counted: mutable.HashSet[String]): Int = 1
+  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = 1
   def runFun(s: String): String = { // "call" the function on the string
     if(capitalize) fun(s).capitalize
     else fun(s)
   }
   override def isLeafNT(): Boolean = false
 
-  override def toChoiceArr(g: Map[String,Production]): Option[Array[Range]] = Some(Array(0 to 0)) //None //Option[Array[Range]()] //Array(null) //TODO: right?
+  override def toChoiceArr(g: Grammar): Option[Array[Range]] = Some(Array(0 to 0)) //None //Option[Array[Range]()] //Array(null) //TODO: right?
 }
 
 object SampleGrammar {
 
   // Count the number of options possible in a given grammar
-  def count(grammar: Map[String, Production], startSymbol: String, soFar: Int, counted: mutable.HashSet[String]): Int = {
-    val samp: Option[Production] = grammar get startSymbol // get Production associated with symbol from grammar
+  def count(grammar: Grammar, soFar: Int, counted: mutable.HashSet[String]): Int = {
+    val samp: Option[Production] = grammar.rules.get(grammar.startSymbol) // get Production associated with symbol from grammar
     var opts = 0
     samp match {
       case Some(samp) => {
@@ -156,24 +156,27 @@ object SampleGrammar {
     opts
   }
 
-  def bind(grammar: Map[String, Production], startSymbol: String, assignment: Array[Int], assignmentPos: Int, alreadyBound: Set[String]): Scope = {
+  def bind(grammar: Grammar, assignment: Array[Int], assignmentPos: Int, alreadyBound: Set[String]): Scope = {
     var curPos = assignmentPos
     var assigned = alreadyBound
 
-    val samp: Option[Production] = grammar get startSymbol // get Production associated with symbol from grammar
+    val samp: Option[Production] = grammar.rules.get(grammar.startSymbol) // get Production associated with symbol from grammar
     samp match {
       case Some(samp) => {
         samp match {
-          case name: Name => bind(grammar, name.sample(), assignment, curPos, alreadyBound)//bind(grammar, name.sample(), scope) // Name becomes start symbol // assigned or AlreadyBound?
+          case name: Name => {
+            grammar.startSymbol = name.sample()
+            bind(grammar, assignment, curPos, alreadyBound)
+          }//bind(grammar, name.sample(), scope) // Name becomes start symbol // assigned or AlreadyBound?
           case choice: Choices => { // bind choicename to specified choice
-            if(!alreadyBound.contains(startSymbol)) {
-              val choice = grammar get startSymbol // redundant?
+            if(!alreadyBound.contains(grammar.startSymbol)) {
+              val choice = grammar.rules.get(grammar.startSymbol) // redundant?
               choice match { // will a name ever go to anything but a choice?
                 case Some(prod) => {
                   prod match {
                     case choice: Choices => {
                       val newScope: Scope = new Scope(grammar, curPos)
-                      newScope.assign(startSymbol, choice.getOptions()(assignment(curPos)).sample())
+                      newScope.assign(grammar.startSymbol, choice.getOptions()(assignment(curPos)).sample())
                       //curPos += 1
                       //                    curPos += 1
                       //                    newScope.setPos(curPos)
@@ -197,7 +200,8 @@ object SampleGrammar {
             for(n <- nt.getList()) {
               n match {
                 case name: Name => { // combine
-                  val toCombine = bind(grammar, name.sample(), assignment, curPos, assigned)
+                  grammar.startSymbol = name.sample() // TODO will this cause problems?
+                  val toCombine = bind(grammar, assignment, curPos, assigned)
                   if(toCombine.getBindings().size == 1) { // indicates that we bound something
                     assigned = assigned + name.sample()
                     curPos += 1
@@ -215,39 +219,48 @@ object SampleGrammar {
           //case p: Production => {}
         }
       }
-      case None => throw new Exception(s"Symbol ${startSymbol} could not be found")
+      case None => throw new Exception(s"Symbol ${grammar.startSymbol} could not be found")
     }
   }
 
-  def render(g: Map[String,Production], startSymbol: String, scope: Scope): Unit = {
+  def render(g: Grammar, scope: Scope): Unit = {
     // find start
     // sample symbol associated with it
     // build string by sampling each symbol
-    val samp: Option[Production] = g get startSymbol // get Production associated with symbol from grammar
+    val samp: Option[Production] = g.rules.get(g.startSymbol) // get Production associated with symbol from grammar
     samp match {
       case Some(samp) => {
         //println(s"${samp} is a LNT ${samp.isLeafNT()}")
         samp match {
-          case name: Name => render(g, name.sample(), scope) // Name becomes start symbol
+          case name: Name => {
+            g.startSymbol = name.sample()
+            render(g, scope)
+          } // Name becomes start symbol
           case term: Terminal => {
             print(term.sample())
           }
           case choice: Choices => {
-            if(scope.isBound(startSymbol)){
+            if(scope.isBound(g.startSymbol)){
               //println(s"${startSymbol} is bound, looking up")
-              print(scope.lookup(startSymbol))
+              print(scope.lookup(g.startSymbol))
             } else {
-              throw new Exception(s"Choice ${startSymbol} has not been bound")
+              throw new Exception(s"Choice ${g.startSymbol} has not been bound")
             }
           }
           case nonterm: Sequence => {
             for(n <- nonterm.getList()) {
               n match {
-                case name: Name => render(g, name.sample(), scope)
+                case name: Name => {
+                  g.startSymbol = name.sample()
+                  render(g, scope)
+                }
                 case fun: Function => print(fun.runFun(scope.lookup(fun.sample())))
+                case term: Terminal => {
+                  print(term.sample())
+                }
                 case p: Production => {
-                  if(scope.isBound(startSymbol)){
-                    print(scope.lookup(startSymbol))
+                  if(scope.isBound(g.startSymbol)){
+                    print(scope.lookup(g.startSymbol))
                   } else {
                     print(p.sample())
                   }
@@ -264,43 +277,50 @@ object SampleGrammar {
           }
         }
       }
-      case None => throw new Exception(s"Symbol ${startSymbol} could not be found")
+      case None => throw new Exception(s"Symbol ${g.startSymbol} could not be found")
     }
   }
 
-  def buildString(g: Map[String,Production], startSymbol: String, scope: Scope, soFar: StringBuilder): StringBuilder = {
+  def buildString(g: Grammar, scope: Scope, soFar: StringBuilder): StringBuilder = {
     // find start
     // sample symbol associated with it
     // build string by sampling each symbol
     var generating: StringBuilder = soFar
 
-    val samp: Option[Production] = g get startSymbol // get Production associated with symbol from grammar
+    val samp: Option[Production] = g.rules.get(g.startSymbol) // get Production associated with symbol from grammar
     samp match {
       case Some(samp) => {
         //println(s"${samp} is a LNT ${samp.isLeafNT()}")
         samp match {
-          case name: Name => buildString(g, name.sample(), scope, generating)//render(g, name.sample(), scope) // Name becomes start symbol
+          case name: Name => {
+            g.startSymbol = name.sample()
+            buildString(g,  scope, generating)
+          }//render(g, name.sample(), scope) // Name becomes start symbol
           case term: Terminal => {
             generating.append(term.sample())
             //print(term.sample())
           }
           case choice: Choices => {
-            if(scope.isBound(startSymbol)){
+            if(scope.isBound(g.startSymbol)){
               //println(s"${startSymbol} is bound, looking up")
               //print(scope.lookup(startSymbol))
-              generating.append(scope.lookup(startSymbol))
+              generating.append(scope.lookup(g.startSymbol))
             } else {
-              throw new Exception(s"Choice ${startSymbol} has not been bound")
+              throw new Exception(s"Choice ${g.startSymbol} has not been bound")
             }
           }
           case nonterm: Sequence => {
             for(n <- nonterm.getList()) {
               n match {
-                case name: Name => buildString(g, name.sample(), scope, generating)
+                case name: Name => {
+                  g.startSymbol = name.sample()
+                  buildString(g, scope, generating)
+                }
                 case fun: Function => generating.append(fun.runFun(scope.lookup(fun.sample())))
+                case term: Terminal => generating.append(term.sample())
                 case p: Production => {
-                  if(scope.isBound(startSymbol)){
-                    generating.append(scope.lookup(startSymbol))
+                  if(scope.isBound(g.startSymbol)){
+                    generating.append(scope.lookup(g.startSymbol))
                   } else {
                     generating.append(p.sample())
                   }
@@ -318,7 +338,7 @@ object SampleGrammar {
           }
         }
       }
-      case None => throw new Exception(s"Symbol ${startSymbol} could not be found")
+      case None => throw new Exception(s"Symbol ${g.startSymbol} could not be found")
     }
   }
 
@@ -373,7 +393,7 @@ object SampleGrammar {
         new Terminal(" movement.")
       )
     )
-    val Linda = { // The grammar
+    val Linda = Grammar(// the grammar
       Map(
         "Start" -> new Name("lindaS"),
         "lindaS" -> lindaS,
@@ -440,47 +460,36 @@ object SampleGrammar {
             new Terminal("environmental justice")
           )
         )
-      )
-    }
+      ),
+      "Start"
+    )
     //val lindaScope = new Scope(Linda, 0)
 
     //sample(grammar, "Start")
     //println()
     //val scope = bind(Linda, "Start", Array(1,2,1,0,0,1,0,1,0,0), 0)
+    println("Xavier:")
     val sSet: Set[String] = Set()
-    val scope = bind(Linda, "Start", Array(3,3,4,4,2,2,3), 0, sSet)
+    val scope = bind(Linda, Array(3,3,4,4,2,2,3), 0, sSet)
     for(e <- scope.getBindings()) println(e)
-    render(Linda, "Start", scope)
+    Linda.resetStartSym
+    render(Linda, scope)
     println()
 
-    val scope2 = bind(Linda, "Start", Array(0,1,1,0,0,0,0), 0, sSet)
+    println("OG Linda:")
+    Linda.resetStartSym
+    val scope2 = bind(Linda, Array(0,1,1,0,0,0,0), 0, sSet)
     for(e <- scope2.getBindings()) println(e)
-    render(Linda, "Start", scope2)
+    Linda.resetStartSym
+    render(Linda,  scope2)
 
     println("\nmakeString version: ")
-    println(buildString(Linda, "Start", scope2, new StringBuilder))
-//    val choiceArr: Option[Array[Range]] = lindaS.toChoiceArr(Linda) // acting on the sequence
-//    //if(choiceArr.length > 0) {
-//    var newCount: Int = 1
-//    choiceArr match {
-//      case Some(arr) => {
-//        for (e <- arr) {
-//          e match {
-//            case e: Range => {
-//              println(e)
-//              newCount *= e.length
-//            }
-//            case _ => {}
-//          }
-//        }
-//      }
-//    }
+    Linda.resetStartSym
+    println(buildString(Linda, scope2, new StringBuilder))
 
-    //}
-    //println(lindaS.toChoiceArr(Linda).toString)
-
+    Linda.resetStartSym
     println()
-    println("Linda count: "  + count(Linda, "Start", 0, new mutable.HashSet[String]()))
+    println("Linda count: "  + count(Linda, 0, new mutable.HashSet[String]()))
 
     //println(s"New count: ${newCount}")
 //    val instance = getInstance(Linda, choiceArr, lindaScope,  Array(0,1,3,0,0,0,0,0,0,0))//,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0))

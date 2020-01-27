@@ -1,14 +1,14 @@
-class Scope(val grammar: Map[String, Production], val curPos: Int) { // or string -> string?
+class Scope(val grammar: Grammar, val curPos: Int) { // or string -> string?
   // grammar is grammar scope is associated with
   // curPos is the position in assignment array at which this production was assigned
   var varBindings: Map[String,String] = Map[String, String]()
   var pos: Int = curPos
 
   def assign(name: String, value: String): Unit = {
-    if (grammar contains name){
+    if (grammar.rules.contains(name)){
       varBindings = varBindings + (name -> value) // TODO: recursive bindings
     } else {
-      throw new Exception("")
+      throw new Exception(s"Could not find ${value} in grammar")
     }
     //this.toString()
   }
