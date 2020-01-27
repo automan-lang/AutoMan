@@ -145,7 +145,7 @@ object SampleGrammar {
 
   // Count the number of options possible in a given grammar
   def count(grammar: Grammar, soFar: Int, counted: mutable.HashSet[String]): Int = {
-    val samp: Option[Production] = grammar.rules.get(grammar.startSymbol) // get Production associated with symbol from grammar
+    val samp: Option[Production] = grammar.rules.get(grammar.curSymbol) // get Production associated with symbol from grammar
     var opts = 0
     samp match {
       case Some(samp) => {
@@ -160,23 +160,23 @@ object SampleGrammar {
     var curPos = assignmentPos
     var assigned = alreadyBound
 
-    val samp: Option[Production] = grammar.rules.get(grammar.startSymbol) // get Production associated with symbol from grammar
+    val samp: Option[Production] = grammar.rules.get(grammar.curSymbol) // get Production associated with symbol from grammar
     samp match {
       case Some(samp) => {
         samp match {
           case name: Name => {
-            grammar.startSymbol = name.sample()
+            grammar.curSymbol = name.sample()
             bind(grammar, assignment, curPos, alreadyBound)
           }//bind(grammar, name.sample(), scope) // Name becomes start symbol // assigned or AlreadyBound?
           case choice: Choices => { // bind choicename to specified choice
-            if(!alreadyBound.contains(grammar.startSymbol)) {
-              val choice = grammar.rules.get(grammar.startSymbol) // redundant?
+            if(!alreadyBound.contains(grammar.curSymbol)) {
+              val choice = grammar.rules.get(grammar.curSymbol) // redundant?
               choice match { // will a name ever go to anything but a choice?
                 case Some(prod) => {
                   prod match {
                     case choice: Choices => {
                       val newScope: Scope = new Scope(grammar, curPos)
-                      newScope.assign(grammar.startSymbol, choice.getOptions()(assignment(curPos)).sample())
+                      newScope.assign(grammar.curSymbol, choice.getOptions()(assignment(curPos)).sample())
                       //curPos += 1
                       //                    curPos += 1
                       //                    newScope.setPos(curPos)
@@ -200,7 +200,7 @@ object SampleGrammar {
             for(n <- nt.getList()) {
               n match {
                 case name: Name => { // combine
-                  grammar.startSymbol = name.sample() // TODO will this cause problems?
+                  grammar.curSymbol = name.sample() // TODO will this cause problems?
                   val toCombine = bind(grammar, assignment, curPos, assigned)
                   if(toCombine.getBindings().size == 1) { // indicates that we bound something
                     assigned = assigned + name.sample()
@@ -219,7 +219,7 @@ object SampleGrammar {
           //case p: Production => {}
         }
       }
-      case None => throw new Exception(s"Symbol ${grammar.startSymbol} could not be found")
+      case None => throw new Exception(s"Symbol ${grammar.curSymbol} could not be found")
     }
   }
 
@@ -227,31 +227,31 @@ object SampleGrammar {
     // find start
     // sample symbol associated with it
     // build string by sampling each symbol
-    val samp: Option[Production] = g.rules.get(g.startSymbol) // get Production associated with symbol from grammar
+    val samp: Option[Production] = g.rules.get(g.curSymbol) // get Production associated with symbol from grammar
     samp match {
       case Some(samp) => {
         //println(s"${samp} is a LNT ${samp.isLeafNT()}")
         samp match {
           case name: Name => {
-            g.startSymbol = name.sample()
+            g.curSymbol = name.sample()
             render(g, scope)
           } // Name becomes start symbol
           case term: Terminal => {
             print(term.sample())
           }
           case choice: Choices => {
-            if(scope.isBound(g.startSymbol)){
+            if(scope.isBound(g.curSymbol)){
               //println(s"${startSymbol} is bound, looking up")
-              print(scope.lookup(g.startSymbol))
+              print(scope.lookup(g.curSymbol))
             } else {
-              throw new Exception(s"Choice ${g.startSymbol} has not been bound")
+              throw new Exception(s"Choice ${g.curSymbol} has not been bound")
             }
           }
           case nonterm: Sequence => {
             for(n <- nonterm.getList()) {
               n match {
                 case name: Name => {
-                  g.startSymbol = name.sample()
+                  g.curSymbol = name.sample()
                   render(g, scope)
                 }
                 case fun: Function => print(fun.runFun(scope.lookup(fun.sample())))
@@ -259,8 +259,8 @@ object SampleGrammar {
                   print(term.sample())
                 }
                 case p: Production => {
-                  if(scope.isBound(g.startSymbol)){
-                    print(scope.lookup(g.startSymbol))
+                  if(scope.isBound(g.curSymbol)){
+                    print(scope.lookup(g.curSymbol))
                   } else {
                     print(p.sample())
                   }
@@ -277,7 +277,7 @@ object SampleGrammar {
           }
         }
       }
-      case None => throw new Exception(s"Symbol ${g.startSymbol} could not be found")
+      case None => throw new Exception(s"Symbol ${g.curSymbol} could not be found")
     }
   }
 
@@ -287,13 +287,13 @@ object SampleGrammar {
     // build string by sampling each symbol
     var generating: StringBuilder = soFar
 
-    val samp: Option[Production] = g.rules.get(g.startSymbol) // get Production associated with symbol from grammar
+    val samp: Option[Production] = g.rules.get(g.curSymbol) // get Production associated with symbol from grammar
     samp match {
       case Some(samp) => {
         //println(s"${samp} is a LNT ${samp.isLeafNT()}")
         samp match {
           case name: Name => {
-            g.startSymbol = name.sample()
+            g.curSymbol = name.sample()
             buildString(g,  scope, generating)
           }//render(g, name.sample(), scope) // Name becomes start symbol
           case term: Terminal => {
@@ -301,26 +301,26 @@ object SampleGrammar {
             //print(term.sample())
           }
           case choice: Choices => {
-            if(scope.isBound(g.startSymbol)){
+            if(scope.isBound(g.curSymbol)){
               //println(s"${startSymbol} is bound, looking up")
               //print(scope.lookup(startSymbol))
-              generating.append(scope.lookup(g.startSymbol))
+              generating.append(scope.lookup(g.curSymbol))
             } else {
-              throw new Exception(s"Choice ${g.startSymbol} has not been bound")
+              throw new Exception(s"Choice ${g.curSymbol} has not been bound")
             }
           }
           case nonterm: Sequence => {
             for(n <- nonterm.getList()) {
               n match {
                 case name: Name => {
-                  g.startSymbol = name.sample()
+                  g.curSymbol = name.sample()
                   buildString(g, scope, generating)
                 }
                 case fun: Function => generating.append(fun.runFun(scope.lookup(fun.sample())))
                 case term: Terminal => generating.append(term.sample())
                 case p: Production => {
-                  if(scope.isBound(g.startSymbol)){
-                    generating.append(scope.lookup(g.startSymbol))
+                  if(scope.isBound(g.curSymbol)){
+                    generating.append(scope.lookup(g.curSymbol))
                   } else {
                     generating.append(p.sample())
                   }
@@ -338,7 +338,7 @@ object SampleGrammar {
           }
         }
       }
-      case None => throw new Exception(s"Symbol ${g.startSymbol} could not be found")
+      case None => throw new Exception(s"Symbol ${g.curSymbol} could not be found")
     }
   }
 
@@ -472,47 +472,28 @@ object SampleGrammar {
     val sSet: Set[String] = Set()
     val scope = bind(Linda, Array(3,3,4,4,2,2,3), 0, sSet)
     for(e <- scope.getBindings()) println(e)
-    Linda.resetStartSym
+    //Linda.resetStartSym
+    Linda.curSymbol = Linda.startSymbol
     render(Linda, scope)
     println()
 
     println("OG Linda:")
-    Linda.resetStartSym
+    //Linda.resetStartSym
+    Linda.curSymbol = Linda.startSymbol
     val scope2 = bind(Linda, Array(0,1,1,0,0,0,0), 0, sSet)
     for(e <- scope2.getBindings()) println(e)
-    Linda.resetStartSym
+    //Linda.resetStartSym
+    Linda.curSymbol = Linda.startSymbol
     render(Linda,  scope2)
 
     println("\nmakeString version: ")
-    Linda.resetStartSym
+    //Linda.resetStartSym
+    Linda.curSymbol = Linda.startSymbol
     println(buildString(Linda, scope2, new StringBuilder))
 
-    Linda.resetStartSym
+    //Linda.resetStartSym
+    Linda.curSymbol = Linda.startSymbol
     println()
     println("Linda count: "  + count(Linda, 0, new mutable.HashSet[String]()))
-
-    //println(s"New count: ${newCount}")
-//    val instance = getInstance(Linda, choiceArr, lindaScope,  Array(0,1,3,0,0,0,0,0,0,0))//,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0))
-//    println("Classic instance: ")
-//    for(s <- instance) print(s)
-//
-//    val newInstance = getInstance(Linda, choiceArr, lindaScope,  Array(3,0,5,4,2,3,1,3,1,3))
-//    println("New instance: ")
-//    for(s <- newInstance) print(s)
-    //println("Instance: " + getInstance(Linda, choiceArr, lindaScope,  Array(0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)).toString)
   }
 }
-
-//val linda = new Experiment(
-//  'name +  " is " + 'age + "years old, single, outspoken, and very bright. " + 'name_gender + " majored in " + 'major  +
-//    ". As a student,  " + 'name_gender + " was deeply concerned with issues of " + 'issues + ", and also participated in " + 'demonstrations + "demonstrations.\n\nWhich is more probable?",
-//  List('name + " is a " + 'job + ".", 'name + " is a " + 'job + " and is active in the " +  'issues + " movement."),
-//  Map(
-//    'name -> nameList,
-//    //'name_gender -> genderMap(nameList),//genderMap(Symbol.valueFromKey("name")),
-//    'age -> List("21", "31", "41", "51", "61"),
-//    'major -> List("chemistry", "psychology", "english literature", "philosophy", "women's studies"),
-//    'issues -> List("discrimination and social justice", "fair wages", "animal rights", "white collar crime", "unemployed circus workers"),
-//    'demonstrations -> List("anti-nuclear", "anti-war", "pro-choice", "anti-abortion", "anti-animal testing"),
-//    'jobs -> List("bank teller", "almond paste mixer", "tennis scout", "lawyer", "professor")
-//  ),
