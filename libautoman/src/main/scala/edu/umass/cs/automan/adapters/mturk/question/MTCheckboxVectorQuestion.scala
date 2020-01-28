@@ -80,7 +80,12 @@ class MTCheckboxVectorQuestion extends CheckboxVectorQuestion with MTurkQuestion
         // if formatted content is specified, use that instead of text field
         _formatted_content match {
           case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString) }</FormattedContent>
-          case None => <Text>{ text }</Text>
+          //case None => <Text>{ text }</Text>
+          case None => <Text>{ this.grammar match {
+            case Some(g) => {
+              g.
+            }
+          }}</Text>
         }
         }
       </QuestionContent>

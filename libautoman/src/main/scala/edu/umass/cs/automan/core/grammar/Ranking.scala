@@ -39,7 +39,7 @@ object Ranking {
 
   // given a grammar, an int, and the bases, prints an experiment instance
   def renderInstance(grammar: Grammar, choice: Int, bases: Array[Int]): Unit = {
-    val assignment = unrank(choice, bases) // get the assignment from the number
+    val assignment = unrank(c, bases) // get the assignment from the number
     grammar.curSymbol = grammar.startSymbol
     val scope = bind(grammar, assignment.toArray, 0, Set())
     grammar.curSymbol = grammar.startSymbol // TODO make this less ugly
