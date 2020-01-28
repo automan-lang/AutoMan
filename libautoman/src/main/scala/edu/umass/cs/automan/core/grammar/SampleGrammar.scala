@@ -141,6 +141,16 @@ class Function(fun: Map[String,String], param: String, capitalize: Boolean) exte
   override def toChoiceArr(g: Grammar): Option[Array[Range]] = Some(Array(0 to 0)) //None //Option[Array[Range]()] //Array(null) //TODO: right?
 }
 
+class OptionBreak() extends Production {
+  override def sample(): String = ""
+
+  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = 1
+
+  override def isLeafNT(): Boolean = false
+
+  override def toChoiceArr(g: Grammar): Option[Array[Range]] = None
+}
+
 object SampleGrammar {
 
   // Count the number of options possible in a given grammar
@@ -236,9 +246,8 @@ object SampleGrammar {
             g.curSymbol = name.sample()
             render(g, scope)
           } // edu.umass.cs.automan.core.grammar.Name becomes start symbol
-          case term: Terminal => {
-            print(term.sample())
-          }
+          case term: Terminal => print(term.sample())
+          case break: OptionBreak => print(break.sample())
           case choice: Choices => {
             if(scope.isBound(g.curSymbol)){
               //println(s"${startSymbol} is bound, looking up")
@@ -255,9 +264,8 @@ object SampleGrammar {
                   render(g, scope)
                 }
                 case fun: Function => print(fun.runFun(scope.lookup(fun.sample())))
-                case term: Terminal => {
-                  print(term.sample())
-                }
+                case term: Terminal => print(term.sample())
+                case break: OptionBreak => print(break.sample())
                 case p: Production => {
                   if(scope.isBound(g.curSymbol)){
                     print(scope.lookup(g.curSymbol))
@@ -296,10 +304,8 @@ object SampleGrammar {
             g.curSymbol = name.sample()
             buildString(g,  scope, generating)
           }//render(g, name.sample(), scope) // edu.umass.cs.automan.core.grammar.Name becomes start symbol
-          case term: Terminal => {
-            generating.append(term.sample())
-            //print(term.sample())
-          }
+          case term: Terminal => generating.append(term.sample())
+          case break: OptionBreak => generating.append(break.sample())
           case choice: Choices => {
             if(scope.isBound(g.curSymbol)){
               //println(s"${startSymbol} is bound, looking up")
@@ -318,6 +324,7 @@ object SampleGrammar {
                 }
                 case fun: Function => generating.append(fun.runFun(scope.lookup(fun.sample())))
                 case term: Terminal => generating.append(term.sample())
+                case break: OptionBreak => generating.append(break.sample())
                 case p: Production => {
                   if(scope.isBound(g.curSymbol)){
                     generating.append(scope.lookup(g.curSymbol))
@@ -377,12 +384,14 @@ object SampleGrammar {
         new Terminal(", and also participated in "),
         new Name("Demonstration"),
         new Terminal(" demonstrations.\nWhich is more probable?\n1. "),
+        new OptionBreak(),
         new Name("Name"),
         new Terminal(" is "),
         new Function(articles, "Job", false),
         new Terminal(" "),
         new Name("Job"),
         new Terminal(".\n2. "),
+        new OptionBreak(),
         new Name("Name"),
         new Terminal(" is "),
         new Function(articles, "Job", false),
@@ -484,7 +493,7 @@ object SampleGrammar {
     for(e <- scope2.getBindings()) println(e)
     //Linda.resetStartSym
     Linda.curSymbol = Linda.startSymbol
-    render(Linda,  scope2)
+    render(Linda, scope2)
 
     println("\nmakeString version: ")
     //Linda.resetStartSym
