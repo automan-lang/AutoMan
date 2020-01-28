@@ -83,7 +83,7 @@ class MTCheckboxVectorQuestion extends CheckboxVectorQuestion with MTurkQuestion
           //case None => <Text>{ text }</Text>
           case None => <Text>{ this.grammar match {
             case Some(g) => {
-              g.
+              // TODO fill this in
             }
           }}</Text>
         }

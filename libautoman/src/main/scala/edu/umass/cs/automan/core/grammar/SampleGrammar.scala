@@ -2,6 +2,7 @@ package edu.umass.cs.automan.core.grammar
 
 import scala.collection.mutable
 import scala.util.Random
+import scala.util.control.Breaks._
 
 trait Production {
   def sample(): String
@@ -305,7 +306,7 @@ object SampleGrammar {
             buildString(g,  scope, generating)
           }//render(g, name.sample(), scope) // edu.umass.cs.automan.core.grammar.Name becomes start symbol
           case term: Terminal => generating.append(term.sample())
-          case break: OptionBreak => generating.append(break.sample())
+          //case break: OptionBreak => generating.append(break.sample())
           case choice: Choices => {
             if(scope.isBound(g.curSymbol)){
               //println(s"${startSymbol} is bound, looking up")
@@ -315,25 +316,27 @@ object SampleGrammar {
               throw new Exception(s"Choice ${g.curSymbol} has not been bound")
             }
           }
-          case nonterm: Sequence => {
-            for(n <- nonterm.getList()) {
-              n match {
-                case name: Name => {
-                  g.curSymbol = name.sample()
-                  buildString(g, scope, generating)
-                }
-                case fun: Function => generating.append(fun.runFun(scope.lookup(fun.sample())))
-                case term: Terminal => generating.append(term.sample())
-                case break: OptionBreak => generating.append(break.sample())
-                case p: Production => {
-                  if(scope.isBound(g.curSymbol)){
-                    generating.append(scope.lookup(g.curSymbol))
-                  } else {
-                    generating.append(p.sample())
+          case nonterm: Sequence => { // TODO sequence in sequence?
+            //breakable {
+              for (n <- nonterm.getList()) {
+                n match {
+                  case name: Name => {
+                    g.curSymbol = name.sample()
+                    buildString(g, scope, generating)
+                  }
+                  case fun: Function => generating.append(fun.runFun(scope.lookup(fun.sample())))
+                  case term: Terminal => generating.append(term.sample())
+                  case optBreak: OptionBreak => generating.append(optBreak.sample())
+                  case p: Production => {
+                    if (scope.isBound(g.curSymbol)) {
+                      generating.append(scope.lookup(g.curSymbol))
+                    } else {
+                      generating.append(p.sample())
+                    }
                   }
                 }
               }
-            }
+            //}
             generating
           }
           case fun: Function => { // need to look up element in grammar via getParam, find its binding, then use that in runFun
@@ -495,7 +498,7 @@ object SampleGrammar {
     Linda.curSymbol = Linda.startSymbol
     render(Linda, scope2)
 
-    println("\nmakeString version: ")
+    println("\nbuildString version: ")
     //Linda.resetStartSym
     Linda.curSymbol = Linda.startSymbol
     println(buildString(Linda, scope2, new StringBuilder))
