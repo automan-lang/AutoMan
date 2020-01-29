@@ -39,3 +39,7 @@ case class VectorOutcome[T](_question: VectorQuestion,
 case class SurveyOutcome(survey: Survey,
                               override protected[automan] val f: Future[AbstractSurveyAnswer])
   extends Outcome[Set[(String,Question#A)]](survey, f)
+
+case class GrammarOutcome[T](_question: GrammarQuestion,
+                             override protected[automan] val f: Future[AbstractAnswer[T]]) //TODO is this actually overriding anything?
+  extends Outcome[T](_question, f)

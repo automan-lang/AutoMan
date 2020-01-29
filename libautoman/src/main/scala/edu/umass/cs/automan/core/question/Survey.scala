@@ -57,7 +57,7 @@ abstract class Survey extends Question {
   }
 
   // TODO: Do we need?
-protected[automan] def composeOutcome(o: O, adapter: AutomanAdapter): O = ???
+  protected[automan] def composeOutcome(o: O, adapter: AutomanAdapter): O = ???
   //{
 //    // unwrap future from previous Outcome
 //    val f = o.f map {

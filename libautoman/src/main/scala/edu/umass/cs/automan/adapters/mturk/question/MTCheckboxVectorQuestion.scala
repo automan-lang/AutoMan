@@ -80,12 +80,19 @@ class MTCheckboxVectorQuestion extends CheckboxVectorQuestion with MTurkQuestion
         // if formatted content is specified, use that instead of text field
         _formatted_content match {
           case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString) }</FormattedContent>
-          //case None => <Text>{ text }</Text>
-          case None => <Text>{ this.grammar match {
-            case Some(g) => {
-              // TODO fill this in
-            }
-          }}</Text>
+          case None => <Text>{ text }</Text>
+//          case None => <Text>{
+//            grammar match {
+//            case Some(g) => {
+//              scope match{
+//                case Some(s) => g.buildBody(s, new StringBuilder)
+//                case None => throw new Exception("Scope must be specified with Grammar.")
+//              }
+//            }
+//            case None => text
+//          }
+//            }
+//          </Text>
         }
         }
       </QuestionContent>
@@ -93,6 +100,7 @@ class MTCheckboxVectorQuestion extends CheckboxVectorQuestion with MTurkQuestion
         <SelectionAnswer>
           <StyleSuggestion>checkbox</StyleSuggestion>
           <Selections>{
+            //grammar match
             if(randomize) randomized_options.map {
               _.toXML
             } else options.map {

@@ -31,4 +31,5 @@ object QuestionType extends Enumeration {
   val RadioButtonQuestion = Value("RadioButtonQuestion")
   val RadioButtonDistributionQuestion = Value("RadioButtonDistributionQuestion")
   val Survey = Value("Survey")
+  val GrammarQuestion = Value("GrammarQuestion")
 }

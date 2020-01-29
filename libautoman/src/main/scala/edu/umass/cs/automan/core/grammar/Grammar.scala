@@ -84,6 +84,7 @@ case class Grammar(_rules: Map[String, Production], _startSymbol: String){
     }
   }
 
+  // TODO these methods may have to move into a Question class
   /**
     * Builds body of a question (up to first OptionBreak)
     * @param scope The scope, containing variable bindings
@@ -149,6 +150,15 @@ case class Grammar(_rules: Map[String, Production], _startSymbol: String){
     }
   }
 
+  /**
+    * Builds options for a Checkbox or Radio Button question
+    *
+    * @param scope The scope, containing variable bindings
+    * @param soFar The string generated so far
+    * @param opts The list of option strings generated so far
+    * @param inOpt Are we in an option? (Have we seen an OptionBreak yet?)
+    * @return A list of StringBuilders representing the list of question options
+    */
   def buildOptions(scope: Scope, soFar: StringBuilder, opts: List[StringBuilder], inOpt: Boolean): List[StringBuilder] = {
     val generating: StringBuilder = soFar
     var opts: List[StringBuilder] = opts

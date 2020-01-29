@@ -5,7 +5,7 @@ import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.core.{AutomanAdapter, MagicNumbers}
 import edu.umass.cs.automan.core.answer._
-import edu.umass.cs.automan.core.grammar.Grammar
+import edu.umass.cs.automan.core.grammar.{Grammar, Scope}
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 import edu.umass.cs.automan.core.mock.{MockAnswer, MockResponse}
 import edu.umass.cs.automan.core.policy.price.PricePolicy
@@ -37,12 +37,13 @@ trait Question {
   protected var _image_alt_text: Option[String] = None
   protected var _image_url: Option[String] = None
   protected var _initial_worker_timeout_in_s: Int = 30
-  protected var _grammar: Option[Grammar] = None
+  //protected var _grammar: Option[Grammar] = None
   protected var _max_replicas: Option[Int] = None
   protected var _mock_answers = Iterable[MockAnswer[A]]()
   protected var _name: String = "" // name of question (default title?)
   protected var _payOnFailure: Boolean = true
   protected var _question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier
+  //protected var _scope: Option[Scope] = None
   protected var _text: Option[String] = None
   protected var _title: Option[String] = None
   protected var _time_value_per_hour: Option[BigDecimal] = None
@@ -68,7 +69,7 @@ trait Question {
   def dont_reject: Boolean = _dont_reject
   def dry_run_=(dr: Boolean) { _dry_run = dr }
   def dry_run: Boolean = _dry_run
-  def grammar: Option[Grammar] = _grammar
+  //def grammar: Option[Grammar] = _grammar
   def id: UUID = _id
   def id_=(id: UUID) { _id = id }
   def id_string: String = _id.toString
@@ -91,6 +92,7 @@ trait Question {
   def pay_all_on_failure: Boolean = _payOnFailure
   def question_timeout_multiplier_=(t: Double) { _question_timeout_multiplier = t }
   def question_timeout_multiplier: Double = _question_timeout_multiplier
+  //def scope: Option[Scope] = _scope
   def strategy = _validation_policy match { case Some(vs) => vs; case None => null }
   def strategy_=(s: Class[AP]) { _validation_policy = Some(s) }
   def text: String = _text match { case Some(t) => t; case None => "Question not specified." }
