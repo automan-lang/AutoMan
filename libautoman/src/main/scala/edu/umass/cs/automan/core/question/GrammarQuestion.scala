@@ -1,6 +1,7 @@
 package edu.umass.cs.automan.core.question
 import java.util.{Date, UUID}
 
+import edu.umass.cs.automan.adapters.mturk.question.MTQuestionOption
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.{AbstractAnswer, Answer, GrammarOutcome, Outcome, ScalarOutcome}
 import edu.umass.cs.automan.core.grammar.{Grammar, Production, Ranking, Scope}
@@ -20,36 +21,57 @@ abstract class GrammarQuestion extends Question {
 //  type TP <: TimeoutPolicy	// how long to run the job
 //  type PP = MLEPricePolicy
 //  type TP = DoublingTimeoutPolicy
+  type QuestionOptionType = MTQuestionOption
 
   protected var _grammar: Grammar = Grammar(Map[String, Production](), "")
   protected var _scope: Scope = new Scope(grammar, 0)
   protected var _confidence: Double = 0.95
   protected var _bases: Array[Int] = Array[Int]() // represents the number of possibilities for each variable TODO: can we generate?
+
+  protected var _numVariants: Int = 0 // the number of variants per experiment
+  protected var _numQs: Int = 0 // the number of questions per trial
   //protected var _rank: Ranking = new Ranking
 
-  protected var question: Question
+  protected var _question: Question
+
+  protected var _options: List[QuestionOptionType] = List[QuestionOptionType]()
 
   // getters and setters
+  def bases_=(b: Array[Int]) { _bases = b }
+  def bases: Array[Int] = _bases
+
   def confidence_=(c: Double) { _confidence = c }
   def confidence: Double = _confidence
 
   def grammar_=(g: Grammar) { _grammar = g }
   def grammar: Grammar = _grammar
 
+  def numVariants_=(n: Int) { _numVariants = n}
+  def numVariants: Int = _numVariants
+
+  def numQs_=(n: Int) { _numQs = n}
+  def numQs: Int = _numQs
+
+  def options_=(os: List[QuestionOptionType]) { _options = os }
+  def options: List[QuestionOptionType] = _options
+
+  def question_=(q: Question) { _question = q }
+  def question: Question = _question
+
   def scope_=(s: Scope) { _scope = s }
   def scope: Scope = _scope
 
-  def bases_=(b: Array[Int]) { _bases = b }
-  def bases: Array[Int] = _bases
-
   def num_possibilities: BigInt
 
-  def generateQuestion(vals: Array[Int], qType: QuestionType): Question
+  //def generateQuestion(vals: Array[Int], qType: QuestionType): QuestionType
+  def generateQuestion(vals: Array[Int], scope: Scope): Question //QuestionType
+
+  def grammarEval(g: Grammar, t: QuestionType): Seq[Question] //Seq[QuestionType]
 //  = {
 //    val teGenInt: Int = Ranking.rank(vals,bases)
 //  }
 
-  override def memo_hash: String = question.memo_hash
+  override def memo_hash: String
 
   // TODO: AP SurveyPolicy? (Will just accept answers for now; later may reject/mark outliers)
   override private[automan] def init_validation_policy(): Unit = {
@@ -81,24 +103,24 @@ abstract class GrammarQuestion extends Question {
     GrammarOutcome(this, schedulerFuture(adapter))
   }
 
-  protected[automan] def composeOutcome(o: O, adapter: AutomanAdapter) : O = {
-    // unwrap future from previous Outcome
-    val f = o.f map {
-      case Answer(value, cost, conf, id, dist) =>
-        if (this.confidence <= conf) {
-          Answer(
-            value,
-            BigDecimal(0.00).setScale(2, math.BigDecimal.RoundingMode.FLOOR),
-            conf,
-            id,
-            dist
-          )
-        } else {
-          startScheduler(adapter)
-        }
-      case _ => startScheduler(adapter)
-    }
-    GrammarOutcome(this, f)
+  protected[automan] def composeOutcome(o: O, adapter: AutomanAdapter) : O = { ???
+//    // unwrap future from previous Outcome
+//    val f = o.f map {
+//      case Answer(value, cost, conf, id, dist) =>
+//        if (this.confidence <= conf) {
+//          Answer(
+//            value,
+//            BigDecimal(0.00).setScale(2, math.BigDecimal.RoundingMode.FLOOR),
+//            conf,
+//            id,
+//            dist
+//          )
+//        } else {
+//          startScheduler(adapter)
+//        }
+//      case _ => startScheduler(adapter)
+//    }
+//    GrammarOutcome(this, f)
   }
 
   override protected[automan] def getQuestionType: QuestionType = QuestionType.GrammarQuestion

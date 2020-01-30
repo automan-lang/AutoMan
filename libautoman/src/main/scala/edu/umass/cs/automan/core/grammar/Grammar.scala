@@ -2,6 +2,7 @@ package edu.umass.cs.automan.core.grammar
 
 import edu.umass.cs.automan.core.grammar.SampleGrammar.buildString
 
+import scala.collection.mutable
 import scala.util.control.Breaks.{break, breakable}
 
 /**
@@ -13,15 +14,92 @@ import scala.util.control.Breaks.{break, breakable}
 
 case class Grammar(_rules: Map[String, Production], _startSymbol: String){
 
-  private var curSym = _startSymbol // the current symbol we're working with, which may change
+  private var _curSym = _startSymbol // the current symbol we're working with, which may change
+  private var _bases: Array[Int] = Array[Int]() // TODO automatically generate from rules?
 
   def rules = _rules
   //def rules_=(newRules: Map[String, edu.umass.cs.automan.core.grammar.Production]) = rules = newRules
 
   def startSymbol = _startSymbol
 
-  def curSymbol = curSym
-  def curSymbol_= (newSym: String): Unit = curSym = newSym
+  def bases = _bases
+  def bases_= (newBases: Array[Int]): Unit = _bases = newBases
+
+  def curSymbol = _curSym
+  def curSymbol_= (newSym: String): Unit = _curSym = newSym
+
+  // Count the number of options possible in this grammar
+  def count(soFar: Int, counted: mutable.HashSet[String]): Int = {
+    val samp: Option[Production] = _rules.get(curSymbol) // get Production associated with symbol from grammar
+    var opts = 0 // TODO will this only work if it starts with an addition?
+    samp match {
+      case Some(samp) => {
+        opts = soFar + samp.count(this, counted)
+      }
+      case None => throw new Exception("Symbol could not be found")
+    }
+    opts
+  }
+
+  // bind variables to vals
+  def bind(assignment: Array[Int], assignmentPos: Int, alreadyBound: Set[String]): Scope = {
+    var curPos = assignmentPos
+    var assigned = alreadyBound
+
+    val samp: Option[Production] = _rules.get(_curSym) // get Production associated with symbol from grammar
+    samp match {
+      case Some(samp) => {
+        samp match {
+          case name: Name => {
+            curSymbol = name.sample()
+            bind(assignment, curPos, alreadyBound)
+          }
+          case choice: Choices => { // bind choicename to specified choice
+            if(!alreadyBound.contains(_curSym)) {
+              val choice = _rules.get(_curSym) // redundant?
+              choice match { // will a name ever go to anything but a choice?
+                case Some(prod) => {
+                  prod match {
+                    case choice: Choices => {
+                      val newScope: Scope = new Scope(this, curPos)
+                      newScope.assign(_curSym, choice.getOptions()(assignment(curPos)).sample())
+                      newScope
+                    }
+                  }
+                }
+                case None => {
+                  throw new Error("Name is invalid; there should be a choice here.")
+                }
+              }
+            } else {
+              val newScope = new Scope(this, curPos)
+              newScope // return empty scope
+            }
+          }
+          case nt: Sequence => { // The first case; combines all the bindings into one scope
+            val newScope = new Scope(this, curPos)
+            for(n <- nt.getList()) {
+              n match {
+                case name: Name => { // combine
+                  curSymbol = name.sample() // TODO will this cause problems?
+                  val toCombine = bind(assignment, curPos, assigned)
+                  if(toCombine.getBindings().size == 1) { // indicates that we bound something
+                    assigned = assigned + name.sample()
+                    curPos += 1
+                    newScope.combineScope(toCombine)
+                    newScope.setPos(curPos + 1)
+                  }
+                }
+                case p: Production => {}
+              }
+            }
+            newScope
+          }
+        }
+      }
+      case None => throw new Exception(s"Symbol ${_curSym} could not be found")
+    }
+  }
 
   // build a string given a scope
   def buildString(scope: Scope, soFar: StringBuilder): StringBuilder = {
