@@ -367,7 +367,7 @@ class WorkerRunnable(tw: TurkWorker,
       // also, we need to ensure that all the tasks have the same properties
       val running = qts.groupBy{ t => HITKey(t)}.flatMap { case (hit_key, tz) =>
         val group_key = hit_key._1
-        val group_id = group_key._1
+        //val group_id = group_key._1
 
         // have we already posted a HIT for these tasks?
         if (internal_state.hit_ids.contains(hit_key)) {

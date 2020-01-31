@@ -269,8 +269,9 @@ object MTurkMethods {
     val (hit_type,state2) = get_or_create_hittype(question.title, q.description, q.keywords, batch_key, internal_state, backend)
     internal_state = state2
 
+    // TODO add param to toXML (abs of hashcode of UUID)
+
     // render XML
-    // TODO special survey case?
     val xml = question.asInstanceOf[MTurkQuestion].toXML(randomize = true).toString()
     DebugLog("Posting task XML:\n" + xml.toString, LogLevelDebug(), LogType.ADAPTER, question.id)
 
@@ -290,8 +291,6 @@ object MTurkMethods {
     //ts.foreach {t => tsMap add (t.getID, t)}
     //val tsMap = ts.map (t => t.getID -> t) toMap //ts.toMap[UUID,Option[Assignment]]
     val hs = HITState(backend.getHIT(new GetHITRequest().withHITId(hit.getHIT.getHITId)).getHIT, ts, hit_type)
-
-    //def apply(): MTurkMethods = new MTurkMethods()
 
     // calculate new HIT key
     val hit_key = (batch_key, question.memo_hash)

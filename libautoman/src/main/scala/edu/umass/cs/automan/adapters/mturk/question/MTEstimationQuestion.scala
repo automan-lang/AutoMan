@@ -104,40 +104,7 @@ class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
     */
   override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = {
     Seq(
-    <Question>
-      <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
-      <QuestionContent>
-        {
-        _image_url match {
-          case Some(url) => {
-            <Binary>
-              <MimeType>
-                <Type>image</Type>
-                <SubType>png</SubType>
-              </MimeType>
-              <DataURL>{ url }</DataURL>
-              <AltText>{ image_alt_text }</AltText>
-            </Binary>
-          }
-          case None => {}
-        }
-        }
-        {
-        // if formatted content is specified, use that instead of text field
-        _formatted_content match {
-          case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString()) }</FormattedContent>
-          case None => <Text>{ text }</Text>
-        }
-        }
-      </QuestionContent>
-      <AnswerSpecification>
-        <FreeTextAnswer>
-          <Constraints>
-            { isNumeric }
-          </Constraints>
-        </FreeTextAnswer>
-      </AnswerSpecification>
-    </Question>
+      toSurveyXML(randomize)
     )
   }
 

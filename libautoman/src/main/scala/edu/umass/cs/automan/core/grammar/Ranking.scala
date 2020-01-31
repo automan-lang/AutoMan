@@ -1,8 +1,9 @@
 package edu.umass.cs.automan.core.grammar
 
-import edu.umass.cs.automan.core.grammar
+import edu.umass.cs.automan.core.grammar.Production
 import edu.umass.cs.automan.core.grammar.SampleGrammar.{bind, buildString, render}
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 object Ranking {
@@ -17,6 +18,30 @@ object Ranking {
 
     //    if(l.length == 0) 1
     //    else l(0) * product(l.slice(1, l.length - 1))
+  }
+
+  def generateBases(g: Grammar): List[Int] = {
+    //val samp: Option[Production] = g.rules.get(g.curSymbol)
+    val samp: Map[String, Production] = g.rules
+    var soFar: List[Int] = List[Int]()
+
+
+//    for(m <- samp) {
+//      m match {
+//        case (s, p) => {
+//          p match {
+//            case choice: Choices => {
+//              soFar = soFar :+ choice.count(g, null)
+//              //generateBases(g, soFar)
+//            }
+//            case p: Production => {
+//              //generateBases(g, soFar)
+//            }
+//          }
+//        }
+//      }
+//    }
+//    soFar
   }
 
   // rank based on array
@@ -57,6 +82,8 @@ object Ranking {
   }
 
   def main(args: Array[String]): Unit = {
+    val testBases = generateBases(getGrammar())
+    println("Testing testBases method: " + testBases)
     val lindaBases = Array(4, 5, 6, 5, 5, 5, 5) // each number is number of possible assignments for that slot
     val total = product(lindaBases)
 
@@ -109,11 +136,11 @@ object Ranking {
         new Terminal(" is "),
         new Name("Age"),
         new Terminal(" years old, single, outspoken, and very bright. "),
-        new grammar.Function(pronouns, "Name", true),
+        new Function(pronouns, "Name", true),
         new Terminal(" majored in "),
         new Name("Major"),
         new Terminal(". As a student, "),
-        new grammar.Function(pronouns, "Name", false),
+        new Function(pronouns, "Name", false),
         new Terminal(" was deeply concerned with issues of "),
         new Name("Issue"),
         new Terminal(", and also participated in "),
@@ -121,13 +148,13 @@ object Ranking {
         new Terminal(" demonstrations.\nWhich is more probable?\n1. "),
         new Name("Name"),
         new Terminal(" is "),
-        new grammar.Function(articles, "Job", false),
+        new Function(articles, "Job", false),
         new Terminal(" "),
         new Name("Job"),
         new Terminal(".\n2. "),
         new Name("Name"),
         new Terminal(" is "),
-        new grammar.Function(articles, "Job", false),
+        new Function(articles, "Job", false),
         new Terminal(" "),
         new Name("Job"),
         new Terminal(" and is active in the "),

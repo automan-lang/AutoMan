@@ -4,154 +4,6 @@ import scala.collection.mutable
 import scala.util.Random
 import scala.util.control.Breaks._
 
-trait Production {
-  def sample(): String
-  def count(g: Grammar, counted: mutable.HashSet[String]): Int
-  def isLeafNT(): Boolean
-  def toChoiceArr(g: Grammar): Option[Array[Range]]
-}
-
-// A set of choices, options for a value
-class Choices(options: List[Production]) extends Production {
-  override def sample(): String = {
-    val ran = new Random()
-    options(ran.nextInt(options.length)).sample()
-  }
-
-  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = {
-    var c: Int = 0
-    for (e <- options) {
-      c = c + e.count(g, counted)
-    } // choices are additive
-    c
-  }
-
-  // return specific terminal given by index i
-  def sampleSpec(i: Int): String = {
-    options(i).sample() //TODO: should probably ensure array bounds
-  }
-
-  // A leafNonTerminal must have at least one terminal, and other elements must also be LNTs
-  override def isLeafNT(): Boolean = {
-    var containsTerm = false
-    var allNT = true
-
-    for(e <- options) {
-      if (e.isInstanceOf[Terminal]) containsTerm = true
-      else if(!e.isLeafNT()) allNT = false
-    }
-    containsTerm && allNT
-  }
-
-  override def toChoiceArr(g: Grammar): Option[Array[Range]] = {
-    var n: Int = 0
-    for (e <- options) {
-      e.toChoiceArr(g) match {
-        case Some(arr) => n += arr.length
-        case None => {}
-        //case Some(e) => n = n + (e.asInstanceOf[Array[Range]]).toChoiceArr(g).length // counting ranges
-      }
-    }
-    Some(Array(0 to n - 1))
-  }
-
-  def getOptions(): List[Production] = options
-}
-
-// A terminal production
-class Terminal(word: String) extends Production {
-  override def sample(): String = {
-    word
-  }
-  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = 1
-
-  override def isLeafNT(): Boolean = true
-
-  override def toChoiceArr(g: Grammar): Option[Array[Range]] = {
-    Some(Array(0 to 0))
-    //toRet = toRet + (0 to 0)
-  }
-}
-
-// A sequence, aka a combination of other terminals/choices and the ordering structure of each problem
-class Sequence(sentence: List[Production]) extends Production {
-  override def sample(): String = {
-    val ran = new Random()
-    sentence(ran.nextInt(sentence.length)).sample()
-  }
-  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = {
-    var c: Int = 1 // TODO: is this ok?
-    for (e <- sentence){
-      c = c*e.count(g, counted)
-    } // nonterminals are multiplicative
-    c
-  }
-
-  override def isLeafNT(): Boolean = false // should be irrelevant
-
-  // return specific terminal given by index i
-  def sampleSpec(i: Int): String = {
-    sentence(i).sample()
-  }
-  def getList(): List[Production] = sentence
-
-  override def toChoiceArr(g: Grammar): Option[Array[Range]] = {
-    var choiceArr: Array[Range] = new Array[Range](sentence.length)
-    for (e <- sentence) {
-      e.toChoiceArr(g) match {
-        case Some(arr) => {
-          val newArr: Array[Range] = choiceArr ++ arr
-          choiceArr = newArr
-        }
-        case None => {}
-      }
-      //choiceArr ++ newArr
-    }
-    Some(choiceArr)
-  }
-}
-
-// A name associated with a edu.umass.cs.automan.core.grammar.Production
-class Name(n: String) extends Production {
-  override def sample(): String = n // sample returns name for further lookup
-  def count(g: Grammar, counted: mutable.HashSet[String]): Int = {
-    if(!counted.contains(n)){
-      counted += n
-      g.rules(this.sample()).count(g, counted) // TODO: get rid of this? null issues?
-    } else 1
-  }
-
-  override def isLeafNT(): Boolean = false
-
-  override def toChoiceArr(g: Grammar): Option[Array[Range]] = {
-    g.rules(this.sample()).toChoiceArr(g)
-  }
-}
-
-// param is name of the edu.umass.cs.automan.core.grammar.Choices that this function applies to
-// fun maps those choices to the function results
-class Function(fun: Map[String,String], param: String, capitalize: Boolean) extends Production {
-  override def sample(): String = param
-  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = 1
-  def runFun(s: String): String = { // "call" the function on the string
-    if(capitalize) fun(s).capitalize
-    else fun(s)
-  }
-  override def isLeafNT(): Boolean = false
-
-  override def toChoiceArr(g: Grammar): Option[Array[Range]] = Some(Array(0 to 0)) //None //Option[Array[Range]()] //Array(null) //TODO: right?
-}
-
-class OptionBreak() extends Production {
-  override def sample(): String = ""
-
-  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = 1
-
-  override def isLeafNT(): Boolean = false
-
-  override def toChoiceArr(g: Grammar): Option[Array[Range]] = None
-}
-
 object SampleGrammar {
 
   // Count the number of options possible in a given grammar
@@ -248,7 +100,7 @@ object SampleGrammar {
             render(g, scope)
           } // edu.umass.cs.automan.core.grammar.Name becomes start symbol
           case term: Terminal => print(term.sample())
-          case break: OptionBreak => print(break.sample())
+          //case break: OptionBreak => print(break.sample())
           case choice: Choices => {
             if(scope.isBound(g.curSymbol)){
               //println(s"${startSymbol} is bound, looking up")
@@ -266,7 +118,7 @@ object SampleGrammar {
                 }
                 case fun: Function => print(fun.runFun(scope.lookup(fun.sample())))
                 case term: Terminal => print(term.sample())
-                case break: OptionBreak => print(break.sample())
+                //case break: OptionBreak => print(break.sample())
                 case p: Production => {
                   if(scope.isBound(g.curSymbol)){
                     print(scope.lookup(g.curSymbol))
@@ -326,7 +178,7 @@ object SampleGrammar {
                   }
                   case fun: Function => generating.append(fun.runFun(scope.lookup(fun.sample())))
                   case term: Terminal => generating.append(term.sample())
-                  case optBreak: OptionBreak => generating.append(optBreak.sample())
+                  //case optBreak: OptionBreak => generating.append(optBreak.sample())
                   case p: Production => {
                     if (scope.isBound(g.curSymbol)) {
                       generating.append(scope.lookup(g.curSymbol))
@@ -387,14 +239,14 @@ object SampleGrammar {
         new Terminal(", and also participated in "),
         new Name("Demonstration"),
         new Terminal(" demonstrations.\nWhich is more probable?\n1. "),
-        new OptionBreak(),
+        //new OptionBreak(),
         new Name("Name"),
         new Terminal(" is "),
         new Function(articles, "Job", false),
         new Terminal(" "),
         new Name("Job"),
         new Terminal(".\n2. "),
-        new OptionBreak(),
+        //new OptionBreak(),
         new Name("Name"),
         new Terminal(" is "),
         new Function(articles, "Job", false),

@@ -66,7 +66,7 @@ abstract class GrammarQuestion extends Question {
   //def generateQuestion(vals: Array[Int], qType: QuestionType): QuestionType
   def generateQuestion(vals: Array[Int], scope: Scope): Question //QuestionType
 
-  def grammarEval(g: Grammar, t: QuestionType): Seq[Question] //Seq[QuestionType]
+  def grammarEval(g: Grammar): Seq[Question] //Seq[QuestionType]
 //  = {
 //    val teGenInt: Int = Ranking.rank(vals,bases)
 //  }

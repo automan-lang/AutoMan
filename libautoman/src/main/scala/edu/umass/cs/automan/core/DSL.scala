@@ -1,6 +1,7 @@
 package edu.umass.cs.automan.core
 
 import edu.umass.cs.automan.core.answer._
+import edu.umass.cs.automan.core.grammar.Grammar
 import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 import edu.umass.cs.automan.core.question._
@@ -527,6 +528,7 @@ trait DSL {
 //                                      confidence: Double = MagicNumbers.DefaultConfidence,
 //                                      dont_reject: Boolean = true,
 //                                      dry_run: Boolean = false,
+//                                      //grammar: QuestionGrammar = null,
 //                                      image_alt_text: String = null,
 //                                      image_url: String = null,
 //                                      initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
@@ -539,7 +541,7 @@ trait DSL {
 //                                      pattern: String = null,
 //                                      pattern_error_text: String = null,
 //                                      question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
-//                                      question_type: QType, // the important thing TODO how pass here from experiment?
+//                                      //question_type: QuestionType, // the important thing TODO how pass here from experiment?
 //                                      sample_size: Int = MagicNumbers.DefaultSampleSizeForDistrib,
 //                                      text: String,
 //                                      title: String = null,
@@ -551,32 +553,7 @@ trait DSL {
 //      q.text = text // TODO where is this getting generated with the grammar?
 //      //q.options = options.asInstanceOf[List[q.QuestionOptionType]] // yeah... ugly
 //
-//      q.question = question_type match {
-//        case e: QuestionType.Estimate => {
 //
-//        }
-//        case cbq: QuestionType.CheckboxQuestion  => { // TODO: why can't I get the QuestionTypes?
-//          checkbox(confidence,
-//            budget,
-//            dont_reject,
-//            dry_run,
-//            image_alt_text,
-//            image_url,
-//            initial_worker_timeout_in_s,
-//            minimum_spawn_policy,
-//            null, //mock_answers,
-//            options,
-//            pay_all_on_failure,
-//            question_timeout_multiplier,
-//            text,
-//            title,
-//            wage
-//          )
-//          //initf(q)
-//          //a.CheckboxQuestion(initf)
-//        }
-//
-//      }
 //    }
 //  }
 }
