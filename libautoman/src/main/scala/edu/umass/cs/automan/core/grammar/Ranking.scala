@@ -20,10 +20,42 @@ object Ranking {
     //    else l(0) * product(l.slice(1, l.length - 1))
   }
 
-  def generateBases(g: Grammar): List[Int] = {
+  def generateBases(g: Grammar, b: List[Int], c: Set[String]): List[Int] = {
     //val samp: Option[Production] = g.rules.get(g.curSymbol)
-    val samp: Map[String, Production] = g.rules
-    var soFar: List[Int] = List[Int]()
+    var soFar: List[Int] = b
+    var counted = c
+
+    val samp: Option[Production] = g.rules.get(g.curSymbol) // get edu.umass.cs.automan.core.grammar.Production associated with symbol from grammar
+    samp match {
+      case Some(samp) => {
+        samp match {
+          case name: Name => {
+            g.curSymbol = name.sample()
+            generateBases(g, soFar, counted)
+          }
+          case choice: Choices => {
+            List[Int](choice.count(g,null))
+          }
+          case nonterm: Sequence => { // TODO sequence in sequence?
+            for (n <- nonterm.getList()) {
+              n match {
+                case name: Name => {
+                  g.curSymbol = name.sample()
+                  if(!(counted.contains(g.curSymbol))) {
+                    counted = counted + g.curSymbol
+                    soFar = soFar ++ generateBases(g, soFar, counted)
+                  }
+                }
+                case p: Production => {}
+              }
+            }
+            //}
+            soFar
+          }
+        }
+      }
+      case None => throw new Exception(s"Symbol ${g.curSymbol} could not be found")
+    }
 
 
 //    for(m <- samp) {
@@ -82,9 +114,9 @@ object Ranking {
   }
 
   def main(args: Array[String]): Unit = {
-    val testBases = generateBases(getGrammar())
-    println("Testing testBases method: " + testBases)
-    val lindaBases = Array(4, 5, 6, 5, 5, 5, 5) // each number is number of possible assignments for that slot
+    val lindaBases = generateBases(getGrammar(), List[Int](), Set[String]()).toArray
+    println("Testing testBases method: " + lindaBases.toString)
+    //val lindaBases = Array(4, 5, 6, 5, 5, 5, 5) // each number is number of possible assignments for that slot
     val total = product(lindaBases)
 
     println(s"total: ${total}")
