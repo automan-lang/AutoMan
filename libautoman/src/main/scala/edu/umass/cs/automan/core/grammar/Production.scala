@@ -138,12 +138,14 @@ abstract class QuestionProduction() extends Production { // TODO make prods take
   def toQuestionText(g: Grammar, variation: Int): (String, List[String])
 }
 
-class EstimateQuestionProduction() extends QuestionProduction {
+class EstimateQuestionProduction() extends QuestionProduction() {
   override def sample(): String = ""
 
   override def count(g: Grammar, counted: mutable.HashSet[String]): Int = ???
 
-  override def toQuestionText(g: Grammar, variation: Int): (String, List[String]) = { ???
-
+  // todo grammar necessary?
+  override def toQuestionText(g: Grammar, variation: Int): (String, List[String]) = {
+    val body: String = Ranking.buildInstance(g, variation)
+    (body, List[String]()) // no options for estimation
   }
 }

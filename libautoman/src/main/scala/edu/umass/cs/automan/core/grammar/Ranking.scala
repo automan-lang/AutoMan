@@ -97,6 +97,7 @@ object Ranking {
   // given a grammar, an int, and the bases, prints an experiment instance
   def renderInstance(grammar: Grammar, choice: Int, bases: Array[Int]): Unit = {
     val assignment = unrank(choice, bases) // get the assignment from the number
+    println(s"Assignment: ${assignment}")
     grammar.curSymbol = grammar.startSymbol
     val scope = bind(grammar, assignment.toArray, 0, Set())
     grammar.curSymbol = grammar.startSymbol // TODO make this less ugly
@@ -105,7 +106,9 @@ object Ranking {
   }
 
   // given a grammar, an int, and the bases, creates a string of an experiment instance
-  def buildInstance(grammar: Grammar, choice: Int, bases: Array[Int]): String = {
+  def buildInstance(grammar: Grammar, choice: Int): String = {
+    grammar.curSymbol = grammar.startSymbol
+    val bases = generateBases(grammar, List[Int](), Set[String]()).toArray
     val assignment = unrank(choice, bases) // get the assignment from the number
     grammar.curSymbol = grammar.startSymbol
     val scope = bind(grammar, assignment.toArray, 0, Set())
@@ -115,33 +118,32 @@ object Ranking {
 
   def main(args: Array[String]): Unit = {
     val lindaBases = generateBases(getGrammar(), List[Int](), Set[String]()).toArray
-    println("Testing testBases method: " + lindaBases.toString)
+    //println("Testing testBases method: " + lindaBases)
     //val lindaBases = Array(4, 5, 6, 5, 5, 5, 5) // each number is number of possible assignments for that slot
+
     val total = product(lindaBases)
 
     println(s"total: ${total}")
 
-    val xRank = rank(Array(3,3,4,4,2,2,3), lindaBases)
-    println(xRank)
+    val xRank = rank(Array(3,3,4,4,2,2,3), lindaBases) // xavier is 70563
+    //println(xRank)
 
     val lRank = rank(Array(0,1,1,0,0,0,0), lindaBases) // the ranking for the classic Linda problem
-    println(lRank)
+//    println(lRank) // 4375
+//    println(unrank(lRank, lindaBases))
 
     val grammar = getGrammar()
+    // if it starts acting up reset start symbol
+//    renderInstance(grammar, lRank, lindaBases)
+//    println(s"Build version:\n${buildInstance(grammar, lRank)}")
+//    renderInstance(grammar, xRank, lindaBases)
+//    println(s"Build version:\n${buildInstance(grammar, xRank)}")
+
     grammar.curSymbol = grammar.startSymbol
-    renderInstance(grammar, lRank, lindaBases)
-    //grammar.curSymbol = grammar.startSymbol
-    println(s"Build version:\n${buildInstance(grammar, lRank, lindaBases)}")
+    val prod: EstimateQuestionProduction = new EstimateQuestionProduction()
+    println(prod.toQuestionText(grammar, 0))
     grammar.curSymbol = grammar.startSymbol
-    renderInstance(grammar, xRank, lindaBases)
-    //grammar.curSymbol = grammar.startSymbol
-    println(s"Build version:\n${buildInstance(grammar, xRank, lindaBases)}")
-//    for (i <- 0 to total - 1) {
-//      val values = unrank(i, lindaBases)
-//      val r = rank(values.toArray, lindaBases)
-//      assert(i == r)
-//      println(s"${values} ${r}")
-//    }
+    println(prod.toQuestionText(grammar, 4375))
   }
 
   // returns the Linda grammar
