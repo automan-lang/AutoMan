@@ -7,6 +7,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 object Ranking {
+
   def product(l: Array[Int]): Int = {
     var toRet = 1
     if (l.length != 0) { //todo redundant?
@@ -108,7 +109,7 @@ object Ranking {
   // given a grammar, an int, and the bases, creates a string of an experiment instance
   def buildInstance(grammar: Grammar, choice: Int): String = {
     grammar.curSymbol = grammar.startSymbol
-    val bases = generateBases(grammar, List[Int](), Set[String]()).toArray
+    val bases = generateBases(grammar, List[Int](), Set[String]()).toArray // todo only does for first sequence... make by sequence?
     val assignment = unrank(choice, bases) // get the assignment from the number
     grammar.curSymbol = grammar.startSymbol
     val scope = bind(grammar, assignment.toArray, 0, Set())
@@ -117,7 +118,136 @@ object Ranking {
   }
 
   def main(args: Array[String]): Unit = {
-    val lindaBases = generateBases(getGrammar(), List[Int](), Set[String]()).toArray
+    val pronouns = Map[String, String](
+      "Linda" -> "she",
+      "Dan" -> "he",
+      "Emmie" -> "she",
+      "Xavier the bloodsucking spider" -> "it"
+    )
+
+    // TODO: what if multiple params need same function?
+    val articles = Map[String, String](
+      "bank teller" -> "a",
+      "almond paste mixer" -> "an",
+      "tennis scout" -> "a",
+      "lawyer" -> "a",
+      "professor" -> "a"
+    )
+    // The problem statement
+    val lindaBody = new Sequence(
+      List(
+        new Name("Name"),
+        new Terminal(" is "),
+        new Name("Age"),
+        new Terminal(" years old, single, outspoken, and very bright. "),
+        new Function(pronouns, "Name", true),
+        new Terminal(" majored in "),
+        new Name("Major"),
+        new Terminal(". As a student, "),
+        new Function(pronouns, "Name", false),
+        new Terminal(" was deeply concerned with issues of "),
+        new Name("Issue"),
+        new Terminal(", and also participated in "),
+        new Name("Demonstration"),
+        new Terminal(" demonstrations.\nWhich is more probable?\n")
+      )
+    )
+      val lindaOpt1 = new Sequence(
+        List(
+          new Name("Name"),
+          new Terminal(" is "),
+          new Function(articles, "Job", false),
+          new Terminal(" "),
+          new Name("Job"),
+          new Terminal(".\n")
+        )
+      )
+    val lindaOpt2 = new Sequence(
+      List(
+        new Name("Name"),
+        new Terminal(" is "),
+        new Function(articles, "Job", false),
+        new Terminal(" "),
+        new Name("Job"),
+        new Terminal(" and is active in the "),
+        new Name("Movement"),
+        new Terminal(" movement.")
+      )
+    )
+
+    val grammar = Grammar( // The grammar
+      Map(
+        "Start" -> new Name("lindaS"),
+        "lindaS" -> lindaBody,
+        "lindaOpt1" -> lindaOpt1,
+        "lindaOpt2" -> lindaOpt2,
+        "Name" -> new Choices(
+          List(
+            new Terminal("Linda"),
+            new Terminal("Dan"),
+            new Terminal("Emmie"),
+            new Terminal("Xavier the bloodsucking spider")
+          )
+        ),
+        "Age" -> new Choices(
+          List(
+            new Terminal("21"),
+            new Terminal("31"),
+            new Terminal("41"),
+            new Terminal("51"),
+            new Terminal("61")
+          )
+        ),
+        "Major" -> new Choices(
+          List(
+            new Terminal("chemistry"),
+            new Terminal("psychology"),
+            new Terminal("english literature"),
+            new Terminal("philosophy"),
+            new Terminal("women's studies"),
+            new Terminal("underwater basket weaving")
+          )
+        ),
+        "Issue" -> new Choices(
+          List(
+            new Terminal("discrimination and social justice"),
+            new Terminal("fair wages"),
+            new Terminal("animal rights"),
+            new Terminal("white collar crime"),
+            new Terminal("unemployed circus workers")
+          )
+        ),
+        "Demonstration" -> new Choices(
+          List(
+            new Terminal("anti-nuclear"),
+            new Terminal("anti-war"),
+            new Terminal("pro-choice"),
+            new Terminal("anti-abortion"),
+            new Terminal("anti-animal testing")
+          )
+        ),
+        "Job" -> new Choices(
+          List(
+            new Terminal("bank teller"),
+            new Terminal("almond paste mixer"),
+            new Terminal("tennis scout"),
+            new Terminal("lawyer"),
+            new Terminal("professor")
+          )
+        ),
+        "Movement" -> new Choices(
+          List(
+            new Terminal("feminist"),
+            new Terminal("anti-plastic water bottle"),
+            new Terminal("pro-pretzel crisp"),
+            new Terminal("pro-metal straw"),
+            new Terminal("environmental justice")
+          )
+        )
+      ), "Start"
+    )
+
+    val lindaBases = generateBases(grammar, List[Int](), Set[String]()).toArray
     //println("Testing testBases method: " + lindaBases)
     //val lindaBases = Array(4, 5, 6, 5, 5, 5, 5) // each number is number of possible assignments for that slot
 
@@ -132,7 +262,7 @@ object Ranking {
 //    println(lRank) // 4375
 //    println(unrank(lRank, lindaBases))
 
-    val grammar = getGrammar()
+    //val grammar = getGrammar()
     // if it starts acting up reset start symbol
 //    renderInstance(grammar, lRank, lindaBases)
 //    println(s"Build version:\n${buildInstance(grammar, lRank)}")
@@ -140,7 +270,7 @@ object Ranking {
 //    println(s"Build version:\n${buildInstance(grammar, xRank)}")
 
     grammar.curSymbol = grammar.startSymbol
-    val prod: EstimateQuestionProduction = new EstimateQuestionProduction()
+    val prod: EstimateQuestionProduction = new EstimateQuestionProduction(lindaBody)
     println(prod.toQuestionText(grammar, 0))
     grammar.curSymbol = grammar.startSymbol
     println(prod.toQuestionText(grammar, 4375))
@@ -196,6 +326,7 @@ object Ranking {
         new Terminal(" movement.")
       )
     )
+
     val Linda = Grammar( // The grammar
       Map(
         "Start" -> new Name("lindaS"),

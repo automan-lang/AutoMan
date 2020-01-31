@@ -9,8 +9,10 @@ trait Production {
   def toChoiceArr(g: Grammar): Option[Array[Range]]
 }
 
+trait TextProduction extends Production{}
+
 // A set of choices, options for a value
-class Choices(options: List[Production]) extends Production {
+class Choices(options: List[Production]) extends TextProduction {
   override def sample(): String = {
     val ran = new Random()
     options(ran.nextInt(options.length)).sample()
@@ -47,7 +49,7 @@ class Choices(options: List[Production]) extends Production {
 }
 
 // A terminal production
-class Terminal(word: String) extends Production {
+class Terminal(word: String) extends TextProduction {
   override def sample(): String = {
     word
   }
@@ -60,7 +62,7 @@ class Terminal(word: String) extends Production {
 }
 
 // A sequence, aka a combination of other terminals/choices and the ordering structure of each problem
-class Sequence(sentence: List[Production]) extends Production {
+class Sequence(sentence: List[Production]) extends TextProduction {
   override def sample(): String = {
     val ran = new Random()
     sentence(ran.nextInt(sentence.length)).sample()
@@ -96,7 +98,7 @@ class Sequence(sentence: List[Production]) extends Production {
 }
 
 // A name associated with a edu.umass.cs.automan.core.grammar.Production
-class Name(n: String) extends Production {
+class Name(n: String) extends TextProduction {
   override def sample(): String = n // sample returns name for further lookup
   def count(g: Grammar, counted: mutable.HashSet[String]): Int = {
     if(!counted.contains(n)){
@@ -112,7 +114,7 @@ class Name(n: String) extends Production {
 
 // param is name of the edu.umass.cs.automan.core.grammar.Choices that this function applies to
 // fun maps those choices to the function results
-class Function(fun: Map[String,String], param: String, capitalize: Boolean) extends Production {
+class Function(fun: Map[String,String], param: String, capitalize: Boolean) extends TextProduction {
   override def sample(): String = param
   override def count(g: Grammar, counted: mutable.HashSet[String]): Int = 1
   def runFun(s: String): String = { // "call" the function on the string
@@ -138,14 +140,57 @@ abstract class QuestionProduction() extends Production { // TODO make prods take
   def toQuestionText(g: Grammar, variation: Int): (String, List[String])
 }
 
-class EstimateQuestionProduction() extends QuestionProduction() {
-  override def sample(): String = ""
+class OptionProduction(text: TextProduction) extends Production {
+  override def sample(): String = text.sample()
+
+  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = ???
+
+  override def toChoiceArr(g: Grammar): Option[Array[Range]] = ???
+}
+
+class EstimateQuestionProduction(body: TextProduction) extends QuestionProduction {
+  override def sample(): String = body.sample()
 
   override def count(g: Grammar, counted: mutable.HashSet[String]): Int = ???
 
   // todo grammar necessary?
   override def toQuestionText(g: Grammar, variation: Int): (String, List[String]) = {
-    val body: String = Ranking.buildInstance(g, variation)
+    val body: String = Ranking.buildInstance(g, variation) // todo where does body come in?
     (body, List[String]()) // no options for estimation
   }
 }
+
+class RadioQuestionProduction(body: TextProduction, options: List[OptionProduction]) extends QuestionProduction {
+  override def sample(): String = ???
+
+  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = ???
+
+  override def toQuestionText(g: Grammar, variation: Int): (String, List[String]) = ???
+}
+
+//class QuestionBodyProduction(g: Grammar, variation: Int) extends Production(){
+//  private val _body = Ranking.buildInstance(g, variation)
+//
+//  override def sample(): String = _body
+//
+//  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = ???
+//
+//  override def toChoiceArr(g: Grammar): Option[Array[Range]] = ???
+//}
+//
+//// todo make this generate like QBP
+//class OptionsProduction(opts: List[String]) extends Production(){
+//  override def sample(): String = {
+//    val toRet: StringBuilder = new StringBuilder()
+//    for(i <- 0 until opts.length){
+//      toRet.addString(new mutable.StringBuilder(opts(i) + "\n"))
+//    }
+//    toRet.toString()
+//  }
+//
+//  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = ???
+//
+//  override def toChoiceArr(g: Grammar): Option[Array[Range]] = ???
+//
+//  def getOpts() = opts
+//}
