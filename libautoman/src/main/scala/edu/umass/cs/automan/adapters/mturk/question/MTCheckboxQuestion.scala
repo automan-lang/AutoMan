@@ -21,7 +21,7 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
   // public API
   def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
-    new String(Hex.encodeHex(md.digest(toXML(randomize = false).toString().getBytes)))
+    new String(Hex.encodeHex(md.digest(toXML(randomize = false, 0).toString().getBytes)))
   }
   override def randomized_options: List[QuestionOptionType] = Utilities.randomPermute(options)
   override def description: String = _description match { case Some(d) => d; case None => this.title }
@@ -46,7 +46,7 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
     (x \\ "Answer" \\ "SelectionIdentifier").map{si => Symbol(si.text)}.toSet
   }
   // TODO: random checkbox fill
-  override protected[mturk] def toXML(randomize: Boolean) : scala.xml.Node = {
+  override protected[mturk] def toXML(randomize: Boolean, variant: Int) : scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
       { XMLBody(randomize) }
     </QuestionForm>

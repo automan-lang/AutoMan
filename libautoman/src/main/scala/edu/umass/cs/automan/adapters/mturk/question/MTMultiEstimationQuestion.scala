@@ -26,7 +26,7 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
   // public API
   def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
-    new String(Hex.encodeHex(md.digest(toXML(randomize = false).toString().getBytes)))
+    new String(Hex.encodeHex(md.digest(toXML(randomize = false, 0).toString().getBytes)))
   }
   override def description: String = _description match { case Some(d) => d; case None => this.title }
   def layout_=(x: scala.xml.Node) { _layout = Some(x) }
@@ -126,7 +126,7 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
       }.toString()
   }
 
-  def toXML(randomize: Boolean): scala.xml.Node = {
+  def toXML(randomize: Boolean, variant: Int): scala.xml.Node = {
     <HTMLQuestion xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2011-11-11/HTMLQuestion.xsd">
       { XMLBody(randomize) }
     </HTMLQuestion>

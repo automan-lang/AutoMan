@@ -7,7 +7,7 @@ import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.grammar.QuestionProduction
 import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.mock.MockResponse
-import edu.umass.cs.automan.core.question.VariantQuestion
+import edu.umass.cs.automan.core.question.{EstimationQuestion, VariantQuestion}
 import edu.umass.cs.automan.core.util.Utilities
 import org.apache.commons.codec.binary.Hex
 
@@ -37,7 +37,7 @@ class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
 
   def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
-    new String(Hex.encodeHex(md.digest(toXML(randomize = false).toString().getBytes)))
+    new String(Hex.encodeHex(md.digest(toXML(randomize = false, 0).toString().getBytes)))
   }
 
   //override type A = VariantQuestion#A
@@ -61,7 +61,17 @@ class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
     * @param randomize Randomize option order?
     * @return XML
     */
-override protected[mturk] def toXML(randomize: Boolean): Node = ???
+override protected[mturk] def toXML(randomize: Boolean, variant: Int): Node = {
+  val bodyText: String = _question.toQuestionText(variant)._1 // todo hardcode magic numbers?
+  val options: List[String] = _question.toQuestionText(variant)._2
+  question match {
+    case QuestionType.EstimationQuestion => {
+      val newQ: MTEstimationQuestion = this.asInstanceOf[MTEstimationQuestion].cloneWithConfidence(_confidence).asInstanceOf[MTEstimationQuestion]
+      //todo dear lord these casts
+      newQ.toXML(randomize, variant)
+    }
+  }
+}
 
   /**
     * Helper function to convert question into XML Question

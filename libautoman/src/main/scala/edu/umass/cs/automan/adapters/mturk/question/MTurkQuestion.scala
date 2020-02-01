@@ -60,7 +60,7 @@ trait MTurkQuestion {
     * @param randomize Randomize option order?
     * @return XML
     */
-  protected[mturk] def toXML(randomize: Boolean) : scala.xml.Node
+  protected[mturk] def toXML(randomize: Boolean, variant: Int) : scala.xml.Node
 
   /**
     * Helper function to convert question into XML Question

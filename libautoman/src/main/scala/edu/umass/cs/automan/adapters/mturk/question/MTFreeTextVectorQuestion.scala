@@ -19,7 +19,7 @@ class MTFreeTextVectorQuestion extends FreeTextVectorQuestion with MTurkQuestion
   // public API
   def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
-    new String(Hex.encodeHex(md.digest(toXML(randomize = false).toString().getBytes)))
+    new String(Hex.encodeHex(md.digest(toXML(randomize = false, 0).toString().getBytes)))
   }
   override def description: String = _description match { case Some(d) => d; case None => this.title }
   override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
@@ -39,7 +39,7 @@ class MTFreeTextVectorQuestion extends FreeTextVectorQuestion with MTurkQuestion
 
     (x \\ "Answer" \ "FreeText").text
   }
-  def toXML(randomize: Boolean): scala.xml.Node = {
+  def toXML(randomize: Boolean, variant: Int): scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
       { XMLBody(randomize) }
     </QuestionForm>
@@ -54,40 +54,7 @@ class MTFreeTextVectorQuestion extends FreeTextVectorQuestion with MTurkQuestion
     */
   override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = {
     Seq(
-    <Question>
-      <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
-      <QuestionContent>
-        {
-        _image_url match {
-          case Some(url) => {
-            <Binary>
-              <MimeType>
-                <Type>image</Type>
-                <SubType>png</SubType>
-              </MimeType>
-              <DataURL>{ url }</DataURL>
-              <AltText>{ image_alt_text }</AltText>
-            </Binary>
-          }
-          case None => {}
-        }
-        }
-        {
-        // if formatted content is specified, use that instead of text field
-        _formatted_content match {
-          case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString()) }</FormattedContent>
-          case None => <Text>{ text }</Text>
-        }
-        }
-      </QuestionContent>
-      <AnswerSpecification>
-        <FreeTextAnswer>
-          <Constraints>
-            <AnswerFormatRegex regex={ this.regex } errorText={ pattern_error_text } />
-          </Constraints>
-        </FreeTextAnswer>
-      </AnswerSpecification>
-    </Question>
+      toSurveyXML(randomize)
     )
   }
 

@@ -49,7 +49,7 @@ class MTSurvey extends Survey with MTurkQuestion {
     // return Set[(selection, ...
   }
 
-  override protected[mturk] def toXML(randomize: Boolean): Node = {
+  override protected[mturk] def toXML(randomize: Boolean, variant: Int): Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
       { XMLBody(randomize) }
     </QuestionForm>
