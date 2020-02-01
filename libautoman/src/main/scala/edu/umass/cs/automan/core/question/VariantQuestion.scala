@@ -2,7 +2,7 @@ package edu.umass.cs.automan.core.question
 import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.core.AutomanAdapter
-import edu.umass.cs.automan.core.answer.{AbstractAnswer, Outcome}
+import edu.umass.cs.automan.core.answer.{AbstractAnswer, Outcome, VariantOutcome}
 import edu.umass.cs.automan.core.grammar.QuestionProduction
 import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
@@ -15,6 +15,7 @@ import edu.umass.cs.automan.core.question.confidence.{ConfidenceInterval, Uncons
 
 abstract class VariantQuestion extends Question {
   type QuestionOptionType <: QuestionOption
+  type O = VariantOutcome[A]
 
 //  type A <: Any			// return type of the function (what you get when you call .value)
 //  type AA <: AbstractAnswer[A]	// an instance of scheduler
@@ -25,10 +26,17 @@ abstract class VariantQuestion extends Question {
 
   protected var _question: QuestionProduction
   protected var _options: List[QuestionOptionType] = List[QuestionOptionType]()
+  protected var _questions: List[Question] = List[Question]()
 
   // Special variant stuff
   def question: QuestionProduction = _question
   def question_=(q: QuestionProduction) { _question = q }
+  def questions: List[Question] = _questions
+  def questions_=(q: List[Question]) { _questions = q }
+  def addQuestion(q: Question): List[Question] = {
+    _questions = _questions :+ q
+    _questions
+  }
 
   // RB Vector stuff
   def options: List[QuestionOptionType] = _options
@@ -69,6 +77,8 @@ abstract class VariantQuestion extends Question {
   }
   def min_value_=(min: Double) { _min_value = Some(min) }
 
+  override protected[automan] def getQuestionType: QuestionType = QuestionType.VariantQuestion
+  //override protected[automan] def getQuestionType(): QuestionType = { question.questionType }
 
   // Methods
   override private[automan] def init_validation_policy(): Unit = {
@@ -94,8 +104,6 @@ abstract class VariantQuestion extends Question {
       }
     }
   }
-
-  override protected[automan] def getQuestionType(): QuestionType = { question.questionType }
 
   override protected[automan] def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID): MockResponse = {
     question match {
