@@ -6,21 +6,15 @@ import edu.umass.cs.automan.core.answer.{AbstractAnswer, Outcome}
 import edu.umass.cs.automan.core.grammar.QuestionProduction
 import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
-import edu.umass.cs.automan.core.question.{EstimationQuestion}
+import edu.umass.cs.automan.core.question.EstimationQuestion
 import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.policy.aggregation.AggregationPolicy
 import edu.umass.cs.automan.core.policy.price.{MLEPricePolicy, PricePolicy}
 import edu.umass.cs.automan.core.policy.timeout.{DoublingTimeoutPolicy, TimeoutPolicy}
+import edu.umass.cs.automan.core.question.confidence.{ConfidenceInterval, UnconstrainedCI}
 
 abstract class VariantQuestion extends Question {
-  var question: QuestionProduction
-
-//  type A = _
-//  type AA = AbstractAnswer[_]
-//  type O = Outcome[_]
-//  type AP = AggregationPolicy
-//  type PP = MLEPricePolicy
-//  type TP = DoublingTimeoutPolicy
+  type QuestionOptionType <: QuestionOption
 
 //  type A <: Any			// return type of the function (what you get when you call .value)
 //  type AA <: AbstractAnswer[A]	// an instance of scheduler
@@ -29,21 +23,60 @@ abstract class VariantQuestion extends Question {
 //  type PP <: PricePolicy	// how to determine reward
 //  type TP <: TimeoutPolicy	// how long to run the job
 
-  override def memo_hash: String = ???
+  protected var _question: QuestionProduction
+  protected var _options: List[QuestionOptionType] = List[QuestionOptionType]()
 
+  // Special variant stuff
+  def question: QuestionProduction = _question
+  def question_=(q: QuestionProduction) { _question = q }
+
+  // RB Vector stuff
+  def options: List[QuestionOptionType] = _options
+  def options_=(os: List[QuestionOptionType]) { _options = os }
+  def num_possibilities: BigInt = BigInt(_options.size)
+  def randomized_options: List[QuestionOptionType]
+
+  // Discrete Scalar stuff
+  protected var _confidence: Double = 0.95
+
+  def confidence_=(c: Double) { _confidence = c }
+  def confidence: Double = _confidence
+
+  // Estimate stuff
+  protected var _confidence_interval: ConfidenceInterval = UnconstrainedCI()
+  protected var _default_sample_size: Int = 12
+  protected var _estimator: Seq[Double] => Double = {
+    // by default, use the mean
+    ds => ds.sum / ds.length
+  }
+  protected var _min_value: Option[Double] = None
+  protected var _max_value: Option[Double] = None
+
+  def confidence_interval_=(ci: ConfidenceInterval) { _confidence_interval = ci }
+  def confidence_interval: ConfidenceInterval = _confidence_interval
+  def default_sample_size: Int = _default_sample_size
+  def default_sample_size_=(n: Int) { _default_sample_size = n }
+  def estimator: Seq[Double] => Double = _estimator
+  def estimator_=(fn: Seq[Double] => Double) { _estimator = fn }
+  def max_value: Double = _max_value match {
+    case Some(v) => v
+    case None => Double.PositiveInfinity
+  }
+  def max_value_=(max: Double) { _max_value = Some(max) }
+  def min_value: Double = _min_value match {
+    case Some(v) => v
+    case None => Double.NegativeInfinity
+  }
+  def min_value_=(min: Double) { _min_value = Some(min) }
+
+
+  // Methods
   override private[automan] def init_validation_policy(): Unit = {
     question match {
       case QuestionType.EstimationQuestion => {
         this.asInstanceOf[EstimationQuestion].init_validation_policy()
       }
     }
-
-//    val qt: QuestionType = question.questionType
-//    qt.toString match {
-//      case "EstimationQuestion" => {
-//        Question.EstimationQuestion.init_validation_policy()
-//      }
-//    }
   }
 
   override private[automan] def init_price_policy(): Unit = {
