@@ -1,5 +1,8 @@
 package edu.umass.cs.automan.core.grammar
 
+import edu.umass.cs.automan.core.info.QuestionType
+import edu.umass.cs.automan.core.info.QuestionType.QuestionType
+
 import scala.collection.mutable
 import scala.util.Random
 
@@ -130,6 +133,8 @@ class Function(fun: Map[String,String], param: String, capitalize: Boolean) exte
   */
 
 abstract class QuestionProduction() extends Production { // TODO make prods take grammars?
+  var _questionType: QuestionType
+
   override def sample(): String
 
   override def count(g: Grammar, counted: mutable.HashSet[String]): Int
@@ -138,6 +143,8 @@ abstract class QuestionProduction() extends Production { // TODO make prods take
 
   // returns tuple (body text, options list)
   def toQuestionText(g: Grammar, variation: Int): (String, List[String])
+
+  def questionType: QuestionType = _questionType
 }
 
 class OptionProduction(text: TextProduction) extends Production {
@@ -149,6 +156,8 @@ class OptionProduction(text: TextProduction) extends Production {
 }
 
 class EstimateQuestionProduction(body: TextProduction) extends QuestionProduction {
+  override var _questionType: QuestionType = QuestionType.EstimationQuestion
+
   override def sample(): String = body.sample()
 
   override def count(g: Grammar, counted: mutable.HashSet[String]): Int = ???
@@ -158,14 +167,18 @@ class EstimateQuestionProduction(body: TextProduction) extends QuestionProductio
     val body: String = Ranking.buildInstance(g, variation) // todo where does body come in?
     (body, List[String]()) // no options for estimation
   }
+
 }
 
 class RadioQuestionProduction(body: TextProduction, options: List[OptionProduction]) extends QuestionProduction {
+  override var _questionType: QuestionType = QuestionType.RadioButtonQuestion
+
   override def sample(): String = ???
 
   override def count(g: Grammar, counted: mutable.HashSet[String]): Int = ???
 
   override def toQuestionText(g: Grammar, variation: Int): (String, List[String]) = ???
+
 }
 
 //class QuestionBodyProduction(g: Grammar, variation: Int) extends Production(){

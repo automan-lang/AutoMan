@@ -26,38 +26,43 @@ object Ranking {
     var soFar: List[Int] = b
     var counted = c
 
-    val samp: Option[Production] = g.rules.get(g.curSymbol) // get edu.umass.cs.automan.core.grammar.Production associated with symbol from grammar
-    samp match {
-      case Some(samp) => {
-        samp match {
-          case name: Name => {
-            g.curSymbol = name.sample()
-            generateBases(g, soFar, counted)
-          }
-          case choice: Choices => {
-            List[Int](choice.count(g,null))
-          }
-          case nonterm: Sequence => { // TODO sequence in sequence?
-            for (n <- nonterm.getList()) {
-              n match {
-                case name: Name => {
-                  g.curSymbol = name.sample()
-                  if(!(counted.contains(g.curSymbol))) {
-                    counted = counted + g.curSymbol
-                    soFar = soFar ++ generateBases(g, soFar, counted)
-                  }
-                }
-                case p: Production => {}
-              }
+    //for(p <- g.rules) { // run through for each production to catch all sequences
+      val samp: Option[Production] = g.rules.get(g.curSymbol) // get edu.umass.cs.automan.core.grammar.Production associated with symbol from grammar
+      samp match {
+        case Some(samp) => {
+          samp match {
+            case name: Name => {
+              //if (!(counted.contains(g.curSymbol))) {
+                g.curSymbol = name.sample()
+                generateBases(g, soFar, counted)
+              //}
             }
-            //}
-            soFar
+            case choice: Choices => {
+              List[Int](choice.count(g, null))
+            }
+            case nonterm: Sequence => { // TODO sequence in sequence?
+              for (n <- nonterm.getList()) {
+                n match {
+                  case name: Name => {
+                    g.curSymbol = name.sample()
+                    if (!(counted.contains(g.curSymbol))) {
+                      counted = counted + g.curSymbol
+                      soFar = soFar ++ generateBases(g, soFar, counted)
+                    }
+                  }
+                  case p: Production => {}
+                }
+              }
+              //}
+              soFar
+            }
           }
         }
-      }
-      case None => throw new Exception(s"Symbol ${g.curSymbol} could not be found")
-    }
-
+        case None => throw new Exception(s"Symbol ${g.curSymbol} could not be found")
+//      }
+//      soFar
+//    }
+//    soFar
 
 //    for(m <- samp) {
 //      m match {
@@ -73,7 +78,7 @@ object Ranking {
 //          }
 //        }
 //      }
-//    }
+    }
 //    soFar
   }
 
@@ -150,9 +155,11 @@ object Ranking {
         new Terminal(", and also participated in "),
         new Name("Demonstration"),
         new Terminal(" demonstrations.\nWhich is more probable?\n")
+        //new Name("lindaOpt1"),
+        //new Name("lindaOpt2")
       )
     )
-      val lindaOpt1 = new Sequence(
+    val lindaOpt1 = new Sequence(
         List(
           new Name("Name"),
           new Terminal(" is "),
@@ -247,10 +254,11 @@ object Ranking {
       ), "Start"
     )
 
-    val lindaBases = generateBases(grammar, List[Int](), Set[String]()).toArray
-    //println("Testing testBases method: " + lindaBases)
+    val lindaBase = generateBases(grammar, List[Int](), Set[String]())
+    println("Testing testBases method: " + lindaBase)
     //val lindaBases = Array(4, 5, 6, 5, 5, 5, 5) // each number is number of possible assignments for that slot
 
+    val lindaBases = lindaBase.toArray
     val total = product(lindaBases)
 
     println(s"total: ${total}")
