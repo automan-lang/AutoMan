@@ -1,6 +1,7 @@
 package edu.umass.cs.automan.core.question
 import java.util.{Date, UUID}
 
+import edu.umass.cs.automan.adapters.mturk.question.MTEstimationQuestion
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.{AbstractAnswer, Outcome, VariantOutcome}
 import edu.umass.cs.automan.core.grammar.QuestionProduction
@@ -15,6 +16,7 @@ import edu.umass.cs.automan.core.question.confidence.{ConfidenceInterval, Uncons
 
 abstract class VariantQuestion extends Question {
   type QuestionOptionType <: QuestionOption
+  //type O = Question#O
   type O = VariantOutcome[A]
 
 //  type A <: Any			// return type of the function (what you get when you call .value)
@@ -24,6 +26,7 @@ abstract class VariantQuestion extends Question {
 //  type PP <: PricePolicy	// how to determine reward
 //  type TP <: TimeoutPolicy	// how long to run the job
 
+  protected var newQ: Question
   protected var _question: QuestionProduction
   protected var _options: List[QuestionOptionType] = List[QuestionOptionType]()
   protected var _questions: List[Question] = List[Question]()
@@ -82,59 +85,78 @@ abstract class VariantQuestion extends Question {
 
   // Methods
   override private[automan] def init_validation_policy(): Unit = {
-    question match {
-      case QuestionType.EstimationQuestion => {
-        this.asInstanceOf[EstimationQuestion].init_validation_policy()
-      }
-    }
+    newQ.init_validation_policy()
+    //      question.questionType match {
+    //        case QuestionType.EstimationQuestion => {
+    //          this.asInstanceOf[MTEstimationQuestion].init_validation_policy()
+    //        }
+    //      }
   }
 
   override private[automan] def init_price_policy(): Unit = {
-    question match {
-      case QuestionType.EstimationQuestion => {
-        this.asInstanceOf[EstimationQuestion].init_price_policy()
-      }
-    }
+    newQ.init_price_policy()
+    //      question.questionType match {
+    //        case QuestionType.EstimationQuestion => {
+    //          this.asInstanceOf[MTEstimationQuestion].init_price_policy()
+    //        }
+    //      }
   }
 
   override private[automan] def init_timeout_policy(): Unit = {
-    question match {
-      case QuestionType.EstimationQuestion => {
-        this.asInstanceOf[EstimationQuestion].init_timeout_policy()
-      }
-    }
+    newQ.init_timeout_policy()
+    //      question.questionType match {
+    //        case QuestionType.EstimationQuestion => {
+    //          this.asInstanceOf[MTEstimationQuestion].init_timeout_policy()
+    //        }
+    //      }
   }
 
   override protected[automan] def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID): MockResponse = {
-    question match {
-      case QuestionType.EstimationQuestion => {
-        this.asInstanceOf[EstimationQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[EstimationQuestion#A], worker_id)
-      }
-    }
+    //newQ.toMockResponse(question_id, response_time, a, worker_id)
+          question.questionType match {
+            case QuestionType.EstimationQuestion => {
+              newQ.asInstanceOf[MTEstimationQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[MTEstimationQuestion#A], worker_id)
+            }
+          }
   }
 
   override protected[automan] def prettyPrintAnswer(answer: A): String = {
-    question match {
+    //newQ.prettyPrintAnswer(answer.asInstanceOf[A])
+    question.questionType match {
       case QuestionType.EstimationQuestion => {
-        this.asInstanceOf[EstimationQuestion].prettyPrintAnswer(answer.asInstanceOf[EstimationQuestion#A])
+        newQ.asInstanceOf[MTEstimationQuestion].prettyPrintAnswer(answer.asInstanceOf[MTEstimationQuestion#A])
       }
     }
+    //      question.questionType match {
+    //        case QuestionType.EstimationQuestion => {
+    //          this.asInstanceOf[MTEstimationQuestion].prettyPrintAnswer(answer.asInstanceOf[MTEstimationQuestion#A])
+    //        }
+    //      }
   }
 
   override protected[automan] def getOutcome(adapter: AutomanAdapter): O = {
-    question match {
-      case QuestionType.EstimationQuestion => {
-        this.asInstanceOf[EstimationQuestion].getOutcome(adapter).asInstanceOf[O]
-      }
-    }
+    //newQ.getOutcome(adapter)
+    VariantOutcome(this, schedulerFuture(adapter))
+//    question.questionType match {
+//      case QuestionType.EstimationQuestion => {
+//        newQ.asInstanceOf[MTEstimationQuestion].getOutcome(adapter)
+//      }
+//    }
+    //VariantOutcome(this, schedulerFuture(adapter))
   }
 
   override protected[automan] def composeOutcome(o: O, adapter: AutomanAdapter): O = {
-    question match {
+    //newQ.composeOutcome(o.asInstanceOf[O], adapter).asInstanceOf[O]
+    question.questionType match {
       case QuestionType.EstimationQuestion => {
-        this.asInstanceOf[EstimationQuestion].composeOutcome(o.asInstanceOf[EstimationQuestion#O], adapter).asInstanceOf[O]
+        newQ.asInstanceOf[MTEstimationQuestion].composeOutcome(o.asInstanceOf[MTEstimationQuestion#O], adapter).asInstanceOf[O]
       }
     }
+    //      question.questionType match {
+    //        case QuestionType.EstimationQuestion => {
+    //          this.asInstanceOf[MTEstimationQuestion].composeOutcome(o.asInstanceOf[MTEstimationQuestion#O], adapter).asInstanceOf[O]
+    //        }
+    //      }
   }
 
 }

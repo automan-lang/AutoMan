@@ -148,5 +148,5 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
   }
 
   // TODO this may not be right
-  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = toXML(randomize)
+  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = toXML(randomize, 0)
 }

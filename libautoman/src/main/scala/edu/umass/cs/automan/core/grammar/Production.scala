@@ -132,7 +132,7 @@ class Function(fun: Map[String,String], param: String, capitalize: Boolean) exte
   * QUESTION PRODUCTIONS
   */
 
-abstract class QuestionProduction() extends Production { // TODO make prods take grammars?
+abstract class QuestionProduction(g: Grammar) extends Production { // TODO make prods take grammars?
   var _questionType: QuestionType
 
   override def sample(): String
@@ -142,7 +142,7 @@ abstract class QuestionProduction() extends Production { // TODO make prods take
   override def toChoiceArr(g: Grammar): Option[Array[Range]] = Some(Array(0 to 0))
 
   // returns tuple (body text, options list)
-  def toQuestionText(g: Grammar, variation: Int): (String, List[String])
+  def toQuestionText(variation: Int): (String, List[String])
 
   def questionType: QuestionType = _questionType
 }
@@ -155,7 +155,7 @@ class OptionProduction(text: TextProduction) extends Production {
   override def toChoiceArr(g: Grammar): Option[Array[Range]] = ???
 }
 
-class EstimateQuestionProduction(body: TextProduction) extends QuestionProduction {
+class EstimateQuestionProduction(g: Grammar, body: TextProduction) extends QuestionProduction(g) {
   override var _questionType: QuestionType = QuestionType.EstimationQuestion
 
   override def sample(): String = body.sample()
@@ -163,21 +163,21 @@ class EstimateQuestionProduction(body: TextProduction) extends QuestionProductio
   override def count(g: Grammar, counted: mutable.HashSet[String]): Int = ???
 
   // todo grammar necessary?
-  override def toQuestionText(g: Grammar, variation: Int): (String, List[String]) = {
+  override def toQuestionText(variation: Int): (String, List[String]) = {
     val body: String = Ranking.buildInstance(g, variation) // todo where does body come in?
     (body, List[String]()) // no options for estimation
   }
 
 }
 
-class RadioQuestionProduction(body: TextProduction, options: List[OptionProduction]) extends QuestionProduction {
+class RadioQuestionProduction(g: Grammar, body: TextProduction, options: List[OptionProduction]) extends QuestionProduction(g) {
   override var _questionType: QuestionType = QuestionType.RadioButtonQuestion
 
   override def sample(): String = ???
 
   override def count(g: Grammar, counted: mutable.HashSet[String]): Int = ???
 
-  override def toQuestionText(g: Grammar, variation: Int): (String, List[String]) = ???
+  override def toQuestionText(variation: Int): (String, List[String]) = ???
 
 }
 

@@ -278,10 +278,10 @@ object Ranking {
 //    println(s"Build version:\n${buildInstance(grammar, xRank)}")
 
     grammar.curSymbol = grammar.startSymbol
-    val prod: EstimateQuestionProduction = new EstimateQuestionProduction(lindaBody)
-    println(prod.toQuestionText(grammar, 0))
+    val prod: EstimateQuestionProduction = new EstimateQuestionProduction(grammar, lindaBody)
+    println(prod.toQuestionText(0))
     grammar.curSymbol = grammar.startSymbol
-    println(prod.toQuestionText(grammar, 4375))
+    println(prod.toQuestionText(4375))
   }
 
   // returns the Linda grammar

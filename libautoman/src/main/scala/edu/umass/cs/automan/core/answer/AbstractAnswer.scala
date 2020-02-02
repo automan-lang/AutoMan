@@ -24,8 +24,8 @@ sealed abstract class AbstractVectorAnswer[T](cost: BigDecimal, question: Vector
   extends AbstractAnswer[T](cost, question, distribution)
 sealed abstract class AbstractSurveyAnswer(cost: BigDecimal, survey: Survey, distribution: Array[Response[Set[(String,Question#A)]]])
   extends AbstractAnswer[Set[(String,Question#A)]](cost, survey, distribution)
-sealed abstract class AbstractGrammarAnswer[T](cost: BigDecimal, question: GrammarQuestion, distribution: Array[Response[T]])
-  extends AbstractAnswer[T](cost, question, distribution)
+//sealed abstract class AbstractGrammarAnswer[T](cost: BigDecimal, question: GrammarQuestion, distribution: Array[Response[T]])
+//  extends AbstractAnswer[T](cost, question, distribution)
 
 /**
   * MULTI-ESTIMATES
@@ -134,19 +134,19 @@ case class IncompleteSurveyAnswers[T](values: Set[Map[String,Question#A]],
 /**
   * GRAMMAR
   */
-case class GrammarAnswer[T](value: T,
-                     override val cost: BigDecimal,
-                     confidence: Double,
-                     override val question: GrammarQuestion,
-                     override val distribution: Array[Response[T]])
-  extends AbstractGrammarAnswer[T](cost, question, distribution)
-case class NoGrammarAnswer[T](override val question: GrammarQuestion)
-  extends AbstractGrammarAnswer[T](0, question, Array[Response[T]]())
-case class LowConfidenceGrammarAnswer[T](value: T,
-                                  override val cost: BigDecimal,
-                                  confidence: Double,
-                                  override val question: GrammarQuestion,
-                                  override val distribution: Array[Response[T]])
-  extends AbstractGrammarAnswer[T](cost, question, distribution)
-case class OverBudgetGrammarAnswer[T](need: BigDecimal, have: BigDecimal, override val question: GrammarQuestion)
-  extends AbstractGrammarAnswer[T](need, question, Array())
+//case class GrammarAnswer[T](value: T,
+//                     override val cost: BigDecimal,
+//                     confidence: Double,
+//                     override val question: GrammarQuestion,
+//                     override val distribution: Array[Response[T]])
+//  extends AbstractGrammarAnswer[T](cost, question, distribution)
+//case class NoGrammarAnswer[T](override val question: GrammarQuestion)
+//  extends AbstractGrammarAnswer[T](0, question, Array[Response[T]]())
+//case class LowConfidenceGrammarAnswer[T](value: T,
+//                                  override val cost: BigDecimal,
+//                                  confidence: Double,
+//                                  override val question: GrammarQuestion,
+//                                  override val distribution: Array[Response[T]])
+//  extends AbstractGrammarAnswer[T](cost, question, distribution)
+//case class OverBudgetGrammarAnswer[T](need: BigDecimal, have: BigDecimal, override val question: GrammarQuestion)
+//  extends AbstractGrammarAnswer[T](need, question, Array())

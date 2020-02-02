@@ -79,6 +79,7 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
   protected[automan] val dbMultiEstimationAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBMultiEstimationAnswer]
   protected[automan] val dbRadioButtonAnswer = TableQuery[edu.umass.cs.automan.core.logging.tables.DBRadioButtonAnswer]
   protected[automan] val dbSurvey = null
+  protected[automan] val dbVariantAnswer = null
 
   // registered plugins
   protected var _plugins = List[Plugin]()
@@ -352,7 +353,8 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
           restore_task_snapshots_of_type(QuestionType.RadioButtonQuestion)(s) :::
           restore_task_snapshots_of_type(QuestionType.RadioButtonDistributionQuestion)(s) :::
           restore_task_snapshots_of_type(QuestionType.MultiEstimationQuestion)(s) :::
-          restore_task_snapshots_of_type(QuestionType.Survey)(s)
+          restore_task_snapshots_of_type(QuestionType.Survey)(s) :::
+          restore_task_snapshots_of_type(QuestionType.VariantQuestion)(s)
         }
 
       }
@@ -546,7 +548,24 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
                   )
             }
           }
-          case Survey => {
+          case Survey => { // todo figure out answer
+            (fQS_TS_THS leftJoin dbRadioButtonAnswer on (_._2._2.history_id === _.history_id)).map {
+              case ((dbquestion, (dbtask, dbtaskhistory)), dbsurvey) =>
+                (dbtask.task_id,
+                  dbtask.round,
+                  dbtask.timeout_in_s,
+                  dbtask.worker_timeout_in_s,
+                  dbtask.cost,
+                  dbtask.creation_time,
+                  dbtaskhistory.scheduler_state,
+                  true,
+                  dbsurvey.worker_id.?,
+                  dbsurvey.answer.?,
+                  dbtaskhistory.state_change_time
+                )
+            }
+          }
+          case VariantQuestion => { // todo figure out what this actually needs
             (fQS_TS_THS leftJoin dbRadioButtonAnswer on (_._2._2.history_id === _.history_id)).map {
               case ((dbquestion, (dbtask, dbtaskhistory)), dbsurvey) =>
                 (dbtask.task_id,
@@ -667,6 +686,8 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
         dbRadioButtonAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBRadioButtonAnswer]]
       case Survey =>
         dbSurvey //++= null
+      case VariantQuestion =>
+        dbVariantAnswer
     }
   }
 

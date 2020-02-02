@@ -1,7 +1,7 @@
 package edu.umass.cs.automan.core
 
 import edu.umass.cs.automan.core.answer._
-import edu.umass.cs.automan.core.grammar.Grammar
+import edu.umass.cs.automan.core.grammar.{Grammar, QuestionProduction}
 import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 import edu.umass.cs.automan.core.question._
@@ -522,38 +522,109 @@ trait DSL {
                                       wage: BigDecimal = MagicNumbers.USFederalMinimumWage
                                     )(implicit a: A): SurveyOutcome
 
-//  type QType <: QuestionType
-//  def grammar[A <: AutomanAdapter, O](
-//                                      budget: BigDecimal = MagicNumbers.DefaultBudget,
-//                                      confidence: Double = MagicNumbers.DefaultConfidence,
-//                                      dont_reject: Boolean = true,
-//                                      dry_run: Boolean = false,
-//                                      //grammar: QuestionGrammar = null,
-//                                      image_alt_text: String = null,
-//                                      image_url: String = null,
-//                                      initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
-//                                      max_value: Double = Double.MaxValue,
-//                                      minimum_spawn_policy: MinimumSpawnPolicy = null,
-//                                      min_value: Double = Double.MinValue,
-//                                      mock_answers: Iterable[MockAnswer[_]] = null,
-//                                      options: List[AnyRef],
-//                                      pay_all_on_failure: Boolean = true,
-//                                      pattern: String = null,
-//                                      pattern_error_text: String = null,
-//                                      question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
-//                                      //question_type: QuestionType, // the important thing TODO how pass here from experiment?
-//                                      sample_size: Int = MagicNumbers.DefaultSampleSizeForDistrib,
-//                                      text: String,
-//                                      title: String = null,
-//                                      wage: BigDecimal = MagicNumbers.USFederalMinimumWage
-//                                    )
-//                                    (implicit a: A): Outcome[_] = {
-//    def initf[Q <: GrammarQuestion](q: Q): Unit = {
-//      // mandatory parameters
-//      q.text = text // TODO where is this getting generated with the grammar?
-//      //q.options = options.asInstanceOf[List[q.QuestionOptionType]] // yeah... ugly
-//
-//
-//    }
-//  }
+  //  def variant[A <: AutomanAdapter, O](
+  //                                      budget: BigDecimal = MagicNumbers.DefaultBudget,
+  //                                      confidence: Double = MagicNumbers.DefaultConfidence,
+  //                                      dont_reject: Boolean = true,
+  //                                      dry_run: Boolean = false,
+  //                                      //grammar: QuestionGrammar = null,
+  //                                      image_alt_text: String = null,
+  //                                      image_url: String = null,
+  //                                      initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
+  //                                      max_value: Double = Double.MaxValue,
+  //                                      minimum_spawn_policy: MinimumSpawnPolicy = null,
+  //                                      min_value: Double = Double.MinValue,
+  //                                      mock_answers: Iterable[MockAnswer[_]] = null,
+  //                                      options: List[AnyRef],
+  //                                      pay_all_on_failure: Boolean = true,
+  //                                      pattern: String = null,
+  //                                      pattern_error_text: String = null,
+  //                                      question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
+  //                                      sample_size: Int = MagicNumbers.DefaultSampleSizeForDistrib,
+  //                                      text: String,
+  //                                      title: String = null,
+  //                                      wage: BigDecimal = MagicNumbers.USFederalMinimumWage
+  //                                    )
+  //                                    (implicit a: A): Outcome[_] = {
+  //    def initf[Q <: GrammarQuestion](q: Q): Unit = {
+  //      // mandatory parameters
+  //      q.text = text // TODO where is this getting generated with the grammar?
+  //      //q.options = options.asInstanceOf[List[q.QuestionOptionType]] // yeah... ugly
+  //
+  //
+  //    }
+  //  }
+  def estimateGrammar[A <: AutomanAdapter](
+                                            confidence_interval: ConfidenceInterval = UnconstrainedCI(),
+                                            confidence: Double = MagicNumbers.DefaultConfidence,
+                                            budget: BigDecimal = MagicNumbers.DefaultBudget,
+                                            default_sample_size: Int = -1,
+                                            dont_reject: Boolean = true,
+                                            dry_run: Boolean = false,
+                                            grammar: Grammar = null,
+                                            estimator: Seq[Double] => Double = null,
+                                            image_alt_text: String = null,
+                                            image_url: String = null,
+                                            initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
+                                            max_value: Double = Double.MaxValue,
+                                            minimum_spawn_policy: MinimumSpawnPolicy = null,
+                                            min_value: Double = Double.MinValue,
+                                            mock_answers: Iterable[MockAnswer[Double]] = null,
+                                            //o: EstimationOutcome,
+                                            pay_all_on_failure: Boolean = true,
+                                            question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
+                                            //text: String,
+                                            question: QuestionProduction,
+                                            title: String = null,
+                                            wage: BigDecimal = MagicNumbers.USFederalMinimumWage
+                                          )
+                                          (implicit a: A): VariantOutcome[_] = {
+    def initf[Q <: VariantQuestion](q: Q) = {
+      // mandatory parameters
+      //q.text = text
+      //q#O = o
+      q.question = question
+
+      // mandatory parameters with sane defaults
+      q.confidence_interval = confidence_interval
+      q.confidence = confidence
+      q.budget = budget
+      q.dont_reject = dont_reject
+      q.dry_run = dry_run
+      q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
+      q.pay_all_on_failure = pay_all_on_failure
+      q.question_timeout_multiplier = question_timeout_multiplier
+
+      // optional parameters
+      if (default_sample_size != -1 && default_sample_size > 0) {
+        q.default_sample_size = default_sample_size
+      }
+      if (estimator != null) {
+        q.estimator = estimator
+      }
+      if (image_alt_text != null) {
+        q.image_alt_text = image_alt_text
+      }
+      if (image_url != null) {
+        q.image_url = image_url
+      }
+      if (max_value != Double.MaxValue) {
+        q.max_value = max_value
+      }
+      if (min_value != Double.MinValue) {
+        q.min_value = min_value
+      }
+      if (title != null) {
+        q.title = title
+      }
+      //      if (mock_answers != null) {
+      //        q.mock_answers = mock_answers
+      //      }
+      if (minimum_spawn_policy != null) {
+        q.minimum_spawn_policy = minimum_spawn_policy
+      }
+    }
+
+    a.VariantQuestion(initf)
+  }
 }

@@ -1,10 +1,10 @@
 package edu.umass.cs.automan.adapters.mturk
 
 import edu.umass.cs.automan.adapters.mturk.logging.MTMemo
-import edu.umass.cs.automan.adapters.mturk.question.{MTCheckboxQuestion, MTCheckboxVectorQuestion, MTEstimationQuestion, MTFreeTextQuestion, MTFreeTextVectorQuestion, MTMultiEstimationQuestion, MTQuestionOption, MTRadioButtonQuestion, MTRadioButtonVectorQuestion, MTSurvey}
+import edu.umass.cs.automan.adapters.mturk.question.{MTCheckboxQuestion, MTCheckboxVectorQuestion, MTEstimationQuestion, MTFreeTextQuestion, MTFreeTextVectorQuestion, MTMultiEstimationQuestion, MTQuestionOption, MTRadioButtonQuestion, MTRadioButtonVectorQuestion, MTSurvey, MTVariantQuestion}
 import edu.umass.cs.automan.core.NoOpAdapter
 import edu.umass.cs.automan.core.answer.{EstimationOutcome, MultiEstimationOutcome, NoAnswer, NoAnswers, NoEstimate, NoMultiEstimate, NoSurveyAnswers, ScalarOutcome, SurveyOutcome, VectorOutcome}
-import edu.umass.cs.automan.core.question.{QuestionOption, Survey}
+import edu.umass.cs.automan.core.question.{QuestionOption, Survey, VariantQuestion}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -20,6 +20,7 @@ class MTurkNoOpAdapter extends NoOpAdapter {
   override type RBDQ    = MTRadioButtonVectorQuestion
   override type MemoDB  = MTMemo
   override type S       = MTSurvey
+  override type VQ      = VariantQuestion
 
   override def Option(id: Symbol, text: String): QuestionOption = new MTQuestionOption(id, text, "")
 
@@ -32,6 +33,8 @@ class MTurkNoOpAdapter extends NoOpAdapter {
   protected def RBQFactory()  = new MTRadioButtonQuestion
   protected def RBDQFactory() = new MTRadioButtonVectorQuestion
   protected def SFactory()    = new MTSurvey
+  protected def VQFactory()   = new MTVariantQuestion
+
 
   override protected def MemoDBFactory(): MTMemo = ???
 
@@ -44,4 +47,6 @@ class MTurkNoOpAdapter extends NoOpAdapter {
   override def RadioButtonQuestion(init: MTRadioButtonQuestion => Unit) = noschedule(RBQFactory(), init)
   override def RadioButtonDistributionQuestion(init: MTRadioButtonVectorQuestion => Unit) = noschedule(RBDQFactory(), init)
   override def Survey(init: Survey => Unit) = noschedule(SFactory(), init)
+  override def VariantQuestion(init: VariantQuestion => Unit) = noschedule(VQFactory(), init)
+
 }
