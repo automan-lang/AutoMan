@@ -26,6 +26,8 @@ abstract class VariantQuestion extends Question {
 //  type PP <: PricePolicy	// how to determine reward
 //  type TP <: TimeoutPolicy	// how long to run the job
 
+  override private[automan] def validation_policy_instance = newQ.validation_policy_instance.asInstanceOf[AP]
+
   protected var newQ: Question
   protected var _question: QuestionProduction
   protected var _options: List[QuestionOptionType] = List[QuestionOptionType]()

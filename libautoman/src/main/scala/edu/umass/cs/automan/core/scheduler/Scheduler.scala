@@ -261,7 +261,7 @@ class Scheduler(val question: Question,
                      suffered_timeout: Boolean,
                      blacklist: List[String],
                      num_comparisons: Int) : (List[Task],Int,Boolean) = {
-    val s = question.validation_policy_instance
+    val s = question.validation_policy_instance // todo why not use VP?
 
     // if we suffered a timeout, we might as well
     // check to see if we can terminate early
@@ -276,7 +276,8 @@ class Scheduler(val question: Question,
     if (!done && tasks.count(_.state == SchedulerState.RUNNING) == 0) {
       // no, so post more
       // compute set of new tasks
-      val new_tasks = s.spawn(tasks, suffered_timeout, num_comparisons2)
+      //val new_tasks = s.spawn(tasks, suffered_timeout, num_comparisons2)
+      val new_tasks = VP.spawn(tasks, suffered_timeout, num_comparisons2)
       assert(spawn_invariant(new_tasks))
       // can we afford these?
       val cost = total_cost(tasks ::: new_tasks)
