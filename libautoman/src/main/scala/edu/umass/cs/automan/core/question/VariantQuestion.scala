@@ -4,7 +4,7 @@ import java.util.{Date, UUID}
 import edu.umass.cs.automan.adapters.mturk.question.MTEstimationQuestion
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.{AbstractAnswer, Outcome, VariantOutcome}
-import edu.umass.cs.automan.core.grammar.QuestionProduction
+import edu.umass.cs.automan.core.grammar.{Grammar, QuestionProduction}
 import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 import edu.umass.cs.automan.core.question.EstimationQuestion
@@ -32,12 +32,15 @@ abstract class VariantQuestion extends Question {
   protected var _question: QuestionProduction
   protected var _options: List[QuestionOptionType] = List[QuestionOptionType]()
   protected var _questions: List[Question] = List[Question]()
+  protected var _grammar: Grammar
 
   // Special variant stuff
   def question: QuestionProduction = _question
   def question_=(q: QuestionProduction) { _question = q }
   def questions: List[Question] = _questions
   def questions_=(q: List[Question]) { _questions = q }
+  def grammar: Grammar = _grammar
+  def grammar_=(g: Grammar) { _grammar = g }
   def addQuestion(q: Question): List[Question] = {
     _questions = _questions :+ q
     _questions

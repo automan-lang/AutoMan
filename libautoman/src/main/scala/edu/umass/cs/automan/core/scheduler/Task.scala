@@ -37,7 +37,7 @@ case class Task(task_id: UUID,
   }
 
   def prettyPrintAnswer: String = {
-    this._answer match { //TODO why is answer null?
+    this._answer match {
       case Some(a) => question.prettyPrintAnswer(a.asInstanceOf[Task.this.question.A])
       case None => "n/a"
     }

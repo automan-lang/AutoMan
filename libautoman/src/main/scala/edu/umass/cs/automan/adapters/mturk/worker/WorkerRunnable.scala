@@ -104,7 +104,7 @@ class WorkerRunnable(tw: TurkWorker,
             case req: DisposeQualsReq => do_sync_action(req, () => scheduled_cleanup_qualifications())
             case req: CreateHITReq => do_sync_action(req, () => scheduled_post(req.ts, req.exclude_worker_ids))
             case req: RejectReq => do_sync_action(req, () => scheduled_reject(req.ts_reasons))
-            case req: RetrieveReq => do_sync_action(req, () => scheduled_retrieve(req.ts, req.current_time)) //TODO: NPE
+            case req: RetrieveReq => do_sync_action(req, () => scheduled_retrieve(req.ts, req.current_time))
             //case req: ApproveReq =>
           }
         } catch {

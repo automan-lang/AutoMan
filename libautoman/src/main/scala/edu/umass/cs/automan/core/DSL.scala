@@ -584,6 +584,7 @@ trait DSL {
       //q.text = text
       //q#O = o
       q.question = question
+      q.grammar = grammar
 
       // mandatory parameters with sane defaults
       q.confidence_interval = confidence_interval

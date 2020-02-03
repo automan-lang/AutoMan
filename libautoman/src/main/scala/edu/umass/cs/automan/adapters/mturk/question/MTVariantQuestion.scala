@@ -1,24 +1,26 @@
 package edu.umass.cs.automan.adapters.mturk.question
 
 import java.security.MessageDigest
+import java.util
 import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.VariantOutcome
-import edu.umass.cs.automan.core.grammar.QuestionProduction
+import edu.umass.cs.automan.core.grammar.{Grammar, QuestionProduction}
 import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.question.{EstimationQuestion, Question, VariantQuestion}
 import edu.umass.cs.automan.core.util.Utilities
 import org.apache.commons.codec.binary.Hex
 
+import scala.collection.mutable
 import scala.xml.Node
 
 class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
   //override type QuestionOptionType = this.type
   override var _question: QuestionProduction = null
-
   override var newQ: Question = null
+  override var _grammar: Grammar = null
 
 //  override type A = this.type
 //  override type AA = this.type
@@ -39,7 +41,11 @@ class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
 
   def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
-    new String(Hex.encodeHex(md.digest(toXML(randomize = false, 0).toString().getBytes)))
+    //val hSet = new mutable.HashSet[String]()
+    val r = new scala.util.Random()
+    val numPoss = grammar.count(0, new mutable.HashSet[String]())
+    //val numPoss = _question.count(grammar.count(0, hSet), new mutable.HashSet[String]())
+    new String(Hex.encodeHex(md.digest(toXML(randomize = false, r.nextInt(numPoss)).toString().getBytes)))
   }
 
   //override type A = VariantQuestion#A
