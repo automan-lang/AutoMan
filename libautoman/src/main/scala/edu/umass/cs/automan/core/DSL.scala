@@ -618,7 +618,7 @@ trait DSL {
       if (title != null) {
         q.title = title
       }
-      //      if (mock_answers != null) {
+      //      if (mock_answers != null) { // TODO figure out mock answer type issues
       //        q.mock_answers = mock_answers
       //      }
       if (minimum_spawn_policy != null) {
@@ -628,4 +628,65 @@ trait DSL {
 
     a.VariantQuestion(initf)
   }
+
+  def checkboxGrammar[A <: AutomanAdapter](
+                                           //grammar: Grammar = null,
+                                           //question: QuestionProduction,
+                                           // no text, options
+                                           confidence: Double = MagicNumbers.DefaultConfidence,
+                                           budget: BigDecimal = MagicNumbers.DefaultBudget,
+                                           dont_reject: Boolean = true,
+                                           dry_run: Boolean = false,
+                                           grammar: Grammar = null,
+                                           image_alt_text: String = null,
+                                           image_url: String = null,
+                                           initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
+                                           minimum_spawn_policy: MinimumSpawnPolicy = null,
+                                           mock_answers: Iterable[MockAnswer[Set[Symbol]]] = null,
+                                           //options: List[AnyRef],
+                                           pay_all_on_failure: Boolean = true,
+                                           question: QuestionProduction,
+                                           question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
+                                           //text: String,
+                                           title: String = null,
+                                           wage: BigDecimal = MagicNumbers.USFederalMinimumWage
+                                          )
+                                          (implicit a: A): VariantOutcome[_] = {
+    def initf[Q <: VariantQuestion](q: Q) = {
+      // mandatory parameters
+      //q.text = text
+      //q#O = o
+      q.question = question
+      q.grammar = grammar
+
+      // mandatory parameters with sane defaults
+      q.confidence = confidence
+      q.budget = budget
+      q.dont_reject = dont_reject
+      q.dry_run = dry_run
+      q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
+      q.pay_all_on_failure = pay_all_on_failure
+      q.question_timeout_multiplier = question_timeout_multiplier
+
+      // optional parameters
+      if (image_alt_text != null) {
+        q.image_alt_text = image_alt_text
+      }
+      if (image_url != null) {
+        q.image_url = image_url
+      }
+      if (title != null) {
+        q.title = title
+      }
+//      if (mock_answers != null) {
+//        q.mock_answers = mock_answers
+//      }
+      if (minimum_spawn_policy != null) {
+        q.minimum_spawn_policy = minimum_spawn_policy
+      }
+    }
+    a.VariantQuestion(initf)
+  }
+
+
 }

@@ -1,7 +1,7 @@
 package edu.umass.cs.automan.core.question
 import java.util.{Date, UUID}
 
-import edu.umass.cs.automan.adapters.mturk.question.MTEstimationQuestion
+import edu.umass.cs.automan.adapters.mturk.question.{MTCheckboxQuestion, MTEstimationQuestion}
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.{AbstractAnswer, Outcome, VariantOutcome}
 import edu.umass.cs.automan.core.grammar.{Grammar, QuestionProduction}
@@ -46,10 +46,14 @@ abstract class VariantQuestion extends Question {
     _questions
   }
 
-  // RB Vector stuff
+  // Radio Button and RB Vector stuff
   def options: List[QuestionOptionType] = _options
   def options_=(os: List[QuestionOptionType]) { _options = os }
-  def num_possibilities: BigInt = BigInt(_options.size)
+  //def num_possibilities: BigInt = BigInt(_options.size)
+  def num_possibilities: BigInt = { // TODO def for RBV is different
+    val base = BigInt(2)
+    base.pow(options.size)
+  }
   def randomized_options: List[QuestionOptionType]
 
   // Discrete Scalar stuff
@@ -118,11 +122,14 @@ abstract class VariantQuestion extends Question {
 
   override protected[automan] def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID): MockResponse = {
     //newQ.toMockResponse(question_id, response_time, a, worker_id)
-          question.questionType match {
-            case QuestionType.EstimationQuestion => {
-              newQ.asInstanceOf[MTEstimationQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[MTEstimationQuestion#A], worker_id)
-            }
-          }
+    question.questionType match {
+      case QuestionType.EstimationQuestion => {
+        newQ.asInstanceOf[MTEstimationQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[MTEstimationQuestion#A], worker_id)
+      }
+      case QuestionType.CheckboxQuestion => {
+        newQ.asInstanceOf[MTCheckboxQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[MTCheckboxQuestion#A], worker_id)
+      }
+    }
   }
 
   override protected[automan] def prettyPrintAnswer(answer: A): String = {
@@ -130,6 +137,9 @@ abstract class VariantQuestion extends Question {
     question.questionType match {
       case QuestionType.EstimationQuestion => {
         newQ.asInstanceOf[MTEstimationQuestion].prettyPrintAnswer(answer.asInstanceOf[MTEstimationQuestion#A])
+      }
+      case QuestionType.CheckboxQuestion => {
+        newQ.asInstanceOf[MTCheckboxQuestion].prettyPrintAnswer(answer.asInstanceOf[MTCheckboxQuestion#A])
       }
     }
     //      question.questionType match {
@@ -155,6 +165,9 @@ abstract class VariantQuestion extends Question {
     question.questionType match {
       case QuestionType.EstimationQuestion => {
         newQ.asInstanceOf[MTEstimationQuestion].composeOutcome(o.asInstanceOf[MTEstimationQuestion#O], adapter).asInstanceOf[O]
+      }
+      case QuestionType.CheckboxQuestion => {
+        newQ.asInstanceOf[MTCheckboxQuestion].composeOutcome(o.asInstanceOf[MTCheckboxQuestion#O], adapter).asInstanceOf[O]
       }
     }
     //      question.questionType match {

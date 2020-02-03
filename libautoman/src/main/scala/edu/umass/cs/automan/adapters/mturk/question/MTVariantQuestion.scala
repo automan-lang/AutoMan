@@ -31,14 +31,6 @@ class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
 
   //override def randomized_options: List[QuestionOptionType] = ???
 
-  //override type A = question
-
-//  override type AA = this.type
-//  override type O = this.type
-//  override type AP = this.type
-//  override type PP = this.type
-//  override type TP = this.type
-
   def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
     //val hSet = new mutable.HashSet[String]()
@@ -71,7 +63,8 @@ class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
     */
 override protected[mturk] def toXML(randomize: Boolean, variant: Int): Node = {
   val bodyText: String = _question.toQuestionText(variant)._1 // todo hardcode magic numbers?
-  val options: List[String] = _question.toQuestionText(variant)._2
+  val options: List[MTQuestionOption] = _question.toQuestionText(variant)._2.map(MTQuestionOption(Symbol(newQ.id.toString()), _, null)) // todo is this the right ID?
+
   question.questionType match {
     case QuestionType.EstimationQuestion => {
       //text = bodyText
@@ -80,6 +73,12 @@ override protected[mturk] def toXML(randomize: Boolean, variant: Int): Node = {
       //val newQ: MTEstimationQuestion = this.asInstanceOf[MTEstimationQuestion].cloneWithConfidence(_confidence).asInstanceOf[MTEstimationQuestion]
       //todo dear lord these casts
       newQ.asInstanceOf[MTEstimationQuestion].toXML(randomize, variant)
+    }
+    case QuestionType.CheckboxQuestion => {
+      newQ = new MTCheckboxQuestion()
+      newQ.text = bodyText
+      newQ.asInstanceOf[MTCheckboxQuestion].options = options
+      newQ.asInstanceOf[MTCheckboxQuestion].toXML(randomize, variant)
     }
   }
 }
