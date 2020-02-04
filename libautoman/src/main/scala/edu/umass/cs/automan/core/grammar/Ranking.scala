@@ -1,7 +1,7 @@
 package edu.umass.cs.automan.core.grammar
 
 import edu.umass.cs.automan.core.grammar.Production
-import edu.umass.cs.automan.core.grammar.SampleGrammar.{bind, buildString, render}
+import edu.umass.cs.automan.core.grammar.Grammar
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -101,25 +101,26 @@ object Ranking {
   }
 
   // given a grammar, an int, and the bases, prints an experiment instance
-  def renderInstance(grammar: Grammar, choice: Int, bases: Array[Int]): Unit = {
-    val assignment = unrank(choice, bases) // get the assignment from the number
-    println(s"Assignment: ${assignment}")
-    grammar.curSymbol = grammar.startSymbol
-    val scope = bind(grammar, assignment.toArray, 0, Set())
-    grammar.curSymbol = grammar.startSymbol // TODO make this less ugly
-    render(grammar, scope)
-    println()
-  }
+//  def renderInstance(grammar: Grammar, choice: Int, bases: Array[Int]): Unit = {
+//    val assignment = unrank(choice, bases) // get the assignment from the number
+//    println(s"Assignment: ${assignment}")
+//    grammar.curSymbol = grammar.startSymbol
+//    val scope = grammar.bind(assignment.toArray, 0, Set())
+//    grammar.curSymbol = grammar.startSymbol // TODO make this less ugly
+//    grammar.render(grammar, scope)
+//    println()
+//  }
 
   // given a grammar, an int, and the bases, creates a string of an experiment instance
-  def buildInstance(grammar: Grammar, choice: Int): String = {
+  def buildInstance(grammar: Grammar, choice: Int): (StringBuilder, List[StringBuilder]) = {
     grammar.curSymbol = grammar.startSymbol
     val bases = generateBases(grammar, List[Int](), Set[String]()).toArray // todo only does for first sequence... make by sequence?
     val assignment = unrank(choice, bases) // get the assignment from the number
+    grammar.curSymbol = grammar.startSymbol // TODO mak sure not resetting for options
+    val scope = grammar.bind(assignment.toArray, 0, Set())
     grammar.curSymbol = grammar.startSymbol
-    val scope = bind(grammar, assignment.toArray, 0, Set())
-    grammar.curSymbol = grammar.startSymbol
-    buildString(grammar, scope, new StringBuilder).toString()
+    grammar.buildQandOpts(scope, new StringBuilder, List[StringBuilder](), new StringBuilder)
+    //buildString(grammar, scope, new StringBuilder).toString()
   }
 
   def main(args: Array[String]): Unit = {

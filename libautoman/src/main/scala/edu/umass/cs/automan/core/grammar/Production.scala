@@ -150,7 +150,7 @@ abstract class QuestionProduction(g: Grammar) extends Production { // TODO make 
 class OptionProduction(text: TextProduction) extends Production {
   override def sample(): String = text.sample()
 
-  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = ???
+  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = 1
 
   override def toChoiceArr(g: Grammar): Option[Array[Range]] = ???
 }
@@ -164,8 +164,36 @@ class EstimateQuestionProduction(g: Grammar, body: TextProduction) extends Quest
 
   // todo grammar necessary?
   override def toQuestionText(variation: Int): (String, List[String]) = {
-    val body: String = Ranking.buildInstance(g, variation) // todo where does body come in?
-    (body, List[String]()) // no options for estimation
+    //val body: String = Ranking.buildInstance(g, variation) // todo where does body come in?
+    //(body, List[String]()) // no options for estimation
+    //val bod: (StringBuilder, List[StringBuilder]) = Ranking.buildInstance(g, variation)
+    val (bod, opts): (StringBuilder, List[StringBuilder]) = Ranking.buildInstance(g, variation)
+    val bodS = bod.toString()
+    val optsS = opts.map(_.toString())//{for(e <- opts) e.toString()}
+    (bodS, optsS)
+    //bod.toString()
+  }
+
+}
+
+class CheckboxQuestionProduction(g: Grammar, body: TextProduction, options: List[OptionProduction]) extends QuestionProduction(g) {
+  override var _questionType: QuestionType = QuestionType.CheckboxQuestion
+
+  override def sample(): String = {
+    ???
+  }
+
+  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = ???
+
+  override def toQuestionText(variation: Int): (String, List[String]) = {
+//    val body: String = Ranking.buildInstance(g, variation) // todo where does body come in?
+//    val options: List[String] =
+//    (body, List[String]()) // no options for estimation
+    //Ranking.buildInstance(g, variation)
+    val (bod, opts): (StringBuilder, List[StringBuilder]) = Ranking.buildInstance(g, variation)
+    val bodS = bod.toString()
+    val optsS = opts.map(_.toString())//{for(e <- opts) e.toString()}
+    (bodS, optsS)
   }
 
 }

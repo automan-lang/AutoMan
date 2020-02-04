@@ -146,7 +146,7 @@ object SampleGrammar {
     // find start
     // sample symbol associated with it
     // build string by sampling each symbol
-    var generating: StringBuilder = soFar
+    val generating: StringBuilder = soFar
 
     val samp: Option[Production] = g.rules.get(g.curSymbol) // get edu.umass.cs.automan.core.grammar.Production associated with symbol from grammar
     samp match {
@@ -168,6 +168,9 @@ object SampleGrammar {
               throw new Exception(s"Choice ${g.curSymbol} has not been bound")
             }
           }
+          case opt: OptionProduction => {
+            generating.append(opt.sample())
+          }
           case nonterm: Sequence => { // TODO sequence in sequence?
             //breakable {
               for (n <- nonterm.getList()) {
@@ -178,6 +181,7 @@ object SampleGrammar {
                   }
                   case fun: Function => generating.append(fun.runFun(scope.lookup(fun.sample())))
                   case term: Terminal => generating.append(term.sample())
+                  case opt: OptionProduction => generating.append(opt.sample())
                   //case optBreak: OptionBreak => generating.append(optBreak.sample())
                   case p: Production => {
                     if (scope.isBound(g.curSymbol)) {
