@@ -3,6 +3,7 @@ package edu.umass.cs.automan.core.grammar
 import edu.umass.cs.automan.core.grammar.SampleGrammar.buildString
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.util.control.Breaks.{break, breakable}
 
 /**
@@ -163,61 +164,85 @@ case class Grammar(_rules: Map[String, Production], _startSymbol: String){
   }
 
   // need to build the question body and options separately
-  def buildQandOpts(scope: Scope, soFarBod: StringBuilder, soFarOpts: List[StringBuilder], cur: StringBuilder): (StringBuilder, List[StringBuilder]) = {
+  def buildQandOpts(scope: Scope, soFarBod: StringBuilder, soFarOpts: ListBuffer[StringBuilder], cur: StringBuilder, inBody: Boolean): (StringBuilder, List[StringBuilder]) = {
     // find start
     // sample symbol associated with it
     // build string by sampling each symbol
-    val generatingBod: StringBuilder = soFarBod
-    var generatingOpts: List[StringBuilder] = soFarOpts
+    var generatingBod: StringBuilder = soFarBod
+    var generatingOpts: ListBuffer[StringBuilder] = new ListBuffer[StringBuilder]()
+    generatingOpts ++= soFarOpts
     val curGen: StringBuilder = cur // what's currently being generated
+    var inBod: Boolean = inBody // are we in the question body?
 
-    val samp: Option[Production] = rules.get(curSymbol) // get edu.umass.cs.automan.core.grammar.Production associated with symbol from grammar
+    val samp: Option[Production] = rules.get(curSymbol) // Production associated with symbol from grammar
     samp match {
       case Some(samp) => {
-        //println(s"${samp} is a LNT ${samp.isLeafNT()}")
         samp match {
           case name: Name => {
             curSymbol = name.sample()
-            buildQandOpts(scope, generatingBod, generatingOpts, curGen)
+            //if(inBod) buildString(scope, )
+            //(generatingBod, generatingOpts.toList)
+            buildQandOpts(scope, generatingBod, generatingOpts, cur, inBod) // todo this is screwing it up?
+            //(generatingBod, generatingOpts.toList)
           }//render(g, name.sample(), scope) // edu.umass.cs.automan.core.grammar.Name becomes start symbol
           case term: Terminal => {
             curGen.append(term.sample())
-            (generatingBod, generatingOpts)
-            //generatingBod.append(term.sample())
+            (generatingBod, generatingOpts.toList)
           }
           //case break: OptionBreak => generating.append(break.sample())
           case choice: Choices => {
             if(scope.isBound(curSymbol)){
-              //println(s"${startSymbol} is bound, looking up")
-              //print(scope.lookup(startSymbol))
               curGen.append(scope.lookup(curSymbol))
-              (generatingBod, generatingOpts)
+              (generatingBod, generatingOpts.toList)
             } else {
               throw new Exception(s"Choice ${curSymbol} has not been bound")
             }
           }
-          case opt: OptionProduction => {
-            generatingBod.append(curGen)
-            generatingBod.clear()
-            generatingOpts +: new StringBuilder(opt.sample())
-            //generatingOpts += opt.sample() //List(new StringBuilder(opt.sample()))
-            (generatingBod, generatingOpts)
-            //generatingBod.append(opt.sample())
+          case fun: Function => { // need to look up element in grammar via getParam, find its binding, then use that in runFun
+            if(scope.isBound(fun.sample())){ // TODO: is this right?
+              curGen.append(fun.runFun(scope.lookup(fun.sample())))
+              (generatingBod, generatingOpts.toList)
+            } else {
+              throw new Exception("Variable not bound")
+            }
           }
-          case nonterm: Sequence => { // TODO sequence in sequence?
-            //breakable {
-            for (n <- nonterm.getList()) {
+          case nonterm: Sequence => {
+            for(n <- nonterm.getList()) {
               n match {
                 case name: Name => {
                   curSymbol = name.sample()
-                  curGen.append(buildString(scope, generatingBod))
+                  //buildQandOpts(scope, generatingBod, generatingOpts, cur, inBod)
+                  buildString(scope, curGen) // todo uncommenting gets answers printed
                 }
                 case fun: Function => curGen.append(fun.runFun(scope.lookup(fun.sample())))
                 case term: Terminal => curGen.append(term.sample())
-                case opt: OptionProduction => curGen.append(opt.sample())
-                //case optBreak: OptionBreak => generating.append(optBreak.sample())
+                case opt: OptionProduction => {
+                  if(inBod) { // hitting first opt
+                    generatingBod = new StringBuilder(curGen.toString()) // linked?
+                    curGen.clear()
+                    inBod = false
+                    //(generatingBod, generatingOpts.toList)
+                    //buildQandOpts(scope, generatingBod, generatingOpts, cur, inBod) // bad bc looking up seq over and over
+                  } else { // hitting subsequent opt
+                    //generatingOpts += curGen.toString()
+                    //generatingOpts = generatingOpts +: List(curGen)
+                    curGen.append(opt.sample())
+                    generatingOpts += new StringBuilder(curGen.toString()) // bad bc won't account for other productions //buildString(scope, curGen)
+                    curGen.clear()
+                    //(generatingBod, generatingOpts.toList)
+                    //buildQandOpts(scope, generatingBod, generatingOpts, cur, inBod)
+                  }
+                }
+//                case seq: Sequence => {
+//                  if(inBod){ // Assuming there will only be two Sequences: the overall one, and the Options one
+//                    generatingBod = new StringBuilder(curGen.toString()) // linked?
+//                    curGen.clear()
+//                    inBod = false
+//                    buildQandOpts(scope, generatingBod, generatingOpts, cur, inBod)
+//                  } else throw new Error("Error: there should only be one Sequence for Options.")
+//                }
                 case p: Production => {
-                  if (scope.isBound(curSymbol)) {
+                  if(scope.isBound(curSymbol)){
                     curGen.append(scope.lookup(curSymbol))
                   } else {
                     curGen.append(p.sample())
@@ -225,21 +250,84 @@ case class Grammar(_rules: Map[String, Production], _startSymbol: String){
                 }
               }
             }
-            //}
-            (generatingBod, generatingOpts)
-          }
-          case fun: Function => { // need to look up element in grammar via getParam, find its binding, then use that in runFun
-            if(scope.isBound(fun.sample())){ // TODO: is this right?
-              curGen.append(fun.runFun(scope.lookup(fun.sample())))
-              (generatingBod, generatingOpts)
-            } else {
-              throw new Exception("Variable not bound")
-            }
+            if(inBod) generatingBod.append(curGen)
+            //else generatingOpts += new StringBuilder(curGen.toString())
+            (generatingBod, generatingOpts.toList)
           }
         }
       }
       case None => throw new Exception(s"Symbol ${curSymbol} could not be found")
     }
+
+//    val samp: Option[Production] = rules.get(curSymbol) // get edu.umass.cs.automan.core.grammar.Production associated with symbol from grammar
+//    samp match {
+//      case Some(samp) => {
+//        //println(s"${samp} is a LNT ${samp.isLeafNT()}")
+//        samp match {
+//          case name: Name => {
+//            curSymbol = name.sample()
+//            buildQandOpts(scope, generatingBod, generatingOpts, curGen)
+//          }//render(g, name.sample(), scope) // edu.umass.cs.automan.core.grammar.Name becomes start symbol
+//          case term: Terminal => {
+//            curGen.append(term.sample())
+//            (generatingBod, generatingOpts)
+//            //generatingBod.append(term.sample())
+//          }
+//          //case break: OptionBreak => generating.append(break.sample())
+//          case choice: Choices => {
+//            if(scope.isBound(curSymbol)){
+//              //println(s"${startSymbol} is bound, looking up")
+//              //print(scope.lookup(startSymbol))
+//              curGen.append(scope.lookup(curSymbol))
+//              (generatingBod, generatingOpts)
+//            } else {
+//              throw new Exception(s"Choice ${curSymbol} has not been bound")
+//            }
+//          }
+//          case opt: OptionProduction => {
+//            generatingBod.append(curGen)
+//            generatingBod.clear()
+//            generatingOpts +: new StringBuilder(opt.sample())
+//            //generatingOpts += opt.sample() //List(new StringBuilder(opt.sample()))
+//            (generatingBod, generatingOpts)
+//            //generatingBod.append(opt.sample())
+//          }
+//          case nonterm: Sequence => { // TODO sequence in sequence?
+//            //breakable {
+//            for (n <- nonterm.getList()) {
+//              n match {
+//                case name: Name => {
+//                  curSymbol = name.sample()
+//                  curGen.append(buildString(scope, generatingBod))
+//                }
+//                case fun: Function => curGen.append(fun.runFun(scope.lookup(fun.sample())))
+//                case term: Terminal => curGen.append(term.sample())
+//                case opt: OptionProduction => curGen.append(opt.sample())
+//                //case optBreak: OptionBreak => generating.append(optBreak.sample())
+//                case p: Production => {
+//                  if (scope.isBound(curSymbol)) {
+//                    curGen.append(scope.lookup(curSymbol))
+//                  } else {
+//                    curGen.append(p.sample())
+//                  }
+//                }
+//              }
+//            }
+//            //}
+//            (generatingBod, generatingOpts)
+//          }
+//          case fun: Function => { // need to look up element in grammar via getParam, find its binding, then use that in runFun
+//            if(scope.isBound(fun.sample())){ // TODO: is this right?
+//              curGen.append(fun.runFun(scope.lookup(fun.sample())))
+//              (generatingBod, generatingOpts)
+//            } else {
+//              throw new Exception("Variable not bound")
+//            }
+//          }
+//        }
+//      }
+//      case None => throw new Exception(s"Symbol ${curSymbol} could not be found")
+//    }
   }
 
 //  // TODO these methods may have to move into a Question class

@@ -4,7 +4,7 @@ import edu.umass.cs.automan.core.grammar.Production
 import edu.umass.cs.automan.core.grammar.Grammar
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 object Ranking {
 
@@ -111,6 +111,15 @@ object Ranking {
 //    println()
 //  }
 
+//  def newBuildInstance(grammar: Grammar, choice: Int, bod: TextProduction, opts: List[OptionProduction]): (StringBuilder, List[StringBuilder]) = {
+//    grammar.curSymbol = grammar.startSymbol
+//    val bases = generateBases(grammar, List[Int](), Set[String]()).toArray // todo only does for first sequence... make by sequence?
+//    val assignment = unrank(choice, bases) // get the assignment from the number
+//    grammar.curSymbol = grammar.startSymbol // TODO mak sure not resetting for options
+//    val scope = grammar.bind(assignment.toArray, 0, Set())
+//    grammar.curSymbol = grammar.startSymbol
+//  }
+
   // given a grammar, an int, and the bases, creates a string of an experiment instance
   def buildInstance(grammar: Grammar, choice: Int): (StringBuilder, List[StringBuilder]) = {
     grammar.curSymbol = grammar.startSymbol
@@ -119,7 +128,7 @@ object Ranking {
     grammar.curSymbol = grammar.startSymbol // TODO mak sure not resetting for options
     val scope = grammar.bind(assignment.toArray, 0, Set())
     grammar.curSymbol = grammar.startSymbol
-    grammar.buildQandOpts(scope, new StringBuilder, List[StringBuilder](), new StringBuilder)
+    grammar.buildQandOpts(scope, new StringBuilder, ListBuffer[StringBuilder](), new StringBuilder, true)
     //buildString(grammar, scope, new StringBuilder).toString()
   }
 
@@ -255,34 +264,78 @@ object Ranking {
       ), "Start"
     )
 
-    val lindaBase = generateBases(grammar, List[Int](), Set[String]())
-    println("Testing testBases method: " + lindaBase)
-    //val lindaBases = Array(4, 5, 6, 5, 5, 5, 5) // each number is number of possible assignments for that slot
+    val optSeq = new Sequence(
+      List(
+        new OptionProduction(new Terminal("1 lb")), // todo these could have seqs in them
+        new OptionProduction(new Terminal("1,000 lb")),
+        new OptionProduction(new Terminal("10,000 lb")) // TODO test with vars in option
+      )
+    )
+    val seq = new Sequence(
+      List(
+        new Terminal("How much does "),
+        new Name("Object"),
+        new Terminal(" weigh?"),
+        new Name("Options")
+      )
+    )
+    val optList: List[OptionProduction] = List(
+      new OptionProduction(new Terminal("1 lb")),
+      new OptionProduction(new Terminal("1,000 lb")),
+      new OptionProduction(new Terminal("10,000 lb")) // TODO test with vars in option
+    )
 
-    val lindaBases = lindaBase.toArray
-    val total = product(lindaBases)
+    val estGrammar: Grammar = new Grammar(
+      Map(
+        "Start" -> new Name("Seq"),
+        "Seq" -> seq,
+        "Object" -> new Choices(
+          List(
+            new Terminal("an ox"),
+            new Terminal("an ocarina"),
+            new Terminal("an obelisk")
+          )
+        ),
+        "Options" -> optSeq
+      ),
+      "Start"
+    )
+    val estProd: EstimateQuestionProduction = new EstimateQuestionProduction(estGrammar, seq)
+    val cbProd: CheckboxQuestionProduction = new CheckboxQuestionProduction(estGrammar, seq, optList) // todo is opts necessary? may have made totext method too complicated
 
-    println(s"total: ${total}")
+   // println(cbProd.toQuestionText(0))
+    val (bod, opts) = cbProd.toQuestionText(0)
+    println(bod)
+    opts.map(println(_))
 
-    val xRank = rank(Array(3,3,4,4,2,2,3), lindaBases) // xavier is 70563
-    //println(xRank)
-
-    val lRank = rank(Array(0,1,1,0,0,0,0), lindaBases) // the ranking for the classic Linda problem
-//    println(lRank) // 4375
-//    println(unrank(lRank, lindaBases))
-
-    //val grammar = getGrammar()
-    // if it starts acting up reset start symbol
-//    renderInstance(grammar, lRank, lindaBases)
-//    println(s"Build version:\n${buildInstance(grammar, lRank)}")
-//    renderInstance(grammar, xRank, lindaBases)
-//    println(s"Build version:\n${buildInstance(grammar, xRank)}")
-
-    grammar.curSymbol = grammar.startSymbol
-    val prod: EstimateQuestionProduction = new EstimateQuestionProduction(grammar, lindaBody)
-    println(prod.toQuestionText(0))
-    grammar.curSymbol = grammar.startSymbol
-    println(prod.toQuestionText(4375))
+//    val lindaBase = generateBases(grammar, List[Int](), Set[String]())
+//    println("Testing testBases method: " + lindaBase)
+//    //val lindaBases = Array(4, 5, 6, 5, 5, 5, 5) // each number is number of possible assignments for that slot
+//
+//    val lindaBases = lindaBase.toArray
+//    val total = product(lindaBases)
+//
+//    println(s"total: ${total}")
+//
+//    val xRank = rank(Array(3,3,4,4,2,2,3), lindaBases) // xavier is 70563
+//    //println(xRank)
+//
+//    val lRank = rank(Array(0,1,1,0,0,0,0), lindaBases) // the ranking for the classic Linda problem
+////    println(lRank) // 4375
+////    println(unrank(lRank, lindaBases))
+//
+//    //val grammar = getGrammar()
+//    // if it starts acting up reset start symbol
+////    renderInstance(grammar, lRank, lindaBases)
+////    println(s"Build version:\n${buildInstance(grammar, lRank)}")
+////    renderInstance(grammar, xRank, lindaBases)
+////    println(s"Build version:\n${buildInstance(grammar, xRank)}")
+//
+//    //grammar.curSymbol = grammar.startSymbol
+//    val prod: EstimateQuestionProduction = new EstimateQuestionProduction(grammar, lindaBody)
+//    println(prod.toQuestionText(0))
+//    grammar.curSymbol = grammar.startSymbol
+//    println(prod.toQuestionText(4375))
   }
 
   // returns the Linda grammar
