@@ -284,13 +284,21 @@ object Ranking {
       ), "Start"
     )
 
-//    val optSeq = new Sequence(
-//      List(
-//        new OptionProduction(new Terminal("1 lb")), // todo these could have seqs in them
-//        new OptionProduction(new Terminal("1,000 lb")),
-//        new OptionProduction(new Terminal("10,000 lb")) // TODO test with vars in option
-//      )
-//    )
+    // todo get rid of
+    val optSeq = new Sequence(
+      List(
+        new OptionProduction(new Terminal("1 lb")), // todo these could have seqs in them
+        new OptionProduction(new Terminal("1,000 lb")),
+        new OptionProduction(new Terminal("10,000 lb")) // TODO test with vars in option
+      )
+    )
+
+    val practiceFunc = Map[String, String](
+      "an ox" -> "an OXEN weighs ",
+      "an ocarina" -> "an OCARINA weighs ",
+      "an obelisk" -> "an OBELISK weighs "
+    )
+
     val qSeq = new Sequence(
       List(
         new Terminal("How much does "),
@@ -301,11 +309,17 @@ object Ranking {
         new Name("c")
       )
     )
-    val optSeq = new Sequence(
+    val optASeq = new Sequence(
       List(
         //new Terminal("An "),
         new Name("Object"),
         new Terminal(" weighs 1 lb")
+      )
+    )
+    val optBSeq = new Sequence(
+      List(
+        new Function(practiceFunc, "Object", true),
+        new Terminal("1,000 lb")
       )
     )
     val optList: List[OptionProduction] = List(
@@ -325,8 +339,8 @@ object Ranking {
             new Terminal("an obelisk")
           )
         ),
-        "a" -> new OptionProduction(optSeq),
-        "b" -> new OptionProduction(new Terminal("1,000 lb")),
+        "a" -> new OptionProduction(optASeq),
+        "b" -> new OptionProduction(optBSeq),
         "c" -> new OptionProduction(new Terminal("10,000 lb"))
         //"Options" -> optSeq // we need a name here
       ),
