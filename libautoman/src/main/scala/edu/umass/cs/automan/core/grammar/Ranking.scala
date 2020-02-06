@@ -48,7 +48,7 @@ object Ranking {
                 List[Int](opt.count(g, null))
 //                soFar = soFar ++ generateBases(g, soFar, counted)
 //                soFar
-              } else soFar
+              } else List[Int]()//soFar
               //generateBases(g, soFar, counted)
             }
             case nonterm: Sequence => { // TODO sequence in sequence?
@@ -142,8 +142,10 @@ object Ranking {
   // given a grammar, an int, and the bases, creates a string of an experiment instance
   def buildInstance(grammar: Grammar, choice: Int): (StringBuilder, List[StringBuilder]) = {
     grammar.curSymbol = grammar.startSymbol
-    val bases = generateBases(grammar, List[Int](), Set[String]()).toArray // todo fix for options
-    val assignment = unrank(choice, bases) // get the assignment from the number todo fix
+    val bases = generateBases(grammar, List[Int](), Set[String]()) // todo fix for options
+    println(bases)
+    val assignment = unrank(choice, bases.toArray) // get the assignment from the number todo fix
+    println(assignment)
     grammar.curSymbol = grammar.startSymbol // TODO make sure not resetting for options
     val scope = grammar.bind(assignment.toArray, 0, Set())
     grammar.curSymbol = grammar.startSymbol
@@ -284,15 +286,6 @@ object Ranking {
       ), "Start"
     )
 
-    // todo get rid of
-    val optSeq = new Sequence(
-      List(
-        new OptionProduction(new Terminal("1 lb")), // todo these could have seqs in them
-        new OptionProduction(new Terminal("1,000 lb")),
-        new OptionProduction(new Terminal("10,000 lb")) // TODO test with vars in option
-      )
-    )
-
     val practiceFunc = Map[String, String](
       "an ox" -> "an OXEN weighs ",
       "an ocarina" -> "an OCARINA weighs ",
@@ -322,11 +315,6 @@ object Ranking {
         new Terminal("1,000 lb")
       )
     )
-    val optList: List[OptionProduction] = List(
-      new OptionProduction(new Terminal("1 lb")),
-      new OptionProduction(new Terminal("1,000 lb")),
-      new OptionProduction(new Terminal("10,000 lb")) // TODO test with vars in option
-    )
 
     val estGrammar: Grammar = new Grammar(
       Map(
@@ -339,15 +327,15 @@ object Ranking {
             new Terminal("an obelisk")
           )
         ),
-        "a" -> new OptionProduction(optASeq),
-        "b" -> new OptionProduction(optBSeq),
+        "a" -> new OptionProduction(optASeq),//new Terminal("1 lb")),//optASeq),
+        "b" -> new OptionProduction(optBSeq),//new Terminal("1,000 lb")),//optBSeq),
         "c" -> new OptionProduction(new Terminal("10,000 lb"))
         //"Options" -> optSeq // we need a name here
       ),
       "Start"
     )
-    val estProd: EstimateQuestionProduction = new EstimateQuestionProduction(estGrammar, qSeq)
-    val cbProd: CheckboxQuestionProduction = new CheckboxQuestionProduction(estGrammar, optSeq, optList) // todo is opts necessary? may have made totext method too complicated
+    //val estProd: EstimateQuestionProduction = new EstimateQuestionProduction(estGrammar, qSeq)
+    val cbProd: CheckboxQuestionProduction = new CheckboxQuestionProduction(estGrammar, qSeq) // todo is opts necessary? may have made totext method too complicated
 
    // println(cbProd.toQuestionText(0))
     val (bod, opts) = cbProd.toQuestionText(0)

@@ -178,7 +178,8 @@ class EstimateQuestionProduction(g: Grammar, body: TextProduction) extends Quest
 
 }
 
-class CheckboxQuestionProduction(g: Grammar, body: TextProduction, options: List[OptionProduction]) extends QuestionProduction(g) {
+// todo we can actually get rid of the body param now...
+class CheckboxQuestionProduction(g: Grammar, body: TextProduction) extends QuestionProduction(g) {
   override var _questionType: QuestionType = QuestionType.CheckboxQuestion
 
   override def sample(): String = {
