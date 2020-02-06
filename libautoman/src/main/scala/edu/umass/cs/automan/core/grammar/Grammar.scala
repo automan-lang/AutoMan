@@ -77,6 +77,10 @@ case class Grammar(_rules: Map[String, Production], _startSymbol: String){
               newScope // return empty scope
             }
           }
+          case opt: OptionProduction => {
+            val newScope = new Scope(this, curPos)
+            newScope
+          }
           case nt: Sequence => { // The first case; combines all the bindings into one scope
             val newScope = new Scope(this, curPos)
             for(n <- nt.getList()) {
@@ -164,7 +168,7 @@ case class Grammar(_rules: Map[String, Production], _startSymbol: String){
   }
 
   // need to build the question body and options separately
-  def buildQandOpts(scope: Scope, soFarBod: StringBuilder, soFarOpts: ListBuffer[StringBuilder], cur: StringBuilder, inBody: Boolean): (StringBuilder, List[StringBuilder]) = {
+  def buildQandOpts(scope: Scope, soFarBod: StringBuilder, soFarOpts: ListBuffer[StringBuilder], cur: StringBuilder, inBody: Boolean): (StringBuilder, ListBuffer[StringBuilder]) = {
     // find start
     // sample symbol associated with it
     // build string by sampling each symbol
@@ -180,67 +184,119 @@ case class Grammar(_rules: Map[String, Production], _startSymbol: String){
         samp match {
           case name: Name => {
             curSymbol = name.sample()
+            buildQandOpts(scope, generatingBod, generatingOpts, curGen, inBod)
+//            if(rules.get(curSymbol).isInstanceOf[Option[OptionProduction]]){
+//              if(inBod){
+//                inBod = false
+//                generatingBod = new StringBuilder(curGen.toString())
+//                buildQandOpts(scope, generatingBod, generatingOpts, curGen, inBod)
+//              } else {
+//                buildQandOpts(scope, generatingBod, generatingOpts, curGen, inBod)
+//              }
+//            } else {
+//              buildQandOpts(scope, generatingBod, generatingOpts, curGen, inBod)
+//            }
+
+            // TODO: check if name links to option prod
+            // then check if in bod
+            // if in bod, append, set inBod to false, and call,
+            // if not, carry on
             //if(inBod) buildString(scope, )
             //(generatingBod, generatingOpts.toList)
-            buildQandOpts(scope, generatingBod, generatingOpts, cur, inBod) // todo this is screwing it up?
+            //buildQandOpts(scope, generatingBod, generatingOpts, curGen, inBod) // todo this is screwing it up?
             //(generatingBod, generatingOpts.toList)
           }//render(g, name.sample(), scope) // edu.umass.cs.automan.core.grammar.Name becomes start symbol
           case term: Terminal => {
             curGen.append(term.sample())
-            (generatingBod, generatingOpts.toList)
+            (generatingBod, generatingOpts)
           }
           //case break: OptionBreak => generating.append(break.sample())
           case choice: Choices => {
             if(scope.isBound(curSymbol)){
               curGen.append(scope.lookup(curSymbol))
-              (generatingBod, generatingOpts.toList)
+              (generatingBod, generatingOpts) // todo problem?
             } else {
               throw new Exception(s"Choice ${curSymbol} has not been bound")
             }
           }
           case fun: Function => { // need to look up element in grammar via getParam, find its binding, then use that in runFun
-            if(scope.isBound(fun.sample())){ // TODO: is this right?
+            if(scope.isBound(fun.sample())){
               curGen.append(fun.runFun(scope.lookup(fun.sample())))
-              (generatingBod, generatingOpts.toList)
+              (generatingBod, generatingOpts)
             } else {
               throw new Exception("Variable not bound")
             }
+          }
+          case opt: OptionProduction => {
+            if(inBod) { // hitting first opt, so save body // todo overriding!
+              generatingBod = new StringBuilder(curGen.toString()) // linked?
+              curGen.clear()
+              inBod = false
+              //curGen.append(buildString(scope, curGen))
+              //(generatingBod, generatingOpts.toList)
+              //buildQandOpts(scope, generatingBod, generatingOpts, cur, inBod) // bad bc looking up seq over and over
+            } else { // hitting subsequent opt, so save opt
+              //curGen.append(opt.sample()) // todo this has no effect
+              generatingOpts += new StringBuilder(curGen.toString()) // bad bc won't account for other productions //buildString(scope, curGen)
+              curGen.clear()
+              //curGen.append(buildString(scope, curGen))
+              //(generatingBod, generatingOpts.toList)
+              //buildQandOpts(scope, generatingBod, generatingOpts, cur, inBod)
+            }
+            opt.getText() match { // generate opt text
+              case name: Name => {
+                curSymbol = name.sample()
+                //buildQandOpts(scope, generatingBod, generatingOpts, curGen, inBod)
+                curGen.append(buildString(scope, curGen)) // todo uncommenting gets answers printed
+              }
+              case fun: Function => curGen.append(fun.runFun(scope.lookup(fun.sample())))
+              case term: Terminal => curGen.append(term.sample())
+                // todo sequence
+              case p: Production => { // covers functions
+                if(scope.isBound(curSymbol)){
+                  curGen.append(scope.lookup(curSymbol))
+                } else {
+                  curGen.append(p.sample())
+                }
+              }
+            }
+            generatingOpts.append(new StringBuilder(curGen.toString()))
+            curGen.clear()
+            //buildQandOpts(scope, generatingBod, generatingOpts, curGen, inBod) // todo never updating symbol so infinite loop
+            (generatingBod, generatingOpts) // todo as soon as we return everything is gone
           }
           case nonterm: Sequence => {
             for(n <- nonterm.getList()) {
               n match {
                 case name: Name => {
                   curSymbol = name.sample()
-                  //buildQandOpts(scope, generatingBod, generatingOpts, cur, inBod)
-                  buildString(scope, curGen) // todo uncommenting gets answers printed
+//                  rules.get(curSymbol) match {
+//                    case Some(symb) => {
+//                      symb match {
+//                        case opt: OptionProduction => {
+//                          if (inBod) {
+//                            inBod = false
+//                            generatingBod = new StringBuilder(curGen.toString())
+////                            val(bod, opts) = buildQandOpts(scope, generatingBod, generatingOpts, curGen, inBod)
+////                            generatingBod = bod
+////                            generatingOpts = opts
+//                          } else {
+//                            buildQandOpts(scope, generatingBod, generatingOpts, curGen, inBod)
+//                          }
+//                        }
+//                        case p: Production => buildQandOpts(scope, generatingBod, generatingOpts, curGen, inBod)
+//                      }
+//                    }
+//                    case None => { throw new Error(s"${curSymbol} could not be found.")}
+//                  }
+
+                  val(bod, opts) = buildQandOpts(scope, generatingBod, generatingOpts, curGen, inBod)
+                  generatingBod = bod // does nothing first time around
+                  generatingOpts = opts
+                  //buildString(scope, curGen) // todo uncommenting gets answers printed
                 }
                 case fun: Function => curGen.append(fun.runFun(scope.lookup(fun.sample())))
                 case term: Terminal => curGen.append(term.sample())
-                case opt: OptionProduction => {
-                  if(inBod) { // hitting first opt
-                    generatingBod = new StringBuilder(curGen.toString()) // linked?
-                    curGen.clear()
-                    inBod = false
-                    //(generatingBod, generatingOpts.toList)
-                    //buildQandOpts(scope, generatingBod, generatingOpts, cur, inBod) // bad bc looking up seq over and over
-                  } else { // hitting subsequent opt
-                    //generatingOpts += curGen.toString()
-                    //generatingOpts = generatingOpts +: List(curGen)
-                    curGen.append(opt.sample())
-                    generatingOpts += new StringBuilder(curGen.toString()) // bad bc won't account for other productions //buildString(scope, curGen)
-                    curGen.clear()
-                    //(generatingBod, generatingOpts.toList)
-                    //buildQandOpts(scope, generatingBod, generatingOpts, cur, inBod)
-                  }
-                }
-//                case seq: Sequence => {
-//                  if(inBod){ // Assuming there will only be two Sequences: the overall one, and the Options one
-//                    generatingBod = new StringBuilder(curGen.toString()) // linked?
-//                    curGen.clear()
-//                    inBod = false
-//                    buildQandOpts(scope, generatingBod, generatingOpts, cur, inBod)
-//                  } else throw new Error("Error: there should only be one Sequence for Options.")
-//                }
                 case p: Production => {
                   if(scope.isBound(curSymbol)){
                     curGen.append(scope.lookup(curSymbol))
@@ -252,7 +308,7 @@ case class Grammar(_rules: Map[String, Production], _startSymbol: String){
             }
             if(inBod) generatingBod.append(curGen)
             //else generatingOpts += new StringBuilder(curGen.toString())
-            (generatingBod, generatingOpts.toList)
+            (generatingBod, generatingOpts)
           }
         }
       }

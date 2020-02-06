@@ -21,6 +21,8 @@ object Ranking {
     //    else l(0) * product(l.slice(1, l.length - 1))
   }
 
+  // b: list of counts
+  // c: counted names
   def generateBases(g: Grammar, b: List[Int], c: Set[String]): List[Int] = {
     //val samp: Option[Production] = g.rules.get(g.curSymbol)
     var soFar: List[Int] = b
@@ -40,6 +42,15 @@ object Ranking {
             case choice: Choices => {
               List[Int](choice.count(g, null))
             }
+            case opt: OptionProduction => {
+              if (!(counted.contains(g.curSymbol))) {
+                counted = counted + g.curSymbol
+                List[Int](opt.count(g, null))
+//                soFar = soFar ++ generateBases(g, soFar, counted)
+//                soFar
+              } else soFar
+              //generateBases(g, soFar, counted)
+            }
             case nonterm: Sequence => { // TODO sequence in sequence?
               for (n <- nonterm.getList()) {
                 n match {
@@ -49,6 +60,14 @@ object Ranking {
                       counted = counted + g.curSymbol
                       soFar = soFar ++ generateBases(g, soFar, counted)
                     }
+                  }
+                  case opt: OptionProduction => {
+                    if (!(counted.contains(g.curSymbol))) {
+                      counted = counted + g.curSymbol
+                      List[Int](opt.count(g, null))
+                      //                soFar = soFar ++ generateBases(g, soFar, counted)
+                      //                soFar
+                    } else soFar
                   }
                   case p: Production => {}
                 }
@@ -128,7 +147,8 @@ object Ranking {
     grammar.curSymbol = grammar.startSymbol // TODO mak sure not resetting for options
     val scope = grammar.bind(assignment.toArray, 0, Set())
     grammar.curSymbol = grammar.startSymbol
-    grammar.buildQandOpts(scope, new StringBuilder, ListBuffer[StringBuilder](), new StringBuilder, true)
+    val (bod, opts) = grammar.buildQandOpts(scope, new StringBuilder, ListBuffer[StringBuilder](), new StringBuilder, true)
+    (bod, opts.toList)
     //buildString(grammar, scope, new StringBuilder).toString()
   }
 
@@ -264,19 +284,21 @@ object Ranking {
       ), "Start"
     )
 
-    val optSeq = new Sequence(
-      List(
-        new OptionProduction(new Terminal("1 lb")), // todo these could have seqs in them
-        new OptionProduction(new Terminal("1,000 lb")),
-        new OptionProduction(new Terminal("10,000 lb")) // TODO test with vars in option
-      )
-    )
+//    val optSeq = new Sequence(
+//      List(
+//        new OptionProduction(new Terminal("1 lb")), // todo these could have seqs in them
+//        new OptionProduction(new Terminal("1,000 lb")),
+//        new OptionProduction(new Terminal("10,000 lb")) // TODO test with vars in option
+//      )
+//    )
     val seq = new Sequence(
       List(
         new Terminal("How much does "),
         new Name("Object"),
         new Terminal(" weigh?"),
-        new Name("Options")
+        new Name("a"),
+        new Name("b"),
+        new Name("c")
       )
     )
     val optList: List[OptionProduction] = List(
@@ -296,7 +318,10 @@ object Ranking {
             new Terminal("an obelisk")
           )
         ),
-        "Options" -> optSeq
+        "a" -> new OptionProduction(new Terminal("1 lb")),
+        "b" -> new OptionProduction(new Terminal("1,000 lb")),
+        "c" -> new OptionProduction(new Terminal("10,000 lb"))
+        //"Options" -> optSeq // we need a name here
       ),
       "Start"
     )

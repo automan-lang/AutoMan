@@ -150,7 +150,9 @@ abstract class QuestionProduction(g: Grammar) extends Production { // TODO make 
 class OptionProduction(text: TextProduction) extends Production {
   override def sample(): String = text.sample()
 
-  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = 1
+  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = text.count(g, counted)
+
+  def getText() = text
 
   override def toChoiceArr(g: Grammar): Option[Array[Range]] = ???
 }
