@@ -216,6 +216,29 @@ case class Grammar(_rules: Map[String, Production], _startSymbol: String){
               case fun: Function => curGen.append(fun.runFun(scope.lookup(fun.sample())))
               case term: Terminal => curGen.append(term.sample())
                 // todo sequence
+                /** if stuff breaks it was here  */
+              case nonterm: Sequence => {
+                for (n <- nonterm.getList()) {
+                  n match {
+                    case name: Name => {
+                      curSymbol = name.sample()
+                      val (bod, opts) = buildQandOpts(scope, generatingBod, generatingOpts, curGen, inBod)
+                      generatingBod = bod // does nothing first time around
+                      generatingOpts = opts
+                    }
+                    case fun: Function => curGen.append(fun.runFun(scope.lookup(fun.sample())))
+                    case term: Terminal => curGen.append(term.sample())
+                    case p: Production => {
+                      if (scope.isBound(curSymbol)) {
+                        curGen.append(scope.lookup(curSymbol))
+                      } else {
+                        curGen.append(p.sample())
+                      }
+                    }
+                  }
+                }
+              }
+                /**  */
               case p: Production => { // covers functions
                 if(scope.isBound(curSymbol)){
                   curGen.append(scope.lookup(curSymbol))
