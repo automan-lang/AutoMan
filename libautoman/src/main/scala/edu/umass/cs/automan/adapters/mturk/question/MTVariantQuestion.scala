@@ -7,7 +7,7 @@ import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.VariantOutcome
-import edu.umass.cs.automan.core.grammar.{Choices, Grammar, Name, Production, QuestionProduction, Sequence}
+import edu.umass.cs.automan.core.grammar.{Choices, Grammar, Name, OptionProduction, Production, QuestionProduction, Sequence}
 import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.question.{EstimationQuestion, Question, VariantQuestion}
@@ -72,6 +72,12 @@ class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
             case Some(r) => md5sum += merkle_hash(r)
             case None => throw new Error(s"Symbol ${res} could not be found while hashing.")
           }
+        }
+        case q: QuestionProduction => {
+          BigInt(md.digest(q.questionType.toString().getBytes)) //todo is this right?
+        }
+        case o: OptionProduction => {
+          md5sum += merkle_hash(o.getText())
         }
       }
       md5sum
