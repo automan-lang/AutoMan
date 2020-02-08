@@ -80,7 +80,7 @@ case class MTState(hit_types: Map[BatchKey,HITType],
     hit_states(hitID)
   }
   def getHITState(hit_key: HITKey) : HITState = {
-    val hit_id = hit_ids(hit_key)
+    val hit_id = hit_ids(hit_key) // TODO this is throwing
     hit_states(hit_id)
   }
   def getBatchKeyByHITTypeId(hitTypeID: HITTypeID) : Option[BatchKey] = {

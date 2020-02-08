@@ -45,7 +45,7 @@ class MTCheckboxVectorQuestion extends CheckboxVectorQuestion with MTurkQuestion
   }
   override protected[mturk] def toXML(randomize: Boolean, variant: Int) : scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
-      { XMLBody(randomize) }
+      { XMLBody(randomize, variant) }
     </QuestionForm>
   }
 
@@ -56,64 +56,13 @@ class MTCheckboxVectorQuestion extends CheckboxVectorQuestion with MTurkQuestion
     * @param randomize Randomize option order?
     * @return XML
     */
-  override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = {
+  override protected[mturk] def XMLBody(randomize: Boolean, variant: Int): Seq[Node] = {
     Seq(
-    <Question>
-      <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
-      <QuestionContent>
-        {
-        _image_url match {
-          case Some(url) => {
-            <Binary>
-              <MimeType>
-                <Type>image</Type>
-                <SubType>png</SubType>
-              </MimeType>
-              <DataURL>{ url }</DataURL>
-              <AltText>{ image_alt_text }</AltText>
-            </Binary>
-          }
-          case None => {}
-        }
-        }
-        {
-        // if formatted content is specified, use that instead of text field
-        _formatted_content match {
-          case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString) }</FormattedContent>
-          case None => <Text>{ text }</Text>
-//          case None => <Text>{
-//            grammar match {
-//            case Some(g) => {
-//              scope match{
-//                case Some(s) => g.buildBody(s, new StringBuilder)
-//                case None => throw new Exception("Scope must be specified with Grammar.")
-//              }
-//            }
-//            case None => text
-//          }
-//            }
-//          </Text>
-        }
-        }
-      </QuestionContent>
-      <AnswerSpecification>
-        <SelectionAnswer>
-          <StyleSuggestion>checkbox</StyleSuggestion>
-          <Selections>{
-            //grammar match
-            if(randomize) randomized_options.map {
-              _.toXML
-            } else options.map {
-              _.toXML
-            } }
-          </Selections>
-        </SelectionAnswer>
-      </AnswerSpecification>
-    </Question>
+    toSurveyXML(randomize, variant)
     )
   }
 
-  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
+  override protected[mturk] def toSurveyXML(randomize: Boolean, variant: Int): Node = {
     <Question>
       <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
       <QuestionContent>

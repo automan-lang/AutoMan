@@ -130,7 +130,8 @@ class MTurkAdapter extends AutomanAdapter {
   }
   protected[automan] def retrieve(ts: List[Task], current_time: Date) = {
     assert(ts.forall(_.state == SchedulerState.RUNNING))
-    run_if_initialized((p: TurkWorker) => p.retrieve(ts, current_time))
+    val toRet = run_if_initialized((p: TurkWorker) => p.retrieve(ts, current_time)) // todo return to original
+    toRet // why is this empty?
   }
   protected[automan] def requesterService = _service
   override protected[automan] def question_startup_hook(q: Question, t: Date): Unit = {

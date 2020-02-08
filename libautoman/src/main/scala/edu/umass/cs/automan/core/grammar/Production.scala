@@ -10,6 +10,7 @@ trait Production {
   def sample(): String
   def count(g: Grammar, counted: mutable.HashSet[String]): Int
   def toChoiceArr(g: Grammar): Option[Array[Range]]
+  def isLeafProd(): Boolean
 }
 
 trait TextProduction extends Production{}
@@ -49,6 +50,8 @@ class Choices(options: List[Production]) extends TextProduction {
   }
 
   def getOptions(): List[Production] = options
+
+  override def isLeafProd(): Boolean = false
 }
 
 // A terminal production
@@ -62,6 +65,8 @@ class Terminal(word: String) extends TextProduction {
     Some(Array(0 to 0))
     //toRet = toRet + (0 to 0)
   }
+
+  override def isLeafProd(): Boolean = true
 }
 
 // A sequence, aka a combination of other terminals/choices and the ordering structure of each problem
@@ -98,6 +103,8 @@ class Sequence(sentence: List[Production]) extends TextProduction {
     }
     Some(choiceArr)
   }
+
+  override def isLeafProd(): Boolean = false
 }
 
 // A name associated with a edu.umass.cs.automan.core.grammar.Production
@@ -113,6 +120,8 @@ class Name(n: String) extends TextProduction {
   override def toChoiceArr(g: Grammar): Option[Array[Range]] = {
     g.rules(this.sample()).toChoiceArr(g)
   }
+
+  override def isLeafProd(): Boolean = false
 }
 
 // param is name of the edu.umass.cs.automan.core.grammar.Choices that this function applies to
@@ -126,6 +135,7 @@ class Function(fun: Map[String,String], param: String, capitalize: Boolean) exte
   }
 
   override def toChoiceArr(g: Grammar): Option[Array[Range]] = Some(Array(0 to 0)) //None //Option[Array[Range]()] //Array(null) //TODO: right?
+  override def isLeafProd(): Boolean = true // todo not sure
 }
 
 /**
@@ -155,6 +165,8 @@ class OptionProduction(text: TextProduction) extends Production {
   def getText() = text
 
   override def toChoiceArr(g: Grammar): Option[Array[Range]] = ???
+
+  override def isLeafProd(): Boolean = false
 }
 
 class EstimateQuestionProduction(g: Grammar, body: TextProduction) extends QuestionProduction(g) {
@@ -176,6 +188,7 @@ class EstimateQuestionProduction(g: Grammar, body: TextProduction) extends Quest
     //bod.toString()
   }
 
+  override def isLeafProd(): Boolean = false
 }
 
 // todo we can actually get rid of the body param now...
@@ -199,6 +212,7 @@ class CheckboxQuestionProduction(g: Grammar, body: TextProduction) extends Quest
     (bodS, optsS)
   }
 
+  override def isLeafProd(): Boolean = false
 }
 
 class RadioQuestionProduction(g: Grammar, body: TextProduction, options: List[OptionProduction]) extends QuestionProduction(g) {
@@ -210,6 +224,7 @@ class RadioQuestionProduction(g: Grammar, body: TextProduction, options: List[Op
 
   override def toQuestionText(variation: Int): (String, List[String]) = ???
 
+  override def isLeafProd(): Boolean = false
 }
 
 //class QuestionBodyProduction(g: Grammar, variation: Int) extends Production(){

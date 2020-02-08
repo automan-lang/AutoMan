@@ -48,7 +48,7 @@ class TurkWorker(val backend: AmazonMTurk, val sleep_ms: Int, val mock_service: 
     blocking_enqueue[List[Task]](RejectReq(ts_reasons))
   }
   def retrieve(ts: List[Task], current_time: Date) : Option[List[Task]] = {
-    blocking_enqueue[List[Task]](RetrieveReq(ts, current_time))
+    blocking_enqueue[List[Task]](RetrieveReq(ts, current_time)) // todo this is the problem
   }
   def shutdown(): Unit = {
     nonblocking_enqueue(ShutdownReq())

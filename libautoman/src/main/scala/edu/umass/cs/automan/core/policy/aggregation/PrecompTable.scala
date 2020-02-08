@@ -19,8 +19,9 @@ object PrecompTable {
 class PrecompTable(val possibilities_sz: Int, val reward_sz: Int) extends Serializable {
   private val _store = Array.fill[Int](possibilities_sz * reward_sz)(0)
 
+  // np is numOpts: number of question possibilities(?)
   private def computeIndex(np: Int, reward: BigDecimal) : Int = {
-    assert(np >= 2)
+    assert(np >= 2) // todo failing here
 
     // convert reward to cents
     val cents: Int = (reward * BigDecimal(100)).toInt

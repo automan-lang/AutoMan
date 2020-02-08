@@ -43,7 +43,7 @@ class MTRadioButtonVectorQuestion extends RadioButtonVectorQuestion with MTurkQu
   }
   def toXML(randomize: Boolean, variant: Int) : scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
-      { XMLBody(randomize) }
+      { XMLBody(randomize, variant) }
     </QuestionForm>
   }
 
@@ -54,7 +54,7 @@ class MTRadioButtonVectorQuestion extends RadioButtonVectorQuestion with MTurkQu
     * @param randomize Randomize option order?
     * @return XML
     */
-  override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = {
+  override protected[mturk] def XMLBody(randomize: Boolean, variant: Int): Seq[Node] = {
     Seq(
     <Question>
       <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
@@ -93,7 +93,7 @@ class MTRadioButtonVectorQuestion extends RadioButtonVectorQuestion with MTurkQu
     )
   }
 
-  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
+  override protected[mturk] def toSurveyXML(randomize: Boolean, variant: Int): Node = {
     <Question>
       <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
       <IsRequired>true</IsRequired>

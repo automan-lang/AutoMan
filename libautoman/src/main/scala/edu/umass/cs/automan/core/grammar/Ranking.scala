@@ -143,9 +143,9 @@ object Ranking {
   def buildInstance(grammar: Grammar, choice: Int): (StringBuilder, List[StringBuilder]) = {
     grammar.curSymbol = grammar.startSymbol
     val bases = generateBases(grammar, List[Int](), Set[String]()) // todo fix for options
-    println(bases)
+    //println(bases)
     val assignment = unrank(choice, bases.toArray) // get the assignment from the number todo fix
-    println(assignment)
+    //println(assignment)
     grammar.curSymbol = grammar.startSymbol // TODO make sure not resetting for options
     val scope = grammar.bind(assignment.toArray, 0, Set())
     grammar.curSymbol = grammar.startSymbol
@@ -327,8 +327,8 @@ object Ranking {
             new Terminal("an obelisk")
           )
         ),
-        "a" -> new OptionProduction(optASeq),//new Terminal("1 lb")),//optASeq),
-        "b" -> new OptionProduction(optBSeq),//new Terminal("1,000 lb")),//optBSeq),
+        "a" -> new OptionProduction(new Terminal("1 lb")),//optASeq),
+        "b" -> new OptionProduction(new Terminal("1,000 lb")),//optBSeq),
         "c" -> new OptionProduction(new Terminal("10,000 lb"))
         //"Options" -> optSeq // we need a name here
       ),

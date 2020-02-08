@@ -40,7 +40,7 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
   }
   def toXML(randomize: Boolean, variant: Int): scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
-      { XMLBody(randomize) }
+      { XMLBody(randomize, variant) }
     </QuestionForm>
   }
 
@@ -53,48 +53,15 @@ class MTFreeTextQuestion extends FreeTextQuestion with MTurkQuestion {
     * @param randomize Randomize option order?
     * @return XML
     */
-  override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = {
+  override protected[mturk] def XMLBody(randomize: Boolean, variant: Int): Seq[Node] = {
     Seq(
-    <Question>
-      <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
-      <QuestionContent>
-        {
-        _image_url match {
-          case Some(url) => {
-            <Binary>
-              <MimeType>
-                <Type>image</Type>
-                <SubType>png</SubType>
-              </MimeType>
-              <DataURL>{ url }</DataURL>
-              <AltText>{ image_alt_text }</AltText>
-            </Binary>
-          }
-          case None => {}
-        }
-        }
-        {
-        // if formatted content is specified, use that instead of text field
-        _formatted_content match {
-          case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString()) }</FormattedContent>
-          case None => <Text>{ text }</Text>
-        }
-        }
-      </QuestionContent>
-      <AnswerSpecification>
-        <FreeTextAnswer>
-          <Constraints>
-            <AnswerFormatRegex regex={ regex } errorText={ pattern_error_text } />
-          </Constraints>
-        </FreeTextAnswer>
-      </AnswerSpecification>
-    </Question>
+      toSurveyXML(randomize, variant)
     )
   }
 
   //override type QuestionOptionType = this.type
 
-  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
+  override protected[mturk] def toSurveyXML(randomize: Boolean, variant: Int): Node = {
     <Question>
       <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
       <QuestionContent>

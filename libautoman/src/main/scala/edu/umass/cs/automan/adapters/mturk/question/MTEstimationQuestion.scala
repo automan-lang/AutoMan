@@ -20,7 +20,8 @@ class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
   // public API
   def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
-    new String(Hex.encodeHex(md.digest(toXML(randomize = false, 0).toString().getBytes)))
+    val toRet = new String(Hex.encodeHex(md.digest(toXML(randomize = false, 0).toString().getBytes)))
+    toRet
   }
   override def description: String = _description match { case Some(d) => d; case None => this.title }
   override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
@@ -42,7 +43,7 @@ class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
   }
   def toXML(randomize: Boolean, variant: Int): scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
-      { XMLBody(randomize) }
+      { XMLBody(randomize, variant) }
     </QuestionForm>
   }
 
@@ -102,13 +103,13 @@ class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
     * @param randomize Randomize option order?
     * @return XML
     */
-  override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = {
+  override protected[mturk] def XMLBody(randomize: Boolean, variant: Int): Seq[Node] = {
     Seq(
-      toSurveyXML(randomize)
+      toSurveyXML(randomize, variant)
     )
   }
 
-  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
+  override protected[mturk] def toSurveyXML(randomize: Boolean, variant: Int): Node = {
     <Question>
       <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
       <QuestionContent>

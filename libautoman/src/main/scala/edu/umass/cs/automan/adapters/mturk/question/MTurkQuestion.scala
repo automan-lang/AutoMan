@@ -68,7 +68,7 @@ trait MTurkQuestion {
     * @param randomize Randomize option order?
     * @return XML
     */
-  protected[mturk] def XMLBody(randomize: Boolean) : Seq[scala.xml.Node]
+  protected[mturk] def XMLBody(randomize: Boolean, variant: Int) : Seq[scala.xml.Node]
 
-  protected[mturk] def toSurveyXML(randomize: Boolean) : scala.xml.Node
+  protected[mturk] def toSurveyXML(randomize: Boolean, variant: Int) : scala.xml.Node
 }

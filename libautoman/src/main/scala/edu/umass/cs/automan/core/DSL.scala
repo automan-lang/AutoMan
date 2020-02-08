@@ -554,6 +554,25 @@ trait DSL {
   //
   //    }
   //  }
+
+  /** GRAMMAR STUFF */
+  def surveyGrammar[A <: AutomanAdapter, O]( // abstract
+                                      budget: BigDecimal = MagicNumbers.DefaultBudget,
+                                      dont_reject: Boolean = true,
+                                      dry_run: Boolean = false,
+                                      image_alt_text: String = null,
+                                      image_url: String = null,
+                                      initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
+                                      minimum_spawn_policy: MinimumSpawnPolicy = null,
+                                      pay_all_on_failure: Boolean = true,
+                                      questions: List[AutomanAdapter => Outcome[_]],
+                                      sample_size: Int = MagicNumbers.DefaultSampleSizeForDistrib,
+                                      survey_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
+                                      text: String,
+                                      title: String = null,
+                                      wage: BigDecimal = MagicNumbers.USFederalMinimumWage
+                                    )(implicit a: A): SurveyOutcome
+
   def estimateGrammar[A <: AutomanAdapter](
                                             confidence_interval: ConfidenceInterval = UnconstrainedCI(),
                                             confidence: Double = MagicNumbers.DefaultConfidence,

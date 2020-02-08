@@ -111,7 +111,8 @@ class Scheduler(val question: Question,
           question.id
         )
 
-        val __answered_tasks = failUnWrap(backend.retrieve(running, time.current_time))
+        val taskList: Option[List[Task]] = backend.retrieve(running, time.current_time) // empty?
+        val __answered_tasks: List[Task] = failUnWrap(taskList)
         assert(retrieve_invariant(running, __answered_tasks))
 
         (__answered_tasks, unrunning, time, num_comparisons, done)

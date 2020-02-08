@@ -51,7 +51,7 @@ class MTSurvey extends Survey with MTurkQuestion {
 
   override protected[mturk] def toXML(randomize: Boolean, variant: Int): Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
-      { XMLBody(randomize) }
+      { XMLBody(randomize, variant) }
     </QuestionForm>
   }
 
@@ -60,7 +60,8 @@ class MTSurvey extends Survey with MTurkQuestion {
     val concat = _question_list.foldLeft("")((acc, o: Outcome[_]) => {
       acc + o.question.memo_hash
     })
-    new String(Hex.encodeHex(md.digest(concat.getBytes)))
+    val toRet = new String(Hex.encodeHex(md.digest(concat.getBytes)))
+    toRet
   }
 
   override protected[automan] def toMockResponse(question_id: UUID, response_time: Date, a: Set[(String, Question#A)], worker_id: UUID): MockResponse = ???
@@ -87,12 +88,12 @@ class MTSurvey extends Survey with MTurkQuestion {
     * @param randomize Randomize option order?
     * @return XML
     */
-  override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = {
-    val node = _question_list.map(_.question.asInstanceOf[MTurkQuestion].toSurveyXML(randomize))
+  override protected[mturk] def XMLBody(randomize: Boolean, variant: Int): Seq[Node] = {
+    val node = _question_list.map(_.question.asInstanceOf[MTurkQuestion].toSurveyXML(randomize, variant))
     node
   }
 
-  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
+  override protected[mturk] def toSurveyXML(randomize: Boolean, variant: Int): Node = {
     throw new Exception("Why are you calling this?")
   }
 }
