@@ -19,7 +19,7 @@ object HITState {
   // creates a HITState object from a HIT data
   // structure and a list of tasks
   def apply(hit: HIT, ts: List[Task], hittype: HITType) : HITState = {
-    val t_a_map = ts.map(_.task_id -> None).toMap
+    val t_a_map: Map[UUID, None.type] = ts.map(_.task_id -> None).toMap
     HITState(hit, t_a_map, hittype, cancelled = false)
   }
 }
@@ -28,7 +28,8 @@ object HITState {
 // but compares them by their Assignment IDs, in case Assignments
 // are fetched multiple times.
 case class HITState(hit: HIT, t_a_map: Map[UUID,Option[Assignment]], hittype: HITType, cancelled: Boolean) {
-  val aid_t_map = t_a_map.flatMap { case (t, a_o) => a_o match { case Some(a) => Some(a.getAssignmentId -> t); case None => None }}
+  val aid_t_map: Map[String, UUID] = t_a_map.flatMap { case (t, a_o) => a_o match { case Some(a) => Some(a.getAssignmentId -> t); case None => None }}
+  // pulls UUIDs and maps assignment associated with it to UUID
 
   def matchAssignments(assns: Array[Assignment], mock_service: Option[MockRequesterService]) : HITState = {
     // make sure that our list of assignments only
