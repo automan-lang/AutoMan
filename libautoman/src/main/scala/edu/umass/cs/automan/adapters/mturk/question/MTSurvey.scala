@@ -34,7 +34,17 @@ class MTSurvey extends Survey with MTurkQuestion {
     var toRet: scala.collection.mutable.Set[(String,Question#A)] = mutable.Set[(String,Question#A)]()
 
     for(q <- question_list.map(_.question)){
-      val id = q.id.toString
+      //var id = ""
+      var id: String = ""
+      q match {
+        case vq: MTVariantQuestion => {
+          id = vq.newQ.id.toString()
+        }
+        case _ => {
+          id = q.id.toString()
+        }
+      }
+      //val id = q.id.toString
       //(x \\ "Answer" \\ "QuestionIdentifier").filter { n => n.text == id} // should pull the answer that matches the UUID
       val a = XML.surveyAnswerFilter(x, id) // gives answer
       val ans = q.asInstanceOf[MTurkQuestion].fromXML(a)

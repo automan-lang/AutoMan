@@ -135,7 +135,7 @@ class WorkerRunnable(tw: TurkWorker,
     // group by HIT
     val answered = ts.groupBy(Key.HITKeyForBatch(batch_key,_)).flatMap { case (hit_key, hts) =>
       // get HITState for this set of tasks
-      val hs = internal_state.getHITState(hit_key)
+      val hs = internal_state.getHITState(hit_key) // todo looks fine here
 
       // start by granting Qualifications, where appropriate
       internal_state = WorkerRunnable.turkRetry(() => MTurkMethods.mturk_grantQualifications(hs, internal_state, tw.backend), timeoutState)

@@ -97,13 +97,14 @@ class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
     * @param x the XML
     * @return Answer value
     */
-  override protected[mturk] def fromXML(x: Node): A = ???
+  override protected[mturk] def fromXML(x: Node): A = newQ.asInstanceOf[MTurkQuestion].fromXML(x).asInstanceOf[A]
 
   /**
     * Converts question to XML QuestionForm
     * Calls XMLBody
     *
     * @param randomize Randomize option order?
+    * @param variant which variant to generate?
     * @return XML
     */
 override protected[mturk] def toXML(randomize: Boolean, variant: Int): Node = {
@@ -122,7 +123,7 @@ override protected[mturk] def toXML(randomize: Boolean, variant: Int): Node = {
       newQ = new MTCheckboxQuestion()
       newQ.text = bodyText
       newQ.id = fixed_id
-      val options: List[MTQuestionOption] = opts.map(new MTQuestionOption(Symbol(newQ.id.toString()), _, ""))
+      val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(newQ.id.toString()), _, ""))
       newQ.asInstanceOf[MTCheckboxQuestion].options = options
       newQ.asInstanceOf[MTCheckboxQuestion].toXML(randomize, variant)
     }

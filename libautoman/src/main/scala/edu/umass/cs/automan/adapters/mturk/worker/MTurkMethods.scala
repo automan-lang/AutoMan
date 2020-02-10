@@ -272,6 +272,7 @@ object MTurkMethods {
     // TODO add param to toXML (abs of hashcode of UUID)
 
     // render XML
+    // TODO get rid of hardcoding
     val xml = question.asInstanceOf[MTurkQuestion].toXML(randomize = true, 0).toString()
     DebugLog("Posting task XML:\n" + xml.toString, LogLevelDebug(), LogType.ADAPTER, question.id)
 
