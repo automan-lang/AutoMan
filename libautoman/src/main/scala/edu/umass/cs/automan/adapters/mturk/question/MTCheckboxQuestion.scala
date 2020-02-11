@@ -42,7 +42,7 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
     //    </Answer>
     DebugLog("MTCheckboxQuestion: fromXML:\n" + x.toString,LogLevelDebug(),LogType.ADAPTER,id)
 
-    println("PRINTING STUFF: " + ((x \\ "Answer" \\ "SelectionIdentifier").map{si => Symbol(si.text)}.toSet).toString)
+    //println("PRINTING STUFF: " + ((x \\ "Answer" \\ "SelectionIdentifier").map{si => Symbol(si.text)}.toSet).toString)
     (x \\ "Answer" \\ "SelectionIdentifier").map{si => Symbol(si.text)}.toSet
   }
   // TODO: random checkbox fill

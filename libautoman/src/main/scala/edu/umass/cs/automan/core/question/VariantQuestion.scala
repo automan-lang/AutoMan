@@ -28,7 +28,7 @@ abstract class VariantQuestion extends Question {
 
   override private[automan] def validation_policy_instance = newQ.validation_policy_instance.asInstanceOf[AP]
 
-  protected var newQ: Question
+  protected var _newQ: Question
   protected var _question: QuestionProduction
   protected var _options: List[QuestionOptionType] = List[QuestionOptionType]()
   protected var _questions: List[Question] = List[Question]()
@@ -45,6 +45,8 @@ abstract class VariantQuestion extends Question {
     _questions = _questions :+ q
     _questions
   }
+  def newQ: Question = _newQ
+  def newQ_=(q: Question) { _newQ = q }
 
   // Radio Button and RB Vector stuff
   def options: List[QuestionOptionType] = _options
@@ -135,11 +137,11 @@ abstract class VariantQuestion extends Question {
   override protected[automan] def prettyPrintAnswer(answer: A): String = {
     //newQ.prettyPrintAnswer(answer.asInstanceOf[A])
     question.questionType match {
-      case QuestionType.EstimationQuestion => {
-        newQ.asInstanceOf[MTEstimationQuestion].prettyPrintAnswer(answer.asInstanceOf[MTEstimationQuestion#A])
+      case QuestionType.EstimationQuestion => { // todo changed from MTEQ on next line
+        newQ.asInstanceOf[EstimationQuestion].prettyPrintAnswer(answer.asInstanceOf[EstimationQuestion#A])
       }
       case QuestionType.CheckboxQuestion => {
-        newQ.asInstanceOf[MTCheckboxQuestion].prettyPrintAnswer(answer.asInstanceOf[MTCheckboxQuestion#A])
+        newQ.asInstanceOf[CheckboxQuestion].prettyPrintAnswer(answer.asInstanceOf[CheckboxQuestion#A])
       }
     }
     //      question.questionType match {

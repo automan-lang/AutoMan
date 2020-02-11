@@ -79,16 +79,42 @@ class MTSurvey extends Survey with MTurkQuestion {
   // prints answers grouped by worker
   // TODO apologies for object orientation
   override protected[automan] def prettyPrintAnswer(answer: Set[(String, Question#A)]): String = {
-    var toRet: StringBuilder = new StringBuilder
-    for(a <- answer){
-      //val (_,(question_id,ans)) = a
-      val (question_id,ans) = a
-      toRet ++= s"${question_id}: ${ans}\n"
+    val ansString: StringBuilder = new StringBuilder()
+    val ansMap: Map[String, Question#A] = answer.toMap
+    //var ans: Question#A = null
+    for(o <- _question_list) {
+      val q: Question = o.question // add VariantQ case
+      q match {
+        case vq: MTVariantQuestion => {
+          val ans = vq.prettyPrintAnswer(ansMap(vq.newQ.id.toString).asInstanceOf[vq.A])
+          ansString.append(ans)
+//          val ans: Question#A = ansMap(vq.newQ.id.toString) // this is just a question identifier
+//          val ppans = q.prettyPrintAnswer(ans.asInstanceOf[q.A])
+//          ansString.append(ppans) //A: Set[(String,Question#A)] // so this is also getting the question ID
+        }
+        case _ => {
+          val ans: Question#A = ansMap(q.id.toString)
+          val ppans = q.prettyPrintAnswer(ans.asInstanceOf[q.A])
+          ansString.append(ppans) //A: Set[(String,Question#A)]
+        }
+      }
+      //val ans: Question#A = ansMap(q.id.toString)
+//      val ppans = q.prettyPrintAnswer(ans.asInstanceOf[q.A])
+//      println(s"printing ${q.id} answer: ${ppans}")
+      //ansString.append(ppans) //A: Set[(String,Question#A)]
     }
-    val toRetStr = toRet.toString()
-    toRetStr
-//    val (_,(question_id,ans)) = answer
-//    s"${question_id}: ${ans}"
+    ansString.toString()
+
+    //    var toRet: StringBuilder = new StringBuilder
+//    for(a <- answer){
+//      //val (_,(question_id,ans)) = a
+//      val (question_id,ans) = a
+//      toRet ++= s"${question_id}: ${ans}\n"
+//    }
+//    val toRetStr = toRet.toString()
+//    toRetStr
+////    val (_,(question_id,ans)) = answer
+////    s"${question_id}: ${ans}"
   }
 
   /**

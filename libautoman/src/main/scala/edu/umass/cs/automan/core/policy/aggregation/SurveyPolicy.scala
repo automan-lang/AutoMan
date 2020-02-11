@@ -29,7 +29,12 @@ abstract class SurveyPolicy(survey: Survey)
          tasks.foldLeft(Map[String, Question#A]())((acc, t) => acc + (t.question.name -> t.answer.get)) // <question id, answer>
       }
     }.toSet
-
+//    val temp1: Set[(String, Question#A)] = temp.map{
+//      case(worker_id, tasks) => {
+//        tasks.foldLeft(Set[(String, Question#A)]())((acc, t) => acc += (t.question.name, t.answer.get))
+//      }
+//    }
+  // Set[(String, Question#A)]
     val dist = getSurveyDistribution(tasks) // raw distribution (not quality-controlled)
     val cost: BigDecimal = valid_tasks.filterNot(_.from_memo).foldLeft(BigDecimal(0)){ case (acc,t) => acc + t.cost }
     SurveyAnswers(temp1, cost, survey, dist).asInstanceOf[Question#AA]

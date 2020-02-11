@@ -21,9 +21,9 @@ import scala.xml.Node
 class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
   //override type QuestionOptionType = this.type
   override var _question: QuestionProduction = null
-  override var newQ: Question = null
+  override var _newQ: Question = null
   override var _grammar: Grammar = null
-  var fixed_id: UUID = this.id
+  //var fixed_id: UUID = this.id
 
 //  override type A = this.type
 //  override type AA = this.type
@@ -115,14 +115,14 @@ override protected[mturk] def toXML(randomize: Boolean, variant: Int): Node = {
     case QuestionType.EstimationQuestion => {
       newQ = new MTEstimationQuestion()
       newQ.text = bodyText
-      newQ.id = fixed_id
+      //newQ.id = fixed_id
       //todo dear lord these casts
       newQ.asInstanceOf[MTEstimationQuestion].toXML(randomize, variant)
     }
     case QuestionType.CheckboxQuestion => {
       newQ = new MTCheckboxQuestion()
       newQ.text = bodyText
-      newQ.id = fixed_id
+      //newQ.id = fixed_id
       val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(newQ.id.toString()), _, ""))
       newQ.asInstanceOf[MTCheckboxQuestion].options = options
       newQ.asInstanceOf[MTCheckboxQuestion].toXML(randomize, variant)

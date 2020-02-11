@@ -118,11 +118,28 @@ case class OverBudgetAnswers[T](need: BigDecimal,
 /**
   * SURVEYS
   */
-case class SurveyAnswers(values: Set[Map[String,Question#A]], // final dist (no worker ids)
+case class SurveyAnswers(values: Set[Map[String,Question#A]], // final dist (no worker ids) // todo values: Set[(String, Question#A)],?
                          override val cost: BigDecimal,
                          override val question: Survey,
-                         override val distribution: Array[Response[Set[(String,Question#A)]]]) // raw dist
-  extends AbstractSurveyAnswer(cost, question, distribution)
+                         override val distribution: Array[Response[Set[(String,Question#A)]]])
+  extends AbstractSurveyAnswer(cost, question, distribution) {
+  override def toString: String = {
+    println("Dan is right")
+    val s: Set[(String, Question#A)] = values.flatMap(m => {
+      m.map {
+        case (key, value) => {
+          (key, value)
+        }
+      }
+    })
+//    val s = values.map {
+//      case (key -> value) => {
+//        (key,value)
+//      }
+//    }
+    question.prettyPrintAnswer(s) // survey A = Set[(String,Question#A)] values.asInstanceOf[this.question.A]
+  }
+}
 case class NoSurveyAnswers(override val question: Survey) // raw dist
   extends AbstractSurveyAnswer(0, question, Array[Response[Set[(String,Question#A)]]]())
 case class IncompleteSurveyAnswers[T](values: Set[Map[String,Question#A]],

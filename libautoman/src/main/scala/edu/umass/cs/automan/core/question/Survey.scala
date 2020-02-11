@@ -1,6 +1,7 @@
 package edu.umass.cs.automan.core.question
 import java.util.{Date, UUID}
 
+import edu.umass.cs.automan.adapters.mturk.question.MTVariantQuestion
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.{AbstractSurveyAnswer, Answers, Outcome, SurveyAnswers, SurveyOutcome}
 import edu.umass.cs.automan.core.info.QuestionType
@@ -54,6 +55,33 @@ abstract class Survey extends Question {
 
   protected[automan] def getOutcome(adapter: AutomanAdapter): O = {
     SurveyOutcome(this, schedulerFuture(adapter)).asInstanceOf[O]
+  }
+
+  override protected[automan] def prettyPrintAnswer(answer: A) : String = {
+    val ansString: StringBuilder = new StringBuilder()
+    val ansMap: Map[String, Question#A] = answer.toMap
+    for(o <- _question_list) {
+      o match {
+        case vq: VariantQuestion => {
+          val ans = vq.prettyPrintAnswer(ansMap(vq.newQ.id.toString).asInstanceOf[vq.A])
+          ansString.append(ans)
+          //          val ans: Question#A = ansMap(vq.newQ.id.toString) // this is just a question identifier
+          //          val ppans = q.prettyPrintAnswer(ans.asInstanceOf[q.A])
+          //          ansString.append(ppans) //A: Set[(String,Question#A)] // so this is also getting the question ID
+        }
+        case q: Question => {
+          val ans: Question#A = ansMap(q.id.toString)
+          val ppans = q.prettyPrintAnswer(ans.asInstanceOf[q.A])
+          ansString.append(ppans) //A: Set[(String,Question#A)]
+        }
+      }
+//      val q: Question = o.question
+//      val ans: Question#A = ansMap(q.id.toString)
+//      val ppans = q.prettyPrintAnswer(ans.asInstanceOf[q.A])
+//      println(s"printing ${q.id} answer: ${ppans}")
+//      ansString.append(ppans) //A: Set[(String,Question#A)]
+    }
+    ansString.toString()
   }
 
   // TODO: Do we need?
