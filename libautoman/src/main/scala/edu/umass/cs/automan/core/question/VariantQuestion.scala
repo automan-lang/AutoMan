@@ -54,8 +54,8 @@ abstract class VariantQuestion extends Question {
   // Radio Button and RB Vector stuff
   def options: List[QuestionOptionType] = _options
   def options_=(os: List[QuestionOptionType]) { _options = os }
-  //def num_possibilities: BigInt = BigInt(_options.size)
-  def rb_num_possibilities: BigInt = { // TODO def for RBV is different
+  def rbv_num_possibilities: BigInt = BigInt(_options.size)
+  def rb_num_possibilities: BigInt = {
     val base = BigInt(2)
     base.pow(options.size)
   }
@@ -171,11 +171,20 @@ abstract class VariantQuestion extends Question {
       case QuestionType.CheckboxQuestion => {
         newQ.asInstanceOf[CheckboxQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[CheckboxQuestion#A], worker_id)
       }
+      case QuestionType.CheckboxDistributionQuestion => {
+        newQ.asInstanceOf[CheckboxVectorQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[CheckboxQuestion#A], worker_id)
+      }
       case QuestionType.FreeTextQuestion => {
         newQ.asInstanceOf[FreeTextQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[FreeTextQuestion#A], worker_id)
       }
       case QuestionType.FreeTextDistributionQuestion => {
         newQ.asInstanceOf[FreeTextVectorQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[FreeTextVectorQuestion#A], worker_id)
+      }
+      case QuestionType.RadioButtonQuestion => {
+        newQ.asInstanceOf[RadioButtonQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[RadioButtonQuestion#A], worker_id)
+      }
+      case QuestionType.RadioButtonDistributionQuestion => {
+        newQ.asInstanceOf[RadioButtonVectorQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[RadioButtonVectorQuestion#A], worker_id)
       }
     }
   }
@@ -190,11 +199,20 @@ abstract class VariantQuestion extends Question {
       case QuestionType.CheckboxQuestion => {
         newQ.asInstanceOf[CheckboxQuestion].prettyPrintAnswer(answer.asInstanceOf[CheckboxQuestion#A])
       }
+      case QuestionType.CheckboxDistributionQuestion => {
+        newQ.asInstanceOf[CheckboxVectorQuestion].prettyPrintAnswer(answer.asInstanceOf[CheckboxQuestion#A])
+      }
       case QuestionType.FreeTextQuestion => {
         newQ.asInstanceOf[FreeTextQuestion].prettyPrintAnswer(answer.asInstanceOf[FreeTextQuestion#A])
       }
       case QuestionType.FreeTextDistributionQuestion => {
         newQ.asInstanceOf[FreeTextVectorQuestion].prettyPrintAnswer(answer.asInstanceOf[FreeTextQuestion#A])
+      }
+      case QuestionType.RadioButtonQuestion => {
+        newQ.asInstanceOf[RadioButtonQuestion].prettyPrintAnswer(answer.asInstanceOf[RadioButtonQuestion#A])
+      }
+      case QuestionType.RadioButtonDistributionQuestion => {
+        newQ.asInstanceOf[RadioButtonVectorQuestion].prettyPrintAnswer(answer.asInstanceOf[RadioButtonVectorQuestion#A])
       }
     }
     //      question.questionType match {
@@ -224,11 +242,20 @@ abstract class VariantQuestion extends Question {
       case QuestionType.CheckboxQuestion => {
         newQ.asInstanceOf[CheckboxQuestion].composeOutcome(o.asInstanceOf[CheckboxQuestion#O], adapter).asInstanceOf[O]
       }
+      case QuestionType.CheckboxDistributionQuestion => {
+        newQ.asInstanceOf[CheckboxVectorQuestion].composeOutcome(o.asInstanceOf[CheckboxVectorQuestion#O], adapter).asInstanceOf[O]
+      }
       case QuestionType.FreeTextQuestion => {
         newQ.asInstanceOf[FreeTextQuestion].composeOutcome(o.asInstanceOf[FreeTextQuestion#O], adapter).asInstanceOf[O]
       }
       case QuestionType.FreeTextDistributionQuestion => {
         newQ.asInstanceOf[FreeTextVectorQuestion].composeOutcome(o.asInstanceOf[FreeTextVectorQuestion#O], adapter).asInstanceOf[O]
+      }
+      case QuestionType.RadioButtonQuestion => {
+        newQ.asInstanceOf[RadioButtonQuestion].composeOutcome(o.asInstanceOf[RadioButtonQuestion#O], adapter).asInstanceOf[O]
+      }
+      case QuestionType.RadioButtonDistributionQuestion => {
+        newQ.asInstanceOf[RadioButtonVectorQuestion].composeOutcome(o.asInstanceOf[RadioButtonVectorQuestion#O], adapter).asInstanceOf[O]
       }
     }
     //      question.questionType match {

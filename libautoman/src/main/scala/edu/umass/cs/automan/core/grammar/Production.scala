@@ -215,6 +215,25 @@ class CheckboxQuestionProduction(g: Grammar, body: TextProduction) extends Quest
   override def isLeafProd(): Boolean = false
 }
 
+class CheckboxesQuestionProduction(g: Grammar, body: TextProduction) extends QuestionProduction(g) {
+  override var _questionType: QuestionType = QuestionType.CheckboxDistributionQuestion
+
+  override def sample(): String = {
+    ???
+  }
+
+  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = ???
+
+  override def toQuestionText(variation: Int): (String, List[String]) = {
+    val (bod, opts): (StringBuilder, List[StringBuilder]) = Ranking.buildInstance(g, variation)
+    val bodS = bod.toString()
+    val optsS = opts.map(_.toString())//{for(e <- opts) e.toString()}
+    (bodS, optsS)
+  }
+
+  override def isLeafProd(): Boolean = false
+}
+
 class FreetextQuestionProduction(g: Grammar, body: TextProduction) extends QuestionProduction(g) {
   override var _questionType: QuestionType = QuestionType.FreeTextQuestion
 
@@ -249,8 +268,25 @@ class FreetextsQuestionProduction(g: Grammar, body: TextProduction) extends Ques
   override def isLeafProd(): Boolean = false
 }
 
-class RadioQuestionProduction(g: Grammar, body: TextProduction, options: List[OptionProduction]) extends QuestionProduction(g) {
+class RadioQuestionProduction(g: Grammar, body: TextProduction) extends QuestionProduction(g) {
   override var _questionType: QuestionType = QuestionType.RadioButtonQuestion
+
+  override def sample(): String = ???
+
+  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = ???
+
+  override def toQuestionText(variation: Int): (String, List[String]) = {
+    val (bod, opts): (StringBuilder, List[StringBuilder]) = Ranking.buildInstance(g, variation)
+    val bodS = bod.toString()
+    val optsS = opts.map(_.toString())//{for(e <- opts) e.toString()}
+    (bodS, optsS)
+  }
+
+  override def isLeafProd(): Boolean = false
+}
+
+class RadiosQuestionProduction(g: Grammar, body: TextProduction) extends QuestionProduction(g) {
+  override var _questionType: QuestionType = QuestionType.RadioButtonDistributionQuestion
 
   override def sample(): String = ???
 
