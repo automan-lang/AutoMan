@@ -19,6 +19,9 @@ abstract class RadioButtonVectorQuestion extends VectorQuestion {
   override protected[automan] def getQuestionType = QuestionType.RadioButtonDistributionQuestion
 
   override protected[automan] def prettyPrintAnswer(answer: Symbol): String = {
-    answer.toString().drop(1)
+    var optionMap: Map[Symbol, String] = Map[Symbol, String]() // map option symbols to option text
+    for(o <- options) optionMap += (o.question_id -> o.question_text)
+
+    "(" + optionMap(answer) + ")"
   }
 }

@@ -188,7 +188,7 @@ override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
       newQ.asInstanceOf[MTCheckboxQuestion].options = options
       newQ.asInstanceOf[MTCheckboxQuestion].toSurveyXML(randomize)
     }
-    case QuestionType.CheckboxQuestion => {
+    case QuestionType.CheckboxDistributionQuestion => {
       newQ = new MTCheckboxVectorQuestion()
       newQ.text = bodyText
       val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
