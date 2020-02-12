@@ -124,8 +124,14 @@ case class SurveyAnswers(values: Set[Map[String,Question#A]], // final dist (no 
                          override val distribution: Array[Response[Set[(String,Question#A)]]])
   extends AbstractSurveyAnswer(cost, question, distribution) {
   override def toString: String = {
+    val toRet: StringBuilder = new StringBuilder()
+
     println("Dan is sort of right")
-    val s = values.head("")
+    //val s = values.head("")
+    for(v <- values){
+      val s = v("")
+      toRet.append(question.prettyPrintAnswer(s.asInstanceOf[SurveyAnswers.this.question.A]))
+    }
 
 //    val s: Set[(String, Question#A)] = values.flatMap(m => {
 //      m.map {
@@ -139,7 +145,8 @@ case class SurveyAnswers(values: Set[Map[String,Question#A]], // final dist (no 
 //        (key,value)
 //      }
 //    }
-    question.prettyPrintAnswer(s.asInstanceOf[SurveyAnswers.this.question.A]) // survey A = Set[(String,Question#A)] values.asInstanceOf[this.question.A]
+    toRet.toString()
+    //question.prettyPrintAnswer(s.asInstanceOf[SurveyAnswers.this.question.A]) // survey A = Set[(String,Question#A)] values.asInstanceOf[this.question.A]
   }
 }
 case class NoSurveyAnswers(override val question: Survey) // raw dist
