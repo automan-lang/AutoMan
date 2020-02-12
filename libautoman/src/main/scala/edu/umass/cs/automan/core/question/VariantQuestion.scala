@@ -55,7 +55,7 @@ abstract class VariantQuestion extends Question {
   def options: List[QuestionOptionType] = _options
   def options_=(os: List[QuestionOptionType]) { _options = os }
   //def num_possibilities: BigInt = BigInt(_options.size)
-  def num_possibilities: BigInt = { // TODO def for RBV is different
+  def rb_num_possibilities: BigInt = { // TODO def for RBV is different
     val base = BigInt(2)
     base.pow(options.size)
   }
@@ -76,6 +76,38 @@ abstract class VariantQuestion extends Question {
   }
   protected var _min_value: Option[Double] = None
   protected var _max_value: Option[Double] = None
+
+  // Freetext stuff
+  protected var _allow_empty: Boolean = false
+  protected var _num_possibilities: BigInt = 1000
+  protected var _pattern: Option[String] = None
+  protected var _pattern_error_text: String = ""
+
+  def allow_empty_pattern_=(ae: Boolean) { _allow_empty = ae }
+  def allow_empty_pattern: Boolean = _allow_empty
+  def freetext_num_possibilities: BigInt = _pattern match {
+    case Some(p) =>
+      val count = PictureClause(p, _allow_empty)._2
+      if (count > 1000) 1000 else count
+    case None => 1000
+  }
+  def pattern: String = _pattern match { case Some(p) => p; case None => ".*" }
+  def pattern_=(p: String) { _pattern = Some(p) }
+  def pattern_error_text: String = _pattern_error_text
+  def pattern_error_text_=(p: String) { _pattern_error_text = p }
+  def regex: String = _pattern match {
+    case Some(p) => PictureClause(p, _allow_empty)._1
+    case None => "^.*$"
+  }
+
+  // MultiEstimate stuff
+//  private val _action = if (sandbox) {
+//    "https://workersandbox.mturk.com/mturk/externalSubmit"
+//  } else {
+//    "https://www.mturk.com/mturk/externalSubmit"
+//  }
+//  private var _iframe_height = 450
+//  private var _layout: Option[scala.xml.Node] = None
 
   def confidence_interval_=(ci: ConfidenceInterval) { _confidence_interval = ci }
   def confidence_interval: ConfidenceInterval = _confidence_interval
@@ -129,10 +161,13 @@ abstract class VariantQuestion extends Question {
     //newQ.toMockResponse(question_id, response_time, a, worker_id)
     question.questionType match { // todo changed from MTQs to regular Qs
       case QuestionType.EstimationQuestion => {
-        newQ.asInstanceOf[EstimationQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[MTEstimationQuestion#A], worker_id)
+        newQ.asInstanceOf[EstimationQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[EstimationQuestion#A], worker_id)
       }
       case QuestionType.CheckboxQuestion => {
-        newQ.asInstanceOf[CheckboxQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[MTCheckboxQuestion#A], worker_id)
+        newQ.asInstanceOf[CheckboxQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[CheckboxQuestion#A], worker_id)
+      }
+      case QuestionType.FreeTextQuestion => {
+        newQ.asInstanceOf[FreeTextQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[FreeTextQuestion#A], worker_id)
       }
     }
   }
@@ -146,6 +181,9 @@ abstract class VariantQuestion extends Question {
       }
       case QuestionType.CheckboxQuestion => {
         newQ.asInstanceOf[CheckboxQuestion].prettyPrintAnswer(answer.asInstanceOf[CheckboxQuestion#A])
+      }
+      case QuestionType.FreeTextQuestion => {
+        newQ.asInstanceOf[FreeTextQuestion].prettyPrintAnswer(answer.asInstanceOf[FreeTextQuestion#A])
       }
     }
     //      question.questionType match {
@@ -170,10 +208,13 @@ abstract class VariantQuestion extends Question {
     //newQ.composeOutcome(o.asInstanceOf[O], adapter).asInstanceOf[O]
     question.questionType match {
       case QuestionType.EstimationQuestion => {
-        newQ.asInstanceOf[MTEstimationQuestion].composeOutcome(o.asInstanceOf[MTEstimationQuestion#O], adapter).asInstanceOf[O]
+        newQ.asInstanceOf[EstimationQuestion].composeOutcome(o.asInstanceOf[EstimationQuestion#O], adapter).asInstanceOf[O]
       }
       case QuestionType.CheckboxQuestion => {
-        newQ.asInstanceOf[MTCheckboxQuestion].composeOutcome(o.asInstanceOf[MTCheckboxQuestion#O], adapter).asInstanceOf[O]
+        newQ.asInstanceOf[CheckboxQuestion].composeOutcome(o.asInstanceOf[CheckboxQuestion#O], adapter).asInstanceOf[O]
+      }
+      case QuestionType.FreeTextQuestion => {
+        newQ.asInstanceOf[FreeTextQuestion].composeOutcome(o.asInstanceOf[FreeTextQuestion#O], adapter).asInstanceOf[O]
       }
     }
     //      question.questionType match {

@@ -130,6 +130,11 @@ class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
       newQ.asInstanceOf[MTCheckboxQuestion].options = options
       newQ.asInstanceOf[MTCheckboxQuestion].toXML(randomize)
     }
+    case QuestionType.FreeTextQuestion => {
+      newQ = new MTFreeTextQuestion()
+      newQ.text = bodyText
+      newQ.asInstanceOf[MTFreeTextQuestion].toXML(randomize)
+    }
   }
 }
 
@@ -158,6 +163,12 @@ override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
       val options: List[MTQuestionOption] = opts.map(new MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
       newQ.asInstanceOf[MTCheckboxQuestion].options = options
       newQ.asInstanceOf[MTCheckboxQuestion].toSurveyXML(randomize)
+    }
+    case QuestionType.FreeTextQuestion => {
+      newQ = new MTFreeTextQuestion()
+      newQ.text = bodyText
+      //todo dear lord these casts
+      newQ.asInstanceOf[MTFreeTextQuestion].toSurveyXML(randomize)
     }
   }
 }
