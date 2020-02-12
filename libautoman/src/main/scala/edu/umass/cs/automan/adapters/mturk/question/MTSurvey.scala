@@ -59,9 +59,9 @@ class MTSurvey extends Survey with MTurkQuestion {
     // return Set[(selection, ...
   }
 
-  override protected[mturk] def toXML(randomize: Boolean, variant: Int): Node = {
+  override protected[mturk] def toXML(randomize: Boolean): Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
-      { XMLBody(randomize, variant) }
+      { XMLBody(randomize) }
     </QuestionForm>
   }
 
@@ -87,7 +87,7 @@ class MTSurvey extends Survey with MTurkQuestion {
       q match {
         case vq: MTVariantQuestion => {
           val ans = vq.prettyPrintAnswer(ansMap(vq.newQ.id.toString).asInstanceOf[vq.A])
-          ansString.append(ans)
+          ansString.append(ans + "\n")
 //          val ans: Question#A = ansMap(vq.newQ.id.toString) // this is just a question identifier
 //          val ppans = q.prettyPrintAnswer(ans.asInstanceOf[q.A])
 //          ansString.append(ppans) //A: Set[(String,Question#A)] // so this is also getting the question ID
@@ -95,7 +95,7 @@ class MTSurvey extends Survey with MTurkQuestion {
         case _ => {
           val ans: Question#A = ansMap(q.id.toString)
           val ppans = q.prettyPrintAnswer(ans.asInstanceOf[q.A])
-          ansString.append(ppans) //A: Set[(String,Question#A)]
+          ansString.append(ppans + "\n") //A: Set[(String,Question#A)]
         }
       }
       //val ans: Question#A = ansMap(q.id.toString)
@@ -124,12 +124,12 @@ class MTSurvey extends Survey with MTurkQuestion {
     * @param randomize Randomize option order?
     * @return XML
     */
-  override protected[mturk] def XMLBody(randomize: Boolean, variant: Int): Seq[Node] = {
-    val node = _question_list.map(_.question.asInstanceOf[MTurkQuestion].toSurveyXML(randomize, variant))
+  override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = {
+    val node = _question_list.map(_.question.asInstanceOf[MTurkQuestion].toSurveyXML(randomize))
     node
   }
 
-  override protected[mturk] def toSurveyXML(randomize: Boolean, variant: Int): Node = {
+  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
     throw new Exception("Why are you calling this?")
   }
 }

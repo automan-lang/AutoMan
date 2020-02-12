@@ -273,7 +273,7 @@ object MTurkMethods {
 
     // render XML
     // TODO get rid of hardcoding
-    val xml = question.asInstanceOf[MTurkQuestion].toXML(randomize = true, 0).toString()
+    val xml = question.asInstanceOf[MTurkQuestion].toXML(randomize = true).toString()
     DebugLog("Posting task XML:\n" + xml.toString, LogLevelDebug(), LogType.ADAPTER, question.id)
 
     var hit = backend.createHITWithHITType(

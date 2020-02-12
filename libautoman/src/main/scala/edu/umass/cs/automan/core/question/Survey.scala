@@ -64,7 +64,7 @@ abstract class Survey extends Question {
       o match {
         case vq: VariantQuestion => {
           val ans = vq.prettyPrintAnswer(ansMap(vq.newQ.id.toString).asInstanceOf[vq.A])
-          ansString.append(ans)
+          ansString.append(ans + "\n")
           //          val ans: Question#A = ansMap(vq.newQ.id.toString) // this is just a question identifier
           //          val ppans = q.prettyPrintAnswer(ans.asInstanceOf[q.A])
           //          ansString.append(ppans) //A: Set[(String,Question#A)] // so this is also getting the question ID
@@ -72,7 +72,7 @@ abstract class Survey extends Question {
         case q: Question => {
           val ans: Question#A = ansMap(q.id.toString)
           val ppans = q.prettyPrintAnswer(ans.asInstanceOf[q.A])
-          ansString.append(ppans) //A: Set[(String,Question#A)]
+          ansString.append(ppans + "\n") //A: Set[(String,Question#A)]
         }
       }
 //      val q: Question = o.question

@@ -26,7 +26,7 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
   // public API
   def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
-    new String(Hex.encodeHex(md.digest(toXML(randomize = false, 0).toString().getBytes)))
+    new String(Hex.encodeHex(md.digest(toXML(randomize = false).toString().getBytes)))
   }
   override def description: String = _description match { case Some(d) => d; case None => this.title }
   def layout_=(x: scala.xml.Node) { _layout = Some(x) }
@@ -126,9 +126,9 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
       }.toString()
   }
 
-  def toXML(randomize: Boolean, variant: Int): scala.xml.Node = {
+  override protected[mturk] def toXML(randomize: Boolean): scala.xml.Node = {
     <HTMLQuestion xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2011-11-11/HTMLQuestion.xsd">
-      { XMLBody(randomize, variant) }
+      { XMLBody(randomize) }
     </HTMLQuestion>
   }
 
@@ -139,7 +139,7 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
     * @param randomize Randomize option order?
     * @return XML
     */
-  override protected[mturk] def XMLBody(randomize: Boolean, variant: Int): Seq[Node] = {
+  override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = {
     {
         <HTMLContent> { scala.xml.PCData(html()) }
         </HTMLContent>
@@ -148,5 +148,5 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
   }
 
   // TODO this may not be right
-  override protected[mturk] def toSurveyXML(randomize: Boolean, variant: Int): Node = toXML(randomize, variant)
+  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = toXML(randomize)
 }

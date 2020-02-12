@@ -19,7 +19,7 @@ class MTFreeTextVectorQuestion extends FreeTextVectorQuestion with MTurkQuestion
   // public API
   def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
-    new String(Hex.encodeHex(md.digest(toXML(randomize = false, 0).toString().getBytes)))
+    new String(Hex.encodeHex(md.digest(toXML(randomize = false).toString().getBytes)))
   }
   override def description: String = _description match { case Some(d) => d; case None => this.title }
   override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
@@ -39,9 +39,9 @@ class MTFreeTextVectorQuestion extends FreeTextVectorQuestion with MTurkQuestion
 
     (x \\ "Answer" \ "FreeText").text
   }
-  def toXML(randomize: Boolean, variant: Int): scala.xml.Node = {
+  override protected[mturk] def toXML(randomize: Boolean): scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
-      { XMLBody(randomize, variant) }
+      { XMLBody(randomize) }
     </QuestionForm>
   }
 
@@ -52,13 +52,13 @@ class MTFreeTextVectorQuestion extends FreeTextVectorQuestion with MTurkQuestion
     * @param randomize Randomize option order?
     * @return XML
     */
-  override protected[mturk] def XMLBody(randomize: Boolean, variant: Int): Seq[Node] = {
+  override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = {
     Seq(
-      toSurveyXML(randomize, variant)
+      toSurveyXML(randomize)
     )
   }
 
-  override protected[mturk] def toSurveyXML(randomize: Boolean, variant: Int): Node = {
+  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
     <Question>
       <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
       <QuestionContent>

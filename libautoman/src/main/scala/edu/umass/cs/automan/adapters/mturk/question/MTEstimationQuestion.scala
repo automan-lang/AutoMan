@@ -20,7 +20,7 @@ class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
   // public API
   def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
-    val toRet = new String(Hex.encodeHex(md.digest(toXML(randomize = false, 0).toString().getBytes)))
+    val toRet = new String(Hex.encodeHex(md.digest(toXML(randomize = false).toString().getBytes)))
     toRet
   }
   override def description: String = _description match { case Some(d) => d; case None => this.title }
@@ -31,7 +31,7 @@ class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
   override def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID) : EstimationMockResponse = {
     EstimationMockResponse(question_id, response_time, a, worker_id)
   }
-  def fromXML(x: scala.xml.Node) : A = {
+  override protected[mturk] def fromXML(x: scala.xml.Node) : A = {
     // There is a SINGLE answer here, like this:
     //    <Answer>
     //      <QuestionIdentifier>721be34c-c867-42ce-8acd-829e64ae62dd</QuestionIdentifier>
@@ -41,9 +41,10 @@ class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
 
     (x \\ "Answer" \ "FreeText").text.toDouble
   }
-  def toXML(randomize: Boolean, variant: Int): scala.xml.Node = {
+
+  override protected[mturk] def toXML(randomize: Boolean): scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
-      { XMLBody(randomize, variant) }
+      { XMLBody(randomize) }
     </QuestionForm>
   }
 
@@ -103,13 +104,13 @@ class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
     * @param randomize Randomize option order?
     * @return XML
     */
-  override protected[mturk] def XMLBody(randomize: Boolean, variant: Int): Seq[Node] = {
+  override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = {
     Seq(
-      toSurveyXML(randomize, variant)
+      toSurveyXML(randomize)
     )
   }
 
-  override protected[mturk] def toSurveyXML(randomize: Boolean, variant: Int): Node = {
+  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
     <Question>
       <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
       <QuestionContent>

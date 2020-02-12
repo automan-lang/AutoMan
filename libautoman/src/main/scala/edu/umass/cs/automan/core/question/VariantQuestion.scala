@@ -127,12 +127,12 @@ abstract class VariantQuestion extends Question {
 
   override protected[automan] def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID): MockResponse = {
     //newQ.toMockResponse(question_id, response_time, a, worker_id)
-    question.questionType match {
+    question.questionType match { // todo changed from MTQs to regular Qs
       case QuestionType.EstimationQuestion => {
-        newQ.asInstanceOf[MTEstimationQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[MTEstimationQuestion#A], worker_id)
+        newQ.asInstanceOf[EstimationQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[MTEstimationQuestion#A], worker_id)
       }
       case QuestionType.CheckboxQuestion => {
-        newQ.asInstanceOf[MTCheckboxQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[MTCheckboxQuestion#A], worker_id)
+        newQ.asInstanceOf[CheckboxQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[MTCheckboxQuestion#A], worker_id)
       }
     }
   }
