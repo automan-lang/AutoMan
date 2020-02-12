@@ -172,7 +172,7 @@ abstract class VariantQuestion extends Question {
         newQ.asInstanceOf[CheckboxQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[CheckboxQuestion#A], worker_id)
       }
       case QuestionType.CheckboxDistributionQuestion => {
-        newQ.asInstanceOf[CheckboxVectorQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[CheckboxQuestion#A], worker_id)
+        newQ.asInstanceOf[CheckboxVectorQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[CheckboxVectorQuestion#A], worker_id)
       }
       case QuestionType.FreeTextQuestion => {
         newQ.asInstanceOf[FreeTextQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[FreeTextQuestion#A], worker_id)
@@ -200,7 +200,7 @@ abstract class VariantQuestion extends Question {
         newQ.asInstanceOf[CheckboxQuestion].prettyPrintAnswer(answer.asInstanceOf[CheckboxQuestion#A])
       }
       case QuestionType.CheckboxDistributionQuestion => {
-        newQ.asInstanceOf[CheckboxVectorQuestion].prettyPrintAnswer(answer.asInstanceOf[CheckboxQuestion#A])
+        newQ.asInstanceOf[CheckboxVectorQuestion].prettyPrintAnswer(answer.asInstanceOf[CheckboxVectorQuestion#A])
       }
       case QuestionType.FreeTextQuestion => {
         newQ.asInstanceOf[FreeTextQuestion].prettyPrintAnswer(answer.asInstanceOf[FreeTextQuestion#A])
