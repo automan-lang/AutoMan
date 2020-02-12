@@ -100,6 +100,11 @@ abstract class VariantQuestion extends Question {
     case None => "^.*$"
   }
 
+  // FTVector stuff
+  private var _sample_size: Int = 30
+  def sample_size_=(n: Int) { _sample_size = n }
+  def sample_size : Int = _sample_size
+
   // MultiEstimate stuff
 //  private val _action = if (sandbox) {
 //    "https://workersandbox.mturk.com/mturk/externalSubmit"
@@ -169,6 +174,9 @@ abstract class VariantQuestion extends Question {
       case QuestionType.FreeTextQuestion => {
         newQ.asInstanceOf[FreeTextQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[FreeTextQuestion#A], worker_id)
       }
+      case QuestionType.FreeTextDistributionQuestion => {
+        newQ.asInstanceOf[FreeTextVectorQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[FreeTextVectorQuestion#A], worker_id)
+      }
     }
   }
 
@@ -184,6 +192,9 @@ abstract class VariantQuestion extends Question {
       }
       case QuestionType.FreeTextQuestion => {
         newQ.asInstanceOf[FreeTextQuestion].prettyPrintAnswer(answer.asInstanceOf[FreeTextQuestion#A])
+      }
+      case QuestionType.FreeTextDistributionQuestion => {
+        newQ.asInstanceOf[FreeTextVectorQuestion].prettyPrintAnswer(answer.asInstanceOf[FreeTextQuestion#A])
       }
     }
     //      question.questionType match {
@@ -215,6 +226,9 @@ abstract class VariantQuestion extends Question {
       }
       case QuestionType.FreeTextQuestion => {
         newQ.asInstanceOf[FreeTextQuestion].composeOutcome(o.asInstanceOf[FreeTextQuestion#O], adapter).asInstanceOf[O]
+      }
+      case QuestionType.FreeTextDistributionQuestion => {
+        newQ.asInstanceOf[FreeTextVectorQuestion].composeOutcome(o.asInstanceOf[FreeTextVectorQuestion#O], adapter).asInstanceOf[O]
       }
     }
     //      question.questionType match {

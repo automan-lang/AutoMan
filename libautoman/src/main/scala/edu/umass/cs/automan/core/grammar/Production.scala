@@ -225,6 +225,23 @@ class FreetextQuestionProduction(g: Grammar, body: TextProduction) extends Quest
   override def toQuestionText(variation: Int): (String, List[String]) = {
     val (bod, opts): (StringBuilder, List[StringBuilder]) = Ranking.buildInstance(g, variation)
     val bodS = bod.toString()
+    val optsS = opts.map(_.toString())//{for(e <- opts) e.toString()} //todo get rid of opts
+    (bodS, optsS)
+  }
+
+  override def isLeafProd(): Boolean = false
+}
+
+class FreetextsQuestionProduction(g: Grammar, body: TextProduction) extends QuestionProduction(g) {
+  override var _questionType: QuestionType = QuestionType.FreeTextQuestion
+
+  override def sample(): String = ???
+
+  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = ???
+
+  override def toQuestionText(variation: Int): (String, List[String]) = {
+    val (bod, opts): (StringBuilder, List[StringBuilder]) = Ranking.buildInstance(g, variation)
+    val bodS = bod.toString()
     val optsS = opts.map(_.toString())//{for(e <- opts) e.toString()}
     (bodS, optsS)
   }

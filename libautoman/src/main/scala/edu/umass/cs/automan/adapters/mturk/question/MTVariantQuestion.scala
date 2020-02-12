@@ -135,6 +135,11 @@ class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
       newQ.text = bodyText
       newQ.asInstanceOf[MTFreeTextQuestion].toXML(randomize)
     }
+    case QuestionType.FreeTextDistributionQuestion => {
+      newQ = new MTFreeTextQuestion()
+      newQ.text = bodyText
+      newQ.asInstanceOf[MTFreeTextVectorQuestion].toXML(randomize)
+    }
   }
 }
 

@@ -776,6 +776,73 @@ trait DSL {
     a.VariantQuestion(initf)
   }
 
+  def freetextsGrammar[A <: AutomanAdapter](
+                                      allow_empty_pattern: Boolean = false,
+                                      sample_size: Int = MagicNumbers.DefaultSampleSizeForDistrib,
+                                      before_filter: String => String = (a: String) => a,
+                                      budget: BigDecimal = MagicNumbers.DefaultBudget,
+                                      dont_reject: Boolean = true,
+                                      dry_run: Boolean = false,
+                                      image_alt_text: String = null,
+                                      image_url: String = null,
+                                      grammar: Grammar = null,
+                                      initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
+                                      minimum_spawn_policy: MinimumSpawnPolicy = null,
+                                      mock_answers: Iterable[MockAnswer[String]] = null,
+                                      pay_all_on_failure: Boolean = true,
+                                      pattern: String = null,
+                                      pattern_error_text: String = null,
+                                      question: QuestionProduction,
+                                      question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
+                                      //text: String,
+                                      title: String = null,
+                                      variant: Integer,
+                                      wage: BigDecimal = MagicNumbers.USFederalMinimumWage
+                                    )
+                                    (implicit a: A): VariantOutcome[_] = {
+    def initf[Q <: VariantQuestion](q: Q) = {
+      // mandatory parameters
+      q.question = question
+      q.grammar = grammar
+      q.variant = variant
+
+      // mandatory parameters with sane defaults
+      q.allow_empty_pattern = allow_empty_pattern
+      q.sample_size = sample_size
+      q.budget = budget
+      q.dont_reject = dont_reject
+      q.dry_run = dry_run
+      q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
+      q.pay_all_on_failure = pay_all_on_failure
+      q.question_timeout_multiplier = question_timeout_multiplier
+
+      // optional parameters
+      if (image_alt_text != null) {
+        q.image_alt_text = image_alt_text
+      }
+      if (image_url != null) {
+        q.image_url = image_url
+      }
+      if (pattern != null) {
+        q.pattern = pattern
+      }
+      if (pattern_error_text != null) {
+        q.pattern_error_text = pattern_error_text
+      }
+      if (title != null) {
+        q.title = title
+      }
+//      if (mock_answers != null) {
+//        q.mock_answers = mock_answers
+//      }
+      if (minimum_spawn_policy != null) {
+        q.minimum_spawn_policy = minimum_spawn_policy
+      }
+    }
+
+    a.VariantQuestion(initf)
+  }
+
   // grammar: Grammar = null,
   // question: QuestionProduction,
   // variant: Integer,
