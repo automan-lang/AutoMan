@@ -23,6 +23,7 @@ class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
   override var _question: QuestionProduction = null
   override var _newQ: Question = null
   override var _grammar: Grammar = null
+  override var _variant: Integer = null
   //var fixed_id: UUID = this.id
 
 //  override type A = this.type
@@ -107,8 +108,9 @@ class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
     * @param variant which variant to generate?
     * @return XML
     */
+    // todo remove variant param
 override protected[mturk] def toXML(randomize: Boolean, variant: Int): Node = {
-  val (body, opts) = _question.toQuestionText(variant)
+  val (body, opts) = _question.toQuestionText(this.variant)
   val bodyText: String = body
 
   question.questionType match {
@@ -117,15 +119,15 @@ override protected[mturk] def toXML(randomize: Boolean, variant: Int): Node = {
       newQ.text = bodyText
       //newQ.id = fixed_id
       //todo dear lord these casts
-      newQ.asInstanceOf[MTEstimationQuestion].toXML(randomize, variant)
+      newQ.asInstanceOf[MTEstimationQuestion].toXML(randomize, this.variant)
     }
     case QuestionType.CheckboxQuestion => {
       newQ = new MTCheckboxQuestion()
       newQ.text = bodyText
       //newQ.id = fixed_id
-      val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(newQ.id.toString()), _, ""))
+      val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
       newQ.asInstanceOf[MTCheckboxQuestion].options = options
-      newQ.asInstanceOf[MTCheckboxQuestion].toXML(randomize, variant)
+      newQ.asInstanceOf[MTCheckboxQuestion].toXML(randomize, this.variant)
     }
   }
 }
@@ -139,7 +141,7 @@ override protected[mturk] def toXML(randomize: Boolean, variant: Int): Node = {
     */
 override protected[mturk] def XMLBody(randomize: Boolean, variant: Int): Seq[Node] = ???
 override protected[mturk] def toSurveyXML(randomize: Boolean, variant: Int): Node = {
-  val (body, opts) = _question.toQuestionText(variant)
+  val (body, opts) = _question.toQuestionText(this.variant)
   val bodyText: String = body
 
   question.questionType match {
@@ -147,14 +149,14 @@ override protected[mturk] def toSurveyXML(randomize: Boolean, variant: Int): Nod
       newQ = new MTEstimationQuestion()
       newQ.text = bodyText
       //todo dear lord these casts
-      newQ.asInstanceOf[MTEstimationQuestion].toSurveyXML(randomize, variant)
+      newQ.asInstanceOf[MTEstimationQuestion].toSurveyXML(randomize, this.variant)
     }
     case QuestionType.CheckboxQuestion => {
       newQ = new MTCheckboxQuestion()
       newQ.text = bodyText
-      val options: List[MTQuestionOption] = opts.map(new MTQuestionOption(Symbol(newQ.id.toString()), _, ""))
+      val options: List[MTQuestionOption] = opts.map(new MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
       newQ.asInstanceOf[MTCheckboxQuestion].options = options
-      newQ.asInstanceOf[MTCheckboxQuestion].toSurveyXML(randomize, variant)
+      newQ.asInstanceOf[MTCheckboxQuestion].toSurveyXML(randomize, this.variant)
     }
   }
 }

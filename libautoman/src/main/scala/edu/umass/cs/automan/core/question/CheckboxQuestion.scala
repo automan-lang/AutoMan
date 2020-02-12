@@ -45,6 +45,11 @@ abstract class CheckboxQuestion extends DiscreteScalarQuestion {
   }
 
   override protected[automan] def prettyPrintAnswer(answer: Set[Symbol]): String = {
-    "(" + answer.map(_.toString().drop(1)).mkString(", ") + ")"
+    var optionMap: Map[Symbol, String] = Map[Symbol, String]() // map option symbols to option text
+    for(o <- options) optionMap += (o.question_id -> o.question_text)
+
+    "(" + answer.map(optionMap(_)).mkString(", ") + ")"
+
+    //"(" + answer.map(_.toString().drop(1)).mkString(", ") + ")"
   }
 }

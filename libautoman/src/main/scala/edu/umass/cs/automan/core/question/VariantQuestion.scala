@@ -33,6 +33,7 @@ abstract class VariantQuestion extends Question {
   protected var _options: List[QuestionOptionType] = List[QuestionOptionType]()
   protected var _questions: List[Question] = List[Question]()
   protected var _grammar: Grammar
+  protected var _variant: Integer
 
   // Special variant stuff
   def question: QuestionProduction = _question
@@ -47,6 +48,8 @@ abstract class VariantQuestion extends Question {
   }
   def newQ: Question = _newQ
   def newQ_=(q: Question) { _newQ = q }
+  def variant: Integer = _variant
+  def variant_=(v: Integer) { _variant = v }
 
   // Radio Button and RB Vector stuff
   def options: List[QuestionOptionType] = _options
@@ -134,6 +137,7 @@ abstract class VariantQuestion extends Question {
     }
   }
 
+  // todo move to MTVQ?
   override protected[automan] def prettyPrintAnswer(answer: A): String = {
     //newQ.prettyPrintAnswer(answer.asInstanceOf[A])
     question.questionType match {

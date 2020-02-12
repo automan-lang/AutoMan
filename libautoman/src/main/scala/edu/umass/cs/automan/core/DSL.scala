@@ -595,6 +595,7 @@ trait DSL {
                                             //text: String,
                                             question: QuestionProduction,
                                             title: String = null,
+                                            variant: Integer,
                                             wage: BigDecimal = MagicNumbers.USFederalMinimumWage
                                           )
                                           (implicit a: A): VariantOutcome[_] = {
@@ -604,6 +605,7 @@ trait DSL {
       //q#O = o
       q.question = question
       q.grammar = grammar
+      q.variant = variant
 
       // mandatory parameters with sane defaults
       q.confidence_interval = confidence_interval
@@ -668,6 +670,7 @@ trait DSL {
                                            question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
                                            //text: String,
                                            title: String = null,
+                                           variant: Integer,
                                            wage: BigDecimal = MagicNumbers.USFederalMinimumWage
                                           )
                                           (implicit a: A): VariantOutcome[_] = {
@@ -677,6 +680,7 @@ trait DSL {
       //q#O = o
       q.question = question
       q.grammar = grammar
+      q.variant = variant
 
       // mandatory parameters with sane defaults
       q.confidence = confidence
