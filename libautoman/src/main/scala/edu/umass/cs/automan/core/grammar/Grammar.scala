@@ -42,101 +42,120 @@ case class Grammar(_rules: Map[String, Production], _startSymbol: String){
     opts
   }
 
-  // bind variables to vals
-  def bind(assignment: Array[Int], assignmentPos: Int, alreadyBound: Set[String]): Scope = {
+  /**
+    * Binds Names to Choice selections based on assignment
+    * @param assignment The variable assignments
+    * @param assignmentPos Where are we in the assignment array?
+    * @param bound The Names already bound to selections
+    * @return A tuple: the Scope containing the bindings, the new assignment position, and what's been bound.
+    */
+  def bind(assignment: Array[Int], assignmentPos: Int, bound: Set[String]): (Scope, Int, Set[String]) = {
+    //var curAssignment = assignment
     var curPos = assignmentPos
-    var assigned = alreadyBound
+    var curBound = bound
 
-    val samp: Option[Production] = _rules.get(_curSym) // get Production associated with symbol from grammar
+    val samp: Option[Production] = rules.get(curSymbol)
     samp match {
-      case Some(samp) => {
-        samp match {
+      case Some(s) => {
+        s match {
+          // This should only trigger when we get the start symbol
           case name: Name => {
             curSymbol = name.sample()
-            bind(assignment, curPos, alreadyBound)
+            bind(assignment, curPos, curBound)
           }
-          case choice: Choices => { // bind choicename to specified choice
-            if(!alreadyBound.contains(_curSym)) {
-              val choice = _rules.get(_curSym) // redundant?
-              choice match { // will a name ever go to anything but a choice?
-                case Some(prod) => {
-                  prod match {
-                    case choice: Choices => {
-                      val newScope: Scope = new Scope(this, curPos)
-                      newScope.assign(_curSym, choice.getOptions()(assignment(curPos)).sample())
-                      newScope
+          // We'll hit a Sequence first and in any Options
+          case seq: Sequence => {
+            val newScope = new Scope(this, curPos)
+            for (n <- seq.getList()) {
+              n match {
+                case name: Name => { // Sample name and run again
+                  val toSamp = name.sample()
+                  if(!curBound.contains(toSamp)){
+                    curBound = curBound + toSamp
+                    curSymbol = toSamp
+                    val (toCombine, newPos, newBound) = bind(assignment, curPos, curBound)
+                    if(toCombine.getBindings().size > 0){ // indicates something bound, so we're going to combine them
+                      newScope.combineScope(toCombine)
+                      curPos = newPos
+                      curBound = newBound
                     }
                   }
                 }
-                case None => {
-                  throw new Error("Name is invalid; there should be a choice here.")
+                case func: Function => { //todo combine with above
+                  val toSamp = func.sample()
+                  if(!curBound.contains(toSamp)){
+                    curBound = curBound + toSamp // adding to curBound here
+                    curSymbol = toSamp
+                    val (toCombine, newPos, newBound) = bind(assignment, curPos, curBound)
+                    if(toCombine.getBindings().size > 0){ // indicates something bound, so we're going to combine them
+                      newScope.combineScope(toCombine)
+                      curPos = newPos
+                      curBound = newBound
+                    }
+                  }
                 }
+                case p: Production => {} // Nothing else matters
               }
-            } else {
-              val newScope = new Scope(this, curPos)
-              newScope // return empty scope
             }
+            (newScope, curPos, curBound)
           }
+          // Choices trigger bindings. Make Scope containing assignment of this name
+            // to the assignment specified in the assignment array
+          case choice: Choices => {
+            val toRetScope = new Scope(this, curPos)
+            toRetScope.assign(curSymbol, choice.getOptions()(assignment(curPos)).sample())
+            curPos = curPos + 1 // incrementing curPos here
+            (toRetScope, curPos, curBound)
+          }
+          // We came to an OptionProd through a Name
           case opt: OptionProduction => {
-            opt.getText() match {
-              case name: Name => {
-                curSymbol = name.sample()
-                bind(assignment, curPos, alreadyBound)
-              }
-              case nt: Sequence => { //todo not sure if right
+            val internalProd = opt.getText()
+            internalProd match {
+              case seq: Sequence => { // there should be a sequence inside every OptionProduction
                 val newScope = new Scope(this, curPos)
-                for(n <- nt.getList()) {
+                for(n <- seq.getList()) {
                   n match {
-                    case name: Name => { // combine
-                      curSymbol = name.sample() // TODO will this cause problems?
-                      val toCombine = bind(assignment, curPos, assigned)
-                      if(toCombine.getBindings().size == 1) { // indicates that we bound something
-                        assigned = assigned + name.sample()
-                        curPos += 1
-                        newScope.combineScope(toCombine)
-                        newScope.setPos(curPos) // curPos + 1?
+                    case name: Name => { // Sample name and run again
+                      val toSamp = name.sample()
+                      if(!curBound.contains(toSamp)){
+                        curBound = curBound + toSamp
+                        curSymbol = toSamp
+                        val (toCombine, newPos, newBound) = bind(assignment, curPos, curBound)
+                        if(toCombine.getBindings().size > 0){ // indicates something bound, so we're going to combine them
+                          newScope.combineScope(toCombine)
+                          curPos = newPos
+                          curBound = newBound
+                        }
                       }
                     }
-                    case p: Production => {}
+                    case func: Function => { //todo combine with above
+                      val toSamp = func.sample()
+                      if(!curBound.contains(toSamp)){
+                        curBound = curBound + toSamp // adding to curBound here
+                        curSymbol = toSamp
+                        val (toCombine, newPos, newBound) = bind(assignment, curPos, curBound)
+                        if(toCombine.getBindings().size > 0){ // indicates something bound, so we're going to combine them
+                          newScope.combineScope(toCombine)
+                          curPos = newPos
+                          curBound = newBound
+                        }
+                      }
+                    }
+                    case p: Production => {} // Nothing else matters
                   }
                 }
-                newScope
+                (newScope, curPos, curBound)
               }
-
+              case p: Production => { throw new Error("There should be a Sequence inside ever OptionProduction.")}
             }
-            /**
-              *
-              */
-            //            val newScope = new Scope(this, curPos)
-//            newScope
-          }
-          case nt: Sequence => { // The first case; combines all the bindings into one scope
-            val newScope = new Scope(this, curPos)
-            for(n <- nt.getList()) {
-              n match {
-                case name: Name => { // combine
-                  curSymbol = name.sample() // TODO will this cause problems?
-                  val toCombine = bind(assignment, curPos, assigned)
-                  if(toCombine.getBindings().size == 1) { // indicates that we bound something
-                    assigned = assigned + name.sample()
-                    curPos += 1
-                    newScope.combineScope(toCombine)
-                    newScope.setPos(curPos + 1)
-                  }
-                }
-                case p: Production => {}
-              }
-            }
-            newScope
           }
         }
       }
-      case None => throw new Exception(s"Symbol ${_curSym} could not be found")
+      case None => throw new Error(s"${curSymbol} could not be found.")
     }
   }
 
   // build a string given a scope
-  //todo is this used?
   def buildString(scope: Scope, soFar: StringBuilder): StringBuilder = {
     // find start
     // sample symbol associated with it

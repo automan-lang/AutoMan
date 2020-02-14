@@ -3,8 +3,8 @@ package edu.umass.cs.automan.core.grammar
 class Scope(val grammar: Grammar, val curPos: Int) { // or string -> string?
   // grammar is grammar scope is associated with
   // curPos is the position in assignment array at which this production was assigned
-  var varBindings: Map[String,String] = Map[String, String]()
-  var pos: Int = curPos
+  private var varBindings: Map[String,String] = Map[String, String]()
+  private var pos: Int = curPos
 
   def assign(name: String, value: String): Unit = {
     if (grammar.rules.contains(name)){

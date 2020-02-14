@@ -56,7 +56,7 @@ object Ranking {
                     soFarCounted = newCount
                   }
                 }
-                case func: Function => { // todo deal with this
+                case func: Function => { // todo combine with above if possible
                   val toSamp = func.sample()
                   if(!soFarCounted.contains(toSamp)) { // only count if haven't seen it yet
                     soFarCounted = soFarCounted + toSamp
@@ -165,7 +165,7 @@ object Ranking {
     val assignment = unrank(choice, bases.toArray) // get the assignment from the number todo fix
     //println(assignment)
     grammar.curSymbol = grammar.startSymbol // TODO make sure not resetting for options
-    val scope = grammar.bind(assignment.toArray, 0, Set())
+    val (scope, p, s) = grammar.bind(assignment.toArray, 0, Set())
     grammar.curSymbol = grammar.startSymbol
     val (bod, opts) = grammar.buildQandOpts(scope, new StringBuilder, ListBuffer[StringBuilder](), new StringBuilder, true)
     (bod, opts.toList)
