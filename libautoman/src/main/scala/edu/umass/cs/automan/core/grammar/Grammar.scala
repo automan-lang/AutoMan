@@ -30,7 +30,7 @@ case class Grammar(_rules: Map[String, Production], _startSymbol: String){
   def curSymbol_= (newSym: String): Unit = _curSym = newSym
 
   // Count the number of options possible in this grammar
-  def count(soFar: Int, counted: mutable.HashSet[String]): Int = {
+  def count(soFar: Int, counted: Set[String]): Int = {
     val samp: Option[Production] = _rules.get(curSymbol) // get Production associated with symbol from grammar
     var opts = 0 // TODO will this only work if it starts with an addition?
     samp match {
@@ -78,8 +78,37 @@ case class Grammar(_rules: Map[String, Production], _startSymbol: String){
             }
           }
           case opt: OptionProduction => {
-            val newScope = new Scope(this, curPos)
-            newScope
+            opt.getText() match {
+              case name: Name => {
+                curSymbol = name.sample()
+                bind(assignment, curPos, alreadyBound)
+              }
+              case nt: Sequence => { //todo not sure if right
+                val newScope = new Scope(this, curPos)
+                for(n <- nt.getList()) {
+                  n match {
+                    case name: Name => { // combine
+                      curSymbol = name.sample() // TODO will this cause problems?
+                      val toCombine = bind(assignment, curPos, assigned)
+                      if(toCombine.getBindings().size == 1) { // indicates that we bound something
+                        assigned = assigned + name.sample()
+                        curPos += 1
+                        newScope.combineScope(toCombine)
+                        newScope.setPos(curPos) // curPos + 1?
+                      }
+                    }
+                    case p: Production => {}
+                  }
+                }
+                newScope
+              }
+
+            }
+            /**
+              *
+              */
+            //            val newScope = new Scope(this, curPos)
+//            newScope
           }
           case nt: Sequence => { // The first case; combines all the bindings into one scope
             val newScope = new Scope(this, curPos)
@@ -107,6 +136,7 @@ case class Grammar(_rules: Map[String, Production], _startSymbol: String){
   }
 
   // build a string given a scope
+  //todo is this used?
   def buildString(scope: Scope, soFar: StringBuilder): StringBuilder = {
     // find start
     // sample symbol associated with it

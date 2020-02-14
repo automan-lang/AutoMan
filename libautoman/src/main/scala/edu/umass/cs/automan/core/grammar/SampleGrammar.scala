@@ -7,7 +7,7 @@ import scala.util.control.Breaks._
 object SampleGrammar {
 
   // Count the number of options possible in a given grammar
-  def count(grammar: Grammar, soFar: Int, counted: mutable.HashSet[String]): Int = {
+  def count(grammar: Grammar, soFar: Int, counted: Set[String]): Int = {
     val samp: Option[Production] = grammar.rules.get(grammar.curSymbol) // get edu.umass.cs.automan.core.grammar.Production associated with symbol from grammar
     var opts = 0
     samp match {
@@ -362,6 +362,6 @@ object SampleGrammar {
     //Linda.resetStartSym
     Linda.curSymbol = Linda.startSymbol
     println()
-    println("Linda count: "  + count(Linda, 0, new mutable.HashSet[String]()))
+    println("Linda count: "  + count(Linda, 0, Set[String]()))
   }
 }

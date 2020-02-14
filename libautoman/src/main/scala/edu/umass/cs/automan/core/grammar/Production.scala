@@ -8,7 +8,7 @@ import scala.util.Random
 
 trait Production {
   def sample(): String
-  def count(g: Grammar, counted: mutable.HashSet[String]): Int
+  def count(g: Grammar, counted: Set[String]): Int
   def toChoiceArr(g: Grammar): Option[Array[Range]]
   def isLeafProd(): Boolean
 }
@@ -22,7 +22,7 @@ class Choices(options: List[Production]) extends TextProduction {
     options(ran.nextInt(options.length)).sample()
   }
 
-  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = {
+  override def count(g: Grammar, counted: Set[String]): Int = {
     var c: Int = 0
     for (e <- options) {
       c = c + e.count(g, counted)
@@ -59,7 +59,7 @@ class Terminal(word: String) extends TextProduction {
   override def sample(): String = {
     word
   }
-  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = 1
+  override def count(g: Grammar, counted: Set[String]): Int = 1
 
   override def toChoiceArr(g: Grammar): Option[Array[Range]] = {
     Some(Array(0 to 0))
@@ -75,7 +75,7 @@ class Sequence(sentence: List[Production]) extends TextProduction {
     val ran = new Random()
     sentence(ran.nextInt(sentence.length)).sample()
   }
-  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = {
+  override def count(g: Grammar, counted: Set[String]): Int = {
     var c: Int = 1 // TODO: is this ok?
     for (e <- sentence){
       c = c*e.count(g, counted)
@@ -110,9 +110,11 @@ class Sequence(sentence: List[Production]) extends TextProduction {
 // A name associated with a edu.umass.cs.automan.core.grammar.Production
 class Name(n: String) extends TextProduction {
   override def sample(): String = n // sample returns name for further lookup
-  def count(g: Grammar, counted: mutable.HashSet[String]): Int = {
+  def count(g: Grammar, counted: Set[String]): Int = {
+    var c: Set[String] = counted
+
     if(!counted.contains(n)){
-      counted += n
+      c = c + n
       g.rules(this.sample()).count(g, counted) // TODO: get rid of this? null issues?
     } else 1
   }
@@ -124,11 +126,11 @@ class Name(n: String) extends TextProduction {
   override def isLeafProd(): Boolean = false
 }
 
-// param is name of the edu.umass.cs.automan.core.grammar.Choices that this function applies to
+// param is name of the Choices that this function applies to
 // fun maps those choices to the function results
 class Function(fun: Map[String,String], param: String, capitalize: Boolean) extends TextProduction {
   override def sample(): String = param
-  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = 1
+  override def count(g: Grammar, counted: Set[String]): Int = 1
   def runFun(s: String): String = { // "call" the function on the string
     if(capitalize) fun(s).capitalize
     else fun(s)
@@ -147,7 +149,7 @@ abstract class QuestionProduction(g: Grammar) extends Production { // TODO make 
 
   override def sample(): String
 
-  override def count(g: Grammar, counted: mutable.HashSet[String]): Int
+  override def count(g: Grammar, counted: Set[String]): Int
 
   override def toChoiceArr(g: Grammar): Option[Array[Range]] = Some(Array(0 to 0))
 
@@ -160,11 +162,11 @@ abstract class QuestionProduction(g: Grammar) extends Production { // TODO make 
 class OptionProduction(text: TextProduction) extends Production {
   override def sample(): String = text.sample()
 
-  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = text.count(g, counted)
+  override def count(g: Grammar, counted: Set[String]): Int = text.count(g, counted)
 
   def getText() = text
 
-  override def toChoiceArr(g: Grammar): Option[Array[Range]] = ???
+  override def toChoiceArr(g: Grammar): Option[Array[Range]] = text.toChoiceArr(g)
 
   override def isLeafProd(): Boolean = false
 }
@@ -174,7 +176,7 @@ class EstimateQuestionProduction(g: Grammar, body: TextProduction) extends Quest
 
   override def sample(): String = body.sample()
 
-  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = ???
+  override def count(g: Grammar, counted: Set[String]): Int = ???
 
   // todo grammar necessary?
   override def toQuestionText(variation: Int): (String, List[String]) = {
@@ -199,7 +201,7 @@ class CheckboxQuestionProduction(g: Grammar, body: TextProduction) extends Quest
     ???
   }
 
-  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = ???
+  override def count(g: Grammar, counted: Set[String]): Int = ???
 
   override def toQuestionText(variation: Int): (String, List[String]) = {
 //    val body: String = Ranking.buildInstance(g, variation) // todo where does body come in?
@@ -222,7 +224,7 @@ class CheckboxesQuestionProduction(g: Grammar, body: TextProduction) extends Que
     ???
   }
 
-  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = ???
+  override def count(g: Grammar, counted: Set[String]): Int = ???
 
   override def toQuestionText(variation: Int): (String, List[String]) = {
     val (bod, opts): (StringBuilder, List[StringBuilder]) = Ranking.buildInstance(g, variation)
@@ -239,7 +241,7 @@ class FreetextQuestionProduction(g: Grammar, body: TextProduction) extends Quest
 
   override def sample(): String = ???
 
-  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = ???
+  override def count(g: Grammar, counted: Set[String]): Int = ???
 
   override def toQuestionText(variation: Int): (String, List[String]) = {
     val (bod, opts): (StringBuilder, List[StringBuilder]) = Ranking.buildInstance(g, variation)
@@ -256,7 +258,7 @@ class FreetextsQuestionProduction(g: Grammar, body: TextProduction) extends Ques
 
   override def sample(): String = ???
 
-  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = ???
+  override def count(g: Grammar, counted: Set[String]): Int = ???
 
   override def toQuestionText(variation: Int): (String, List[String]) = {
     val (bod, opts): (StringBuilder, List[StringBuilder]) = Ranking.buildInstance(g, variation)
@@ -273,7 +275,7 @@ class RadioQuestionProduction(g: Grammar, body: TextProduction) extends Question
 
   override def sample(): String = ???
 
-  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = ???
+  override def count(g: Grammar, counted: Set[String]): Int = ???
 
   override def toQuestionText(variation: Int): (String, List[String]) = {
     val (bod, opts): (StringBuilder, List[StringBuilder]) = Ranking.buildInstance(g, variation)
@@ -290,7 +292,7 @@ class RadiosQuestionProduction(g: Grammar, body: TextProduction) extends Questio
 
   override def sample(): String = ???
 
-  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = ???
+  override def count(g: Grammar, counted: Set[String]): Int = ???
 
   override def toQuestionText(variation: Int): (String, List[String]) = {
     val (bod, opts): (StringBuilder, List[StringBuilder]) = Ranking.buildInstance(g, variation)

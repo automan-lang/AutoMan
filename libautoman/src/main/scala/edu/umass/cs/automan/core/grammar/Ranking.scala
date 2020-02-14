@@ -21,84 +21,102 @@ object Ranking {
     //    else l(0) * product(l.slice(1, l.length - 1))
   }
 
-  // b: list of counts
-  // c: counted names
-  def generateBases(g: Grammar, b: List[Int], c: Set[String]): List[Int] = {
-    //val samp: Option[Production] = g.rules.get(g.curSymbol)
-    var soFar: List[Int] = b
-    var counted = c
+  /**
+    * Generates bases for a given grammar for use in the mixed radix funciton.
+    * Assumes all Options associated with a Name.
+    * @param g The grammar
+    * @param bases The list of bases so far
+    * @param counted The counted names so far
+    * @return A tuple of the bases and counted symbols
+    */
+  def generateBases(g: Grammar, bases: List[Int], counted: Set[String]): (List[Int], Set[String]) = {
+    var soFarBases: List[Int] = bases
+    var soFarCounted: Set[String] = counted
 
-    //for(p <- g.rules) { // run through for each production to catch all sequences
-      val samp: Option[Production] = g.rules.get(g.curSymbol) // get edu.umass.cs.automan.core.grammar.Production associated with symbol from grammar
-      samp match {
-        case Some(samp) => {
-          samp match {
-            case name: Name => {
-              //if (!(counted.contains(g.curSymbol))) {
-                g.curSymbol = name.sample()
-                generateBases(g, soFar, counted)
-              //}
-            }
-            case choice: Choices => {
-              List[Int](choice.count(g, null))
-            }
-            case opt: OptionProduction => {
-              if (!(counted.contains(g.curSymbol))) {
-                counted = counted + g.curSymbol
-                List[Int](opt.count(g, null))
-//                soFar = soFar ++ generateBases(g, soFar, counted)
-//                soFar
-              } else List[Int]()//soFar
-              //generateBases(g, soFar, counted)
-            }
-            case nonterm: Sequence => { // TODO sequence in sequence?
-              for (n <- nonterm.getList()) {
-                n match {
-                  case name: Name => {
-                    g.curSymbol = name.sample()
-                    if (!(counted.contains(g.curSymbol))) {
-                      counted = counted + g.curSymbol
-                      soFar = soFar ++ generateBases(g, soFar, counted)
-                    }
+    val samp: Option[Production] = g.rules.get(g.curSymbol)
+    samp match {
+      case Some(s) => {
+        s match {
+          // This should only trigger when we get the start symbol
+          case name: Name => {
+            g.curSymbol = name.sample()
+            generateBases(g, bases, counted)
+          }
+          // We'll hit a Sequence first and in any Options
+          case seq: Sequence => {
+            for(n <- seq.getList()) {
+              n match {
+                case name: Name => { // Sample name and run again
+                  val toSamp = name.sample()
+                  if(!soFarCounted.contains(toSamp)) { // only count if haven't seen it yet
+                    soFarCounted = soFarCounted + toSamp // todo helper function?
+                    g.curSymbol = toSamp
+                    val (newBase, newCount) = generateBases(g, soFarBases, soFarCounted)
+                    soFarBases = newBase
+                    soFarCounted = newCount
                   }
-                  case opt: OptionProduction => {
-                    if (!(counted.contains(g.curSymbol))) {
-                      counted = counted + g.curSymbol
-                      List[Int](opt.count(g, null))
-                      //                soFar = soFar ++ generateBases(g, soFar, counted)
-                      //                soFar
-                    } else soFar
-                  }
-                  case p: Production => {}
                 }
+                case func: Function => { // todo deal with this
+                  val toSamp = func.sample()
+                  if(!soFarCounted.contains(toSamp)) { // only count if haven't seen it yet
+                    soFarCounted = soFarCounted + toSamp
+                    g.curSymbol = toSamp
+                    val (newBase, newCount) = generateBases(g, soFarBases, soFarCounted)
+                    soFarBases = newBase
+                    soFarCounted = newCount
+                  }
+                }
+                case p: Production => {} // Nothing else counts
               }
-              //}
-              soFar
+            }
+            (soFarBases, soFarCounted)
+          }
+          // If we've hit a Choices, we count those and add it to the bases
+          case choice: Choices => {
+            (soFarBases ++ List[Int](choice.count(g, soFarCounted)), soFarCounted)
+          }
+          // We came to an OptionProd through a Name
+          case opt: OptionProduction => { // we have to get inside the option production
+            val internalProd = opt.getText()
+            internalProd match {
+              case seq: Sequence => { // there should be a sequence inside every OptionProduction
+                for(n <- seq.getList()) {
+                  n match {
+                    case name: Name => { // only thing we have to worry about here is names and functions
+                      val toSamp = name.sample()
+                      if(!soFarCounted.contains(toSamp)) { // only count if haven't seen it yet
+                        soFarCounted = soFarCounted + toSamp
+                        g.curSymbol = toSamp
+                        val (newBases, newCount) = generateBases(g, soFarBases, soFarCounted)
+                        soFarBases = newBases
+                        soFarCounted = newCount
+                      }
+                      (soFarBases, soFarCounted)
+                    }
+                    case func: Function => { // todo deal with this
+                      val toSamp = func.sample()
+                      if(!soFarCounted.contains(toSamp)) { // only count if haven't seen it yet
+                        soFarCounted = soFarCounted + toSamp
+                        g.curSymbol = toSamp
+                        val (newBases, newCount) = generateBases(g, soFarBases, soFarCounted)
+                        soFarBases = newBases
+                        soFarCounted = newCount
+                      }
+                      (soFarBases, soFarCounted)
+                    }
+                    case p: Production => { (soFarBases, soFarCounted) }
+                  }
+                }
+                (soFarBases, soFarCounted)
+              }
+              case p: Production => { throw new Error("There should be a Sequence inside ever OptionProduction.")}
             }
           }
         }
-        case None => throw new Exception(s"Symbol ${g.curSymbol} could not be found")
-//      }
-//      soFar
-//    }
-//    soFar
-
-//    for(m <- samp) {
-//      m match {
-//        case (s, p) => {
-//          p match {
-//            case choice: Choices => {
-//              soFar = soFar :+ choice.count(g, null)
-//              //generateBases(g, soFar)
-//            }
-//            case p: Production => {
-//              //generateBases(g, soFar)
-//            }
-//          }
-//        }
-//      }
+      }
+      case None => throw new Error(s"${g.curSymbol} could not be found.")
     }
-//    soFar
+
   }
 
   // rank based on array
@@ -142,7 +160,7 @@ object Ranking {
   // given a grammar, an int, and the bases, creates a string of an experiment instance
   def buildInstance(grammar: Grammar, choice: Int): (StringBuilder, List[StringBuilder]) = {
     grammar.curSymbol = grammar.startSymbol
-    val bases = generateBases(grammar, List[Int](), Set[String]()) // todo fix for options
+    val (bases, counted) = generateBases(grammar, List[Int](), Set[String]()) // todo fix for options
     //println(bases)
     val assignment = unrank(choice, bases.toArray) // get the assignment from the number todo fix
     //println(assignment)
@@ -341,6 +359,8 @@ object Ranking {
     val (bod, opts) = cbProd.toQuestionText(0)
     println(bod)
     opts.map(println(_))
+
+    println(rank(Array(0,1,3,0,0,0,0), Array(4,5,6,5,5,5,5)))
 
 //    val lindaBase = generateBases(grammar, List[Int](), Set[String]())
 //    println("Testing testBases method: " + lindaBase)
