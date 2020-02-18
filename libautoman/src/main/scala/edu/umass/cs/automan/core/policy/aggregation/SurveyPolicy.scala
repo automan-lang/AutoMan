@@ -24,11 +24,11 @@ abstract class SurveyPolicy(survey: Survey)
     // distribution of quality-controlled answers
     val temp0: Seq[Task] = valid_tasks.filter(_.worker_id.isDefined) // filter out undefined worker ids
     val temp: Map[String, Seq[Task]] = temp0.groupBy(_.worker_id.get) // t -> t.worker_id (tasks by worker id)
-    val temp1: Set[Map[String, Question#A]] = temp.map {
+    val temp1: Seq[Map[String, Question#A]] = temp.map {
       case (worker_id, tasks) => {
-         tasks.foldLeft(Map[String, Question#A]())((acc, t) => acc + (t.question.name -> t.answer.get)) // <question id, answer>
+         tasks.foldLeft(Map[String, Question#A]())((acc, t) => acc + (t.question.id.toString -> t.answer.get)) // <question id, answer>
       }
-    }.toSet
+    }.toSeq
 //    val temp1: Set[(String, Question#A)] = temp.map{
 //      case(worker_id, tasks) => {
 //        tasks.foldLeft(Set[(String, Question#A)]())((acc, t) => acc += (t.question.name, t.answer.get))

@@ -356,11 +356,13 @@ object Ranking {
     val cbProd: CheckboxQuestionProduction = new CheckboxQuestionProduction(estGrammar, qSeq) // todo is opts necessary? may have made totext method too complicated
 
    // println(cbProd.toQuestionText(0))
-    val (bod, opts) = cbProd.toQuestionText(0)
-    println(bod)
-    opts.map(println(_))
+//    val (bod, opts) = cbProd.toQuestionText(0)
+//    println(bod)
+//    opts.map(println(_))
 
     println(rank(Array(0,1,3,0,0,0,0), Array(4,5,6,5,5,5,5)))
+    println(rank(Array(1,1), Array(4,3)))
+    println(unrank(rank(Array(1,1), Array(4,3)), Array(4,3)))
 
 //    val lindaBase = generateBases(grammar, List[Int](), Set[String]())
 //    println("Testing testBases method: " + lindaBase)

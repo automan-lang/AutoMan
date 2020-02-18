@@ -21,7 +21,7 @@ abstract class Survey extends Question {
   type TP = DoublingTimeoutPolicy
 
   protected var _question_list: List[Outcome[_]] = List() // the list of questions in the survey // TODO DSL
-  private var _sample_size: Int = 1
+  private var _sample_size: Int = 3
 
   def question_list_=(l: List[Outcome[_]]) { _question_list = l }
   def question_list: List[Outcome[_]] = _question_list

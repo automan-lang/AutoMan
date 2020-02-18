@@ -1,6 +1,11 @@
 package edu.umass.cs.automan.core.answer
 
+import java.io.{BufferedWriter, File, FileWriter, PrintWriter}
+
+//import au.com.bytecode.opencsv.CSVWriter
 import edu.umass.cs.automan.core.question._
+
+import scala.collection.mutable.ListBuffer
 
 /**
  * Most abstract answer type.  Subtypes exist to make
@@ -118,7 +123,7 @@ case class OverBudgetAnswers[T](need: BigDecimal,
 /**
   * SURVEYS
   */
-case class SurveyAnswers(values: Set[Map[String,Question#A]], // final dist (no worker ids) // todo values: Set[(String, Question#A)],?
+case class SurveyAnswers(values: Seq[Map[String,Question#A]], // final dist (no worker ids) // todo values: Set[(String, Question#A)],?
                          override val cost: BigDecimal,
                          override val question: Survey,
                          override val distribution: Array[Response[Set[(String,Question#A)]]])
@@ -126,12 +131,43 @@ case class SurveyAnswers(values: Set[Map[String,Question#A]], // final dist (no 
   override def toString: String = {
     val toRet: StringBuilder = new StringBuilder()
 
-    println("Dan is sort of right")
+    //println("Dan is sort of right")
     //val s = values.head("")
-    for(v <- values){
-      val s = v("")
-      toRet.append(question.prettyPrintAnswer(s.asInstanceOf[SurveyAnswers.this.question.A]))
+    //val outputFile = new BufferedWriter(new FileWriter("answers.text"))
+    val pw = new PrintWriter(new File("answers.txt"))
+    //val csvWriter = new CSVWriter(outputFile)
+    //var toRecord: ListBuffer[Array[String]] = new ListBuffer[Array[String]]()
+    //var toRecord: ListBuffer[String] = new ListBuffer[String]()
+
+//    for(v <- distribution){
+//      v match {
+//        case r: Response[Set[(String,Question#A)]] => {
+//          val s: Map[String, Question#A] = r.value.flatMap(m => {
+//            m.map {
+//              case (str, q) => {
+//                str -> q
+//              }
+//            }
+//          })
+//          val s = v.value.get(question.name)
+//          val toPrint: String = question.prettyPrintAnswer(s.asInstanceOf[SurveyAnswers.this.question.A])
+//          pw.write(toPrint + ",")
+//          println(s"adding ${toPrint} to file")
+//          toRet.append(toPrint)
+//        }
+//      }
+    for(v <- values) {
+      val s = v(question.id.toString)
+      val toPrint: String = question.prettyPrintAnswer(s.asInstanceOf[SurveyAnswers.this.question.A])
+      pw.write(toPrint + ",\n")
+      println(s"adding ${toPrint} to file")
+      //csvWriter.write(toPrint)
+      //toRecord += Array(toPrint)
+      //toRecord += toPrint
+      toRet.append(toPrint)
     }
+    pw.close()
+    //csvWriter.writeAll(toRecord.toList)
 
 //    val s: Set[(String, Question#A)] = values.flatMap(m => {
 //      m.map {

@@ -38,7 +38,8 @@ libraryDependencies := {
     "com.amazonaws"              % "aws-java-sdk-mechanicalturkrequester" % "1.11.637",
     "com.h2database"             % "h2"                     % "1.4.189",
     "org.slf4j"                  % "slf4j-nop"              % "1.6.4",
-    "org.apache.logging.log4j"   % "log4j-core"             % "2.13.0"
+    "org.apache.logging.log4j"   % "log4j-core"             % "2.13.0",
+    "au.com.bytecode"            % "opencsv"                % "2.4"
   )
 }
 

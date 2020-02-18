@@ -19,7 +19,7 @@ import edu.umass.cs.automan.core.util.{Utilities, Stopwatch}
 import scala.annotation.tailrec
 
 object WorkerRunnable {
-  val OK_THRESHOLD = 10
+  val OK_THRESHOLD = 10 // todo change back to 10
 
   class RetryState(val sleep_ms: Int) {
     var backoff_exponent: Int = 0
