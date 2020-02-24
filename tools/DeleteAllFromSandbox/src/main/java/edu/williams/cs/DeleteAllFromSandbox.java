@@ -144,7 +144,23 @@ public class DeleteAllFromSandbox {
         client.deleteHIT(req);
     }
 
+    private static void Usage() {
+        System.out.println("Usage:");
+        System.out.println("  You should use the \"run.sh\" shell script.");
+        System.out.println();
+        System.out.println("  ./run <path to mturk.properties file>");
+        System.out.println();
+        System.out.println("Gory details:");
+        System.out.println("  run.sh actually calls Maven, which performs the following incantation to Cthulhu:");
+        System.out.println("  mvn -X exec:java -Dexec.args=\"<path to mturk.properties file>\"");
+    }
+
     public static void main(String[] args) {
+        if (args.length != 1) {
+            Usage();
+            System.exit(1);
+        }
+
         final AmazonMTurk client = getSandboxClient(args[0]);
 
         List<HIT> hits = listHITs(client);
