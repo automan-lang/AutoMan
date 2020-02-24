@@ -14,6 +14,7 @@ abstract class SurveyPolicy(survey: Survey)
     // num_comparisons is irrelevant for termination based
     // on a fixed sample size but bump anyway for consistency
     (done >= survey.sample_size, num_comparisons + 1) // cheating
+    // todo we're done if the number of completed tasks >= survey sample size, so if MSP < SS, won't be done
   }
   def rejection_response(tasks: List[Task]): String = {
     "We can only accept a single answer per worker."

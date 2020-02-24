@@ -11,7 +11,7 @@ class SimpleSurveyPolicy(survey: Survey)
 
   override protected[policy] def num_to_run(tasks: List[Task], num_comparisons: Int, reward: BigDecimal): Int = {
     // additional number needed to reach num_samples
-    Math.max(survey.sample_size - outstanding_tasks(tasks).size, 0)
+    Math.max(survey.sample_size - outstanding_tasks(tasks).size, 0) // TODO ignoring MSP if less than sample size
   }
 
   /**

@@ -361,8 +361,8 @@ object Ranking {
 //    opts.map(println(_))
 
     println(rank(Array(0,1,3,0,0,0,0), Array(4,5,6,5,5,5,5)))
-    println(rank(Array(1,1), Array(4,3)))
-    println(unrank(rank(Array(1,1), Array(4,3)), Array(4,3)))
+    println(rank(Array(1,2), Array(4,3)))
+    println(unrank(rank(Array(1,2), Array(4,3)), Array(4,3)))
 
 //    val lindaBase = generateBases(grammar, List[Int](), Set[String]())
 //    println("Testing testBases method: " + lindaBase)

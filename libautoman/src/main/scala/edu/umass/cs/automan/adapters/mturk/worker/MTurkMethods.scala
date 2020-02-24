@@ -139,7 +139,23 @@ object MTurkMethods {
   }
 
   private[worker] def mturk_getAllAssignmentsForHIT(hit_state: HITState, backend: AmazonMTurk): Array[Assignment] = {
-    backend.listAssignmentsForHIT(new ListAssignmentsForHITRequest().withHITId(hit_state.HITId)).getAssignments.asScala.toArray[Assignment]
+    val req: ListAssignmentsForHITRequest = new ListAssignmentsForHITRequest().withHITId(hit_state.HITId)
+    var assns: Array[Assignment] = Array[Assignment]()
+    var nextToken: String = null
+
+    do {
+      val res: ListAssignmentsForHITResult = backend.listAssignmentsForHIT(req)
+      val iterAssns: Array[Assignment] = res.getAssignments().asScala.toArray[Assignment]
+      assns = assns ++ iterAssns
+      nextToken = res.getNextToken
+      req.setNextToken(nextToken)
+    } while(nextToken != null)
+
+    assns
+//    backend.listAssignmentsForHIT(new ListAssignmentsForHITRequest()
+//      .withHITId(hit_state.HITId))
+//      .getAssignments.asScala.toArray[Assignment]
+
     //val assignArr = assignList.toArray()[Assignment]//toArray
     //assignArr
   }
