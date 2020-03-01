@@ -22,7 +22,128 @@ object Ranking {
   }
 
   /**
-    * Generates bases for a given grammar for use in the mixed radix funciton.
+    * Generates bases for a given grammar for use in the mixed radix function.
+    * This uses a breadth-first approach.
+    * Assumes all Options associated with a Name.
+    * @param g The grammar
+    * @return The bases
+    */
+  def newGenerateBases(g: Grammar): List[Int] = {
+    val q: mutable.Queue[Production] = new mutable.Queue[Production]()
+    var bases: List[Int] = List[Int]() // the bases we're generating
+    var counted: Set[String] = Set[String]() // the counted names
+    var curSym: String = g.startSymbol
+
+    counted = counted + curSym
+//    // get first sequence
+    val firstSeq = getSeq(g, curSym)
+    //q += firstSeq
+    q.enqueue(firstSeq)
+
+    while(!q.isEmpty) {
+      val samp: Production = q.dequeue()
+      samp match {
+        // We'll hit a Sequence first and in any Options. Enqueue all its children.
+        case seq: Sequence => {
+          for(n <- seq.getList()) {
+            q.enqueue(n)
+          }
+        }
+          // need to get symbol associated with Name and go from there
+        case name: Name => {
+          curSym = name.sample()
+          val prod = g.rules.get(curSym)
+          prod match {
+            case Some(p) => p match {
+              // count choice if haven't seen yet
+              case choice: Choices => {
+                if (!counted.contains(curSym)) {
+                  counted = counted + curSym
+                  //bases :+ choice.count(g, counted)
+                  bases = bases :+ choice.count(g, counted)
+                }
+              }
+              // enqueue opt sequences
+              case opt: OptionProduction => {
+                //val optSeq = getSeq(g, opt.getText())
+                val optSeq = opt.getText()
+                assert(optSeq.isInstanceOf[Sequence])
+                for (n <- optSeq.asInstanceOf[Sequence].getList()) {
+                  q.enqueue(n)
+                }
+              }
+            }
+          }
+        }
+        case func: Function => { // todo condense with name case
+          curSym = func.sample()
+          val prod = g.rules.get(curSym)
+          prod match {
+            case Some(p) => p match {
+              // count choice if haven't seen yet
+              case choice: Choices => {
+                if (!counted.contains(curSym)) {
+                  counted = counted + curSym
+                  bases = bases :+ choice.count(g, counted)
+                }
+              }
+              // enqueue opt sequences
+              case opt: OptionProduction => {
+                //val optSeq = getSeq(g, opt.getText())
+                val optSeq = opt.getText()
+                assert(optSeq.isInstanceOf[Sequence])
+                for (n <- optSeq.asInstanceOf[Sequence].getList()) {
+                  q.enqueue(n)
+                }
+              }
+            }
+          }
+//          val toSamp = func.sample()
+//          if(!counted.contains(toSamp)) { // only count if haven't seen it yet
+//            counted += toSamp
+//            curSym = toSamp
+//            val curProd = g.rules.get(curSym)
+//            curProd match {
+//              case choice: Choices => {
+//                bases :+ choice.count(g, counted)
+//              }
+//              case _ => {}
+//            }
+//          }
+        }
+//        case choice: Choices => {
+//          bases :+ choice.count(g, counted)
+//        }
+        case _ => {}
+      }
+//        }
+//        case None => {
+//          throw new Error(s"${curSym} not found")
+//        }
+      //}
+    }
+    bases
+  }
+
+  private def getSeq(g: Grammar, symbol: String): Production = {
+    var seq: Production = null
+    val firstName = g.rules.get(symbol)
+    firstName match {
+      case Some(n) => {
+        val seqOpt = g.rules.get(n.sample())
+        seqOpt match {
+          case Some(s) => {
+            seq = s
+          }
+        }
+      }
+    }
+    assert(seq.isInstanceOf[Sequence])
+    seq
+  }
+
+  /**
+    * Generates bases for a given grammar for use in the mixed radix function.
     * Assumes all Options associated with a Name.
     * @param g The grammar
     * @param bases The list of bases so far
@@ -204,40 +325,44 @@ object Ranking {
         new Name("Issue"),
         new Terminal(", and also participated in "),
         new Name("Demonstration"),
-        new Terminal(" demonstrations.\nWhich is more probable?\n")
+        new Terminal(" demonstrations.\nWhich is more probable?\n"),
+        new Name("a"),
+        new Name("b")
         //new Name("lindaOpt1"),
         //new Name("lindaOpt2")
       )
     )
-    val lindaOpt1 = new Sequence(
-        List(
-          new Name("Name"),
-          new Terminal(" is "),
-          new Function(articles, "Job", false),
-          new Terminal(" "),
-          new Name("Job"),
-          new Terminal(".\n")
-        )
+    val opt1: OptionProduction =
+      new OptionProduction(
+        new Sequence(
+          List(
+            new Name("Name"),
+            new Terminal(" is "),
+            new Function(articles, "Job", false),
+            new Terminal(" "),
+            new Name("Job"),
+            new Terminal(".")
+          ))
       )
-    val lindaOpt2 = new Sequence(
-      List(
-        new Name("Name"),
-        new Terminal(" is "),
-        new Function(articles, "Job", false),
-        new Terminal(" "),
-        new Name("Job"),
-        new Terminal(" and is active in the "),
-        new Name("Movement"),
-        new Terminal(" movement.")
+    val opt2: OptionProduction =
+      new OptionProduction(
+        new Sequence(
+          List(
+            new Name("Name"),
+            new Terminal(" is "),
+            new Function(articles, "Job", false),
+            new Terminal(" "),
+            new Name("Job"),
+            new Terminal(" and is active in the "),
+            new Name("Movement"),
+            new Terminal(" movement.")
+          ))
       )
-    )
 
     val grammar = Grammar( // The grammar
       Map(
         "Start" -> new Name("lindaS"),
         "lindaS" -> lindaBody,
-        "lindaOpt1" -> lindaOpt1,
-        "lindaOpt2" -> lindaOpt2,
         "Name" -> new Choices(
           List(
             new Terminal("Linda"),
@@ -300,7 +425,9 @@ object Ranking {
             new Terminal("pro-metal straw"),
             new Terminal("environmental justice")
           )
-        )
+        ),
+        "a" -> opt1,
+        "b" -> opt2
       ), "Start"
     )
 
@@ -355,14 +482,44 @@ object Ranking {
     //val estProd: EstimateQuestionProduction = new EstimateQuestionProduction(estGrammar, qSeq)
     val cbProd: CheckboxQuestionProduction = new CheckboxQuestionProduction(estGrammar, qSeq) // todo is opts necessary? may have made totext method too complicated
 
+    val recSeq: Sequence = new Sequence(
+      List(
+        new Name("a"),
+        new Name("b")
+      )
+    )
+    val recGrammar: Grammar = Grammar(
+      Map(
+        "Start" -> new Name("Seq"),
+        "Seq" -> recSeq,
+        "a" -> new Choices(
+          List(
+            new Name("b"),
+            new Name("a")
+          )
+        ),
+        "b" -> new Choices(
+          List(
+            new Terminal("1"),
+            new Terminal("2"),
+            new Terminal("3")
+          )
+        )
+      ),
+      "Start"
+    )
    // println(cbProd.toQuestionText(0))
 //    val (bod, opts) = cbProd.toQuestionText(0)
 //    println(bod)
 //    opts.map(println(_))
 
-    println(rank(Array(0,1,3,0,0,0,0), Array(4,5,6,5,5,5,5)))
-    println(rank(Array(1,2), Array(4,3)))
-    println(unrank(rank(Array(1,2), Array(4,3)), Array(4,3)))
+    println(generateBases(recGrammar, List[Int](), Set[String]())._1)
+    println(s"New GB recursive: ${newGenerateBases(recGrammar)}")
+    println(generateBases(grammar, List[Int](), Set[String]())._1)
+    println(s"New GB Linda: ${newGenerateBases(grammar)}")
+//    println(rank(Array(0,1,3,0,0,0,0), Array(4,5,6,5,5,5,5)))
+//    println(rank(Array(1,2), Array(4,3)))
+//    println(unrank(rank(Array(1,2), Array(4,3)), Array(4,3)))
 
 //    val lindaBase = generateBases(grammar, List[Int](), Set[String]())
 //    println("Testing testBases method: " + lindaBase)
@@ -392,128 +549,5 @@ object Ranking {
 //    println(prod.toQuestionText(0))
 //    grammar.curSymbol = grammar.startSymbol
 //    println(prod.toQuestionText(4375))
-  }
-
-  // returns the Linda grammar
-  def getGrammar(): Grammar = {
-    val pronouns = Map[String, String](
-      "Linda" -> "she",
-      "Dan" -> "he",
-      "Emmie" -> "she",
-      "Xavier the bloodsucking spider" -> "it"
-    )
-
-    // TODO: what if multiple params need same function?
-    val articles = Map[String, String](
-      "bank teller" -> "a",
-      "almond paste mixer" -> "an",
-      "tennis scout" -> "a",
-      "lawyer" -> "a",
-      "professor" -> "a"
-    )
-    // The problem statement
-    val lindaS = new Sequence(
-      List(
-        new Name("Name"),
-        new Terminal(" is "),
-        new Name("Age"),
-        new Terminal(" years old, single, outspoken, and very bright. "),
-        new Function(pronouns, "Name", true),
-        new Terminal(" majored in "),
-        new Name("Major"),
-        new Terminal(". As a student, "),
-        new Function(pronouns, "Name", false),
-        new Terminal(" was deeply concerned with issues of "),
-        new Name("Issue"),
-        new Terminal(", and also participated in "),
-        new Name("Demonstration"),
-        new Terminal(" demonstrations.\nWhich is more probable?\n1. "),
-        new Name("Name"),
-        new Terminal(" is "),
-        new Function(articles, "Job", false),
-        new Terminal(" "),
-        new Name("Job"),
-        new Terminal(".\n2. "),
-        new Name("Name"),
-        new Terminal(" is "),
-        new Function(articles, "Job", false),
-        new Terminal(" "),
-        new Name("Job"),
-        new Terminal(" and is active in the "),
-        new Name("Movement"),
-        new Terminal(" movement.")
-      )
-    )
-
-    val Linda = Grammar( // The grammar
-      Map(
-        "Start" -> new Name("lindaS"),
-        "lindaS" -> lindaS,
-        "Name" -> new Choices(
-          List(
-            new Terminal("Linda"),
-            new Terminal("Dan"),
-            new Terminal("Emmie"),
-            new Terminal("Xavier the bloodsucking spider")
-          )
-        ),
-        "Age" -> new Choices(
-          List(
-            new Terminal("21"),
-            new Terminal("31"),
-            new Terminal("41"),
-            new Terminal("51"),
-            new Terminal("61")
-          )
-        ),
-        "Major" -> new Choices(
-          List(
-            new Terminal("chemistry"),
-            new Terminal("psychology"),
-            new Terminal("english literature"),
-            new Terminal("philosophy"),
-            new Terminal("women's studies"),
-            new Terminal("underwater basket weaving")
-          )
-        ),
-        "Issue" -> new Choices(
-          List(
-            new Terminal("discrimination and social justice"),
-            new Terminal("fair wages"),
-            new Terminal("animal rights"),
-            new Terminal("white collar crime"),
-            new Terminal("unemployed circus workers")
-          )
-        ),
-        "Demonstration" -> new Choices(
-          List(
-            new Terminal("anti-nuclear"),
-            new Terminal("anti-war"),
-            new Terminal("pro-choice"),
-            new Terminal("anti-abortion"),
-            new Terminal("anti-animal testing")
-          )
-        ),
-        "Job" -> new Choices(
-          List(
-            new Terminal("bank teller"),
-            new Terminal("almond paste mixer"),
-            new Terminal("tennis scout"),
-            new Terminal("lawyer"),
-            new Terminal("professor")
-          )
-        ),
-        "Movement" -> new Choices(
-          List(
-            new Terminal("feminist"),
-            new Terminal("anti-plastic water bottle"),
-            new Terminal("pro-pretzel crisp"),
-            new Terminal("pro-metal straw"),
-            new Terminal("environmental justice")
-          )
-        )
-      ), "Start"
-    )
-    Linda
   }
 }
