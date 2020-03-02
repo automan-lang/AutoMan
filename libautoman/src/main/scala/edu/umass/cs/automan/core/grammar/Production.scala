@@ -11,7 +11,7 @@ trait Production {
   def count(g: Grammar, counted: Set[String]): Int
   def toChoiceArr(g: Grammar): Option[Array[Range]]
   def isLeafProd(): Boolean // Certain prods can terminate
-  def isLeafNT(counted: Set[String]): Boolean // Checking if prod and everything it maps to are LNTs
+  def isLeafNT(counted: Set[String], name: String): Boolean // Checking if prod and everything it maps to are LNTs
 }
 
 trait TextProduction extends Production{}
@@ -55,11 +55,13 @@ class Choices(options: List[Production]) extends TextProduction {
   override def isLeafProd(): Boolean = false
 
   // A leafNonTerminal must map to all LNTs or counted NTs
-  def isLeafNT(counted: Set[String]): Boolean = {
+  def isLeafNT(counted: Set[String], name: String): Boolean = {
     var allNT = true
 
     for(e <- options) {
-      if(!(e.isLeafNT(counted) || counted.contains(e.sample()))) allNT = false
+      if(!(e.isLeafNT(counted, name) || counted.contains(e.sample()))) {
+        if(!(e.sample() == name)) allNT = false
+      } // pass in name. If not contained, check if name is same as choices name. if yes, still LNT (but will need to count as 1 later)
     } // checking if counted contains should be irrelevant bc checking if names are contained in Name.isLeafNT
     allNT
   }
@@ -79,7 +81,7 @@ class Terminal(word: String) extends TextProduction {
 
   override def isLeafProd(): Boolean = true
 
-  override def isLeafNT(counted: Set[String]): Boolean = true
+  override def isLeafNT(counted: Set[String], name: String): Boolean = true
 }
 
 // A sequence, aka a combination of other terminals/choices and the ordering structure of each problem
@@ -119,7 +121,7 @@ class Sequence(sentence: List[Production]) extends TextProduction {
 
   override def isLeafProd(): Boolean = false
 
-  override def isLeafNT(counted: Set[String]): Boolean = false
+  override def isLeafNT(counted: Set[String], name: String): Boolean = false
 }
 
 // A name associated with a edu.umass.cs.automan.core.grammar.Production
@@ -140,7 +142,7 @@ class Name(n: String) extends TextProduction {
 
   override def isLeafProd(): Boolean = false
 
-  override def isLeafNT(counted: Set[String]): Boolean = {
+  override def isLeafNT(counted: Set[String], name: String): Boolean = {
     if(counted.contains(n)) true
     else false
   }
@@ -158,7 +160,7 @@ class Function(fun: Map[String,String], param: String, capitalize: Boolean) exte
 
   override def toChoiceArr(g: Grammar): Option[Array[Range]] = Some(Array(0 to 0)) //None //Option[Array[Range]()] //Array(null) //TODO: right?
   override def isLeafProd(): Boolean = true // todo not sure
-  override def isLeafNT(counted: Set[String]): Boolean = {
+  override def isLeafNT(counted: Set[String], name: String): Boolean = {
     if(counted.contains(param)) true
     else false
   }
@@ -182,7 +184,7 @@ abstract class QuestionProduction(g: Grammar) extends Production { // TODO make 
 
   def questionType: QuestionType = _questionType
 
-  def isLeafNT(counted: Set[String]): Boolean = false
+  def isLeafNT(counted: Set[String], name: String): Boolean = false
 }
 
 class OptionProduction(text: TextProduction) extends Production {
@@ -196,7 +198,7 @@ class OptionProduction(text: TextProduction) extends Production {
 
   override def isLeafProd(): Boolean = false
 
-  override def isLeafNT(counted: Set[String]): Boolean = false
+  override def isLeafNT(counted: Set[String], name: String): Boolean = false
 }
 
 class EstimateQuestionProduction(g: Grammar, body: TextProduction) extends QuestionProduction(g) {

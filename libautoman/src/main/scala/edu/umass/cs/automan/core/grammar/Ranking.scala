@@ -57,10 +57,12 @@ object Ranking {
             case Some(p) => p match {
               // count choice if haven't seen yet
               case choice: Choices => {
-                if (choice.isLeafNT(counted) && !counted.contains(curSym)) {
+                if (choice.isLeafNT(counted, curSym) && !counted.contains(curSym)) { // false bc 'a' not counted yet
                   counted = counted + curSym
                   //bases :+ choice.count(g, counted)
                   bases = bases :+ choice.count(g, counted)
+                } else if (!counted.contains(curSym)) { // only re-enqueue if we haven't counted it
+                  q.enqueue(name)
                 }
               }
               // enqueue opt sequences
@@ -82,9 +84,11 @@ object Ranking {
             case Some(p) => p match {
               // count choice if haven't seen yet
               case choice: Choices => {
-                if (choice.isLeafNT(counted) && !counted.contains(curSym)) {
+                if (choice.isLeafNT(counted, curSym) && !counted.contains(curSym)) {
                   counted = counted + curSym
                   bases = bases :+ choice.count(g, counted)
+                } else {
+                  q.enqueue(choice)
                 }
               }
               // enqueue opt sequences
@@ -114,7 +118,7 @@ object Ranking {
 //        case choice: Choices => {
 //          bases :+ choice.count(g, counted)
 //        }
-        case _ => {}
+        case _ => {} // choices within OptProd going here
       }
 //        }
 //        case None => {
@@ -494,7 +498,7 @@ object Ranking {
         "Seq" -> recSeq,
         "a" -> new Choices(
           List(
-            new Name("b"),
+            new Name("b"), // this should be a seq, no?
             new Name("a")
           )
         ),
