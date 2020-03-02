@@ -57,7 +57,7 @@ object Ranking {
             case Some(p) => p match {
               // count choice if haven't seen yet
               case choice: Choices => {
-                if (!counted.contains(curSym)) {
+                if (choice.isLeafNT(counted) && !counted.contains(curSym)) {
                   counted = counted + curSym
                   //bases :+ choice.count(g, counted)
                   bases = bases :+ choice.count(g, counted)
@@ -82,7 +82,7 @@ object Ranking {
             case Some(p) => p match {
               // count choice if haven't seen yet
               case choice: Choices => {
-                if (!counted.contains(curSym)) {
+                if (choice.isLeafNT(counted) && !counted.contains(curSym)) {
                   counted = counted + curSym
                   bases = bases :+ choice.count(g, counted)
                 }
