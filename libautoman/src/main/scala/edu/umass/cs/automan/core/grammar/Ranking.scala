@@ -37,6 +37,7 @@ object Ranking {
     counted = counted + curSym
 //    // get first sequence
     val firstSeq = getSeq(g, curSym)
+    println(firstSeq)
     //q += firstSeq
     q.enqueue(firstSeq)
 
@@ -45,24 +46,27 @@ object Ranking {
       samp match {
         // We'll hit a Sequence first and in any Options. Enqueue all its children.
         case seq: Sequence => {
+          println("first elem " + seq.sampleSpec(0))
           for(n <- seq.getList()) {
             q.enqueue(n)
+            println(s"Enqueuing ${n.sample()}")
           }
         }
           // need to get symbol associated with Name and go from there
         case name: Name => {
-          curSym = name.sample()
+          curSym = name.sample() // current name
           val prod = g.rules.get(curSym)
           prod match {
             case Some(p) => p match {
               // count choice if haven't seen yet
               case choice: Choices => {
-                if (choice.isLeafNT(counted, curSym) && !counted.contains(curSym)) { // false bc 'a' not counted yet
+                if (choice.isLeafNT(counted, curSym) && !counted.contains(curSym)) {
                   counted = counted + curSym
                   //bases :+ choice.count(g, counted)
                   bases = bases :+ choice.count(g, counted)
                 } else if (!counted.contains(curSym)) { // only re-enqueue if we haven't counted it
                   q.enqueue(name)
+                  println(s"Enqueuing ${curSym}")
                 }
               }
               // enqueue opt sequences
@@ -72,13 +76,14 @@ object Ranking {
                 assert(optSeq.isInstanceOf[Sequence])
                 for (n <- optSeq.asInstanceOf[Sequence].getList()) {
                   q.enqueue(n)
+                  println(s"Enqueuing ${curSym}")
                 }
               }
             }
           }
         }
         case func: Function => { // todo condense with name case
-          curSym = func.sample()
+          curSym = func.sample() // current name
           val prod = g.rules.get(curSym)
           prod match {
             case Some(p) => p match {
@@ -102,29 +107,9 @@ object Ranking {
               }
             }
           }
-//          val toSamp = func.sample()
-//          if(!counted.contains(toSamp)) { // only count if haven't seen it yet
-//            counted += toSamp
-//            curSym = toSamp
-//            val curProd = g.rules.get(curSym)
-//            curProd match {
-//              case choice: Choices => {
-//                bases :+ choice.count(g, counted)
-//              }
-//              case _ => {}
-//            }
-//          }
         }
-//        case choice: Choices => {
-//          bases :+ choice.count(g, counted)
-//        }
         case _ => {} // choices within OptProd going here
       }
-//        }
-//        case None => {
-//          throw new Error(s"${curSym} not found")
-//        }
-      //}
     }
     bases
   }
@@ -498,8 +483,14 @@ object Ranking {
         "Seq" -> recSeq,
         "a" -> new Choices(
           List(
-            new Name("b"), // this should be a seq, no?
-            new Name("a")
+            new Sequence(
+              List(
+                new Name("b"),
+                new Name("a")
+              )
+            )
+//            new Name("b"), // this should be a seq, no?
+//            new Name("a")
           )
         ),
         "b" -> new Choices(
@@ -517,10 +508,12 @@ object Ranking {
 //    println(bod)
 //    opts.map(println(_))
 
-    println(generateBases(recGrammar, List[Int](), Set[String]())._1)
+    //println(generateBases(recGrammar, List[Int](), Set[String]())._1)
+    //recGrammar.curSymbol = recGrammar.startSymbol
     println(s"New GB recursive: ${newGenerateBases(recGrammar)}")
-    println(generateBases(grammar, List[Int](), Set[String]())._1)
-    println(s"New GB Linda: ${newGenerateBases(grammar)}")
+    println(s"New GB recursive: ${newGenerateBases(recGrammar)}")
+//    println(generateBases(grammar, List[Int](), Set[String]())._1)
+//    println(s"New GB Linda: ${newGenerateBases(grammar)}")
 //    println(rank(Array(0,1,3,0,0,0,0), Array(4,5,6,5,5,5,5)))
 //    println(rank(Array(1,2), Array(4,3)))
 //    println(unrank(rank(Array(1,2), Array(4,3)), Array(4,3)))

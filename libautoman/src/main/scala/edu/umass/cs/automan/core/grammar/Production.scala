@@ -25,7 +25,7 @@ class Choices(options: List[Production]) extends TextProduction {
 
   override def count(g: Grammar, counted: Set[String]): Int = {
     var c: Int = 0
-    for (e <- options) {
+    for (e <- options) { // if an option contains the name that brought us here, it should be k
       c = c + e.count(g, counted)
     } // choices are additive
     c
@@ -55,13 +55,28 @@ class Choices(options: List[Production]) extends TextProduction {
   override def isLeafProd(): Boolean = false
 
   // A leafNonTerminal must map to all LNTs or counted NTs
+  // name is name that maps to this Choices
   def isLeafNT(counted: Set[String], name: String): Boolean = {
     var allNT = true
 
     for(e <- options) {
-      if(!(e.isLeafNT(counted, name) || counted.contains(e.sample()))) {
-        if(!(e.sample() == name)) allNT = false
-      } // pass in name. If not contained, check if name is same as choices name. if yes, still LNT (but will need to count as 1 later)
+//      if(e.isInstanceOf[Sequence]) {
+//        allNT = false
+//      } else
+      if(!e.isLeafNT(counted, name)) {
+        if(e.isInstanceOf[Sequence]) {
+          for(p <- e.asInstanceOf[Sequence].getList()) {
+            if(!(p.sample() == name || counted.contains(e.sample()))) allNT = false
+          }
+        } else if(!counted.contains(e.sample())) allNT = false
+      }
+//      if(!(e.isLeafNT(counted, name) || counted.contains(e.sample()))) { // todo if e sampling sequence weird
+//        if(e.isInstanceOf[Sequence]) {
+//          for(p <- e.asInstanceOf[Sequence].getList()) {
+//            if(p.sample() == name) allNT = true
+//          }
+//        } else if(e.sample() != name) allNT = false // Sequence gets to here
+      //} // pass in name. If not already counted, check if name is same as choice's name. if yes, still LNT (but will need to count as 1 later)
     } // checking if counted contains should be irrelevant bc checking if names are contained in Name.isLeafNT
     allNT
   }
@@ -93,7 +108,7 @@ class Sequence(sentence: List[Production]) extends TextProduction {
   override def count(g: Grammar, counted: Set[String]): Int = {
     var c: Int = 1 // TODO: is this ok?
     for (e <- sentence){
-      c = c*e.count(g, counted)
+      if(!counted.contains(e.sample())) c = c*e.count(g, counted) // counting b here
     } // nonterminals are multiplicative
     c
   }
@@ -132,7 +147,7 @@ class Name(n: String) extends TextProduction {
 
     if(!counted.contains(n)){
       c = c + n
-      g.rules(this.sample()).count(g, counted) // TODO: get rid of this? null issues?
+      g.rules(this.sample()).count(g, c) // TODO: get rid of this? null issues?
     } else 1
   }
 
