@@ -34,6 +34,8 @@ object Ranking {
     var counted: Set[String] = Set[String]() // the counted names
     var curSym: String = g.startSymbol
 
+    var baseMap: Map[String, Int] = Map[String, Int]() // a map to keep track of which bases map to which strings
+
     counted = counted + curSym
 //    // get first sequence
     val firstSeq = getSeq(g, curSym)
@@ -64,7 +66,10 @@ object Ranking {
                 if (choice.isLeafNT(counted, curSym) && !counted.contains(curSym)) {
                   counted = counted + curSym
                   //bases :+ choice.count(g, counted)
-                  bases = bases :+ choice.count(g, counted)
+                  val newBase = choice.count(g, counted)
+                  println(s"${curSym} has base ${newBase}")
+                  baseMap += curSym -> newBase
+                  //bases = bases :+ newBase
                 } else if (!counted.contains(curSym)) { // only re-enqueue if not LNT and haven't counted it
                   q.enqueue(name)
                   println(s"Enqueuing ${curSym} 69") // this is repeating
@@ -92,7 +97,10 @@ object Ranking {
               case choice: Choices => {
                 if (choice.isLeafNT(counted, curSym) && !counted.contains(curSym)) {
                   counted = counted + curSym
-                  bases = bases :+ choice.count(g, counted)
+                  val newBase = choice.count(g, counted)
+                  println(s"${curSym} has base ${newBase}")
+                  baseMap += curSym -> newBase
+                  //bases = bases :+ newBase
                 } else {
                   q.enqueue(choice)
                 }
@@ -111,6 +119,15 @@ object Ranking {
         }
         case _ => {} // choices within OptProd going here
       }
+    }
+
+    // Add bases in order (determined by sequence)
+    for(n <- firstSeq.asInstanceOf[Sequence].getList()) {
+      val newBase = baseMap.get(n.sample())
+      newBase match {
+        case Some(n) => bases = bases :+ n
+      }
+      //bases = bases :+ baseMap.get(newBase)
     }
     bases
   }
@@ -480,6 +497,7 @@ object Ranking {
         new Name("b")
       )
     )
+
     val recGrammar: Grammar = Grammar(
       Map(
         "Start" -> new Name("Seq"),
@@ -492,8 +510,6 @@ object Ranking {
                 new Name("a")
               )
             )
-//            new Name("b"), // this should be a seq, no?
-//            new Name("a")
           )
         ),
         "b" -> new Choices(
@@ -507,6 +523,33 @@ object Ranking {
       "Start",
       7
     )
+
+    val recGrammar2: Grammar = Grammar(
+      Map(
+        "Start" -> new Name("Seq"),
+        "Seq" -> recSeq,
+        "a" -> new Choices(
+          List(
+            new Sequence(
+              List(
+                new Name("a"),
+                new Name("b")
+              )
+            )
+          )
+        ),
+        "b" -> new Choices(
+          List(
+            new Terminal("1"),
+            new Terminal("2"),
+            new Terminal("3")
+          )
+        )
+      ),
+      "Start",
+      7
+    )
+
    // println(cbProd.toQuestionText(0))
 //    val (bod, opts) = cbProd.toQuestionText(0)
 //    println(bod)
@@ -515,7 +558,7 @@ object Ranking {
     //println(generateBases(recGrammar, List[Int](), Set[String]())._1)
     //recGrammar.curSymbol = recGrammar.startSymbol
     println(s"New GB recursive: ${newGenerateBases(recGrammar)}")
-    println(s"New GB recursive: ${newGenerateBases(recGrammar)}")
+    println(s"New GB recursive: ${newGenerateBases(recGrammar2)}")
 //    println(generateBases(grammar, List[Int](), Set[String]())._1)
 //    println(s"New GB Linda: ${newGenerateBases(grammar)}")
 //    println(rank(Array(0,1,3,0,0,0,0), Array(4,5,6,5,5,5,5)))
