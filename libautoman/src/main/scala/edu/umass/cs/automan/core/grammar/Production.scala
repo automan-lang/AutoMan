@@ -19,8 +19,13 @@ trait TextProduction extends Production{}
 // A set of choices, options for a value
 class Choices(options: List[Production]) extends TextProduction {
   override def sample(): String = {
-    val ran = new Random()
-    options(ran.nextInt(options.length)).sample()
+    val samp: StringBuilder = new StringBuilder()
+    for(o <- options) {
+      samp.addString(new StringBuilder(o.sample()))
+    }
+    samp.toString()
+//    val ran = new Random()
+//    options(ran.nextInt(options.length)).sample()
   }
 
   override def count(g: Grammar, counted: Set[String]): Int = {
@@ -66,11 +71,11 @@ class Choices(options: List[Production]) extends TextProduction {
       if(!e.isLeafNT(counted, name)) {
         if(e.isInstanceOf[Sequence]) {
           for(p <- e.asInstanceOf[Sequence].getList()) {
-            if(!(p.sample() == name || counted.contains(e.sample()))) allNT = false
+            if(!(p.sample() == name || counted.contains(p.sample()))) allNT = false // todo is this right
           }
         } else if(!counted.contains(e.sample())) allNT = false
       }
-//      if(!(e.isLeafNT(counted, name) || counted.contains(e.sample()))) { // todo if e sampling sequence weird
+//      if(!(e.isLeafNT(counted, name) || counted.contains(e.sample()))) {
 //        if(e.isInstanceOf[Sequence]) {
 //          for(p <- e.asInstanceOf[Sequence].getList()) {
 //            if(p.sample() == name) allNT = true
@@ -109,6 +114,7 @@ class Sequence(sentence: List[Production]) extends TextProduction {
     var c: Int = 1 // TODO: is this ok?
     for (e <- sentence){
       if(!counted.contains(e.sample())) c = c*e.count(g, counted) // counting b here
+      //else c = c*g.maxDepth
     } // nonterminals are multiplicative
     c
   }
@@ -147,8 +153,8 @@ class Name(n: String) extends TextProduction {
 
     if(!counted.contains(n)){
       c = c + n
-      g.rules(this.sample()).count(g, c) // TODO: get rid of this? null issues?
-    } else 1
+      g.rules(this.sample()).count(g, c)
+    } else g.maxDepth//1 // TODO k goes here I think
   }
 
   override def toChoiceArr(g: Grammar): Option[Array[Range]] = {

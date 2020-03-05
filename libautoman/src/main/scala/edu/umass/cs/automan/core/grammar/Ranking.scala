@@ -49,12 +49,13 @@ object Ranking {
           println("first elem " + seq.sampleSpec(0))
           for(n <- seq.getList()) {
             q.enqueue(n)
-            println(s"Enqueuing ${n.sample()}")
+            println(s"Enqueuing ${n.sample()} 52")
           }
         }
           // need to get symbol associated with Name and go from there
         case name: Name => {
           curSym = name.sample() // current name
+          println(s"sampling ${curSym}")
           val prod = g.rules.get(curSym)
           prod match {
             case Some(p) => p match {
@@ -64,9 +65,9 @@ object Ranking {
                   counted = counted + curSym
                   //bases :+ choice.count(g, counted)
                   bases = bases :+ choice.count(g, counted)
-                } else if (!counted.contains(curSym)) { // only re-enqueue if we haven't counted it
+                } else if (!counted.contains(curSym)) { // only re-enqueue if not LNT and haven't counted it
                   q.enqueue(name)
-                  println(s"Enqueuing ${curSym}")
+                  println(s"Enqueuing ${curSym} 69") // this is repeating
                 }
               }
               // enqueue opt sequences
@@ -76,7 +77,7 @@ object Ranking {
                 assert(optSeq.isInstanceOf[Sequence])
                 for (n <- optSeq.asInstanceOf[Sequence].getList()) {
                   q.enqueue(n)
-                  println(s"Enqueuing ${curSym}")
+                  println(s"Enqueuing ${curSym} 79")
                 }
               }
             }
@@ -417,7 +418,8 @@ object Ranking {
         ),
         "a" -> opt1,
         "b" -> opt2
-      ), "Start"
+      ), "Start",
+      7
     )
 
     val practiceFunc = Map[String, String](
@@ -466,7 +468,8 @@ object Ranking {
         "c" -> new OptionProduction(new Terminal("10,000 lb"))
         //"Options" -> optSeq // we need a name here
       ),
-      "Start"
+      "Start",
+      7
     )
     //val estProd: EstimateQuestionProduction = new EstimateQuestionProduction(estGrammar, qSeq)
     val cbProd: CheckboxQuestionProduction = new CheckboxQuestionProduction(estGrammar, qSeq) // todo is opts necessary? may have made totext method too complicated
@@ -501,7 +504,8 @@ object Ranking {
           )
         )
       ),
-      "Start"
+      "Start",
+      7
     )
    // println(cbProd.toQuestionText(0))
 //    val (bod, opts) = cbProd.toQuestionText(0)

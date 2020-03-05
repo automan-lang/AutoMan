@@ -329,7 +329,8 @@ object SampleGrammar {
           )
         )
       ),
-      "Start"
+      "Start",
+      7
     )
     //val lindaScope = new edu.umass.cs.automan.core.grammar.Scope(Linda, 0)
 

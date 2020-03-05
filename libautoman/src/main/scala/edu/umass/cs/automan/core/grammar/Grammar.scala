@@ -13,15 +13,18 @@ import scala.util.control.Breaks.{break, breakable}
   * @param _startSymbol the start symbol for the eventual iterations over the experiment space. Doesn't change.
   */
 
-case class Grammar(_rules: Map[String, Production], _startSymbol: String){
+case class Grammar(_rules: Map[String, Production], _startSymbol: String, _maxDepth: Int){
 
   private var _curSym = _startSymbol // the current symbol we're working with, which may change
   private var _bases: Array[Int] = Array[Int]() // TODO automatically generate from rules?
+  private val _depthParam = _maxDepth
 
   def rules = _rules
   //def rules_=(newRules: Map[String, edu.umass.cs.automan.core.grammar.Production]) = rules = newRules
 
   def startSymbol = _startSymbol
+
+  def maxDepth = _depthParam
 
   def bases = _bases
   def bases_= (newBases: Array[Int]): Unit = _bases = newBases
