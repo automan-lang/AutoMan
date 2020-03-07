@@ -559,6 +559,7 @@ object Ranking {
     //recGrammar.curSymbol = recGrammar.startSymbol
     println(s"New GB recursive: ${newGenerateBases(recGrammar)}")
     println(s"New GB recursive: ${newGenerateBases(recGrammar2)}")
+    println()
 //    println(generateBases(grammar, List[Int](), Set[String]())._1)
 //    println(s"New GB Linda: ${newGenerateBases(grammar)}")
 //    println(rank(Array(0,1,3,0,0,0,0), Array(4,5,6,5,5,5,5)))

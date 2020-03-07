@@ -20,12 +20,12 @@ trait TextProduction extends Production{}
 class Choices(options: List[Production]) extends TextProduction {
   override def sample(): String = {
     val samp: StringBuilder = new StringBuilder()
-    for(o <- options) {
+    for (o <- options) {
       samp.addString(new StringBuilder(o.sample()))
     }
     samp.toString()
-//    val ran = new Random()
-//    options(ran.nextInt(options.length)).sample()
+    //    val ran = new Random()
+    //    options(ran.nextInt(options.length)).sample()
   }
 
   override def count(g: Grammar, counted: Set[String]): Int = {
@@ -40,7 +40,7 @@ class Choices(options: List[Production]) extends TextProduction {
   def sampleSpec(i: Int): String = {
     assert(i < options.length)
     assert(i >= 0)
-    options(i).sample() //TODO: should probably ensure array bounds
+    options(i).sample()
   }
 
   override def toChoiceArr(g: Grammar): Option[Array[Range]] = {
@@ -59,32 +59,71 @@ class Choices(options: List[Production]) extends TextProduction {
 
   override def isLeafProd(): Boolean = false
 
-  // A leafNonTerminal must map to all LNTs or counted NTs
+  // A leafNonTerminal must map to all LNTs
   // name is name that maps to this Choices
   def isLeafNT(counted: Set[String], name: String): Boolean = {
     var allNT = true
 
-    for(e <- options) {
-//      if(e.isInstanceOf[Sequence]) {
-//        allNT = false
-//      } else
-      if(!e.isLeafNT(counted, name)) {
-        if(e.isInstanceOf[Sequence]) {
-          for(p <- e.asInstanceOf[Sequence].getList()) {
-            if(!(p.sample() == name || counted.contains(p.sample()))) allNT = false // todo is this right
-          }
-        } else if(!counted.contains(e.sample())) allNT = false
-      }
-//      if(!(e.isLeafNT(counted, name) || counted.contains(e.sample()))) {
-//        if(e.isInstanceOf[Sequence]) {
-//          for(p <- e.asInstanceOf[Sequence].getList()) {
-//            if(p.sample() == name) allNT = true
-//          }
-//        } else if(e.sample() != name) allNT = false // Sequence gets to here
-      //} // pass in name. If not already counted, check if name is same as choice's name. if yes, still LNT (but will need to count as 1 later)
-    } // checking if counted contains should be irrelevant bc checking if names are contained in Name.isLeafNT
+    for (e <- options) {
+      if (!e.isLeafNT(counted, name)) { // if e is LNT, great
+        allNT = false
+        //        if(e.isInstanceOf[Sequence]) { // if there's a sequence option, have to look at things inside
+        //          for(p <- e.asInstanceOf[Sequence].getList()) {
+        //            // if option doesn't reference itself or hasn't been counted, not LNT
+        //            if(!(p.sample() == name || counted.contains(p.sample()))) allNT = false // todo is this right
+        //          }
+        //        } else if(!counted.contains(e.sample())) allNT = false // if not a Seq and not counted, not an NT
+        //      }
+
+
+        //      if(!(e.isLeafNT(counted, name) || counted.contains(e.sample()))) {
+        //        if(e.isInstanceOf[Sequence]) {
+        //          for(p <- e.asInstanceOf[Sequence].getList()) {
+        //            if(p.sample() == name) allNT = true
+        //          }
+        //        } else if(e.sample() != name) allNT = false // Sequence gets to here
+        //} // pass in name. If not already counted, check if name is same as choice's name. if yes, still LNT (but will need to count as 1 later)
+      } // checking if counted contains should be irrelevant bc checking if names are contained in Name.isLeafNT
+    }
     allNT
   }
+
+  // returns whether the Choice maps to itself and a terminal or LNT
+  def mapsToSelfAndTerm(counted: Set[String], name: String): Boolean = {
+    var mapsToSelf = false
+    var mapsToTerm = false
+
+    for(e <- options) {
+      if(e.isInstanceOf[Sequence]) { // if there's a sequence option, have to look at things inside
+        for(p <- e.asInstanceOf[Sequence].getList()) {
+          if(p.sample() == name) mapsToSelf = true
+        }
+      } else {
+        if(e.sample() == name) mapsToSelf = true
+        if(e.isLeafNT(counted, name)) mapsToTerm = true
+      }
+    }
+    mapsToSelf && mapsToTerm
+  }
+
+  // Returns true if this Choice maps to itself and no terminals/LNTs (and so is infinite)
+  def isInfinite(counted: Set[String], name: String): Boolean = {
+    var mapsToTerm = false
+    var mapsToSelf = false
+
+    for(e <- options) {
+      if(e.isInstanceOf[Sequence]) { // if there's a sequence option, have to look at things inside
+        for(p <- e.asInstanceOf[Sequence].getList()) {
+          if(p.sample() == name) mapsToSelf = true
+        }
+      } else {
+        if(e.sample() == name) mapsToSelf = true
+        if(e.isLeafNT(counted, name)) mapsToTerm = true
+      }
+    }
+    mapsToSelf && !mapsToTerm
+  }
+
 }
 
 // A terminal production
@@ -142,7 +181,16 @@ class Sequence(sentence: List[Production]) extends TextProduction {
 
   override def isLeafProd(): Boolean = false
 
-  override def isLeafNT(counted: Set[String], name: String): Boolean = false
+  override def isLeafNT(counted: Set[String], name: String): Boolean = {
+    var allNT = true
+
+    for (e <- sentence) {
+      if (!e.isLeafNT(counted, name)) { // if e is LNT, great
+        allNT = false
+      }
+    }
+    allNT
+  }
 }
 
 // A name associated with a edu.umass.cs.automan.core.grammar.Production
