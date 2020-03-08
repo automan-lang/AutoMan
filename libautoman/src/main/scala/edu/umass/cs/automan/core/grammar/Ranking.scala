@@ -63,17 +63,30 @@ object Ranking {
             case Some(p) => p match {
               // count choice if haven't seen yet
               case choice: Choices => {
-                if (choice.isLeafNT(counted, curSym) && !counted.contains(curSym)) {
-                  counted = counted + curSym
-                  //bases :+ choice.count(g, counted)
+                if(choice.isLeafNT(counted, curSym)) {
                   val newBase = choice.count(g, counted)
-                  println(s"${curSym} has base ${newBase}")
+                  println(s"${curSym} is LNT has base ${newBase}")
                   baseMap += curSym -> newBase
-                  //bases = bases :+ newBase
-                } else if (!counted.contains(curSym)) { // only re-enqueue if not LNT and haven't counted it
-                  q.enqueue(name)
-                  println(s"Enqueuing ${curSym} 69") // this is repeating
+                } else if(choice.mapsToSelfAndTerm(counted, curSym)) {
+                  println(s"${curSym} MTSAT and has base ${g.maxDepth}")
+                  baseMap += curSym -> g.maxDepth
+                } else if(choice.isInfinite(counted, curSym)) {
+                  println(s"${curSym} is infinite and has base 1")
+                  baseMap += curSym -> 1
+                } else {
+                  throw new Error("choice is screwed up")
                 }
+//                if (choice.isLeafNT(counted, curSym) && !counted.contains(curSym)) {
+//                  counted = counted + curSym
+//                  //bases :+ choice.count(g, counted)
+//                  val newBase = choice.count(g, counted)
+//                  println(s"${curSym} has base ${newBase}")
+//                  baseMap += curSym -> newBase
+//                  //bases = bases :+ newBase
+//                } else if (!counted.contains(curSym)) { // only re-enqueue if not LNT and haven't counted it
+//                  q.enqueue(name)
+//                  println(s"Enqueuing ${curSym} 69") // this is repeating
+//                }
               }
               // enqueue opt sequences
               case opt: OptionProduction => {
@@ -498,33 +511,7 @@ object Ranking {
       )
     )
 
-    val recGrammar: Grammar = Grammar(
-      Map(
-        "Start" -> new Name("Seq"),
-        "Seq" -> recSeq,
-        "a" -> new Choices(
-          List(
-            new Sequence(
-              List(
-                new Name("b"),
-                new Name("a")
-              )
-            )
-          )
-        ),
-        "b" -> new Choices(
-          List(
-            new Terminal("1"),
-            new Terminal("2"),
-            new Terminal("3")
-          )
-        )
-      ),
-      "Start",
-      7
-    )
-
-    val recGrammar2: Grammar = Grammar(
+    val infiniteRecGrammar: Grammar = Grammar(
       Map(
         "Start" -> new Name("Seq"),
         "Seq" -> recSeq,
@@ -550,6 +537,114 @@ object Ranking {
       7
     )
 
+    val nonInfinRecGrammar: Grammar = Grammar(
+      Map(
+        "Start" -> new Name("Seq"),
+        "Seq" -> recSeq,
+        "a" -> new Choices(
+          List(
+            new Sequence(
+              List(
+                new Name("a"),
+                new Name("b")
+              )
+            ),
+            new Terminal("1")
+          )
+        ),
+        "b" -> new Choices(
+          List(
+            new Terminal("1"),
+            new Terminal("2"),
+            new Terminal("3")
+          )
+        )
+      ),
+      "Start",
+      7
+    )
+
+    val testLNT = new Choices(
+      List(
+        new Terminal("1"),
+        new Terminal("2"),
+        new Terminal("3")
+      )
+    )
+
+    val testInfinite = new Choices(
+      List(
+        new Name("a")
+      )
+    )
+
+    val testNoninfinite = new Choices(
+      List(
+        new Name("a"),
+        new Terminal("1")
+      )
+    )
+
+    val testLNTWithSeq = new Choices(
+      List(
+        new Sequence(
+          List(
+            new Terminal("1"),
+            new Terminal("2"),
+            new Terminal("3")
+          )
+        )
+      )
+    )
+
+    val testInfinWithSeq = new Choices(
+      List(
+        new Sequence(
+          List(
+            new Name("a"),
+            new Terminal("1")
+          )
+        )
+      )
+    )
+
+    val testNonInfinWithSeq = new Choices(
+      List(
+        new Sequence(
+          List(
+            new Name("a"),
+            new Terminal("1")
+          )
+        ),
+        new Terminal("1")
+      )
+    )
+
+    assert(testLNT.isLeafNT(Set[String](), "a"))
+    assert(!(testLNT.isInfinite(Set[String](), "a")))
+    assert(!testLNT.mapsToSelfAndTerm(Set[String](), "a"))
+
+    assert(!testInfinite.isLeafNT(Set[String](), "a"))
+    assert((testInfinite.isInfinite(Set[String](), "a")))
+    assert(!testInfinite.mapsToSelfAndTerm(Set[String](), "a"))
+
+    assert(!testNoninfinite.isLeafNT(Set[String](), "a"))
+    assert(!(testNoninfinite.isInfinite(Set[String](), "a")))
+    assert(testNoninfinite.mapsToSelfAndTerm(Set[String](), "a"))
+
+    assert(testLNTWithSeq.isLeafNT(Set[String](), "a"))
+    assert(!(testLNTWithSeq.isInfinite(Set[String](), "a")))
+    assert(!testLNTWithSeq.mapsToSelfAndTerm(Set[String](), "a"))
+
+    assert(!testInfinWithSeq.isLeafNT(Set[String](), "a"))
+    assert((testInfinWithSeq.isInfinite(Set[String](), "a")))
+    assert(!testInfinWithSeq.mapsToSelfAndTerm(Set[String](), "a"))
+
+    assert(!testNonInfinWithSeq.isLeafNT(Set[String](), "a"))
+    assert(!(testNonInfinWithSeq.isInfinite(Set[String](), "a")))
+    assert(testNonInfinWithSeq.mapsToSelfAndTerm(Set[String](), "a"))
+
+
    // println(cbProd.toQuestionText(0))
 //    val (bod, opts) = cbProd.toQuestionText(0)
 //    println(bod)
@@ -557,8 +652,8 @@ object Ranking {
 
     //println(generateBases(recGrammar, List[Int](), Set[String]())._1)
     //recGrammar.curSymbol = recGrammar.startSymbol
-    println(s"New GB recursive: ${newGenerateBases(recGrammar)}")
-    println(s"New GB recursive: ${newGenerateBases(recGrammar2)}")
+    println(s"infinite: ${newGenerateBases(infiniteRecGrammar)}")
+    println(s"noninfinite: ${newGenerateBases(nonInfinRecGrammar)}")
     println()
 //    println(generateBases(grammar, List[Int](), Set[String]())._1)
 //    println(s"New GB Linda: ${newGenerateBases(grammar)}")
