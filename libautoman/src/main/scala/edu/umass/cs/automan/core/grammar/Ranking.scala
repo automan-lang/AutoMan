@@ -39,7 +39,7 @@ object Ranking {
     counted = counted + curSym
 //    // get first sequence
     val firstSeq = getSeq(g, curSym)
-    println(firstSeq)
+    //println(firstSeq)
     //q += firstSeq
     q.enqueue(firstSeq)
 
@@ -48,16 +48,16 @@ object Ranking {
       samp match {
         // We'll hit a Sequence first and in any Options. Enqueue all its children.
         case seq: Sequence => {
-          println("first elem " + seq.sampleSpec(0))
+          //println("first elem " + seq.sampleSpec(0))
           for(n <- seq.getList()) {
             q.enqueue(n)
-            println(s"Enqueuing ${n.sample()} 52")
+            //println(s"Enqueuing ${n.sample()} 52")
           }
         }
           // need to get symbol associated with Name and go from there
         case name: Name => {
           curSym = name.sample() // current name
-          println(s"sampling ${curSym}")
+          //println(s"sampling ${curSym}")
           val prod = g.rules.get(curSym)
           prod match {
             case Some(p) => p match {
@@ -65,13 +65,13 @@ object Ranking {
               case choice: Choices => {
                 if(choice.isLeafNT(counted, curSym)) {
                   val newBase = choice.count(g, counted)
-                  println(s"${curSym} is LNT has base ${newBase}")
+                  //println(s"${curSym} is LNT has base ${newBase}")
                   baseMap += curSym -> newBase
                 } else if(choice.mapsToSelfAndTerm(counted, curSym)) {
-                  println(s"${curSym} MTSAT and has base ${g.maxDepth}")
+                  //println(s"${curSym} MTSAT and has base ${g.maxDepth}")
                   baseMap += curSym -> g.maxDepth
                 } else if(choice.isInfinite(counted, curSym)) {
-                  println(s"${curSym} is infinite and has base 1")
+                  //println(s"${curSym} is infinite and has base 1")
                   baseMap += curSym -> 1
                 } else {
                   throw new Error("choice is screwed up")
@@ -95,7 +95,7 @@ object Ranking {
                 assert(optSeq.isInstanceOf[Sequence])
                 for (n <- optSeq.asInstanceOf[Sequence].getList()) {
                   q.enqueue(n)
-                  println(s"Enqueuing ${curSym} 79")
+                  //println(s"Enqueuing ${curSym} 79")
                 }
               }
             }
@@ -111,7 +111,7 @@ object Ranking {
                 if (choice.isLeafNT(counted, curSym) && !counted.contains(curSym)) {
                   counted = counted + curSym
                   val newBase = choice.count(g, counted)
-                  println(s"${curSym} has base ${newBase}")
+                  //println(s"${curSym} has base ${newBase}")
                   baseMap += curSym -> newBase
                   //bases = bases :+ newBase
                 } else {
@@ -301,7 +301,8 @@ object Ranking {
   // given a grammar, an int, and the bases, creates a string of an experiment instance
   def buildInstance(grammar: Grammar, choice: Int): (StringBuilder, List[StringBuilder]) = {
     grammar.curSymbol = grammar.startSymbol
-    val (bases, counted) = generateBases(grammar, List[Int](), Set[String]()) // todo fix for options
+    //val (bases, counted) = generateBases(grammar, List[Int](), Set[String]()) // todo fix for options
+    val bases = newGenerateBases(grammar)
     //println(bases)
     val assignment = unrank(choice, bases.toArray) // get the assignment from the number todo fix
     //println(assignment)
@@ -655,6 +656,12 @@ object Ranking {
     println(s"infinite: ${newGenerateBases(infiniteRecGrammar)}")
     println(s"noninfinite: ${newGenerateBases(nonInfinRecGrammar)}")
     println()
+
+    println(buildInstance(infiniteRecGrammar, 0)._1) // nondeterministic
+    println(buildInstance(nonInfinRecGrammar, 0)._1)
+//    println(buildInstance(nonInfinRecGrammar, 20)._1)
+//    println(buildInstance(nonInfinRecGrammar, 21)._1)
+
 //    println(generateBases(grammar, List[Int](), Set[String]())._1)
 //    println(s"New GB Linda: ${newGenerateBases(grammar)}")
 //    println(rank(Array(0,1,3,0,0,0,0), Array(4,5,6,5,5,5,5)))

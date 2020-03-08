@@ -106,7 +106,17 @@ case class Grammar(_rules: Map[String, Production], _startSymbol: String, _maxDe
             // to the assignment specified in the assignment array
           case choice: Choices => {
             val toRetScope = new Scope(this, curPos)
-            toRetScope.assign(curSymbol, choice.getOptions()(assignment(curPos)).sample())
+            val toSamp = choice.getOptions()(assignment(curPos))
+            toSamp match {
+              case seq: Sequence => {
+                for(p <- seq.getList()) {
+                  toRetScope.assign(curSymbol, p.sample())
+                }
+              }
+              case p: Production => {
+                toRetScope.assign(curSymbol, toSamp.sample())
+              }
+            }
             curPos = curPos + 1 // incrementing curPos here
             (toRetScope, curPos, curBound)
           }

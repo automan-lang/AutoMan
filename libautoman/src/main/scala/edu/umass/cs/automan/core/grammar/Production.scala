@@ -146,9 +146,13 @@ class Terminal(word: String) extends TextProduction {
 // A sequence, aka a combination of other terminals/choices and the ordering structure of each problem
 class Sequence(sentence: List[Production]) extends TextProduction {
   override def sample(): String = {
-    val ran = new Random()
-    sentence(ran.nextInt(sentence.length)).sample()
+    val samp: StringBuilder = new StringBuilder()
+    for (o <- sentence) {
+      samp.addString(new StringBuilder(o.sample()))
+    }
+    samp.toString()
   }
+
   override def count(g: Grammar, counted: Set[String]): Int = {
     var c: Int = 1 // TODO: is this ok?
     for (e <- sentence){
