@@ -62,31 +62,10 @@ object Ranking {
           prod match {
             case Some(p) => p match {
               // count choice if haven't seen yet
-              case choice: Choices => {
-                if(choice.isLeafNT(counted, curSym)) {
-                  val newBase = choice.count(g, counted)
-                  //println(s"${curSym} is LNT has base ${newBase}")
-                  baseMap += curSym -> newBase
-                } else if(choice.mapsToSelfAndTerm(counted, curSym)) {
-                  //println(s"${curSym} MTSAT and has base ${g.maxDepth}")
-                  baseMap += curSym -> g.maxDepth
-                } else if(choice.isInfinite(counted, curSym)) {
-                  //println(s"${curSym} is infinite and has base 1")
-                  baseMap += curSym -> 1
-                } else {
-                  throw new Error("choice is screwed up")
-                }
-//                if (choice.isLeafNT(counted, curSym) && !counted.contains(curSym)) {
-//                  counted = counted + curSym
-//                  //bases :+ choice.count(g, counted)
-//                  val newBase = choice.count(g, counted)
-//                  println(s"${curSym} has base ${newBase}")
-//                  baseMap += curSym -> newBase
-//                  //bases = bases :+ newBase
-//                } else if (!counted.contains(curSym)) { // only re-enqueue if not LNT and haven't counted it
-//                  q.enqueue(name)
-//                  println(s"Enqueuing ${curSym} 69") // this is repeating
-//                }
+              case choice: Choices => { // todo just call count and handle opts individually
+                val newBase = choice.count(g, counted, curSym)
+                println(s"${curSym} has base ${newBase}")
+                baseMap += curSym -> newBase
               }
               // enqueue opt sequences
               case opt: OptionProduction => {
@@ -108,15 +87,9 @@ object Ranking {
             case Some(p) => p match {
               // count choice if haven't seen yet
               case choice: Choices => {
-                if (choice.isLeafNT(counted, curSym) && !counted.contains(curSym)) {
-                  counted = counted + curSym
-                  val newBase = choice.count(g, counted)
-                  //println(s"${curSym} has base ${newBase}")
-                  baseMap += curSym -> newBase
-                  //bases = bases :+ newBase
-                } else {
-                  q.enqueue(choice)
-                }
+                val newBase = choice.count(g, counted, curSym)
+                println(s"${curSym} has base ${newBase}")
+                baseMap += curSym -> newBase
               }
               // enqueue opt sequences
               case opt: OptionProduction => {
@@ -162,103 +135,103 @@ object Ranking {
     seq
   }
 
-  /**
-    * Generates bases for a given grammar for use in the mixed radix function.
-    * Assumes all Options associated with a Name.
-    * @param g The grammar
-    * @param bases The list of bases so far
-    * @param counted The counted names so far
-    * @return A tuple of the bases and counted symbols
-    */
-  def generateBases(g: Grammar, bases: List[Int], counted: Set[String]): (List[Int], Set[String]) = {
-    var soFarBases: List[Int] = bases
-    var soFarCounted: Set[String] = counted
-
-    val samp: Option[Production] = g.rules.get(g.curSymbol)
-    samp match {
-      case Some(s) => {
-        s match {
-          // This should only trigger when we get the start symbol
-          case name: Name => {
-            g.curSymbol = name.sample()
-            generateBases(g, bases, counted)
-          }
-          // We'll hit a Sequence first and in any Options
-          case seq: Sequence => {
-            for(n <- seq.getList()) {
-              n match {
-                case name: Name => { // Sample name and run again
-                  val toSamp = name.sample()
-                  if(!soFarCounted.contains(toSamp)) { // only count if haven't seen it yet
-                    soFarCounted = soFarCounted + toSamp // todo helper function?
-                    g.curSymbol = toSamp
-                    val (newBase, newCount) = generateBases(g, soFarBases, soFarCounted)
-                    soFarBases = newBase
-                    soFarCounted = newCount
-                  }
-                }
-                case func: Function => { // todo combine with above if possible
-                  val toSamp = func.sample()
-                  if(!soFarCounted.contains(toSamp)) { // only count if haven't seen it yet
-                    soFarCounted = soFarCounted + toSamp
-                    g.curSymbol = toSamp
-                    val (newBase, newCount) = generateBases(g, soFarBases, soFarCounted)
-                    soFarBases = newBase
-                    soFarCounted = newCount
-                  }
-                }
-                case p: Production => {} // Nothing else counts
-              }
-            }
-            (soFarBases, soFarCounted)
-          }
-          // If we've hit a Choices, we count those and add it to the bases
-          case choice: Choices => {
-            (soFarBases ++ List[Int](choice.count(g, soFarCounted)), soFarCounted)
-          }
-          // We came to an OptionProd through a Name
-          case opt: OptionProduction => { // we have to get inside the option production
-            val internalProd = opt.getText()
-            internalProd match {
-              case seq: Sequence => { // there should be a sequence inside every OptionProduction
-                for(n <- seq.getList()) {
-                  n match {
-                    case name: Name => { // only thing we have to worry about here is names and functions
-                      val toSamp = name.sample()
-                      if(!soFarCounted.contains(toSamp)) { // only count if haven't seen it yet
-                        soFarCounted = soFarCounted + toSamp
-                        g.curSymbol = toSamp
-                        val (newBases, newCount) = generateBases(g, soFarBases, soFarCounted)
-                        soFarBases = newBases
-                        soFarCounted = newCount
-                      }
-                      (soFarBases, soFarCounted)
-                    }
-                    case func: Function => { // todo deal with this
-                      val toSamp = func.sample()
-                      if(!soFarCounted.contains(toSamp)) { // only count if haven't seen it yet
-                        soFarCounted = soFarCounted + toSamp
-                        g.curSymbol = toSamp
-                        val (newBases, newCount) = generateBases(g, soFarBases, soFarCounted)
-                        soFarBases = newBases
-                        soFarCounted = newCount
-                      }
-                      (soFarBases, soFarCounted)
-                    }
-                    case p: Production => { (soFarBases, soFarCounted) }
-                  }
-                }
-                (soFarBases, soFarCounted)
-              }
-              case p: Production => { throw new Error("There should be a Sequence inside ever OptionProduction.")}
-            }
-          }
-        }
-      }
-      case None => throw new Error(s"${g.curSymbol} could not be found.")
-    }
-
-  }
+//  /**
+//    * Generates bases for a given grammar for use in the mixed radix function.
+//    * Assumes all Options associated with a Name.
+//    * @param g The grammar
+//    * @param bases The list of bases so far
+//    * @param counted The counted names so far
+//    * @return A tuple of the bases and counted symbols
+//    */
+//  def generateBases(g: Grammar, bases: List[Int], counted: Set[String]): (List[Int], Set[String]) = {
+//    var soFarBases: List[Int] = bases
+//    var soFarCounted: Set[String] = counted
+//
+//    val samp: Option[Production] = g.rules.get(g.curSymbol)
+//    samp match {
+//      case Some(s) => {
+//        s match {
+//          // This should only trigger when we get the start symbol
+//          case name: Name => {
+//            g.curSymbol = name.sample()
+//            generateBases(g, bases, counted)
+//          }
+//          // We'll hit a Sequence first and in any Options
+//          case seq: Sequence => {
+//            for(n <- seq.getList()) {
+//              n match {
+//                case name: Name => { // Sample name and run again
+//                  val toSamp = name.sample()
+//                  if(!soFarCounted.contains(toSamp)) { // only count if haven't seen it yet
+//                    soFarCounted = soFarCounted + toSamp // todo helper function?
+//                    g.curSymbol = toSamp
+//                    val (newBase, newCount) = generateBases(g, soFarBases, soFarCounted)
+//                    soFarBases = newBase
+//                    soFarCounted = newCount
+//                  }
+//                }
+//                case func: Function => { // todo combine with above if possible
+//                  val toSamp = func.sample()
+//                  if(!soFarCounted.contains(toSamp)) { // only count if haven't seen it yet
+//                    soFarCounted = soFarCounted + toSamp
+//                    g.curSymbol = toSamp
+//                    val (newBase, newCount) = generateBases(g, soFarBases, soFarCounted)
+//                    soFarBases = newBase
+//                    soFarCounted = newCount
+//                  }
+//                }
+//                case p: Production => {} // Nothing else counts
+//              }
+//            }
+//            (soFarBases, soFarCounted)
+//          }
+//          // If we've hit a Choices, we count those and add it to the bases
+//          case choice: Choices => {
+//            (soFarBases ++ List[Int](choice.count(g, soFarCounted, )), soFarCounted)
+//          }
+//          // We came to an OptionProd through a Name
+//          case opt: OptionProduction => { // we have to get inside the option production
+//            val internalProd = opt.getText()
+//            internalProd match {
+//              case seq: Sequence => { // there should be a sequence inside every OptionProduction
+//                for(n <- seq.getList()) {
+//                  n match {
+//                    case name: Name => { // only thing we have to worry about here is names and functions
+//                      val toSamp = name.sample()
+//                      if(!soFarCounted.contains(toSamp)) { // only count if haven't seen it yet
+//                        soFarCounted = soFarCounted + toSamp
+//                        g.curSymbol = toSamp
+//                        val (newBases, newCount) = generateBases(g, soFarBases, soFarCounted)
+//                        soFarBases = newBases
+//                        soFarCounted = newCount
+//                      }
+//                      (soFarBases, soFarCounted)
+//                    }
+//                    case func: Function => { // todo deal with this
+//                      val toSamp = func.sample()
+//                      if(!soFarCounted.contains(toSamp)) { // only count if haven't seen it yet
+//                        soFarCounted = soFarCounted + toSamp
+//                        g.curSymbol = toSamp
+//                        val (newBases, newCount) = generateBases(g, soFarBases, soFarCounted)
+//                        soFarBases = newBases
+//                        soFarCounted = newCount
+//                      }
+//                      (soFarBases, soFarCounted)
+//                    }
+//                    case p: Production => { (soFarBases, soFarCounted) }
+//                  }
+//                }
+//                (soFarBases, soFarCounted)
+//              }
+//              case p: Production => { throw new Error("There should be a Sequence inside ever OptionProduction.")}
+//            }
+//          }
+//        }
+//      }
+//      case None => throw new Error(s"${g.curSymbol} could not be found.")
+//    }
+//
+//  }
 
   // rank based on array
   def rank(vals: Array[Int], bases: Array[Int]): Int = {
@@ -544,13 +517,14 @@ object Ranking {
         "Seq" -> recSeq,
         "a" -> new Choices(
           List(
+            new Terminal("1"),
             new Sequence(
               List(
                 new Name("a"),
                 new Name("b")
               )
-            ),
-            new Terminal("1")
+            )//,
+            //new Terminal("1")
           )
         ),
         "b" -> new Choices(
@@ -621,29 +595,29 @@ object Ranking {
       )
     )
 
-    assert(testLNT.isLeafNT(Set[String](), "a"))
-    assert(!(testLNT.isInfinite(Set[String](), "a")))
-    assert(!testLNT.mapsToSelfAndTerm(Set[String](), "a"))
-
-    assert(!testInfinite.isLeafNT(Set[String](), "a"))
-    assert((testInfinite.isInfinite(Set[String](), "a")))
-    assert(!testInfinite.mapsToSelfAndTerm(Set[String](), "a"))
-
-    assert(!testNoninfinite.isLeafNT(Set[String](), "a"))
-    assert(!(testNoninfinite.isInfinite(Set[String](), "a")))
-    assert(testNoninfinite.mapsToSelfAndTerm(Set[String](), "a"))
-
-    assert(testLNTWithSeq.isLeafNT(Set[String](), "a"))
-    assert(!(testLNTWithSeq.isInfinite(Set[String](), "a")))
-    assert(!testLNTWithSeq.mapsToSelfAndTerm(Set[String](), "a"))
-
-    assert(!testInfinWithSeq.isLeafNT(Set[String](), "a"))
-    assert((testInfinWithSeq.isInfinite(Set[String](), "a")))
-    assert(!testInfinWithSeq.mapsToSelfAndTerm(Set[String](), "a"))
-
-    assert(!testNonInfinWithSeq.isLeafNT(Set[String](), "a"))
-    assert(!(testNonInfinWithSeq.isInfinite(Set[String](), "a")))
-    assert(testNonInfinWithSeq.mapsToSelfAndTerm(Set[String](), "a"))
+//    assert(testLNT.isLeafNT(Set[String](), "a"))
+//    assert(!(testLNT.isInfinite(Set[String](), "a")))
+//    assert(!testLNT.mapsToSelfAndTerm(Set[String](), "a"))
+//
+//    assert(!testInfinite.isLeafNT(Set[String](), "a"))
+//    assert((testInfinite.isInfinite(Set[String](), "a")))
+//    assert(!testInfinite.mapsToSelfAndTerm(Set[String](), "a"))
+//
+//    assert(!testNoninfinite.isLeafNT(Set[String](), "a"))
+//    assert(!(testNoninfinite.isInfinite(Set[String](), "a")))
+//    assert(testNoninfinite.mapsToSelfAndTerm(Set[String](), "a"))
+//
+//    assert(testLNTWithSeq.isLeafNT(Set[String](), "a"))
+//    assert(!(testLNTWithSeq.isInfinite(Set[String](), "a")))
+//    assert(!testLNTWithSeq.mapsToSelfAndTerm(Set[String](), "a"))
+//
+//    assert(!testInfinWithSeq.isLeafNT(Set[String](), "a"))
+//    assert((testInfinWithSeq.isInfinite(Set[String](), "a")))
+//    assert(!testInfinWithSeq.mapsToSelfAndTerm(Set[String](), "a"))
+//
+//    assert(!testNonInfinWithSeq.isLeafNT(Set[String](), "a"))
+//    assert(!(testNonInfinWithSeq.isInfinite(Set[String](), "a")))
+//    assert(testNonInfinWithSeq.mapsToSelfAndTerm(Set[String](), "a"))
 
 
    // println(cbProd.toQuestionText(0))
@@ -653,13 +627,13 @@ object Ranking {
 
     //println(generateBases(recGrammar, List[Int](), Set[String]())._1)
     //recGrammar.curSymbol = recGrammar.startSymbol
-    println(s"infinite: ${newGenerateBases(infiniteRecGrammar)}")
-    println(s"noninfinite: ${newGenerateBases(nonInfinRecGrammar)}")
+    //println(s"infinite: ${newGenerateBases(infiniteRecGrammar)}") // [1,3]
+    println(s"noninfinite: ${newGenerateBases(nonInfinRecGrammar)}") // [8,3]
     println()
 
-    println(buildInstance(infiniteRecGrammar, 0)._1) // nondeterministic
-    println(buildInstance(nonInfinRecGrammar, 0)._1)
-//    println(buildInstance(nonInfinRecGrammar, 20)._1)
+    //println(buildInstance(infiniteRecGrammar, 0)._1)
+    //println(buildInstance(nonInfinRecGrammar, 0)._1)
+    //println(buildInstance(nonInfinRecGrammar, 20)._1)
 //    println(buildInstance(nonInfinRecGrammar, 21)._1)
 
 //    println(generateBases(grammar, List[Int](), Set[String]())._1)

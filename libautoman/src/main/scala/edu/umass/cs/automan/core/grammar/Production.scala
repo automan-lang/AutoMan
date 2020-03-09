@@ -8,10 +8,10 @@ import scala.util.Random
 
 trait Production {
   def sample(): String
-  def count(g: Grammar, counted: Set[String]): Int
-  def toChoiceArr(g: Grammar): Option[Array[Range]]
+  def count(grammar: Grammar, counted: Set[String], name: String): Int
+  def toChoiceArr(grammar: Grammar): Option[Array[Range]]
   def isLeafProd(): Boolean // Certain prods can terminate
-  def isLeafNT(counted: Set[String], name: String): Boolean // Checking if prod and everything it maps to are LNTs
+  def isLeafNT(counted: Set[String], name: String, grammar: Grammar): Boolean // Checking if prod and everything it maps to are LNTs
 }
 
 trait TextProduction extends Production{}
@@ -28,11 +28,37 @@ class Choices(options: List[Production]) extends TextProduction {
     //    options(ran.nextInt(options.length)).sample()
   }
 
-  override def count(g: Grammar, counted: Set[String]): Int = {
+  override def count(grammar: Grammar, counted: Set[String], name: String): Int = {
     var c: Int = 0
+    var mapsToTerm = false
+    var mapsToSelf = false
+    // todo counter in case of multiple recursive cases?
+
     for (e <- options) { // if an option contains the name that brought us here, it should be k
-      c = c + e.count(g, counted)
-    } // choices are additive
+      if (e.isLeafNT(counted, name, grammar)) { // if LNT, safe to count
+        mapsToTerm = true
+        c += e.count(grammar, counted, name)
+      } else if (checkMapsToSelf(e, counted, name, grammar)) mapsToSelf = true
+    }
+
+    if(mapsToSelf && !mapsToTerm) c = 1 // if infinite, count is 1
+    else if(mapsToSelf && mapsToTerm) c += grammar.maxDepth // if recursive but finite, add k
+
+//      if(e.isLeafNT(counted, name, grammar)) {
+//        c += e.count(grammar, counted, name)
+//        //println(s"${curSym} is LNT has base ${newBase}")
+//        //baseMap += curSym -> newBase
+//      } else if(mapsToSelfAndTerm(e, counted, name, grammar)) { // todo needs to factor in that it might map to term later
+//        //println(s"${curSym} MTSAT and has base ${g.maxDepth}")
+//        c += grammar.maxDepth // todo ignoring other options
+//      } else if(isInfinite(e, counted, name, grammar)) {
+//        //println(s"${curSym} is infinite and has base 1")
+//        c += 1
+//      } else {
+//        throw new Error("choice is screwed up")
+//      }
+      //c = c + newBase
+    //} // choices are additive
     c
   }
 
@@ -43,10 +69,10 @@ class Choices(options: List[Production]) extends TextProduction {
     options(i).sample()
   }
 
-  override def toChoiceArr(g: Grammar): Option[Array[Range]] = {
+  override def toChoiceArr(grammar: Grammar): Option[Array[Range]] = {
     var n: Int = 0
     for (e <- options) {
-      e.toChoiceArr(g) match {
+      e.toChoiceArr(grammar) match {
         case Some(arr) => n += arr.length
         case None => {}
         //case Some(e) => n = n + (e.asInstanceOf[Array[Range]]).toChoiceArr(g).length // counting ranges
@@ -61,69 +87,64 @@ class Choices(options: List[Production]) extends TextProduction {
 
   // A leafNonTerminal must map to all LNTs
   // name is name that maps to this Choices
-  def isLeafNT(counted: Set[String], name: String): Boolean = {
+  def isLeafNT(counted: Set[String], name: String, grammar: Grammar): Boolean = {
     var allNT = true
 
     for (e <- options) {
-      if (!e.isLeafNT(counted, name)) { // if e is LNT, great
+      if (!e.isLeafNT(counted, name, grammar)) { // if e is LNT, great
         allNT = false
-        //        if(e.isInstanceOf[Sequence]) { // if there's a sequence option, have to look at things inside
-        //          for(p <- e.asInstanceOf[Sequence].getList()) {
-        //            // if option doesn't reference itself or hasn't been counted, not LNT
-        //            if(!(p.sample() == name || counted.contains(p.sample()))) allNT = false // todo is this right
-        //          }
-        //        } else if(!counted.contains(e.sample())) allNT = false // if not a Seq and not counted, not an NT
-        //      }
-
-
-        //      if(!(e.isLeafNT(counted, name) || counted.contains(e.sample()))) {
-        //        if(e.isInstanceOf[Sequence]) {
-        //          for(p <- e.asInstanceOf[Sequence].getList()) {
-        //            if(p.sample() == name) allNT = true
-        //          }
-        //        } else if(e.sample() != name) allNT = false // Sequence gets to here
-        //} // pass in name. If not already counted, check if name is same as choice's name. if yes, still LNT (but will need to count as 1 later)
       } // checking if counted contains should be irrelevant bc checking if names are contained in Name.isLeafNT
     }
     allNT
   }
 
-  // returns whether the Choice maps to itself and a terminal or LNT
-  def mapsToSelfAndTerm(counted: Set[String], name: String): Boolean = {
+  // returns whether the specified Production maps to itself and a terminal or LNT
+  def mapsToSelfAndTerm(p: Production, counted: Set[String], name: String, grammar: Grammar): Boolean = {
     var mapsToSelf = false
     var mapsToTerm = false
 
-    for(e <- options) {
-      if(e.isInstanceOf[Sequence]) { // if there's a sequence option, have to look at things inside
-        for(p <- e.asInstanceOf[Sequence].getList()) {
-          if(p.sample() == name) mapsToSelf = true
+    //for(e <- options) {
+      if(p.isInstanceOf[Sequence]) { // if there's a sequence option, have to look at things inside
+        for(l <- p.asInstanceOf[Sequence].getList()) {
+          if(l.sample() == name) mapsToSelf = true
+          if(l.isLeafNT(counted, name, grammar)) mapsToTerm = true // names only LNTs if counted...  TODO get grammar somehow?
         }
       } else {
-        if(e.sample() == name) mapsToSelf = true
-        if(e.isLeafNT(counted, name)) mapsToTerm = true
+        if(p.sample() == name) mapsToSelf = true
+        if(p.isLeafNT(counted, name, grammar)) mapsToTerm = true
       }
-    }
+    //}
     mapsToSelf && mapsToTerm
   }
 
-  // Returns true if this Choice maps to itself and no terminals/LNTs (and so is infinite)
-  def isInfinite(counted: Set[String], name: String): Boolean = {
+  def checkMapsToSelf(p: Production, counted: Set[String], name: String, grammar: Grammar): Boolean = {
+    if(p.isInstanceOf[Sequence]) { // if there's a sequence option, have to look at things inside
+      for(l <- p.asInstanceOf[Sequence].getList()) {
+        if(l.sample() == name) return true
+      }
+    } else {
+      if(p.sample() == name) return true
+    }
+    false
+  }
+
+  // Returns true if the specified Production maps to itself and no terminals/LNTs (and so is infinite)
+  def isInfinite(p: Production, counted: Set[String], name: String, grammar: Grammar): Boolean = {
     var mapsToTerm = false
     var mapsToSelf = false
 
-    for(e <- options) {
-      if(e.isInstanceOf[Sequence]) { // if there's a sequence option, have to look at things inside
-        for(p <- e.asInstanceOf[Sequence].getList()) {
-          if(p.sample() == name) mapsToSelf = true
+    //for(e <- options) {
+      if(p.isInstanceOf[Sequence]) { // if there's a sequence option, have to look at things inside
+        for(l <- p.asInstanceOf[Sequence].getList()) {
+          if(l.sample() == name) mapsToSelf = true
         }
       } else {
-        if(e.sample() == name) mapsToSelf = true
-        if(e.isLeafNT(counted, name)) mapsToTerm = true
+        if(p.sample() == name) mapsToSelf = true
+        if(p.isLeafNT(counted, name, grammar)) mapsToTerm = true
       }
-    }
+    //}
     mapsToSelf && !mapsToTerm
   }
-
 }
 
 // A terminal production
@@ -131,16 +152,16 @@ class Terminal(word: String) extends TextProduction {
   override def sample(): String = {
     word
   }
-  override def count(g: Grammar, counted: Set[String]): Int = 1
+  override def count(grammar: Grammar, counted: Set[String], name: String): Int = 1
 
-  override def toChoiceArr(g: Grammar): Option[Array[Range]] = {
+  override def toChoiceArr(grammar: Grammar): Option[Array[Range]] = {
     Some(Array(0 to 0))
     //toRet = toRet + (0 to 0)
   }
 
   override def isLeafProd(): Boolean = true
 
-  override def isLeafNT(counted: Set[String], name: String): Boolean = true
+  override def isLeafNT(counted: Set[String], name: String, grammar: Grammar): Boolean = true
 }
 
 // A sequence, aka a combination of other terminals/choices and the ordering structure of each problem
@@ -153,10 +174,10 @@ class Sequence(sentence: List[Production]) extends TextProduction {
     samp.toString()
   }
 
-  override def count(g: Grammar, counted: Set[String]): Int = {
+  override def count(grammar: Grammar, counted: Set[String], name: String): Int = {
     var c: Int = 1 // TODO: is this ok?
     for (e <- sentence){
-      if(!counted.contains(e.sample())) c = c*e.count(g, counted) // counting b here
+      if(!counted.contains(e.sample())) c = c*e.count(grammar, counted, name) // counting b here
       //else c = c*g.maxDepth
     } // nonterminals are multiplicative
     c
@@ -168,10 +189,10 @@ class Sequence(sentence: List[Production]) extends TextProduction {
   }
   def getList(): List[Production] = sentence
 
-  override def toChoiceArr(g: Grammar): Option[Array[Range]] = {
+  override def toChoiceArr(grammar: Grammar): Option[Array[Range]] = {
     var choiceArr: Array[Range] = new Array[Range](sentence.length)
     for (e <- sentence) {
-      e.toChoiceArr(g) match {
+      e.toChoiceArr(grammar) match {
         case Some(arr) => {
           val newArr: Array[Range] = choiceArr ++ arr
           choiceArr = newArr
@@ -185,13 +206,14 @@ class Sequence(sentence: List[Production]) extends TextProduction {
 
   override def isLeafProd(): Boolean = false
 
-  override def isLeafNT(counted: Set[String], name: String): Boolean = {
+  override def isLeafNT(counted: Set[String], name: String, grammar: Grammar): Boolean = {
     var allNT = true
 
     for (e <- sentence) {
-      if (!e.isLeafNT(counted, name)) { // if e is LNT, great
-        allNT = false
-      }
+      if(!counted.contains(e.sample()) || e.sample() == name) allNT = false //todo contains or ==?
+//      if (!e.isLeafNT(counted, name, grammar)) { // if e is LNT, great
+//        if(!counted.contains(name) || e.sample() == name) allNT = false
+//      }
     }
     allNT
   }
@@ -200,24 +222,44 @@ class Sequence(sentence: List[Production]) extends TextProduction {
 // A name associated with a edu.umass.cs.automan.core.grammar.Production
 class Name(n: String) extends TextProduction {
   override def sample(): String = n // sample returns name for further lookup
-  def count(g: Grammar, counted: Set[String]): Int = {
+  def count(grammar: Grammar, counted: Set[String], name: String): Int = {
     var c: Set[String] = counted
 
     if(!counted.contains(n)){
       c = c + n
-      g.rules(this.sample()).count(g, c)
-    } else g.maxDepth//1 // TODO k goes here I think
+      grammar.rules(this.sample()).count(grammar, c, name)
+    } else grammar.maxDepth//1 // TODO k goes here I think
   }
 
-  override def toChoiceArr(g: Grammar): Option[Array[Range]] = {
-    g.rules(this.sample()).toChoiceArr(g)
+  override def toChoiceArr(grammar: Grammar): Option[Array[Range]] = {
+    grammar.rules(this.sample()).toChoiceArr(grammar)
   }
 
   override def isLeafProd(): Boolean = false
 
-  override def isLeafNT(counted: Set[String], name: String): Boolean = {
-    if(counted.contains(n)) true
-    else false
+  override def isLeafNT(counted: Set[String], name: String, grammar: Grammar): Boolean = {
+    val linkedProd = grammar.rules.get(name)
+    linkedProd match {
+      case Some(l) => {
+        if (l.isLeafNT(counted, name, grammar)) return true
+        else return false
+//        l match {
+//          case nt: Sequence => {
+//            //if (nt)
+//            if (nt.isLeafNT(counted, name, grammar)) return true
+//            else return false
+//          }
+//          case p: Production => {
+//            if (p.isLeafNT(counted, name, grammar)) return true
+//            else return false
+//          }
+//        }
+      }
+      case None => throw new Error("Name not found")
+    }
+    false
+//    if(counted.contains(n)) true
+//    else false
   }
 }
 
@@ -225,15 +267,15 @@ class Name(n: String) extends TextProduction {
 // fun maps those choices to the function results
 class Function(fun: Map[String,String], param: String, capitalize: Boolean) extends TextProduction {
   override def sample(): String = param
-  override def count(g: Grammar, counted: Set[String]): Int = 1
+  override def count(grammar: Grammar, counted: Set[String], name: String): Int = 1
   def runFun(s: String): String = { // "call" the function on the string
     if(capitalize) fun(s).capitalize
     else fun(s)
   }
 
-  override def toChoiceArr(g: Grammar): Option[Array[Range]] = Some(Array(0 to 0)) //None //Option[Array[Range]()] //Array(null) //TODO: right?
+  override def toChoiceArr(grammar: Grammar): Option[Array[Range]] = Some(Array(0 to 0)) //None //Option[Array[Range]()] //Array(null) //TODO: right?
   override def isLeafProd(): Boolean = true // todo not sure
-  override def isLeafNT(counted: Set[String], name: String): Boolean = {
+  override def isLeafNT(counted: Set[String], name: String, grammar: Grammar): Boolean = {
     if(counted.contains(param)) true
     else false
   }
@@ -248,30 +290,30 @@ abstract class QuestionProduction(g: Grammar) extends Production { // TODO make 
 
   override def sample(): String
 
-  override def count(g: Grammar, counted: Set[String]): Int
+  override def count(grammar: Grammar, counted: Set[String], name: String): Int
 
-  override def toChoiceArr(g: Grammar): Option[Array[Range]] = Some(Array(0 to 0))
+  override def toChoiceArr(grammar: Grammar): Option[Array[Range]] = Some(Array(0 to 0))
 
   // returns tuple (body text, options list)
   def toQuestionText(variation: Int): (String, List[String])
 
   def questionType: QuestionType = _questionType
 
-  def isLeafNT(counted: Set[String], name: String): Boolean = false
+  def isLeafNT(counted: Set[String], name: String, grammar: Grammar): Boolean = false
 }
 
 class OptionProduction(text: TextProduction) extends Production {
   override def sample(): String = text.sample()
 
-  override def count(g: Grammar, counted: Set[String]): Int = text.count(g, counted)
+  override def count(grammar: Grammar, counted: Set[String], name: String): Int = text.count(grammar, counted, name)
 
   def getText() = text
 
-  override def toChoiceArr(g: Grammar): Option[Array[Range]] = text.toChoiceArr(g)
+  override def toChoiceArr(grammar: Grammar): Option[Array[Range]] = text.toChoiceArr(grammar)
 
   override def isLeafProd(): Boolean = false
 
-  override def isLeafNT(counted: Set[String], name: String): Boolean = false
+  override def isLeafNT(counted: Set[String], name: String, grammar: Grammar): Boolean = false
 }
 
 class EstimateQuestionProduction(g: Grammar, body: TextProduction) extends QuestionProduction(g) {
@@ -279,7 +321,7 @@ class EstimateQuestionProduction(g: Grammar, body: TextProduction) extends Quest
 
   override def sample(): String = body.sample()
 
-  override def count(g: Grammar, counted: Set[String]): Int = ???
+  override def count(grammar: Grammar, counted: Set[String], name: String): Int = ???
 
   // todo grammar necessary?
   override def toQuestionText(variation: Int): (String, List[String]) = {
@@ -306,7 +348,7 @@ class CheckboxQuestionProduction(g: Grammar, body: TextProduction) extends Quest
     body.sample()
   }
 
-  override def count(g: Grammar, counted: Set[String]): Int = ???
+  override def count(grammar: Grammar, counted: Set[String], name: String): Int = ???
 
   override def toQuestionText(variation: Int): (String, List[String]) = {
 //    val body: String = Ranking.buildInstance(g, variation) // todo where does body come in?
@@ -329,7 +371,7 @@ class CheckboxesQuestionProduction(g: Grammar, body: TextProduction) extends Que
     body.sample()
   }
 
-  override def count(g: Grammar, counted: Set[String]): Int = ???
+  override def count(grammar: Grammar, counted: Set[String], name: String): Int = ???
 
   override def toQuestionText(variation: Int): (String, List[String]) = {
     val (bod, opts): (StringBuilder, List[StringBuilder]) = Ranking.buildInstance(g, variation)
@@ -346,7 +388,7 @@ class FreetextQuestionProduction(g: Grammar, body: TextProduction) extends Quest
 
   override def sample(): String = body.sample()
 
-  override def count(g: Grammar, counted: Set[String]): Int = ???
+  override def count(grammar: Grammar, counted: Set[String], name: String): Int = ???
 
   override def toQuestionText(variation: Int): (String, List[String]) = {
     val (bod, opts): (StringBuilder, List[StringBuilder]) = Ranking.buildInstance(g, variation)
@@ -363,7 +405,7 @@ class FreetextsQuestionProduction(g: Grammar, body: TextProduction) extends Ques
 
   override def sample(): String = body.sample()
 
-  override def count(g: Grammar, counted: Set[String]): Int = ???
+  override def count(grammar: Grammar, counted: Set[String], name: String): Int = ???
 
   override def toQuestionText(variation: Int): (String, List[String]) = {
     val (bod, opts): (StringBuilder, List[StringBuilder]) = Ranking.buildInstance(g, variation)
@@ -380,7 +422,7 @@ class RadioQuestionProduction(g: Grammar, body: TextProduction) extends Question
 
   override def sample(): String = body.sample()
 
-  override def count(g: Grammar, counted: Set[String]): Int = ???
+  override def count(grammar: Grammar, counted: Set[String], name: String): Int = ???
 
   override def toQuestionText(variation: Int): (String, List[String]) = {
     val (bod, opts): (StringBuilder, List[StringBuilder]) = Ranking.buildInstance(g, variation)
@@ -397,7 +439,7 @@ class RadiosQuestionProduction(g: Grammar, body: TextProduction) extends Questio
 
   override def sample(): String = body.sample()
 
-  override def count(g: Grammar, counted: Set[String]): Int = ???
+  override def count(grammar: Grammar, counted: Set[String], name: String): Int = ???
 
   override def toQuestionText(variation: Int): (String, List[String]) = {
     val (bod, opts): (StringBuilder, List[StringBuilder]) = Ranking.buildInstance(g, variation)

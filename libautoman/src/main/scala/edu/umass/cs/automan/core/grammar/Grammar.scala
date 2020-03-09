@@ -1,6 +1,6 @@
 package edu.umass.cs.automan.core.grammar
 
-import edu.umass.cs.automan.core.grammar.SampleGrammar.buildString
+//import edu.umass.cs.automan.core.grammar.SampleGrammar.buildString
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -38,7 +38,7 @@ case class Grammar(_rules: Map[String, Production], _startSymbol: String, _maxDe
     var opts = 0 // TODO will this only work if it starts with an addition?
     samp match {
       case Some(samp) => {
-        opts = soFar + samp.count(this, counted)
+        opts = soFar + samp.count(this, counted, curSymbol)
       }
       case None => throw new Exception("Symbol could not be found")
     }
@@ -103,10 +103,14 @@ case class Grammar(_rules: Map[String, Production], _startSymbol: String, _maxDe
             (newScope, curPos, curBound)
           }
           // Choices trigger bindings. Make Scope containing assignment of this name
-            // to the assignment specified in the assignment array
+            // to the value specified by the assignment in the assignment array
           case choice: Choices => {
             val toRetScope = new Scope(this, curPos)
-            val toSamp = choice.getOptions()(assignment(curPos))
+//            if(choice.mapsToSelfAndTerm(Set[String](), curSymbol)) {
+//              //
+//            }
+
+            val toSamp = choice.getOptions()(assignment(curPos)) // assignment out of bounds when using k
             toSamp match {
               case seq: Sequence => {
                 for(p <- seq.getList()) {
@@ -277,7 +281,6 @@ case class Grammar(_rules: Map[String, Production], _startSymbol: String, _maxDe
               }
               case fun: Function => curGen.append(fun.runFun(scope.lookup(fun.sample())))
               case term: Terminal => curGen.append(term.sample())
-                // todo sequence
                 /** if stuff breaks it was here  */
               case nonterm: Sequence => {
                 for (n <- nonterm.getList()) {
