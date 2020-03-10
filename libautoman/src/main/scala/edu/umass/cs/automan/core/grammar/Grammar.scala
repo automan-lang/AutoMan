@@ -106,16 +106,22 @@ case class Grammar(_rules: Map[String, Production], _startSymbol: String, _maxDe
             // to the value specified by the assignment in the assignment array
           case choice: Choices => {
             val toRetScope = new Scope(this, curPos)
+            // if choice is
+            // if(choice)
+            //choice.getOptions()
 //            if(choice.mapsToSelfAndTerm(Set[String](), curSymbol)) {
 //              //
 //            }
 
+            // todo this may just be a name now
             val toSamp = choice.getOptions()(assignment(curPos)) // assignment out of bounds when using k
+            println(s"toSamp ${toSamp}")
             toSamp match {
               case seq: Sequence => {
-                for(p <- seq.getList()) {
-                  toRetScope.assign(curSymbol, p.sample())
-                }
+                toRetScope.assign(curSymbol, seq.sample()) // need to assign to whole seq
+//                for(p <- seq.getList()) {
+//                  toRetScope.assign(curSymbol, p.sample()) // todo this seems wrong
+//                }
               }
               case p: Production => {
                 toRetScope.assign(curSymbol, toSamp.sample())

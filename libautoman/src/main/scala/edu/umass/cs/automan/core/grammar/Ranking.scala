@@ -278,6 +278,7 @@ object Ranking {
     val bases = newGenerateBases(grammar)
     //println(bases)
     val assignment = unrank(choice, bases.toArray) // get the assignment from the number todo fix
+    println(s"Assignment ${assignment}")
     //println(assignment)
     grammar.curSymbol = grammar.startSymbol // TODO make sure not resetting for options
     val (scope, p, s) = grammar.bind(assignment.toArray, 0, Set())
@@ -485,6 +486,8 @@ object Ranking {
       )
     )
 
+    // A -> AB
+    // B -> 1 | 2 | 3
     val infiniteRecGrammar: Grammar = Grammar(
       Map(
         "Start" -> new Name("Seq"),
@@ -511,6 +514,8 @@ object Ranking {
       7
     )
 
+    // A -> AB | 1
+    // B -> 1 | 2 | 3
     val nonInfinRecGrammar: Grammar = Grammar(
       Map(
         "Start" -> new Name("Seq"),
@@ -627,13 +632,14 @@ object Ranking {
 
     //println(generateBases(recGrammar, List[Int](), Set[String]())._1)
     //recGrammar.curSymbol = recGrammar.startSymbol
-    //println(s"infinite: ${newGenerateBases(infiniteRecGrammar)}") // [1,3]
+    println(s"infinite: ${newGenerateBases(infiniteRecGrammar)}") // [1,3]
     println(s"noninfinite: ${newGenerateBases(nonInfinRecGrammar)}") // [8,3]
     println()
 
-    //println(buildInstance(infiniteRecGrammar, 0)._1)
-    //println(buildInstance(nonInfinRecGrammar, 0)._1)
-    //println(buildInstance(nonInfinRecGrammar, 20)._1)
+    println(buildInstance(infiniteRecGrammar, 0)._1) // todo shouldn't be printing b
+    // binding to sequence
+//    println(buildInstance(nonInfinRecGrammar, 0)._1)
+//    println(buildInstance(nonInfinRecGrammar, 20)._1)
 //    println(buildInstance(nonInfinRecGrammar, 21)._1)
 
 //    println(generateBases(grammar, List[Int](), Set[String]())._1)

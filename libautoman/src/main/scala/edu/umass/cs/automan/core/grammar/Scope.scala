@@ -8,7 +8,7 @@ class Scope(val grammar: Grammar, val curPos: Int) { // or string -> string?
 
   def assign(name: String, value: String): Unit = {
     if (grammar.rules.contains(name)){
-      varBindings = varBindings + (name -> value) // TODO: recursive bindings
+      varBindings = varBindings + (name -> value) // TODO: binding a to a and b
     } else {
       throw new Exception(s"Could not find ${value} in grammar")
     }
