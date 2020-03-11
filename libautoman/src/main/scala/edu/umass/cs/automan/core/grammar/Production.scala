@@ -16,7 +16,11 @@ trait Production {
 
 trait TextProduction extends Production{}
 
-// A set of choices, options for a value
+/**
+  * A Choice is a Production that contains multiple options that it could evaluate to. Which one it evaluates to is
+  * determined by an assignment.
+  * @param options The options the Choice can choose between
+  */
 class Choices(options: List[Production]) extends TextProduction {
   override def sample(): String = {
     val samp: StringBuilder = new StringBuilder()
@@ -24,8 +28,6 @@ class Choices(options: List[Production]) extends TextProduction {
       samp.addString(new StringBuilder(o.sample()))
     }
     samp.toString()
-    //    val ran = new Random()
-    //    options(ran.nextInt(options.length)).sample()
   }
 
   override def count(grammar: Grammar, counted: Set[String], name: String): Int = {
@@ -43,22 +45,6 @@ class Choices(options: List[Production]) extends TextProduction {
 
     if(mapsToSelf && !mapsToTerm) c = 1 // if infinite, count is 1
     else if(mapsToSelf && mapsToTerm) c += grammar.maxDepth // if recursive but finite, add k
-
-//      if(e.isLeafNT(counted, name, grammar)) {
-//        c += e.count(grammar, counted, name)
-//        //println(s"${curSym} is LNT has base ${newBase}")
-//        //baseMap += curSym -> newBase
-//      } else if(mapsToSelfAndTerm(e, counted, name, grammar)) { // todo needs to factor in that it might map to term later
-//        //println(s"${curSym} MTSAT and has base ${g.maxDepth}")
-//        c += grammar.maxDepth // todo ignoring other options
-//      } else if(isInfinite(e, counted, name, grammar)) {
-//        //println(s"${curSym} is infinite and has base 1")
-//        c += 1
-//      } else {
-//        throw new Error("choice is screwed up")
-//      }
-      //c = c + newBase
-    //} // choices are additive
     c
   }
 
@@ -147,7 +133,10 @@ class Choices(options: List[Production]) extends TextProduction {
   }
 }
 
-// A terminal production
+/**
+  * A Terminal is a Production that contains a String.
+  * @param word The String this Terminal is associated with
+  */
 class Terminal(word: String) extends TextProduction {
   override def sample(): String = {
     word
@@ -164,7 +153,13 @@ class Terminal(word: String) extends TextProduction {
   override def isLeafNT(counted: Set[String], name: String, grammar: Grammar): Boolean = true
 }
 
-// A sequence, aka a combination of other terminals/choices and the ordering structure of each problem
+
+/**
+  * A Sequence is a nonterminal, i.e. a combination of terminals and other Productions. It links Productions together.
+  * in a sensible structure.
+  *
+  * @param sentence A List of Productions
+  */
 class Sequence(sentence: List[Production]) extends TextProduction {
   override def sample(): String = {
     val samp: StringBuilder = new StringBuilder()
@@ -219,7 +214,10 @@ class Sequence(sentence: List[Production]) extends TextProduction {
   }
 }
 
-// A name associated with a edu.umass.cs.automan.core.grammar.Production
+/**
+  * A Name is a Production. It is used to map to another Production so that we can look them up.
+  * @param n The text associated with the Name
+  */
 class Name(n: String) extends TextProduction {
   override def sample(): String = n // sample returns name for further lookup
   def count(grammar: Grammar, counted: Set[String], name: String): Int = {
@@ -228,7 +226,7 @@ class Name(n: String) extends TextProduction {
     if(!counted.contains(n)){
       c = c + n
       grammar.rules(this.sample()).count(grammar, c, name)
-    } else grammar.maxDepth//1 // TODO k goes here I think
+    } else grammar.maxDepth // todo or 1?
   }
 
   override def toChoiceArr(grammar: Grammar): Option[Array[Range]] = {
@@ -243,42 +241,51 @@ class Name(n: String) extends TextProduction {
       case Some(l) => {
         if (l.isLeafNT(counted, name, grammar)) return true
         else return false
-//        l match {
-//          case nt: Sequence => {
-//            //if (nt)
-//            if (nt.isLeafNT(counted, name, grammar)) return true
-//            else return false
-//          }
-//          case p: Production => {
-//            if (p.isLeafNT(counted, name, grammar)) return true
-//            else return false
-//          }
-//        }
       }
       case None => throw new Error("Name not found")
     }
     false
-//    if(counted.contains(n)) true
-//    else false
   }
 }
 
-// param is name of the Choices that this function applies to
-// fun maps those choices to the function results
+/**
+  * Functions are Productions with a value that varies based on the value of an associated Name.
+  * A sample Function could map names to pronouns, or nouns to articles.
+  * @param fun The mapping of Names to values
+  * @param param The Name the Function is associated with
+  * @param capitalize Whether or not to capitalize the value
+  */
 class Function(fun: Map[String,String], param: String, capitalize: Boolean) extends TextProduction {
   override def sample(): String = param
   override def count(grammar: Grammar, counted: Set[String], name: String): Int = 1
-  def runFun(s: String): String = { // "call" the function on the string
+
+  /// "Call" the function on the string
+  def runFun(s: String): String = {
     if(capitalize) fun(s).capitalize
     else fun(s)
   }
 
-  override def toChoiceArr(grammar: Grammar): Option[Array[Range]] = Some(Array(0 to 0)) //None //Option[Array[Range]()] //Array(null) //TODO: right?
-  override def isLeafProd(): Boolean = true // todo not sure
+  override def toChoiceArr(grammar: Grammar): Option[Array[Range]] = Some(Array(0 to 0))
+  override def isLeafProd(): Boolean = true
   override def isLeafNT(counted: Set[String], name: String, grammar: Grammar): Boolean = {
     if(counted.contains(param)) true
     else false
   }
+}
+
+/**
+  * A Variable is a Production similar to a Choice, but permanently bound to the same Production in the recursive case.
+  */
+class Variable(name: Name, options: List[Production]) extends TextProduction {
+  override def sample(): String = ???
+
+  override def count(grammar: Grammar, counted: Set[String], name: String): Int = ???
+
+  override def toChoiceArr(grammar: Grammar): Option[Array[Range]] = ???
+
+  override def isLeafProd(): Boolean = ???
+
+  override def isLeafNT(counted: Set[String], name: String, grammar: Grammar): Boolean = ???
 }
 
 /**
@@ -450,31 +457,3 @@ class RadiosQuestionProduction(g: Grammar, body: TextProduction) extends Questio
 
   override def isLeafProd(): Boolean = false
 }
-
-
-//class QuestionBodyProduction(g: Grammar, variation: Int) extends Production(){
-//  private val _body = Ranking.buildInstance(g, variation)
-//
-//  override def sample(): String = _body
-//
-//  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = ???
-//
-//  override def toChoiceArr(g: Grammar): Option[Array[Range]] = ???
-//}
-//
-//// todo make this generate like QBP
-//class OptionsProduction(opts: List[String]) extends Production(){
-//  override def sample(): String = {
-//    val toRet: StringBuilder = new StringBuilder()
-//    for(i <- 0 until opts.length){
-//      toRet.addString(new mutable.StringBuilder(opts(i) + "\n"))
-//    }
-//    toRet.toString()
-//  }
-//
-//  override def count(g: Grammar, counted: mutable.HashSet[String]): Int = ???
-//
-//  override def toChoiceArr(g: Grammar): Option[Array[Range]] = ???
-//
-//  def getOpts() = opts
-//}

@@ -45,6 +45,10 @@ case class Grammar(_rules: Map[String, Production], _startSymbol: String, _maxDe
     opts
   }
 
+
+
+
+
   /**
     * Binds Names to Choice selections based on assignment
     * @param assignment The variable assignments
