@@ -486,20 +486,16 @@ object Ranking {
       )
     )
 
+    // Start -> AB
     // A -> AB
     // B -> 1 | 2 | 3
     val infiniteRecGrammar: Grammar = Grammar(
       Map(
-        "Start" -> new Name("Seq"),
-        "Seq" -> recSeq,
-        "a" -> new Choices(
+        "Start" -> new Name("S"),
+        "S" -> recSeq,
+        "a" -> new Choices( // does this still need to be a choice?
           List(
-            new Sequence(
-              List(
-                new Name("a"),
-                new Name("b")
-              )
-            )
+            recSeq
           )
         ),
         "b" -> new Choices(
@@ -511,15 +507,16 @@ object Ranking {
         )
       ),
       "Start",
-      7
+      3
     )
 
+    // Start -> AB
     // A -> AB | 1
     // B -> 1 | 2 | 3
     val nonInfinRecGrammar: Grammar = Grammar(
       Map(
-        "Start" -> new Name("Seq"),
-        "Seq" -> recSeq,
+        "Start" -> new Name("S"),
+        "S" -> recSeq,
         "a" -> new Choices(
           List(
             new Terminal("1"),
@@ -541,16 +538,27 @@ object Ranking {
         )
       ),
       "Start",
-      7
+      3
     )
 
     //println(generateBases(recGrammar, List[Int](), Set[String]())._1)
     //recGrammar.curSymbol = recGrammar.startSymbol
-    println(s"infinite: ${newGenerateBases(infiniteRecGrammar)}") // [1,3]
-    println(s"noninfinite: ${newGenerateBases(nonInfinRecGrammar)}") // [8,3]
+//    println(s"infinite: ${newGenerateBases(infiniteRecGrammar)}") // [1,3]
+//    println(s"noninfinite: ${newGenerateBases(nonInfinRecGrammar)}") // [8,3]
     println()
+    val treeInf = infiniteRecGrammar.expandToTree(Grammar(Map[String,Production](), "Start", 3), "Start", 3)
+    val treeNoninf = nonInfinRecGrammar.expandToTree(Grammar(Map[String,Production](), "Start", 3), "Start", 3)
 
-    println(buildInstance(infiniteRecGrammar, 0)._1) // todo shouldn't be printing b
+    println("infinite")
+    for(r <- treeInf.rules) {
+      println(r)
+    }
+    println("\nnoninfinite")
+    for(r <- treeNoninf.rules) {
+      println(r)
+    }
+
+    //println(buildInstance(infiniteRecGrammar, 0)._1) // todo shouldn't be printing b
     // binding to sequence
 //    println(buildInstance(nonInfinRecGrammar, 0)._1)
 //    println(buildInstance(nonInfinRecGrammar, 20)._1)

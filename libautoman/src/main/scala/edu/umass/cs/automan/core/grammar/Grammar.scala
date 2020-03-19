@@ -16,7 +16,6 @@ import scala.util.control.Breaks.{break, breakable}
 case class Grammar(_rules: Map[String, Production], _startSymbol: String, _maxDepth: Int){
 
   private var _curSym = _startSymbol // the current symbol we're working with, which may change
-  private var _bases: Array[Int] = Array[Int]() // TODO automatically generate from rules?
   private val _depthParam = _maxDepth
 
   def rules = _rules
@@ -25,9 +24,6 @@ case class Grammar(_rules: Map[String, Production], _startSymbol: String, _maxDe
   def startSymbol = _startSymbol
 
   def maxDepth = _depthParam
-
-  def bases = _bases
-  def bases_= (newBases: Array[Int]): Unit = _bases = newBases
 
   def curSymbol = _curSym
   def curSymbol_= (newSym: String): Unit = _curSym = newSym
@@ -46,6 +42,98 @@ case class Grammar(_rules: Map[String, Production], _startSymbol: String, _maxDe
   }
 
 
+  /**
+    * Expands a Grammar into a tree by expanding Sequences until the depth parameter k is hit.
+    * @param curTree The tree we're building
+    * @param currentSymbol The current symbol we're working with
+    * @param levelsToGo The number of levels to go
+    * @return
+    */
+  def expandToTree(curTree: Grammar, currentSymbol: String, levelsToGo: Int): Grammar = {
+    //var generatingTree = curTree
+
+    // traverse grammar
+    // for every nonterminal N, replace with N_i at recursion depth i
+    // has same options
+    // N_k = ""
+    // how do levels?
+    if(levelsToGo == 0) return curTree
+
+    val samp: Option[Production] = rules.get(currentSymbol)
+    samp match {
+      case Some(s) => {
+        s match {
+          case name: Name => {
+            expandToTree(curTree, name.sample(), levelsToGo)
+          }
+          case choice: Choices => {
+            var newRules = curTree.rules
+            //val newName = new String
+
+            var isRecursive = false
+            for(c <- choice.getOptions()) { // iterate through choices to see if have to rename
+              c match {
+                case name: Name => {
+                  if(name == currentSymbol) {
+                    isRecursive = true
+                  } else {
+                    val toCombine = expandToTree(curTree, name.sample(), levelsToGo - 1)
+                    newRules = newRules ++ toCombine.rules
+                  }
+                }
+                case seq: Sequence => {
+
+                }
+              }
+            }
+          }
+        }
+      }
+//      case Some(s) => {
+//        s match {
+//          case name: Name => { // should trigger with start
+//            expandToTree(curTree, name.sample(), levelsToGo)
+//          }
+//          case seq: Sequence => { // need to iterate through
+//            var newRules = curTree.rules
+//            val newName = new String(currentSymbol + s"_${this.maxDepth - levelsToGo}")
+//
+//            if (levelsToGo != 0) {
+//              for(n <- seq.getList()) {
+//                n match {
+//                  case name: Name => {
+//                    val toCombine = expandToTree(curTree, name.sample(), levelsToGo - 1)
+//                    newRules = newRules ++ toCombine.rules
+//                  }
+//                }
+//              }
+//
+//              newRules = newRules + (newName -> seq)
+//              val newGram = Grammar(newRules, startSymbol, maxDepth)
+//              //generatingTree = expandToTree(newGram, currentSymbol, levelsToGo - 1)
+//              expandToTree(newGram, currentSymbol, levelsToGo - 1)
+//            } else { // Terminate sequence with empty string
+//              newRules = newRules + (newName -> new Terminal("")) // todo this never hits
+//              Grammar(newRules, startSymbol, maxDepth)
+//            }
+//          }
+//          case p: Production => { // looping here
+//            if (!curTree.rules.contains(currentSymbol)) {
+//              var newRules = curTree.rules
+//              newRules = newRules + (currentSymbol -> p)
+//              expandToTree(Grammar(newRules, startSymbol, maxDepth), currentSymbol, levelsToGo)
+//            } else {
+//              expandToTree(curTree, currentSymbol, levelsToGo - 1)
+//            }
+//          }
+//        }
+//      }
+//      case None => {
+//        throw new Error("Expansion has gone awry")
+//      }
+    }
+    //generatingTree
+  }
 
 
 

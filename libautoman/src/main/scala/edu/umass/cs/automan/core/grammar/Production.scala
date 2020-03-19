@@ -10,7 +10,7 @@ trait Production {
   def sample(): String
   def count(grammar: Grammar, counted: Set[String], name: String): Int
   def toChoiceArr(grammar: Grammar): Option[Array[Range]]
-  def isLeafProd(): Boolean // Certain prods can terminate
+  def isLeafProd(): Boolean // Certain prods can terminate. Helper for MemoHash
   def isLeafNT(counted: Set[String], name: String, grammar: Grammar): Boolean // Checking if prod and everything it maps to are LNTs
 }
 
@@ -275,17 +275,40 @@ class Function(fun: Map[String,String], param: String, capitalize: Boolean) exte
 
 /**
   * A Variable is a Production similar to a Choice, but permanently bound to the same Production in the recursive case.
+  * It is used to bind sentences in the grammar to a stable identier.
+  *
+  * @param name The Name that this Variable is associated with
+  * @param options The possible choices it is associated with, of which it will be bound to one
   */
 class Variable(name: Name, options: List[Production]) extends TextProduction {
-  override def sample(): String = ???
+  override def sample(): String = {
+    val samp: StringBuilder = new StringBuilder()
+    for (o <- options) {
+      samp.addString(new StringBuilder(o.sample()))
+    }
+    samp.toString()
+  }
 
   override def count(grammar: Grammar, counted: Set[String], name: String): Int = ???
 
   override def toChoiceArr(grammar: Grammar): Option[Array[Range]] = ???
 
-  override def isLeafProd(): Boolean = ???
+  override def isLeafProd(): Boolean = false
 
-  override def isLeafNT(counted: Set[String], name: String, grammar: Grammar): Boolean = ???
+  override def isLeafNT(counted: Set[String], name: String, grammar: Grammar): Boolean = {
+    var allNT = true
+
+    for (e <- options) {
+      if (!e.isLeafNT(counted, name, grammar)) { // if e is LNT, great
+        allNT = false
+      } // checking if counted contains should be irrelevant bc checking if names are contained in Name.isLeafNT
+    }
+    allNT
+  }
+
+  def getOptions(): List[Production] = options
+
+  def getName(): Name = name
 }
 
 /**
