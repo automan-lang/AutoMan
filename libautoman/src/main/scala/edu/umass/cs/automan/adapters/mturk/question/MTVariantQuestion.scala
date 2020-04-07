@@ -7,7 +7,8 @@ import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.VariantOutcome
-import edu.umass.cs.automan.core.grammar.{Choices, Grammar, Name, OptionProduction, Production, QuestionProduction, Sequence}
+import edu.umass.cs.automan.core.grammar.Rank.Grammar
+import edu.umass.cs.automan.core.grammar.{Choices, Expression, Name, OptionProduction, Production, QuestionProduction, Sequence}
 import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.question.{EstimationQuestion, Question, VariantQuestion}
@@ -56,7 +57,7 @@ class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
     //toRet
   }
 
-  def merkle_hash(p: Production): BigInt = {
+  def merkle_hash(p: Expression): BigInt = {
     val md: MessageDigest = MessageDigest.getInstance("md5")
     if(p.isLeafProd()) BigInt(md.digest(p.sample().getBytes()))
     else {
@@ -110,58 +111,57 @@ class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
     // todo remove variant param
 
   override protected[mturk] def toXML(randomize: Boolean): Node = {
-
       val (body, opts) = _question.toQuestionText(variant)
       val bodyText: String = body
 
-  question.questionType match {
-    case QuestionType.EstimationQuestion => {
-      newQ = new MTEstimationQuestion()
-      newQ.text = bodyText
-      //newQ.id = fixed_id
-      //todo dear lord these casts
-      newQ.asInstanceOf[MTEstimationQuestion].toXML(randomize)
-    }
-    case QuestionType.CheckboxQuestion => {
-      newQ = new MTCheckboxQuestion()
-      newQ.text = bodyText
-      val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
-      newQ.asInstanceOf[MTCheckboxQuestion].options = options
-      newQ.asInstanceOf[MTCheckboxQuestion].toXML(randomize)
-    }
-    case QuestionType.CheckboxDistributionQuestion => {
-      newQ = new MTCheckboxVectorQuestion()
-      newQ.text = bodyText
-      val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
-      newQ.asInstanceOf[MTCheckboxVectorQuestion].options = options
-      newQ.asInstanceOf[MTCheckboxVectorQuestion].toXML(randomize)
-    }
-    case QuestionType.FreeTextQuestion => {
-      newQ = new MTFreeTextQuestion()
-      newQ.text = bodyText
-      newQ.asInstanceOf[MTFreeTextQuestion].toXML(randomize)
-    }
-    case QuestionType.FreeTextDistributionQuestion => {
-      newQ = new MTFreeTextQuestion()
-      newQ.text = bodyText
-      newQ.asInstanceOf[MTFreeTextVectorQuestion].toXML(randomize)
-    }
-    case QuestionType.RadioButtonQuestion => {
-      newQ = new MTRadioButtonQuestion()
-      newQ.text = bodyText
-      val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
-      newQ.asInstanceOf[MTRadioButtonQuestion].options = options
-      newQ.asInstanceOf[MTRadioButtonQuestion].toXML(randomize)
-    }
-    case QuestionType.RadioButtonDistributionQuestion => {
-      newQ = new MTRadioButtonVectorQuestion()
-      newQ.text = bodyText
-      val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
-      newQ.asInstanceOf[MTRadioButtonVectorQuestion].options = options
-      newQ.asInstanceOf[MTRadioButtonVectorQuestion].toXML(randomize)
+    question.questionType match {
+      case QuestionType.EstimationQuestion => {
+        newQ = new MTEstimationQuestion()
+        newQ.text = bodyText
+        //newQ.id = fixed_id
+        //todo dear lord these casts
+        newQ.asInstanceOf[MTEstimationQuestion].toXML(randomize)
+      }
+      case QuestionType.CheckboxQuestion => {
+        newQ = new MTCheckboxQuestion()
+        newQ.text = bodyText
+        val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
+        newQ.asInstanceOf[MTCheckboxQuestion].options = options
+        newQ.asInstanceOf[MTCheckboxQuestion].toXML(randomize)
+      }
+      case QuestionType.CheckboxDistributionQuestion => {
+        newQ = new MTCheckboxVectorQuestion()
+        newQ.text = bodyText
+        val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
+        newQ.asInstanceOf[MTCheckboxVectorQuestion].options = options
+        newQ.asInstanceOf[MTCheckboxVectorQuestion].toXML(randomize)
+      }
+      case QuestionType.FreeTextQuestion => {
+        newQ = new MTFreeTextQuestion()
+        newQ.text = bodyText
+        newQ.asInstanceOf[MTFreeTextQuestion].toXML(randomize)
+      }
+      case QuestionType.FreeTextDistributionQuestion => {
+        newQ = new MTFreeTextQuestion()
+        newQ.text = bodyText
+        newQ.asInstanceOf[MTFreeTextVectorQuestion].toXML(randomize)
+      }
+      case QuestionType.RadioButtonQuestion => {
+        newQ = new MTRadioButtonQuestion()
+        newQ.text = bodyText
+        val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
+        newQ.asInstanceOf[MTRadioButtonQuestion].options = options
+        newQ.asInstanceOf[MTRadioButtonQuestion].toXML(randomize)
+      }
+      case QuestionType.RadioButtonDistributionQuestion => {
+        newQ = new MTRadioButtonVectorQuestion()
+        newQ.text = bodyText
+        val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
+        newQ.asInstanceOf[MTRadioButtonVectorQuestion].options = options
+        newQ.asInstanceOf[MTRadioButtonVectorQuestion].toXML(randomize)
+      }
     }
   }
-}
 
   /**
     * Helper function to convert question into XML Question
