@@ -1,6 +1,5 @@
 package edu.umass.cs.automan.adapters.mturk.question
 
-import edu.umass.cs.automan.core.grammar.Grammar
 import edu.umass.cs.automan.core.question.QuestionOption
 
 import xml.Unparsed
