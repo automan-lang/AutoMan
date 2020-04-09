@@ -8,7 +8,8 @@ import java.util.{Date, UUID}
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.VariantOutcome
 import edu.umass.cs.automan.core.grammar.Rank.Grammar
-import edu.umass.cs.automan.core.grammar.{Choices, Expression, Name, OptionProduction, Production, QuestionProduction, Sequence}
+import edu.umass.cs.automan.core.grammar.Expand.Start
+import edu.umass.cs.automan.core.grammar.{Choice, Expression, Name, OptionProduction, QuestionProduction, Ref, Sequence, Terminal}
 import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.question.{EstimationQuestion, Question, VariantQuestion}
@@ -25,31 +26,15 @@ class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
   override var _newQ: Question = null
   override var _grammar: Grammar = null
   override var _variant: Integer = null
-  //var fixed_id: UUID = this.id
-
-//  override type A = this.type
-//  override type AA = this.type
-//  override type O = this.type
-//  override type AP = this.type
-//  override type PP = this.type
-//  override type TP = this.type
-
-  //override def randomized_options: List[QuestionOptionType] = ???
 
   def memo_hash: String = {
-    //val md: MessageDigest = MessageDigest.getInstance("md5")
-    //val hSet = new mutable.HashSet[String]()
-//    val r = new scala.util.Random()
-//    val numPoss = grammar.count(0, new mutable.HashSet[String]())
-    //val numPoss = _question.count(grammar.count(0, hSet), new mutable.HashSet[String]())
-    //new String(Hex.encodeHex(md.digest(toXML(randomize = false, r.nextInt(numPoss)).toString().getBytes)))
-    val startProd = _grammar.rules.get(_grammar.startSymbol)
+    val startProd = _grammar(Start)
     startProd match {
-      case Some(prod) => {
-        val toRet = new String(Hex.encodeHex(merkle_hash(prod).toString().getBytes))
+      case expr: Expression => {
+        val toRet = new String(Hex.encodeHex(merkle_hash(expr, _grammar).toString().getBytes))
         toRet
       }
-      case None => {
+      case _ => {
         throw new Error("Something has gone very wrong while hashing.")
       }
     }
@@ -57,32 +42,36 @@ class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
     //toRet
   }
 
-  def merkle_hash(p: Expression): BigInt = {
+  // Helper method to hash an Expression
+  def merkle_hash(p: Expression, g: Grammar): BigInt = {
     val md: MessageDigest = MessageDigest.getInstance("md5")
-    if(p.isLeafProd()) BigInt(md.digest(p.sample().getBytes()))
-    else {
+//    if(p.isLeafProd()) BigInt(md.digest(p.sample().getBytes()))
+//    else {
       var md5sum: BigInt = BigInt("0")
       p match {
-        case c: Choices => {
-          for(o <- c.getOptions()) md5sum += merkle_hash(o)
+        case Ref(nt) => {
+          md5sum += merkle_hash(g(nt), g)
+          md5sum
         }
-        case s: Sequence => {
-          for(o <- s.getList()) md5sum += merkle_hash(o)
+        case Choice(options) => {
+          for(o <- options) md5sum += merkle_hash(o, g)
+          md5sum
         }
-        case n: Name => {
-          val res = _grammar.rules.get(n.sample())
-          res match {
-            case Some(r) => md5sum += merkle_hash(r)
-            case None => throw new Error(s"Symbol ${res} could not be found while hashing.")
-          }
+        case Sequence(sentence) => {
+          for(o <- sentence) md5sum += merkle_hash(o, g)
+          md5sum
+        }
+        case Terminal(value) => {
+          md5sum += value.hashCode
+          md5sum
         }
         case q: QuestionProduction => {
           BigInt(md.digest(q.questionType.toString().getBytes)) //todo is this right?
         }
-        case o: OptionProduction => {
-          md5sum += merkle_hash(o.getText())
+        case OptionProduction(text) => {
+          md5sum += merkle_hash(text, g)
         }
-      }
+      //}
       md5sum
     }
   }

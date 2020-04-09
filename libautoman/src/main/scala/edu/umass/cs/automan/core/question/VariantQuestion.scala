@@ -4,7 +4,8 @@ import java.util.{Date, UUID}
 import edu.umass.cs.automan.adapters.mturk.question.{MTCheckboxQuestion, MTEstimationQuestion}
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.{AbstractAnswer, Outcome, VariantOutcome}
-import edu.umass.cs.automan.core.grammar.{Grammar, QuestionProduction}
+import edu.umass.cs.automan.core.grammar.QuestionProduction
+import edu.umass.cs.automan.core.grammar.Rank.Grammar
 import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 import edu.umass.cs.automan.core.question.EstimationQuestion

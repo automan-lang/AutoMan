@@ -29,6 +29,7 @@ object Rank {
   def generateBasesHelper(expr: Expression, g: Grammar, kc: KCount): (Array[Int], KCount) = {
     expr match {
       case Ref(nt) => generateBasesHelper(g(nt), g, kc) // forward
+      case OptionProduction(text) => generateBasesHelper(text, g, kc)
       case Terminal(value) => (Array[Int](), kc) // no base for Terms
       case Sequence(sentence) => mergeHelper(sentence, kc, g) // generate bases for all exprs in Seq and combine
       case Choice(choices) => { // ditto

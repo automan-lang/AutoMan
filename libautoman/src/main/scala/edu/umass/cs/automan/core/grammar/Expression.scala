@@ -1,6 +1,8 @@
 package edu.umass.cs.automan.core.grammar
 
-import edu.umass.cs.automan.core.grammar.Rank.{Grammar, Name}
+import edu.umass.cs.automan.core.grammar.Rank.Grammar
+import edu.umass.cs.automan.core.info.QuestionType
+import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 
 trait Expression {}
 
@@ -13,27 +15,64 @@ case class Binding(nt: Name) extends TextExpression {}
 
 case class Terminal(value: String) extends TextExpression {}
 
-case class Choice(choices: Array[Expression]) extends TextExpression {}
+case class Choice(choices: Array[Expression]) extends TextExpression {
+  def getOptions: Array[Expression] = choices
+}
 
-case class Sequence(sentence: Array[Expression]) extends TextExpression {}
+case class Sequence(sentence: Array[Expression]) extends TextExpression {
+  def getSentence: Array[Expression] = sentence
+}
 
 /*** Question Productions ***/
-abstract class QuestionProduction(g: Grammar) extends Expression {}
+abstract class QuestionProduction(g: Grammar) extends Expression {
+  val _questionType: QuestionType
 
-class OptionProduction(text: TextExpression) extends Expression {}
+  def questionType: QuestionType = _questionType
 
-class EstimateQuestionProduction(g: Grammar) extends QuestionProduction(g) {}
+  // returns tuple (body text, options list)
+  def toQuestionText(variation: Int): (String, List[String])
+}
 
-class EstimatesQuestionProduction(g: Grammar) extends QuestionProduction(g) {}
+case class OptionProduction(text: TextExpression) extends Expression {}
 
-class CheckboxQuestionProduction(g: Grammar) extends QuestionProduction(g) {}
+case class EstimateQuestionProduction(g: Grammar) extends QuestionProduction(g) {
+  override val _questionType: QuestionType = QuestionType.EstimationQuestion
 
-class CheckboxesQuestionProduction(g: Grammar) extends QuestionProduction(g) {}
+  override def toQuestionText(variation: Int): (String, List[String]) = ???
+}
 
-class FreetextQuestionproduction(g: Grammar) extends QuestionProduction(g) {}
+case class CheckboxQuestionProduction(g: Grammar) extends QuestionProduction(g) {
+  override val _questionType: QuestionType = QuestionType.CheckboxQuestion
 
-class FreetextsQuestionproduction(g: Grammar) extends QuestionProduction(g) {}
+  override def toQuestionText(variation: Int): (String, List[String]) = ???
+}
 
-class RadioQuestionProduction(g: Grammar) extends QuestionProduction(g) {}
+case class CheckboxesQuestionProduction(g: Grammar) extends QuestionProduction(g) {
+  override val _questionType: QuestionType = QuestionType.CheckboxDistributionQuestion
 
-class RadiosQuestionProduction(g: Grammar) extends QuestionProduction(g) {}
+  override def toQuestionText(variation: Int): (String, List[String]) = ???
+}
+
+case class FreetextQuestionProduction(g: Grammar) extends QuestionProduction(g) {
+  override val _questionType: QuestionType = QuestionType.FreeTextQuestion
+
+  override def toQuestionText(variation: Int): (String, List[String]) = ???
+}
+
+case class FreetextsQuestionProduction(g: Grammar) extends QuestionProduction(g) {
+  override val _questionType: QuestionType = QuestionType.FreeTextQuestion
+
+  override def toQuestionText(variation: Int): (String, List[String]) = ???
+}
+
+case class RadioQuestionProduction(g: Grammar) extends QuestionProduction(g) {
+  override val _questionType: QuestionType = QuestionType.RadioButtonQuestion
+
+  override def toQuestionText(variation: Int): (String, List[String]) = ???
+}
+
+case class RadiosQuestionProduction(g: Grammar) extends QuestionProduction(g) {
+  override val _questionType: QuestionType = QuestionType.RadioButtonDistributionQuestion
+
+  override def toQuestionText(variation: Int): (String, List[String]) = ???
+}

@@ -1,7 +1,8 @@
 package edu.umass.cs.automan.core
 
 import edu.umass.cs.automan.core.answer._
-import edu.umass.cs.automan.core.grammar.{Grammar, QuestionProduction}
+import edu.umass.cs.automan.core.grammar.Rank.Grammar
+import edu.umass.cs.automan.core.grammar.{QuestionProduction}
 import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 import edu.umass.cs.automan.core.question._

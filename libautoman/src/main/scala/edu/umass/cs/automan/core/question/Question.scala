@@ -5,7 +5,6 @@ import java.util.{Date, UUID}
 
 import edu.umass.cs.automan.core.{AutomanAdapter, MagicNumbers}
 import edu.umass.cs.automan.core.answer._
-import edu.umass.cs.automan.core.grammar.{Grammar, Scope}
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 import edu.umass.cs.automan.core.mock.{MockAnswer, MockResponse}
 import edu.umass.cs.automan.core.policy.price.PricePolicy

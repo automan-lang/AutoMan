@@ -102,6 +102,11 @@ object Expand {
         val (_, newG) = expandLHSHelper(nt, kc, g, k) //todo figure out if should be new name?
         (Binding(newNT), newG)
       }
+      case OptionProduction(text) => {
+        // expand expression
+        val (newE, newG) = expandRHSHelper(lhs, text, g, kc, k)
+        (OptionProduction(newE.asInstanceOf[TextExpression]), newG) // todo fix hacky crap
+      }
     }
   }
 
@@ -147,4 +152,5 @@ object Expand {
   def ch(exprs: Array[Expression]) = { Choice(exprs) }
   def term(literal: String) = { Terminal(literal) }
   def seq(exprs: Array[Expression]) = { Sequence(exprs) }
+  def opt(text: TextExpression): OptionProduction = {OptionProduction(text)}
 }
