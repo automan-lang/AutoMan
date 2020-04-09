@@ -30,7 +30,7 @@ abstract class QuestionProduction(g: Grammar) extends Expression {
   def questionType: QuestionType = _questionType
 
   // returns tuple (body text, options list)
-  def toQuestionText(variation: Int): (String, List[String])
+  def toQuestionText(variation: Int, depth: Int): (String, List[String])
 }
 
 case class OptionProduction(text: TextExpression) extends Expression {}
@@ -38,41 +38,44 @@ case class OptionProduction(text: TextExpression) extends Expression {}
 case class EstimateQuestionProduction(g: Grammar) extends QuestionProduction(g) {
   override val _questionType: QuestionType = QuestionType.EstimationQuestion
 
-  override def toQuestionText(variation: Int): (String, List[String]) = ???
+  override def toQuestionText(variation: Int, depth: Int): (String, List[String]) = ???
 }
 
 case class CheckboxQuestionProduction(g: Grammar) extends QuestionProduction(g) {
   override val _questionType: QuestionType = QuestionType.CheckboxQuestion
 
-  override def toQuestionText(variation: Int): (String, List[String]) = ???
+  override def toQuestionText(variation: Int, depth: Int): (String, List[String]) = ???
 }
 
 case class CheckboxesQuestionProduction(g: Grammar) extends QuestionProduction(g) {
   override val _questionType: QuestionType = QuestionType.CheckboxDistributionQuestion
 
-  override def toQuestionText(variation: Int): (String, List[String]) = ???
+  override def toQuestionText(variation: Int, depth: Int): (String, List[String]) = ???
 }
 
 case class FreetextQuestionProduction(g: Grammar) extends QuestionProduction(g) {
   override val _questionType: QuestionType = QuestionType.FreeTextQuestion
 
-  override def toQuestionText(variation: Int): (String, List[String]) = ???
+  override def toQuestionText(variation: Int, depth: Int): (String, List[String]) = ???
 }
 
 case class FreetextsQuestionProduction(g: Grammar) extends QuestionProduction(g) {
   override val _questionType: QuestionType = QuestionType.FreeTextQuestion
 
-  override def toQuestionText(variation: Int): (String, List[String]) = ???
+  override def toQuestionText(variation: Int, depth: Int): (String, List[String]) = ???
 }
 
 case class RadioQuestionProduction(g: Grammar) extends QuestionProduction(g) {
   override val _questionType: QuestionType = QuestionType.RadioButtonQuestion
 
-  override def toQuestionText(variation: Int): (String, List[String]) = ???
+  override def toQuestionText(variation: Int, depth: Int): (String, List[String]) = {
+    val (body, opts) = Render.buildInstance(g, variation, depth)
+    (body, opts.toList)
+  }
 }
 
 case class RadiosQuestionProduction(g: Grammar) extends QuestionProduction(g) {
   override val _questionType: QuestionType = QuestionType.RadioButtonDistributionQuestion
 
-  override def toQuestionText(variation: Int): (String, List[String]) = ???
+  override def toQuestionText(variation: Int, depth: Int): (String, List[String]) = ???
 }

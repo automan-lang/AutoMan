@@ -35,6 +35,7 @@ abstract class VariantQuestion extends Question {
   protected var _questions: List[Question] = List[Question]()
   protected var _grammar: Grammar
   protected var _variant: Integer
+  protected var _depth: Integer
 
   // Special variant stuff
   def question: QuestionProduction = _question
@@ -51,6 +52,8 @@ abstract class VariantQuestion extends Question {
   def newQ_=(q: Question) { _newQ = q }
   def variant: Integer = _variant
   def variant_=(v: Integer) { _variant = v }
+  def depth: Integer = _depth
+  def depth_=(d: Integer) {_depth = d}
 
   // Radio Button and RB Vector stuff
   def options: List[QuestionOptionType] = _options

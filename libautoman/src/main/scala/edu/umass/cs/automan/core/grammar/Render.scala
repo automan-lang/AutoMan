@@ -146,6 +146,22 @@ object Render {
     }
   }
 
+  /**
+    * Expands, binds, and generates a given instance of a grammar.
+    * @param g The Grammar
+    * @param variation The variation to generate
+    * @param depth The depth to expand the Grammar to
+    * @return A tuple of the body of the instance and any question options
+    */
+  def buildInstance(g: Grammar, variation: Int, depth: Int): (String, Array[String]) = {
+    val expandedG = expand(g, depth)
+    val bases = Rank.generateBases(expandedG)
+    val assignment = Rank.unrank(variation, bases)
+    val scope = Bind.bind(expandedG, assignment)
+    val (body, opts) = renderInstance(scope, expandedG)
+    (body.toString, opts.map(_.toString))
+  }
+
   def prettyPrintInstance(body: String, opts: Array[String]) = {
     println(body)
     opts.map(println(_))
@@ -171,17 +187,7 @@ object Render {
           term(" is a "),
           binding(nt("Job")),
           term(".")))),
-        //        binding(nt("Name")),
-        //        term(" is a "),
-        //        binding(nt("Job")),
-        //        term("."),
-        term("\n"),
-        //        binding(nt("Name")),
-        //        term(" is a "),
-        //        binding(nt("Job")),
-        //        term(" and is active in the "),
-        //        binding(nt("Movement")),
-        //        term(" movement.")
+        //term("\n"),
         opt(seq(Array(
           binding(nt("Name")),
           term(" is a "),

@@ -36,7 +36,7 @@ object Rank {
         val numChoices = choices.length
         val (bases, newKC) = mergeHelper(choices, kc, g)
         //(Array[Int](numChoices).concat(bases), newKC)
-        (Array[Int](numChoices) ++ (bases), newKC)
+        (Array[Int](numChoices) ++ bases, newKC)
       }
       case Binding(nt) => { // generate base if 0th instance of binding
         val name = nt.text
@@ -66,7 +66,7 @@ object Rank {
           case (arr, kc) => {
             val (newArr, newKC) = generateBasesHelper(e, g, kc)
             //(newArr.concat(arr), newKC)
-            (newArr ++ (arr), newKC)
+            (arr ++ newArr, newKC)
           } case _ => throw new Error("Something is wrong in merging")
         }
       }

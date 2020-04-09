@@ -904,6 +904,7 @@ trait DSL {
   def radioGrammar[A <: AutomanAdapter, O](
                                      confidence: Double = MagicNumbers.DefaultConfidence,
                                      budget: BigDecimal = MagicNumbers.DefaultBudget,
+                                     depth: Int,
                                      dont_reject: Boolean = true,
                                      dry_run: Boolean = false,
                                      image_alt_text: String = null,
@@ -922,6 +923,7 @@ trait DSL {
                                    (implicit a: A): VariantOutcome[_] = {
     def initf[Q <: VariantQuestion](q: Q) = {
       // mandatory parameters
+      q.depth = depth
       q.question = question
       q.grammar = grammar
       q.variant = variant

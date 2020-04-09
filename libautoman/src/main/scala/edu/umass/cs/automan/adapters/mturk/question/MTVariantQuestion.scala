@@ -9,7 +9,7 @@ import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.VariantOutcome
 import edu.umass.cs.automan.core.grammar.Rank.Grammar
 import edu.umass.cs.automan.core.grammar.Expand.Start
-import edu.umass.cs.automan.core.grammar.{Choice, Expression, Name, OptionProduction, QuestionProduction, Ref, Sequence, Terminal}
+import edu.umass.cs.automan.core.grammar.{Binding, Choice, Expression, Name, OptionProduction, QuestionProduction, Ref, Sequence, Terminal}
 import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.question.{EstimationQuestion, Question, VariantQuestion}
@@ -26,6 +26,7 @@ class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
   override var _newQ: Question = null
   override var _grammar: Grammar = null
   override var _variant: Integer = null
+  override var _depth: Integer = null
 
   def memo_hash: String = {
     val startProd = _grammar(Start)
@@ -50,6 +51,10 @@ class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
       var md5sum: BigInt = BigInt("0")
       p match {
         case Ref(nt) => {
+          md5sum += merkle_hash(g(nt), g)
+          md5sum
+        }
+        case Binding(nt) => {
           md5sum += merkle_hash(g(nt), g)
           md5sum
         }
@@ -100,7 +105,7 @@ class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
     // todo remove variant param
 
   override protected[mturk] def toXML(randomize: Boolean): Node = {
-      val (body, opts) = _question.toQuestionText(variant)
+      val (body, opts) = _question.toQuestionText(variant, depth)
       val bodyText: String = body
 
     question.questionType match {
@@ -161,7 +166,7 @@ class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
     */
 override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = ???
 override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
-  val (body, opts) = _question.toQuestionText(this.variant)
+  val (body, opts) = _question.toQuestionText(variant, depth)
   val bodyText: String = body
 
   question.questionType match {
