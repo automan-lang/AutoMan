@@ -211,9 +211,35 @@ object Render {
     (body, opts)
   }
 
-  def prettyPrintInstance(body: String, opts: Array[String]) = {
+  // Helper method to print an instance
+  def prettyPrintInstance(body: String, opts: Array[String]): Unit = {
     println(body)
-    opts.map(println(_))
+    opts.foreach(println(_))
+    println()
+  }
+
+  // Generates examples of a provided grammar. Generates (limit) examples, or all of them if no limit is supplied.
+  def dryRun(g: Grammar, depth: Int, limit: Option[Int]): Array[(String, Array[String])] = {
+    var generated = Array[(String, Array[String])]()
+
+    val expandedG = expand(g, depth)
+    val bases = Rank.generateBases(expandedG)
+
+    val numToGenerate: Int = { // figure out how many instances to generate
+      limit match {
+        case Some(i) => i
+        case None => bases.product
+      }
+    }
+
+    // Generate each instance and append
+    for (i <- 0 until numToGenerate) {
+      val assignment = Rank.unrank(i, bases)
+      val scope = Bind.bind(expandedG, assignment)
+      generated = generated :+ renderInstance(scope, expandedG)
+    }
+
+    generated
   }
 
   def main(args: Array[String]): Unit = {
@@ -249,7 +275,7 @@ object Render {
         binding(nt("Issue")),
         term(", and also participated in "),
         binding(nt("Demonstration")),
-        term(" demonstrations.\n Which is more probable?\n"),
+        term(" demonstrations.\n Which is more probable?"),
         opt(seq(Array(
           binding(nt("Name")),
           term(" is "),
@@ -320,9 +346,9 @@ object Render {
       ))
     )
 
-    val expLindaG = expand(lindaG, 2)
+    //val expLindaG = expand(lindaG, 2)
 //    //println(Expand.prettyPrint(expLindaG))
-    val lindaBases = Rank.generateBases(expLindaG)
+    //val lindaBases = Rank.generateBases(expLindaG)
 //    //println("Linda: ")
 //    //println("bases: " + lindaBases.mkString(" "))
 //    val lindaAssignment = Rank.unrank(0, lindaBases)
@@ -331,8 +357,16 @@ object Render {
 //    //println(Bind.prettyPrintScope(lindaScope))
 //    val (body, opts) = renderInstance(lindaScope, expLindaG)
 //    prettyPrintInstance(body, opts)
-    val variation = Rank.rank(Array(3, 3, 5, 0, 4, 1, 2), lindaBases)
-    val (body1, opts1) = buildInstance(lindaG, variation, 2)
-    prettyPrintInstance(body1, opts1)
+//    val variation = Rank.rank(Array(3, 3, 5, 0, 4, 1, 2), lindaBases) // todo make build method to take array
+//    val (body1, opts1) = buildInstance(lindaG, variation, 2)
+//    prettyPrintInstance(body1, opts1)
+    val instances: Array[(String, Array[String])] = dryRun(lindaG, 2, None)
+    for(e <- instances){
+      e match {
+        case (bod, opts) => {
+          prettyPrintInstance(bod, opts)
+        }
+      }
+    }
   }
 }
