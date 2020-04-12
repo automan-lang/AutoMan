@@ -165,9 +165,9 @@ case class SurveyAnswers(values: Seq[Map[String,Question#A]], // final dist (no 
         case (strs, i) => {
           strs match {
             case (q, ans) => {
-              toAdd += q
-              toAdd += ans
-              toAdd += i.toString
+              toAdd = toAdd :+ q
+              toAdd = toAdd :+ ans
+              toAdd = toAdd :+ i.toString
             }
             case _ => throw new Error("parsing error")
           }
