@@ -8,19 +8,58 @@ trait Expression {}
 
 trait TextExpression extends Expression {}
 
+/**
+  * A Ref is an Expression that refers to another Expression in a grammar.
+  * @param nt The Name of the Expression
+  */
 case class Ref(nt: Name) extends TextExpression { // these become NTs by mapping to Expressions
+  def getName = nt
 }
 
+/**
+  * A Binding refers to another Expression, but always evaluates to the same thing.
+  * @param nt The Name of the Binding
+  */
 case class Binding(nt: Name) extends TextExpression {}
 
-case class Terminal(value: String) extends TextExpression {}
+/**
+  * A Terminal contains a String.
+  * @param value The String the Terminal is associated with
+  */
+case class Terminal(value: String) extends TextExpression {
+  def toText = value
+}
 
+/**
+  * A Choice contains multiple options that it could evaluate to. Which one is determined by the instance assignment.
+  * @param choices The options of the Choice
+  */
 case class Choice(choices: Array[Expression]) extends TextExpression {
   def getOptions: Array[Expression] = choices
 }
 
+/**
+  * A Sequence is a combination of Productions.
+  * @param sentence A list of Productions
+  */
 case class Sequence(sentence: Array[Expression]) extends TextExpression {
   def getSentence: Array[Expression] = sentence
+}
+
+/**
+  * Functions are Productions with a value that varies based on the value of an associated Name.
+  * A sample Function could map names to pronouns, or nouns to articles.
+  * @param fun The mapping of Names to values
+  * @param param The Ref the Function is associated with. Note that it must refer to a Binding.
+  * @param capitalize Whether or not to capitalize the value
+  */
+case class Function(fun: Map[String, String], param: Name, capitalize: Boolean) extends TextExpression {
+
+  // "Call" the function on the string
+  def runFun(s: String): String = {
+    if(capitalize) fun(s).capitalize
+    else fun(s)
+  }
 }
 
 /*** Question Productions ***/

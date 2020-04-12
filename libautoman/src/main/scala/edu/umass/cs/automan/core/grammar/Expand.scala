@@ -107,6 +107,14 @@ object Expand {
         val (newE, newG) = expandRHSHelper(lhs, text, g, kc, k)
         (OptionProduction(newE.asInstanceOf[TextExpression]), newG) // todo fix hacky crap
       }
+      case Function(fun, param, capitalize) => {
+        param match {
+          case nt: Name => {
+            val (newParam, _) = nt.freshName(kc, k)
+            (Function(fun, newParam, capitalize), g)
+          }
+        }
+      }
     }
   }
 
@@ -142,6 +150,8 @@ object Expand {
       case Sequence(sentence) => sentence.map(prettyPrintHelper(_)).mkString( "")
       //case Binding(name, maybeInt) => "Var(" + fullname(new Name(name, maybeInt)) + ")"
       case Binding(nt) => "Var(" + nt.fullname() + ")"
+      case OptionProduction(text) => s"Option(${prettyPrintHelper(text)})\n"
+      case Function(_, param, _) => s"fun(${param.fullname()})"
     }
   }
 
@@ -153,4 +163,5 @@ object Expand {
   def term(literal: String) = { Terminal(literal) }
   def seq(exprs: Array[Expression]) = { Sequence(exprs) }
   def opt(text: TextExpression): OptionProduction = {OptionProduction(text)}
+  def fun(fun: Map[String, String], param: Name, capitalize: Boolean): Function = { Function(fun, param, capitalize) }
 }

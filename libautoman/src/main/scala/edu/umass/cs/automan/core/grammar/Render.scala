@@ -1,48 +1,51 @@
 package edu.umass.cs.automan.core.grammar
 
-import edu.umass.cs.automan.core.grammar.Expand.{Scope, Start, binding, ch, expand, nt, ref, seq, term, opt}
+import edu.umass.cs.automan.core.grammar.Expand.{Scope, Start, binding, ch, expand, nt, ref, seq, term, opt, fun}
 import edu.umass.cs.automan.core.grammar.Rank.Grammar
 
 object Render {
 
   /**
-    * Creates a string of the grammar instance specified by the Scope.
-    *
-    * @param scope   The Scope containing the variable bindings
+    * Creates a string of the experiment instance specified by the Scope.
+    * @param scope The Scope containing the variable bindings
     * @param grammar The Grammar that we're working with
-    * @return A String that is the desired derivation of the Grammar
+    * @return A String representing the body of the question and an array representing the question options
     */
-  def render(scope: Scope, grammar: Grammar): String = {
+  def renderInstance(scope: Scope, grammar: Grammar): (String, Array[String]) = {
     //renderHelper(grammar(Start), scope, new StringBuilder, Map[Name, (Int, Int)](), 0, 0)
-    renderHelper(grammar(Start), grammar, scope, new StringBuilder, true, -1, Map[Name, String]())._1.toString()
+    //renderHelper(grammar(Start), grammar, scope, new StringBuilder, true, -1, Map[Name, String]())._1.toString()
+    val (instArr, choiceArrs, binMap, _) = firstRender(grammar(Start), grammar, scope, Array[Expression](), Array[Array[Expression]](), true, -1, Map[Name, String]())
+    secondRender(instArr, choiceArrs, binMap)
   }
 
-  // Helper method to generate a String for an Expression
-  // Returns the current string being generated, the index we're at in the grammar, and a Map for bindings from their Name to the String generated
-  def renderHelper(expr: Expression, g: Grammar, scope: Scope, generating: StringBuilder, doAppend: Boolean, index: Int, boundVars: Map[Name, String]): (StringBuilder, Int, Map[Name, String]) = {
-    var instanceSoFar = generating
-    var position = index
+  // returns list of terms and functions for body, lists for each opt, map of bindings to the strings they map to, and position
+  def firstRender(expr: Expression, g: Grammar, scope: Scope, generatingBod: Array[Expression], generatingOpts: Array[Array[Expression]], doAppend: Boolean, index: Int, boundVars: Map[Name, String]): (Array[Expression], Array[Array[Expression]], Map[Name, String], Int) = {
+    var bodSoFar = generatingBod
+    var optsSoFar = generatingOpts
     var boundVarsSoFar = boundVars
+    var position = index
 
     expr match {
       case Ref(nt) => {
-        renderHelper(g(nt), g, scope, instanceSoFar, doAppend, position, boundVarsSoFar)
-      } // forward
-      case OptionProduction(text) => { // if hit another OP, terminate
-        renderHelper(text, g, scope, instanceSoFar, doAppend, position, boundVarsSoFar)
+        firstRender(g(nt), g, scope, bodSoFar, optsSoFar, doAppend, position, boundVarsSoFar)
       }
-      case Terminal(value) => { // append if we're on the right branch
-        if (doAppend) instanceSoFar.append(value)
-        (instanceSoFar, position, boundVarsSoFar)
+      case t: Terminal => { // append if we're on the right branch
+        if(doAppend) bodSoFar = bodSoFar :+ t
+        (bodSoFar, optsSoFar, boundVarsSoFar, position)
+      }
+      case f: Function => {
+        if(doAppend) bodSoFar = bodSoFar :+ f
+        (bodSoFar, optsSoFar, boundVarsSoFar, position)
       }
       case Sequence(sentence) => { // call on each part of seq
-        for (e <- sentence) {
-          val (newStr, newInd, newBound) = renderHelper(e, g, scope, instanceSoFar, doAppend, position, boundVarsSoFar)
-          instanceSoFar = newStr
+        for(e <- sentence) {
+          val (newBod, newOpts, newBound, newInd) = firstRender(e, g, scope, bodSoFar, optsSoFar, doAppend, position, boundVarsSoFar)
+          bodSoFar = newBod
+          optsSoFar = newOpts
+          boundVarsSoFar = newBound
           position = newInd
-          boundVarsSoFar = newBound // updating fine here
         }
-        (instanceSoFar, position, boundVarsSoFar)
+        (bodSoFar, optsSoFar, boundVarsSoFar, position)
       }
       case Choice(choices) => { // call on each Choice but only append correct one
         position += 1
@@ -51,67 +54,103 @@ object Render {
           if (doAppend && scope(position) == e) { // if scope points to this option we're on a valid branch // pos - 1?
             doApp = true
           }
-          val (newStr, newInd, newBound) = renderHelper(e, g, scope, instanceSoFar, doApp, position, boundVarsSoFar) // pos + 1?
-          instanceSoFar = newStr
-          position = newInd
+
+          val (newBod, newOpts, newBound, newInd) = firstRender(e, g, scope, bodSoFar, optsSoFar, doApp, position, boundVarsSoFar)
+          bodSoFar = newBod
+          optsSoFar = newOpts
           boundVarsSoFar = newBound
+          position = newInd
         }
-        (instanceSoFar, position, boundVarsSoFar)
+        (bodSoFar, optsSoFar, boundVarsSoFar, position)
+      }
+      case OptionProduction(text) => {
+        val (newOpt, newBound, newInd) = renderHelper(text, g, scope, Array[Expression](), doAppend, position, boundVarsSoFar) // pos or index?
+        boundVarsSoFar = newBound
+        position = newInd
+        (bodSoFar, optsSoFar :+ newOpt, boundVarsSoFar, position)
       }
       case Binding(nt) => {
-        val startStr = instanceSoFar.toString() // save string before adding binding so we know what was added
+        var startArr = Array[Expression]() // save expression list before adding binding so we know what was added
+        for(e <- bodSoFar) startArr = startArr :+ e
 
-        if (!(boundVarsSoFar contains nt)) { // haven't seen this binding before // todo doAppend?
-          val (newStr, newInd, newBound) = renderHelper(g(nt), g, scope, instanceSoFar, doAppend, position, boundVarsSoFar)
-          val added: String = (newStr diff startStr).toString()//newStr.toString.toSeq.diff(startStr) // figure out what was added
-          instanceSoFar = newStr
+        if (!(boundVarsSoFar contains nt)) { // haven't seen this binding before
+          val (newBod, newOpts, newBound, newInd) = firstRender(g(nt), g, scope, bodSoFar, optsSoFar, doAppend, position, boundVarsSoFar)
+          val added: Array[Expression] = newBod.diff(startArr)// figure out what was added
+
+          val toAdd = new StringBuilder()
+          for(e <- added) { // Bindings cannot map to Functions for now
+            assert(e.isInstanceOf[Terminal])
+            toAdd.append(e.asInstanceOf[Terminal].toText)
+          }
+
+          bodSoFar = newBod
+          optsSoFar = newOpts
+          boundVarsSoFar = newBound //+ (nt -> toAdd)
+          boundVarsSoFar += (nt -> toAdd.toString())
           position = newInd
-          boundVarsSoFar = newBound + (nt -> added) // update bindings
-        } else {
-          instanceSoFar = instanceSoFar.append(boundVarsSoFar(nt))
+          // val added: String = newStr.toString.toSeq.diff(startStr).unwrap// figure out what was added
+        } else { // if have seen, look up binding and add to instance
+          bodSoFar = bodSoFar :+ term(boundVarsSoFar(nt)) //instanceSoFar.append(boundVarsSoFar(nt))
         }
-        (instanceSoFar, position, boundVarsSoFar)
+        (bodSoFar, optsSoFar, boundVarsSoFar, position)
       }
     }
   }
 
-  def renderInstance(scope: Scope, grammar: Grammar): (String, Array[String]) = {
-    val(body, opts, _, _) = renderInstanceHelper(grammar(Start), grammar, scope, new StringBuilder, Array[StringBuilder](), true, -1, Map[Name, String]())
-    (body.toString, opts.map(_.toString()))
+  // Generates a String representing the question body and an Array of Strings representing the question options
+  def secondRender(bodArr: Array[Expression], optsArr: Array[Array[Expression]], bindingMap: Map[Name, String]): (String, Array[String]) = {
+    val bod = secondRenderHelper(bodArr, bindingMap)
+    val opts = optsArr.map(secondRenderHelper(_, bindingMap))
+    (bod, opts)
+  }
+
+  // Helper method to generate a string from the Expression arrays by appending Terminals and calling Functions
+  def secondRenderHelper(instArr: Array[Expression], bindingMap: Map[Name, String]): String = {
+    val instance = new StringBuilder
+    for(e <- instArr) {
+      e match {
+        case Terminal(value) => {
+          instance.append(value)
+        }
+        case Function(_, param, _) => {
+          instance.append(e.asInstanceOf[Function].runFun(bindingMap(param)))
+        }
+      }
+    }
+    instance.toString()
   }
 
   // Helper method to generate a String for an Expression
   // Returns the current string being generated, the index we're at in the grammar, and a Map for bindings from their Name to the String generated
-  def renderInstanceHelper(expr: Expression, g: Grammar, scope: Scope, generatingBod: StringBuilder, generatingOpts: Array[StringBuilder], doAppend: Boolean, index: Int, boundVars: Map[Name, String]): (StringBuilder, Array[StringBuilder], Int, Map[Name, String]) = {
-    var bodSoFar = generatingBod
-    var optsSoFar = generatingOpts
-    var position = index
+  // Mostly used to generate OptProds
+  def renderHelper(expr: Expression, g: Grammar, scope: Scope, generating: Array[Expression], doAppend: Boolean, index: Int, boundVars: Map[Name, String]): (Array[Expression], Map[Name, String], Int) = {
+    var instanceSoFar = generating
     var boundVarsSoFar = boundVars
+    var position = index
 
     expr match {
       case Ref(nt) => {
-        renderInstanceHelper(g(nt), g, scope, bodSoFar, optsSoFar, doAppend, position, boundVarsSoFar)
-      } // forward
-      case OptionProduction(text) => {
-        val (newOpt, newInd, newBound) = renderHelper(expr, g, scope, new StringBuilder, doAppend, index, boundVarsSoFar)
-        position = newInd
-        boundVarsSoFar = newBound
-        //optsSoFar += newOpt
-        (bodSoFar, optsSoFar :+ newOpt, position, boundVarsSoFar)
+        renderHelper(g(nt), g, scope, instanceSoFar, doAppend, position, boundVarsSoFar)
       }
-      case Terminal(value) => { // append if we're on the right branch
-        if (doAppend) bodSoFar.append(value)
-        (bodSoFar, optsSoFar, position, boundVarsSoFar)
+      case t: Terminal => { // append if we're on the right branch
+        if(doAppend) instanceSoFar = instanceSoFar :+ t
+        (instanceSoFar, boundVarsSoFar, position)
+      }
+      case f: Function => {
+        if(doAppend) instanceSoFar = instanceSoFar :+ f
+        (instanceSoFar, boundVarsSoFar, position)
+      }
+      case OptionProduction(text) => { // if hit another OP, terminate
+        renderHelper(text, g, scope, instanceSoFar, doAppend, position, boundVarsSoFar)
       }
       case Sequence(sentence) => { // call on each part of seq
-        for (e <- sentence) {
-          val (newStr, newOpts, newInd, newBound) = renderInstanceHelper(e, g, scope, bodSoFar, optsSoFar, doAppend, position, boundVarsSoFar)
-          bodSoFar = newStr
-          optsSoFar = newOpts
+        for(e <- sentence) {
+          val (newInst, newBound, newInd) = renderHelper(e, g, scope, instanceSoFar, doAppend, position, boundVarsSoFar)
+          instanceSoFar = newInst
+          boundVarsSoFar = newBound
           position = newInd
-          boundVarsSoFar = newBound // updating fine here
         }
-        (bodSoFar, optsSoFar, position, boundVarsSoFar)
+        (instanceSoFar, boundVarsSoFar, position)
       }
       case Choice(choices) => { // call on each Choice but only append correct one
         position += 1
@@ -120,28 +159,38 @@ object Render {
           if (doAppend && scope(position) == e) { // if scope points to this option we're on a valid branch // pos - 1?
             doApp = true
           }
-          val (newStr, newOpts, newInd, newBound) = renderInstanceHelper(e, g, scope, bodSoFar, optsSoFar, doApp, position, boundVarsSoFar) // pos + 1?
-          bodSoFar = newStr
-          optsSoFar = newOpts
-          position = newInd
-          boundVarsSoFar = newBound
-        }
-        (bodSoFar, optsSoFar, position, boundVarsSoFar)
-      }
-      case Binding(nt) => {
-        val startStr = bodSoFar.toString() // save string before adding binding so we know what was added
 
-        if (!(boundVarsSoFar contains nt)) { // haven't seen this binding before // todo doAppend?
-          val (newStr, newOpts, newInd, newBound) = renderInstanceHelper(g(nt), g, scope, bodSoFar, optsSoFar, doAppend, position, boundVarsSoFar)
-          val added: String = (newStr diff startStr).toString()//newStr.toString.toSeq.diff(startStr) // figure out what was added
-          bodSoFar = newStr
-          optsSoFar = newOpts
+          val (newInst, newBound, newInd) = renderHelper(e, g, scope, instanceSoFar, doApp, position, boundVarsSoFar)
+          instanceSoFar = newInst
+          boundVarsSoFar = newBound
           position = newInd
-          boundVarsSoFar = newBound + (nt -> added) // update bindings
-        } else {
-          bodSoFar = bodSoFar.append(boundVarsSoFar(nt))
         }
-        (bodSoFar, optsSoFar, position, boundVarsSoFar)
+        (instanceSoFar, boundVarsSoFar, position)
+      }
+
+      case Binding(nt) => {
+        var startArr = Array[Expression]() // save expression list before adding binding so we know what was added
+        for(e <- instanceSoFar) startArr = startArr :+ e
+
+        if (!(boundVarsSoFar contains nt)) { // haven't seen this binding before
+          val (newInst, newBound, newInd) = renderHelper(g(nt), g, scope, instanceSoFar, doAppend, position, boundVarsSoFar)
+          val added: Array[Expression] = newInst.diff(startArr)// figure out what was added
+
+          val toAdd = new StringBuilder()
+          for(e <- added) { // Bindings cannot map to Functions for now
+            assert(e.isInstanceOf[Terminal])
+            toAdd.append(e.asInstanceOf[Terminal].toText)
+          }
+
+          instanceSoFar = newInst
+          boundVarsSoFar = newBound //+ (nt -> toAdd)
+          boundVarsSoFar += (nt -> toAdd.toString())
+          position = newInd
+          // val added: String = newStr.toString.toSeq.diff(startStr).unwrap// figure out what was added
+        } else { // if have seen, look up binding and add to instance
+          instanceSoFar = instanceSoFar :+ term(boundVarsSoFar(nt)) //instanceSoFar.append(boundVarsSoFar(nt))
+        }
+        (instanceSoFar, boundVarsSoFar, position)
       }
     }
   }
@@ -159,7 +208,7 @@ object Render {
     val assignment = Rank.unrank(variation, bases)
     val scope = Bind.bind(expandedG, assignment)
     val (body, opts) = renderInstance(scope, expandedG)
-    (body.toString, opts.map(_.toString))
+    (body, opts)
   }
 
   def prettyPrintInstance(body: String, opts: Array[String]) = {
@@ -169,28 +218,51 @@ object Render {
 
   def main(args: Array[String]): Unit = {
     // Linda!
+    val pronouns = Map[String, String](
+      "Linda" -> "she",
+      "Dan" -> "he",
+      "Emmie" -> "she",
+      "Xavier the bloodsucking spider" -> "it"
+    )
+
+    val articles = Map[String,String](
+      "bank teller" -> "a",
+      "almond paste mixer" -> "an",
+      "tennis scout" -> "a",
+      "lawyer" -> "a",
+      "professor" -> "a"
+    )
+
     val lindaG = Map[Name, Expression](
       Start -> ref("A"),
       nt("A") -> seq(Array(
         binding(nt("Name")),
         term(" is "),
         binding(nt("Age")),
-        term("  years old, single, outspoken, and very bright. She majored in "),
+        term(" years old, single, outspoken, and very bright. "),
+        fun(pronouns, nt("Name"), true),
+        term(" majored in "),
         binding(nt("Major")),
-        term(". As a student, she was deeply concerned with issues of "),
+        term(". As a student, "),
+        fun(pronouns, nt("Name"), false),
+        term(" was deeply concerned with issues of "),
         binding(nt("Issue")),
         term(", and also participated in "),
         binding(nt("Demonstration")),
         term(" demonstrations.\n Which is more probable?\n"),
         opt(seq(Array(
           binding(nt("Name")),
-          term(" is a "),
+          term(" is "),
+          fun(articles, nt("Job"), false),
+          term(" "),
           binding(nt("Job")),
           term(".")))),
         //term("\n"),
         opt(seq(Array(
           binding(nt("Name")),
-          term(" is a "),
+          term(" is "),
+          fun(articles, nt("Job"), false),
+          term(" "),
           binding(nt("Job")),
           term(" and is active in the "),
           binding(nt("Movement")),
@@ -199,9 +271,9 @@ object Render {
       )),
       nt("Name") -> ch(Array(
         term("Linda"),
+        term("Dan"),
         term("Emmie"),
-        term("Cheryl"),
-        term("Little Miss Muffet")
+        term("Xavier the bloodsucking spider")
       )),
       nt("Age") -> ch(Array(
         term("21"),
@@ -234,7 +306,7 @@ object Render {
       )),
       nt("Job") -> ch(Array(
         term("bank teller"),
-        term("semiretired almond paste mixer"),
+        term("almond paste mixer"),
         term("tennis scout"),
         term("lawyer"),
         term("professor")
@@ -249,13 +321,18 @@ object Render {
     )
 
     val expLindaG = expand(lindaG, 2)
+//    //println(Expand.prettyPrint(expLindaG))
     val lindaBases = Rank.generateBases(expLindaG)
-    println("Linda: ")
-    //println("bases: " + lindaBases.mkString(" "))
-    val lindaAssignment = Rank.unrank(0, lindaBases)
-    println("assignment: " + lindaAssignment.mkString(" "))
-    val lindaScope = Bind.bind(expLindaG, lindaAssignment)
-    val (body, opts) = renderInstance(lindaScope, expLindaG)
-    prettyPrintInstance(body, opts)
+//    //println("Linda: ")
+//    //println("bases: " + lindaBases.mkString(" "))
+//    val lindaAssignment = Rank.unrank(0, lindaBases)
+//    //println("assignment: " + lindaAssignment.mkString(" "))
+//    val lindaScope = Bind.bind(expLindaG, lindaAssignment)
+//    //println(Bind.prettyPrintScope(lindaScope))
+//    val (body, opts) = renderInstance(lindaScope, expLindaG)
+//    prettyPrintInstance(body, opts)
+    val variation = Rank.rank(Array(3, 3, 5, 0, 4, 1, 2), lindaBases)
+    val (body1, opts1) = buildInstance(lindaG, variation, 2)
+    prettyPrintInstance(body1, opts1)
   }
 }

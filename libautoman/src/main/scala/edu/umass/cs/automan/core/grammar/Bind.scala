@@ -27,8 +27,9 @@ object Bind {
 
     expr match {
       case Ref(nt) => bindHelper(g(nt), g, assignment, generatingScope, soFarNames + nt.text)
-      case OptionProduction(text) => bindHelper(text, g, assignment, generatingScope, soFarNames)
-      case Terminal(value) => (soFarScope, soFarNames)
+      case OptionProduction(text) => bindHelper(text, g, assignment, generatingScope, soFarNames) // forward
+      case Terminal(_) => (soFarScope, soFarNames) // ignore
+      case Function(_,_,_) => (soFarScope, soFarNames) // ignore
       case Sequence(sentence) => { // bind each component
         for(e <- sentence) {
           val (newScope, newNames) = bindHelper(e, g, assignment, soFarScope, soFarNames)
