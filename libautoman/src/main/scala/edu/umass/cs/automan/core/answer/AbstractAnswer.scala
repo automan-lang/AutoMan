@@ -2,8 +2,9 @@ package edu.umass.cs.automan.core.answer
 
 import java.io.{BufferedWriter, File, FileWriter, PrintWriter}
 
-//import au.com.bytecode.opencsv.CSVWriter
+import au.com.bytecode.opencsv.CSVWriter
 import edu.umass.cs.automan.core.question._
+import scala.collection.JavaConversions._
 
 import scala.collection.mutable.ListBuffer
 
@@ -128,6 +129,60 @@ case class SurveyAnswers(values: Seq[Map[String,Question#A]], // final dist (no 
                          override val question: Survey,
                          override val distribution: Array[Response[Set[(String,Question#A)]]])
   extends AbstractSurveyAnswer(cost, question, distribution) {
+
+  /**
+    * Generates a CSV file with the answer distribution
+    */
+  def toCSV = {
+    val outputFile = new BufferedWriter(new FileWriter("./output.csv"))
+    val csvWriter = new CSVWriter(outputFile)
+    val csvFields = Array("question", "answer", "count")
+
+    // construct distribution map
+    var ansMap = Map[(String, String), Int]() // a map from the question ID and answers to the number of selections
+    for(v <- values) {
+      val qID = question.id.toString
+      val response = v(question.id.toString)
+      val responseString = question.prettyPrintAnswer(response.asInstanceOf[SurveyAnswers.this.question.A])
+
+      val numAlready = 0
+      if(ansMap contains ((qID, responseString))) {
+        val numAlready = ansMap((qID, responseString))
+      }
+      ansMap += ((qID, responseString) -> numAlready)
+    }
+
+    // add fields to csv
+    var listOfRecords = new ListBuffer[Array[String]]()
+    listOfRecords += Array(question.id.toString)
+    listOfRecords += csvFields
+
+    // add answer dist to csv
+    for(a <- ansMap) {
+      var toAdd = Array[String]()
+
+      a match {
+        case (strs, i) => {
+          strs match {
+            case (q, ans) => {
+              toAdd += q
+              toAdd += ans
+              toAdd += i.toString
+            }
+            case _ => throw new Error("parsing error")
+          }
+        }
+        case _ => throw new Error("parsing error")
+      }
+      listOfRecords += toAdd
+    }
+
+    // write everything
+    //val recordList: java.util.List[Array[String]] = listOfRecords
+    csvWriter.writeAll(listOfRecords)
+    outputFile.close()
+  }
+
   override def toString: String = {
     val toRet: StringBuilder = new StringBuilder()
 
@@ -156,7 +211,7 @@ case class SurveyAnswers(values: Seq[Map[String,Question#A]], // final dist (no 
 //          toRet.append(toPrint)
 //        }
 //      }
-    for(v <- values) {
+    for(v <- values) { // map from String (question ID) to Response
       val s = v(question.id.toString)
       val toPrint: String = question.prettyPrintAnswer(s.asInstanceOf[SurveyAnswers.this.question.A])
       pw.write(toPrint + ",\n")
