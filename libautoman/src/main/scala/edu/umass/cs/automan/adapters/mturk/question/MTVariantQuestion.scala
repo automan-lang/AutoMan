@@ -20,7 +20,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.xml.Node
 
-class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
+class MTVariantQuestion(sandbox: Boolean) extends VariantQuestion with MTurkQuestion {
   //override type QuestionOptionType = this.type
   override var _question: QuestionProduction = null
   override var _newQ: Question = null
@@ -141,7 +141,7 @@ class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
         newQ.asInstanceOf[MTFreeTextVectorQuestion].toXML(randomize)
       }
       case QuestionType.RadioButtonQuestion => {
-        newQ = new MTRadioButtonQuestion()
+        newQ = new MTRadioButtonQuestion(sandbox)
         newQ.text = bodyText
         val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
         newQ.asInstanceOf[MTRadioButtonQuestion].options = options
@@ -195,7 +195,7 @@ override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
       newQ.asInstanceOf[MTFreeTextQuestion].toSurveyXML(randomize)
     }
     case QuestionType.RadioButtonQuestion => {
-      newQ = new MTRadioButtonQuestion()
+      newQ = new MTRadioButtonQuestion(sandbox)
       newQ.text = bodyText
       val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
       newQ.asInstanceOf[MTRadioButtonQuestion].options = options

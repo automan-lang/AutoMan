@@ -92,10 +92,10 @@ class MTurkAdapter extends AutomanAdapter {
   protected def EQFactory()   = new MTEstimationQuestion
   protected def FTQFactory()  = new MTFreeTextQuestion
   protected def FTDQFactory() = new MTFreeTextVectorQuestion
-  protected def RBQFactory()  = new MTRadioButtonQuestion
+  protected def RBQFactory()  = new MTRadioButtonQuestion(sandbox_mode)
   protected def RBDQFactory() = new MTRadioButtonVectorQuestion
   protected def SFactory()    = new MTSurvey
-  protected def VQFactory()   = new MTVariantQuestion
+  protected def VQFactory()   = new MTVariantQuestion(sandbox_mode)
 
   def Option(id: Symbol, text: String) = new MTQuestionOption(id, text, "")
   def Option(id: Symbol, text: String, image_url: String) = new MTQuestionOption(id, text, image_url)

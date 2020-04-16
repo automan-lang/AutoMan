@@ -19,6 +19,11 @@ abstract class RadioButtonQuestion extends DiscreteScalarQuestion {
   def num_possibilities: BigInt = BigInt(_options.size)
   def randomized_options: List[QuestionOptionType]
 
+  // Experimental JavaScript stuff
+  protected var _dimensions: Array[Dimension] = Array()
+  def dimensions_=(dim: Array[Dimension]) { _dimensions = dim }
+  def dimensions: Array[Dimension] = _dimensions
+
   override protected[automan] def getQuestionType = QuestionType.RadioButtonQuestion
 
   // private methods

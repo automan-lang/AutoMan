@@ -5,17 +5,23 @@ import java.util.{Date, UUID}
 import edu.umass.cs.automan.adapters.mturk.mock.RadioButtonMockResponse
 import edu.umass.cs.automan.adapters.mturk.policy.aggregation.MTurkMinimumSpawnPolicy
 import edu.umass.cs.automan.core.logging._
-import edu.umass.cs.automan.core.question.RadioButtonQuestion
+import edu.umass.cs.automan.core.question.{Dimension, RadioButtonQuestion}
 import edu.umass.cs.automan.core.util.Utilities
 import java.security.MessageDigest
 
 import org.apache.commons.codec.binary.Hex
 
-import scala.xml.{Elem, Node}
+import scala.xml.{Elem, Node, NodeSeq}
 
-class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
+class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with MTurkQuestion {
   type QuestionOptionType = MTQuestionOption
   override type A = RadioButtonQuestion#A // need this to be an array
+
+  private val _action = if (sandbox) {
+    "https://workersandbox.mturk.com/mturk/externalSubmit"
+  } else {
+    "https://www.mturk.com/mturk/externalSubmit"
+  }
 
   // public API
   def memo_hash: String = {
@@ -43,9 +49,79 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
   }
   // TODO: random checkbox fill
   override protected[mturk] def toXML(randomize: Boolean): scala.xml.Node = {
+//    <HTMLQuestion xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2011-11-11/HTMLQuestion.xsd">
+//      { XMLBody(randomize) }
+//    </HTMLQuestion>
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
       { XMLBody(randomize) }
     </QuestionForm>
+  }
+
+  def renderQuestion(dimension: Dimension) : scala.xml.Node = {
+    val idname = s"dimension_${ dimension.id.toString.drop(1) }"
+    <p>
+      <input type="text" class="dimension" id={ idname } name={ dimension.id.toString.drop(1) } />
+    </p>
+  }
+
+  def jsFunctions : String = {
+    """
+      |function getAssignmentID() {
+      |  return location.search.match(/assignmentId=(\w+)/)[1];
+      |}
+      |
+      |function previewMode() {
+      |  var assignment_id = getAssignmentID();
+      |  return assignment_id === 'ASSIGNMENT_ID_NOT_AVAILABLE';
+      |}
+      |
+      |function disableSubmitOnPreview() {
+      |  if (previewMode()) {
+      |    document.getElementById('submitButton').setAttribute('disabled', true);
+      |  }
+      |}
+      |
+      |function startup() {
+      |  disableSubmitOnPreview();
+      |  document.getElementById('assignmentId').value = getAssignmentID();
+      |}
+    """.stripMargin
+  }
+
+  def html() = {
+    String.format("<!DOCTYPE html>%n") + {
+      <html>
+        <head>
+          <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+        </head>
+        <body onload="startup()">
+          <div id="wrapper">
+            <div id="hit_content">
+              <form name="mturk_form" method="post" id="mturk_form" action={_action}>
+                <input type="hidden" value={id.toString} name="question_id" id="question_id"/>
+                <input type="hidden" value="" name="assignmentId" id="assignmentId"/>
+                {
+                _image_url match {
+                  case Some(url) => <p><img id="question_image" src={ url }/></p>
+                  case None => NodeSeq.Empty
+                }
+                }
+                {
+                _text match {
+                  case Some(text) => <p>{ text }</p>
+                  case None => NodeSeq.Empty
+                }
+                }
+                { dimensions.map(renderQuestion) }
+                <p>
+                  <input type="submit" id="submitButton" value="Submit"/>
+                </p>
+              </form>
+            </div>
+          </div>
+        </body>
+      </html>
+    }
   }
 
   /**
@@ -62,41 +138,43 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
   }
 
   override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
+    <HTMLContent> { scala.xml.PCData(html()) }
+    </HTMLContent>
     //Seq(
-      <Question>
-        <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
-        <IsRequired>true</IsRequired>
-        <QuestionContent>
-          {
-          _image_url match {
-            case Some(url) => {
-              <Binary>
-                <MimeType>
-                  <Type>image</Type>
-                  <SubType>png</SubType>
-                </MimeType>
-                <DataURL>{ url }</DataURL>
-                <AltText>{ image_alt_text }</AltText>
-              </Binary>
-            }
-            case None => {}
-          }
-          }
-          {
-          // if formatted content is specified, use that instead of text field
-          _formatted_content match {
-            case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString()) }</FormattedContent>
-            case None => <Text>{ text }</Text>
-          }
-          }
-        </QuestionContent>
-        <AnswerSpecification>
-          <SelectionAnswer>
-            <StyleSuggestion>radiobutton</StyleSuggestion>
-            <Selections>{ if(randomize) randomized_options.map { _.toXML } else options.map { _.toXML } }</Selections>
-          </SelectionAnswer>
-        </AnswerSpecification>
-      </Question>
+//      <Question>
+//        <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
+//        <IsRequired>true</IsRequired>
+//        <QuestionContent>
+//          {
+//          _image_url match {
+//            case Some(url) => {
+//              <Binary>
+//                <MimeType>
+//                  <Type>image</Type>
+//                  <SubType>png</SubType>
+//                </MimeType>
+//                <DataURL>{ url }</DataURL>
+//                <AltText>{ image_alt_text }</AltText>
+//              </Binary>
+//            }
+//            case None => {}
+//          }
+//          }
+//          {
+//          // if formatted content is specified, use that instead of text field
+//          _formatted_content match {
+//            case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString()) }</FormattedContent>
+//            case None => <Text>{ text }</Text>
+//          }
+//          }
+//        </QuestionContent>
+//        <AnswerSpecification>
+//          <SelectionAnswer>
+//            <StyleSuggestion>radiobutton</StyleSuggestion>
+//            <Selections>{ if(randomize) randomized_options.map { _.toXML } else options.map { _.toXML } }</Selections>
+//          </SelectionAnswer>
+//        </AnswerSpecification>
+//      </Question>
     //)
   }
 }

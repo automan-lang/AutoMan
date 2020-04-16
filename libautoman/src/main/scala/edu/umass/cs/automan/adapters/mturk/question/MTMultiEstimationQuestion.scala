@@ -145,7 +145,7 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
         </HTMLContent>
         <FrameHeight>{ _iframe_height.toString }</FrameHeight>
     }
-  }
+  } // calling html()
 
   // TODO this may not be right
   override protected[mturk] def toSurveyXML(randomize: Boolean): Node = toXML(randomize)
