@@ -9,7 +9,7 @@ import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.VariantOutcome
 import edu.umass.cs.automan.core.grammar.Rank.Grammar
 import edu.umass.cs.automan.core.grammar.Expand.Start
-import edu.umass.cs.automan.core.grammar.{Binding, Choice, Expression, Name, OptionProduction, QuestionProduction, Ref, Sequence, Terminal}
+import edu.umass.cs.automan.core.grammar.{Binding, Choice, Expression, Function, Name, OptionProduction, QuestionProduction, Ref, Sequence, Terminal}
 import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.question.{EstimationQuestion, Question, VariantQuestion}
@@ -70,6 +70,11 @@ class MTVariantQuestion(sandbox: Boolean) extends VariantQuestion with MTurkQues
           md5sum += value.hashCode
           md5sum
         }
+        case Function(fun, param, _) => {
+          md5sum += merkle_hash(g(param), g)
+          md5sum += fun.hashCode
+          md5sum
+        }
         case q: QuestionProduction => {
           BigInt(md.digest(q.questionType.toString().getBytes)) //todo is this right?
         }
@@ -102,7 +107,6 @@ class MTVariantQuestion(sandbox: Boolean) extends VariantQuestion with MTurkQues
     * @param randomize Randomize option order?
     * @return XML
     */
-    // todo remove variant param
 
   override protected[mturk] def toXML(randomize: Boolean): Node = {
       val (body, opts) = _question.toQuestionText(variant, depth)

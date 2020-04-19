@@ -265,30 +265,22 @@ object Render {
         binding(nt("Name")),
         term(" is "),
         binding(nt("Age")),
-        term(" years old, single, outspoken, and very bright. "),
-        fun(pronouns, nt("Name"), true),
-        term(" majored in "),
+        term("  years old, single, outspoken, and very bright. She majored in "),
         binding(nt("Major")),
-        term(". As a student, "),
-        fun(pronouns, nt("Name"), false),
-        term(" was deeply concerned with issues of "),
+        term(". As a student, she was deeply concerned with issues of "),
         binding(nt("Issue")),
         term(", and also participated in "),
         binding(nt("Demonstration")),
-        term(" demonstrations.\n Which is more probable?"),
+        term(" demonstrations.\n Which is more probable?\n"),
         opt(seq(Array(
           binding(nt("Name")),
-          term(" is "),
-          fun(articles, nt("Job"), false),
-          term(" "),
+          term(" is a "),
           binding(nt("Job")),
           term(".")))),
         //term("\n"),
         opt(seq(Array(
           binding(nt("Name")),
-          term(" is "),
-          fun(articles, nt("Job"), false),
-          term(" "),
+          term(" is a "),
           binding(nt("Job")),
           term(" and is active in the "),
           binding(nt("Movement")),
@@ -346,6 +338,8 @@ object Render {
       ))
     )
 
+    val (body1, opts1) = buildInstance(lindaG, 435245353, 2)
+    println(prettyPrintInstance(body1, opts1))
     //val expLindaG = expand(lindaG, 2)
 //    //println(Expand.prettyPrint(expLindaG))
     //val lindaBases = Rank.generateBases(expLindaG)
@@ -360,13 +354,13 @@ object Render {
 //    val variation = Rank.rank(Array(3, 3, 5, 0, 4, 1, 2), lindaBases) // todo make build method to take array
 //    val (body1, opts1) = buildInstance(lindaG, variation, 2)
 //    prettyPrintInstance(body1, opts1)
-    val instances: Array[(String, Array[String])] = dryRun(lindaG, 2, None)
-    for(e <- instances){
-      e match {
-        case (bod, opts) => {
-          prettyPrintInstance(bod, opts)
-        }
-      }
-    }
+    //val instances: Array[(String, Array[String])] = dryRun(lindaG, 2, None)
+//    for(e <- instances){
+//      e match {
+//        case (bod, opts) => {
+//          prettyPrintInstance(bod, opts)
+//        }
+//      }
+//    }
   }
 }

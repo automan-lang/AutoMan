@@ -34,6 +34,10 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
 
   // private API
   _minimum_spawn_policy = MTurkMinimumSpawnPolicy
+  private var _iframe_height = 450
+  private var _layout: Option[scala.xml.Node] = None
+
+
   override def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID) : RadioButtonMockResponse = {
     RadioButtonMockResponse(question_id, response_time, a, worker_id)
   }
@@ -49,12 +53,12 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
   }
   // TODO: random checkbox fill
   override protected[mturk] def toXML(randomize: Boolean): scala.xml.Node = {
-//    <HTMLQuestion xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2011-11-11/HTMLQuestion.xsd">
-//      { XMLBody(randomize) }
-//    </HTMLQuestion>
-    <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
+    <HTMLQuestion xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2011-11-11/HTMLQuestion.xsd">
       { XMLBody(randomize) }
-    </QuestionForm>
+    </HTMLQuestion>
+//    <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
+//      { XMLBody(randomize) }
+//    </QuestionForm>
   }
 
   def renderQuestion(dimension: Dimension) : scala.xml.Node = {
@@ -65,9 +69,9 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
   }
 
   def jsFunctions : String = {
-    """
+    s"""
       |function getAssignmentID() {
-      |  return location.search.match(/assignmentId=(\w+)/)[1];
+      |  return location.search.match(/assignmentId=([_0-9a-zA-Z]+)/)[1];
       |}
       |
       |function previewMode() {
@@ -85,14 +89,58 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
       |  disableSubmitOnPreview();
       |  document.getElementById('assignmentId').value = getAssignmentID();
       |}
+      |
+      |function shuffle(array) {
+      |  for (let i = array.length - 1; i > 0; i--) {
+      |    const j = Math.floor(Math.random() * (i + 1));
+      |    [array[i], array[j]] = [array[j], array[i]];
+      |  }
+      |}
+      |
+      |function insertOptions() {
+      |  const form = document.createElement("crowd-form");
+      |  const group = document.createElement("crowd-radio-group");
+      |  group.setAttribute("id", "radio");
+      |
+      |  const options = ${options.toArray};
+      |
+      |  const optIDs = ${options.map(_.question_id)};
+      |  const optTexts = ${options.map(_.question_text)};
+      |
+      |  optTexts.forEach((option, index) => {
+      |    var form = document.getElementById("radio");
+      |    var input = document.createElement("crowd-radio-group");
+      |    input.name = "option_" + option;
+      |    input.value = optIDs[index];
+      |    var optText = document.createTextNode(option);
+      |    input.appendChild(optText);
+      |    form.appendChild(input);
+      |  });
+      |}
     """.stripMargin
   }
+  // shuffle(options); on 102
+//  <crowd-form>
+//    <crowd-radio-group id ="radio">
+//
+//    </crowd-radio-group>
+//  </crowd-form>
+
 
   def html() = {
     String.format("<!DOCTYPE html>%n") + {
+      //<![CDATA[
+      //<!DOCTYPE html>
       <html>
         <head>
           <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+          <script>{ jsFunctions }</script>
+          {
+          _layout match {
+            case Some(layout) => layout
+            case None => NodeSeq.Empty
+          }
+          }
         </head>
         <body onload="startup()">
           <div id="wrapper">
@@ -113,6 +161,7 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
                 }
                 }
                 { dimensions.map(renderQuestion) }
+                <script onload ="insertOptions()" src="https://assets.crowd.aws/crowd-html-elements.js"></script>
                 <p>
                   <input type="submit" id="submitButton" value="Submit"/>
                 </p>
@@ -121,6 +170,7 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
           </div>
         </body>
       </html>
+      //]]>
     }
   }
 
@@ -133,48 +183,97 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
     */
   override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = {
     Seq(
-      toSurveyXML(randomize)
+      toSurveyXML(randomize),
+    <FrameHeight>{ _iframe_height.toString }</FrameHeight>
     )
   }
 
   override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
-    <HTMLContent> { scala.xml.PCData(html()) }
-    </HTMLContent>
-    //Seq(
-//      <Question>
-//        <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
-//        <IsRequired>true</IsRequired>
-//        <QuestionContent>
-//          {
-//          _image_url match {
-//            case Some(url) => {
-//              <Binary>
-//                <MimeType>
-//                  <Type>image</Type>
-//                  <SubType>png</SubType>
-//                </MimeType>
-//                <DataURL>{ url }</DataURL>
-//                <AltText>{ image_alt_text }</AltText>
-//              </Binary>
+    {
+      <HTMLContent> { scala.xml.PCData(html()) }
+      </HTMLContent>
+        //<FrameHeight>{ _iframe_height.toString }</FrameHeight>
+    }
+//    <Question>
+//      <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
+//      <IsRequired>true</IsRequired>
+//      <QuestionContent>
+//        {
+//        _image_url match {
+//          case Some(url) => {
+//            <Binary>
+//              <MimeType>
+//                <Type>image</Type>
+//                <SubType>png</SubType>
+//              </MimeType>
+//              <DataURL>{ url }</DataURL>
+//              <AltText>{ image_alt_text }</AltText>
+//            </Binary>
+//          }
+//          case None => {}
+//        }
+//        }
+//        {
+//        // if formatted content is specified, use that instead of text field
+//        _formatted_content match {
+//          case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString) }</FormattedContent>
+//          case None => <Text>{ text }</Text>
+//        }
+//        }
+//      </QuestionContent>
+//      <AnswerSpecification>
+//        <SelectionAnswer>
+//          <StyleSuggestion>radiobutton</StyleSuggestion>
+//          <Selections>{ if(randomize) {
+//              <HTMLContent>
+//
+//                { scala.xml.PCData(html()) }
+//
+//              </HTMLContent>
 //            }
-//            case None => {}
+//            //randomized_options.map { _.toXML }
+//          } else {
+//            options.map { _.toXML }
 //          }
-//          }
-//          {
-//          // if formatted content is specified, use that instead of text field
-//          _formatted_content match {
-//            case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString()) }</FormattedContent>
-//            case None => <Text>{ text }</Text>
-//          }
-//          }
-//        </QuestionContent>
-//        <AnswerSpecification>
-//          <SelectionAnswer>
-//            <StyleSuggestion>radiobutton</StyleSuggestion>
-//            <Selections>{ if(randomize) randomized_options.map { _.toXML } else options.map { _.toXML } }</Selections>
-//          </SelectionAnswer>
-//        </AnswerSpecification>
-//      </Question>
-    //)
+//          </Selections>
+//        </SelectionAnswer>
+//      </AnswerSpecification>
+//    </Question>
   }
+  //Seq(
+  //      <Question>
+  //        <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
+  //        <IsRequired>true</IsRequired>
+  //        <QuestionContent>
+  //          {
+  //          _image_url match {
+  //            case Some(url) => {
+  //              <Binary>
+  //                <MimeType>
+  //                  <Type>image</Type>
+  //                  <SubType>png</SubType>
+  //                </MimeType>
+  //                <DataURL>{ url }</DataURL>
+  //                <AltText>{ image_alt_text }</AltText>
+  //              </Binary>
+  //            }
+  //            case None => {}
+  //          }
+  //          }
+  //          {
+  //          // if formatted content is specified, use that instead of text field
+  //          _formatted_content match {
+  //            case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString()) }</FormattedContent>
+  //            case None => <Text>{ text }</Text>
+  //          }
+  //          }
+  //        </QuestionContent>
+  //        <AnswerSpecification>
+  //          <SelectionAnswer>
+  //            <StyleSuggestion>radiobutton</StyleSuggestion>
+  //            <Selections>{ if(randomize) randomized_options.map { _.toXML } else options.map { _.toXML } }</Selections>
+  //          </SelectionAnswer>
+  //        </AnswerSpecification>
+  //      </Question>
+  //)
 }

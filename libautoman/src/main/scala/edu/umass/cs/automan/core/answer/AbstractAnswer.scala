@@ -139,10 +139,15 @@ case class SurveyAnswers(values: Seq[Map[String,Question#A]], // final dist (no 
     val csvFields = Array("question", "answer", "count")
 
     // construct distribution map
+    // aggregates at survey level
     var ansMap = Map[(String, String), Int]() // a map from the question ID and answers to the number of selections
     for(v <- values) {
       val qID = question.id.toString
       val response = v(question.id.toString)
+//      for(r <- response) {
+//
+//      }
+
       val responseString = question.prettyPrintAnswer(response.asInstanceOf[SurveyAnswers.this.question.A])
 
       var numAlready = 0
