@@ -11,5 +11,6 @@ scalaVersion := "2.11.7"
 exportJars := true
 
 libraryDependencies ++= Seq(
-  "edu.umass.cs" %% "automan" % "1.4.0-SNAPSHOT"
+  "edu.umass.cs" %% "automan" % "1.4.0-SNAPSHOT",
+  "au.com.bytecode"            % "opencsv"                % "2.4"
 )
