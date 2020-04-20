@@ -9,18 +9,26 @@ import edu.umass.cs.automan.core.logging.{DebugLog, LogLevelDebug, LogType}
 import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.question.{Question, Survey}
 import edu.umass.cs.automan.adapters.mturk.util.XML
+import edu.umass.cs.automan.core.info.QuestionType
 import org.apache.commons.codec.binary.Hex
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.xml.{Elem, Node, NodeSeq}
 
-class MTSurvey extends Survey with MTurkQuestion {
+class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
 
   override def description: String = _description match { case Some(d) => d; case None => this.title }
   override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
 
   private var _iframe_height = 450
+
+  private val _action = if (sandbox) {
+    "https://workersandbox.mturk.com/mturk/externalSubmit"
+  } else {
+    "https://www.mturk.com/mturk/externalSubmit"
+  }
+  private var _layout: Option[scala.xml.Node] = None
 
   override protected[mturk] def fromXML(x: Node): A = { // Set[(String,Question#A)]
 //    DebugLog("MTRadioButtonQuestion: fromXML:\n" + x.toString,LogLevelDebug(),LogType.ADAPTER,id)
@@ -75,58 +83,144 @@ class MTSurvey extends Survey with MTurkQuestion {
 //      { XMLBody(randomize) }
 //    </QuestionForm>
     <HTMLQuestion xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2011-11-11/HTMLQuestion.xsd">
-      <HTMLContent>
-        { val bod: Seq[Node] = XMLBody(randomize)
-        bod
+      <HTMLContent><![CDATA[
+      <!DOCTYPE html>
+          <head>
+            <title>Please fill out this survey</title>
+            <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+            <script>{ jsFunctions }</script>
+            {
+            _layout match {
+              case Some(layout) => layout
+              case None => NodeSeq.Empty
+            }
+            }
+            <script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
+          </head>
+          <body onload="startup()">
+            <div id="wrapper">
+              <div id="hit_content">
+                <crowd-form name="mturk_form" method="post" id="mturk_form" action={_action}>
+                  {
+                  var toInsert: NodeSeq = <div></div>
+                  for (q <- _question_list) {
+                    toInsert = toInsert ++ generateQuestionText(q.question)
+                    toInsert = toInsert ++ generateQuestionOpts(q.question)
+                  }
+                  //XMLBody(randomize)
+                  }
+                  <p>
+                    <input type="submit" id="submitButton" value="Submit"/>
+                  </p>
+                  </crowd-form>
+                </div>
+              </div>
+            </body>
+        </html>
 
-//      val toAdd = {
-//        <p>
-//          <input type="submit" id="submitButton" value="Submit"/>
-//        </p>
-//      }
-//
-//      val bods: NodeSeq = (bod \ "body")
-//        bods.tail ++= toAdd // added submit button to end
-//
-//        val topHTML = (bod \ "html")
-//        topHTML match {
-//          case Node(str, data, node) => topHTML = Node(str, data, bods)
-//          //case Elem(_,_,_,_,child) => topHTML = Elem(_,_,_,_, bods)
-//          //case Elem(_,_,_,child) => topHTML = Elem(_,_,_,bods)
-//        }
-        //topHTML.child
-
-      //val toAdd = "</body><p><input type='submit' id='submitButton' value='Submit'/></p>"
-      //val bodString = bod.toString() // adding List
-      //var bodArr: ArrayBuffer[String] = ArrayBuffer()
-      // need to insert after last instance of </body>
-      //bodArr ++= bodString.split("</body>")
-      //assert(bodArr.length == 2)
-//      bodArr.insert(bodArr.length - 1, toAdd)
-//      val newBod = bodArr.toString()
-      //xml.XML.loadString(newBod)
-
-//          bod = bod ++ {
-//            <p>
-//              <input type="submit" id="submitButton" value="Submit"/>
-//            </p>
-//          }
-        //val tl = bod.last
-//      val bodyDiv: NodeSeq = (bod \ "body") // todo combine nodes into one node?
-//      assert(bodyDiv.size == 1)
-//      bodyDiv.head match {
-//
-//      }
-        //bod
-        }
-
-      </HTMLContent>
+      ]]></HTMLContent>
       <FrameHeight>{ _iframe_height.toString }</FrameHeight>
     </HTMLQuestion>
+  }
+
+  private def generateQuestionText(question: Question): Node = {
+    <div>question.text</div>
+  }
+
+  private def generateQuestionOpts(question: Question): NodeSeq = {
+    val qName = s"option_${question.id}"
+    var toRet: NodeSeq = <div></div>
+
+    question.getQuestionType match {
+      case QuestionType.VariantQuestion => {
+        question.asInstanceOf[MTVariantQuestion].initQuestion()
+        generateQuestionOpts(question.asInstanceOf[MTVariantQuestion].getInternalQuestion)
+      }
+      case QuestionType.RadioButtonQuestion => {
+        for (o <- question.asInstanceOf[MTRadioButtonQuestion].options) {
+          var toApp = <crowd-radio-button name={qName.toString} id={question.id.toString}>{o.question_text}</crowd-radio-button>
+          toRet = toRet ++ toApp
+        }
+        toRet
+      }
+      case _ => throw new Error("other question types not implemented")
+    }
+  }
+
+  def jsFunctions : String = {
+    s"""
+       |function getAssignmentID() {
+       |  return location.search.match(/assignmentId=([_0-9a-zA-Z]+)/)[1];
+       |}
+       |
+       |function previewMode() {
+       |  var assignment_id = getAssignmentID();
+       |  return assignment_id === 'ASSIGNMENT_ID_NOT_AVAILABLE';
+       |}
+       |
+       |function disableSubmitOnPreview() {
+       |  if (previewMode()) {
+       |    document.getElementById('submitButton').setAttribute('disabled', true);
+       |  }
+       |}
+       |
+       |function startup() {
+       |  disableSubmitOnPreview();
+       |  document.getElementById('assignmentId').value = getAssignmentID();
+       |  insertOptions();
+       |}
+       |
+       |function shuffle(array) {
+       |  if (array.length != 0) {
+       |    for (let i = array.length - 1; i != 0; i--) {
+       |      const j = Math.floor(Math.random() * (i + 1));
+       |      [array[i], array[j]] = [array[j], array[i]];
+       |    }
+       |  }
+       |}
+    """.stripMargin
   }
 //  <p>
 //    <input type="submit" id="submitButton" value="Submit"/>
 //  </p>
+  //      val toAdd = {
+  //        <p>
+  //          <input type="submit" id="submitButton" value="Submit"/>
+  //        </p>
+  //      }
+  //
+  //      val bods: NodeSeq = (bod \ "body")
+  //        bods.tail ++= toAdd // added submit button to end
+  //
+  //        val topHTML = (bod \ "html")
+  //        topHTML match {
+  //          case Node(str, data, node) => topHTML = Node(str, data, bods)
+  //          //case Elem(_,_,_,_,child) => topHTML = Elem(_,_,_,_, bods)
+  //          //case Elem(_,_,_,child) => topHTML = Elem(_,_,_,bods)
+  //        }
+  //topHTML.child
+
+  //val toAdd = "</body><p><input type='submit' id='submitButton' value='Submit'/></p>"
+  //val bodString = bod.toString() // adding List
+  //var bodArr: ArrayBuffer[String] = ArrayBuffer()
+  // need to insert after last instance of </body>
+  //bodArr ++= bodString.split("</body>")
+  //assert(bodArr.length == 2)
+  //      bodArr.insert(bodArr.length - 1, toAdd)
+  //      val newBod = bodArr.toString()
+  //xml.XML.loadString(newBod)
+
+  //          bod = bod ++ {
+  //            <p>
+  //              <input type="submit" id="submitButton" value="Submit"/>
+  //            </p>
+  //          }
+  //val tl = bod.last
+  //      val bodyDiv: NodeSeq = (bod \ "body") // todo combine nodes into one node?
+  //      assert(bodyDiv.size == 1)
+  //      bodyDiv.head match {
+  //
+  //      }
 
   override def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")

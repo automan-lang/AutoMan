@@ -53,9 +53,11 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
   }
   // TODO: random checkbox fill
   override protected[mturk] def toXML(randomize: Boolean): scala.xml.Node = {
-    <HTMLQuestion xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2011-11-11/HTMLQuestion.xsd">
+    //<HTMLQuestion xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2011-11-11/HTMLQuestion.xsd">
+    <div>
       { XMLBody(randomize) }
-    </HTMLQuestion>
+    </div>
+    //</HTMLQuestion>
 //    <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
 //      { XMLBody(randomize) }
 //    </QuestionForm>
@@ -88,37 +90,65 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
       |function startup() {
       |  disableSubmitOnPreview();
       |  document.getElementById('assignmentId').value = getAssignmentID();
+      |  insertOptions();
       |}
       |
       |function shuffle(array) {
-      |  for (let i = array.length - 1; i > 0; i--) {
-      |    const j = Math.floor(Math.random() * (i + 1));
-      |    [array[i], array[j]] = [array[j], array[i]];
+      |  if (array.length != 0) {
+      |    for (let i = array.length - 1; i != 0; i--) {
+      |      const j = Math.floor(Math.random() * (i + 1));
+      |      [array[i], array[j]] = [array[j], array[i]];
+      |    }
       |  }
       |}
       |
       |function insertOptions() {
-      |  const form = document.createElement('crowd-form');
-      |  const group = document.createElement('crowd-radio-group');
-      |  group.setAttribute('id', 'radio');
+      |  const options = ${generateOptions()};
+      |  const form = document.getElementById('mturk_form');
+      |  var group = document.createElement('crowd-radio-group');
+      |  group.setAttribute('id', 'radio_${id.toString}');
+      |  form.appendChild(group);
       |
-      |  const options = ${options.toArray};
+      |  const optIDs = [];
+      |  const optTexts = [];
       |
-      |  const optIDs = ${options.map(_.question_id)};
-      |  const optTexts = ${options.map(_.question_text)};
+      |  for (let opt in options) {
+      |    optIDs.push(opt[0]);
+      |    optTexts.push(opt[1]);
+      |  }
       |
-      |  for (const option of optTexts) {
-      |    var form = document.getElementById('radio');
-      |    var input = document.createElement('crowd-radio-group');
-      |    input.name = 'option_' + option;
-      |    input.value = option;
-      |    var optText = document.createTextNode(option);
-      |    input.appendChild(optText);
-      |    form.appendChild(input);
-      |  });
+      |  var docForm = document.getElementById('radio_${id.toString}');
+      |  for (let i = 0; i != optTexts.length; i++) {
+      |    var text = optTexts[i];
+      |    var id = optIDs[i];
+      |
+      |    var choice = document.createElement('crowd-radio-button');
+      |    choice.name = 'option_' + text;
+      |    choice.value = id;
+      |
+      |    choice.appendChild(document.createTextNode(text));
+      |    docForm.appendChild(choice);
+      |  }
       |}
     """.stripMargin
   }
+//  var optText = document.createTextNode(text);
+//  choice.appendChild(optText);
+//  const optIDs = [${options.map(_.question_id).map(e => "'" + e.toString().drop(1) + "'").mkString(",")}];
+//  const optTexts = [${options.map(_.question_text).map(e => "'" + e + "'").mkString(",")}];
+
+  // [[id, text], [id, text] ] nested JS arrays
+  // iterate over, index 0 and 1
+  private def generateOptions(): String = {
+    val toRet: StringBuilder = new StringBuilder("[")
+    for(opt <- options) {
+      toRet.append("['" + opt.question_id.toString().drop(1) + "','")
+      toRet.append(opt.question_text + "']")
+    }
+    toRet.append("]")
+    toRet.toString()
+  }
+  //const form = document.createElement('crowd-form');
   // shuffle(options); on 102
 //  <crowd-form>
 //    <crowd-radio-group id ="radio">
@@ -142,22 +172,24 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
   //<title>Please fill out this survey</title>
   def html() = {
     String.format("<!DOCTYPE html>%n") + {
-      <html>
-        <head>
-          <title>Please fill out this survey</title>
-          <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-          <script>{ jsFunctions }</script>
-          {
-          _layout match {
-            case Some(layout) => layout
-            case None => NodeSeq.Empty
-          }
-          }
-        </head>
-        <body onload="startup()">
-          <div id="wrapper">
-            <div id="hit_content">
-              <form name="mturk_form" method="post" id="mturk_form" action={_action}>
+//      <html>
+//        <head>
+//          <title>Please fill out this survey</title>
+//          <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+//          <script>{ jsFunctions }</script>
+//          {
+//          _layout match {
+//            case Some(layout) => layout
+//            case None => NodeSeq.Empty
+//          }
+//          }
+//          <script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
+//        </head>
+//        <body onload="startup()">
+//          <div id="wrapper">
+//            <div id="hit_content">
+//              <crowd-form name="mturk_form" method="post" id="mturk_form" action={_action}>
+              <div>
                 <input type="hidden" value={id.toString} name="question_id" id="question_id"/>
                 <input type="hidden" value="" name="assignmentId" id="assignmentId"/>
                 {
@@ -173,18 +205,14 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
                 }
                 }
                 { dimensions.map(renderQuestion) }
-                <script onload ="insertOptions()"></script>
+              </div>
 
-                <p>
-                  <input type="submit" id="submitButton" value="Submit"/>
-                </p>
-
-              </form>
-            </div>
-          </div>
-        </body>
-      </html>
-    }.toString()
+//              </crowd-form>
+//            </div>
+//          </div>
+//        </body>
+//      </html>
+    }.toString
   }
   //]]>
   //src="https://assets.crowd.aws/crowd-html-elements.js"

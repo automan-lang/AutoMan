@@ -28,6 +28,8 @@ class MTVariantQuestion(sandbox: Boolean) extends VariantQuestion with MTurkQues
   override var _variant: Integer = null
   override var _depth: Integer = null
 
+  def getInternalQuestion = _newQ
+
   def memo_hash: String = {
     val startProd = _grammar(Start)
     startProd match {
@@ -100,6 +102,52 @@ class MTVariantQuestion(sandbox: Boolean) extends VariantQuestion with MTurkQues
     */
   override protected[mturk] def fromXML(x: Node): A = newQ.asInstanceOf[MTurkQuestion].fromXML(x).asInstanceOf[A]
 
+  def initQuestion() = {
+    val (body, opts) = _question.toQuestionText(variant, depth)
+    val bodyText: String = body
+
+    question.questionType match {
+      case QuestionType.EstimationQuestion => {
+        newQ = new MTEstimationQuestion()
+        newQ.text = bodyText
+        //newQ.id = fixed_id
+      }
+      case QuestionType.CheckboxQuestion => {
+        newQ = new MTCheckboxQuestion()
+        newQ.text = bodyText
+        val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
+        newQ.asInstanceOf[MTCheckboxQuestion].options = options
+      }
+      case QuestionType.CheckboxDistributionQuestion => {
+        newQ = new MTCheckboxVectorQuestion()
+        newQ.text = bodyText
+        val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
+        newQ.asInstanceOf[MTCheckboxVectorQuestion].options = options
+      }
+      case QuestionType.FreeTextQuestion => {
+        newQ = new MTFreeTextQuestion()
+        newQ.text = bodyText
+      }
+      case QuestionType.FreeTextDistributionQuestion => {
+        newQ = new MTFreeTextQuestion()
+        newQ.text = bodyText
+      }
+      case QuestionType.RadioButtonQuestion => {
+        newQ = new MTRadioButtonQuestion(sandbox)
+        newQ.text = bodyText
+        val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
+        newQ.asInstanceOf[MTRadioButtonQuestion].options = options
+      }
+      case QuestionType.RadioButtonDistributionQuestion => {
+        newQ = new MTRadioButtonVectorQuestion()
+        newQ.text = bodyText
+        val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
+        newQ.asInstanceOf[MTRadioButtonVectorQuestion].options = options
+      }
+    }
+  }
+
+
   /**
     * Converts question to XML QuestionForm
     * Calls XMLBody
@@ -117,7 +165,6 @@ class MTVariantQuestion(sandbox: Boolean) extends VariantQuestion with MTurkQues
         newQ = new MTEstimationQuestion()
         newQ.text = bodyText
         //newQ.id = fixed_id
-        //todo dear lord these casts
         newQ.asInstanceOf[MTEstimationQuestion].toXML(randomize)
       }
       case QuestionType.CheckboxQuestion => {
