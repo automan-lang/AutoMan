@@ -98,20 +98,20 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
       |}
       |
       |function insertOptions() {
-      |  const form = document.createElement("crowd-form");
-      |  const group = document.createElement("crowd-radio-group");
-      |  group.setAttribute("id", "radio");
+      |  const form = document.createElement('crowd-form');
+      |  const group = document.createElement('crowd-radio-group');
+      |  group.setAttribute('id', 'radio');
       |
       |  const options = ${options.toArray};
       |
       |  const optIDs = ${options.map(_.question_id)};
       |  const optTexts = ${options.map(_.question_text)};
       |
-      |  optTexts.forEach((option, index) => {
-      |    var form = document.getElementById("radio");
-      |    var input = document.createElement("crowd-radio-group");
-      |    input.name = "option_" + option;
-      |    input.value = optIDs[index];
+      |  for (const option of optTexts) {
+      |    var form = document.getElementById('radio');
+      |    var input = document.createElement('crowd-radio-group');
+      |    input.name = 'option_' + option;
+      |    input.value = option;
       |    var optText = document.createTextNode(option);
       |    input.appendChild(optText);
       |    form.appendChild(input);
@@ -125,14 +125,26 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
 //
 //    </crowd-radio-group>
 //  </crowd-form>
+  //<![CDATA[
+  //<!DOCTYPE html>
 
+//  optTexts.forEach((option, index) => {
+//    var form = document.getElementById('radio');
+//    var input = document.createElement('crowd-radio-group');
+//    input.name = 'option_' + option;
+//    input.value = optIDs[index];
+//    var optText = document.createTextNode(option);
+//    input.appendChild(optText);
+//    form.appendChild(input);
+//  });
+//}
 
+  //<title>Please fill out this survey</title>
   def html() = {
     String.format("<!DOCTYPE html>%n") + {
-      //<![CDATA[
-      //<!DOCTYPE html>
       <html>
         <head>
+          <title>Please fill out this survey</title>
           <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
           <script>{ jsFunctions }</script>
           {
@@ -161,18 +173,25 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
                 }
                 }
                 { dimensions.map(renderQuestion) }
-                <script onload ="insertOptions()" src="https://assets.crowd.aws/crowd-html-elements.js"></script>
+                <script onload ="insertOptions()"></script>
+
                 <p>
                   <input type="submit" id="submitButton" value="Submit"/>
                 </p>
+
               </form>
             </div>
           </div>
         </body>
       </html>
-      //]]>
-    }
+    }.toString()
   }
+  //]]>
+  //src="https://assets.crowd.aws/crowd-html-elements.js"
+//  <p>
+//    <input type="submit" id="submitButton" value="Submit"/>
+//  </p>
+  // inside form or body?
 
   /**
     * Helper function to convert question into XML Question
@@ -186,12 +205,14 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
       toSurveyXML(randomize),
     <FrameHeight>{ _iframe_height.toString }</FrameHeight>
     )
-  }
+  }//<HTMLContent>//</HTMLContent>,
 
   override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
     {
-      <HTMLContent> { scala.xml.PCData(html()) }
-      </HTMLContent>
+      scala.xml.PCData(html())
+      //<HTMLContent>
+        //{ scala.xml.PCData(html()) }
+      //</HTMLContent>
         //<FrameHeight>{ _iframe_height.toString }</FrameHeight>
     }
 //    <Question>

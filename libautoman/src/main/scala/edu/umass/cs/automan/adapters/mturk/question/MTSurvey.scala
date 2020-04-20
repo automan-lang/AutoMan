@@ -12,12 +12,15 @@ import edu.umass.cs.automan.adapters.mturk.util.XML
 import org.apache.commons.codec.binary.Hex
 
 import scala.collection.mutable
-import scala.xml.{Node, NodeSeq}
+import scala.collection.mutable.ArrayBuffer
+import scala.xml.{Elem, Node, NodeSeq}
 
 class MTSurvey extends Survey with MTurkQuestion {
 
   override def description: String = _description match { case Some(d) => d; case None => this.title }
   override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
+
+  private var _iframe_height = 450
 
   override protected[mturk] def fromXML(x: Node): A = { // Set[(String,Question#A)]
 //    DebugLog("MTRadioButtonQuestion: fromXML:\n" + x.toString,LogLevelDebug(),LogType.ADAPTER,id)
@@ -59,11 +62,71 @@ class MTSurvey extends Survey with MTurkQuestion {
     // return Set[(selection, ...
   }
 
+//  private def addNode(afterTerm: String, to: Node, newNode: Node): Node = {
+//    (to \ afterTerm) match {
+//      case Node(str, data, node) => {
+//        new Node(str, data, node ++ newNode)
+//      }
+//    }
+//  }
+
   override protected[mturk] def toXML(randomize: Boolean): Node = {
-    <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
-      { XMLBody(randomize) }
-    </QuestionForm>
+//    <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
+//      { XMLBody(randomize) }
+//    </QuestionForm>
+    <HTMLQuestion xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2011-11-11/HTMLQuestion.xsd">
+      <HTMLContent>
+        { val bod: Seq[Node] = XMLBody(randomize)
+        bod
+
+//      val toAdd = {
+//        <p>
+//          <input type="submit" id="submitButton" value="Submit"/>
+//        </p>
+//      }
+//
+//      val bods: NodeSeq = (bod \ "body")
+//        bods.tail ++= toAdd // added submit button to end
+//
+//        val topHTML = (bod \ "html")
+//        topHTML match {
+//          case Node(str, data, node) => topHTML = Node(str, data, bods)
+//          //case Elem(_,_,_,_,child) => topHTML = Elem(_,_,_,_, bods)
+//          //case Elem(_,_,_,child) => topHTML = Elem(_,_,_,bods)
+//        }
+        //topHTML.child
+
+      //val toAdd = "</body><p><input type='submit' id='submitButton' value='Submit'/></p>"
+      //val bodString = bod.toString() // adding List
+      //var bodArr: ArrayBuffer[String] = ArrayBuffer()
+      // need to insert after last instance of </body>
+      //bodArr ++= bodString.split("</body>")
+      //assert(bodArr.length == 2)
+//      bodArr.insert(bodArr.length - 1, toAdd)
+//      val newBod = bodArr.toString()
+      //xml.XML.loadString(newBod)
+
+//          bod = bod ++ {
+//            <p>
+//              <input type="submit" id="submitButton" value="Submit"/>
+//            </p>
+//          }
+        //val tl = bod.last
+//      val bodyDiv: NodeSeq = (bod \ "body") // todo combine nodes into one node?
+//      assert(bodyDiv.size == 1)
+//      bodyDiv.head match {
+//
+//      }
+        //bod
+        }
+
+      </HTMLContent>
+      <FrameHeight>{ _iframe_height.toString }</FrameHeight>
+    </HTMLQuestion>
   }
+//  <p>
+//    <input type="submit" id="submitButton" value="Submit"/>
+//  </p>
 
   override def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
