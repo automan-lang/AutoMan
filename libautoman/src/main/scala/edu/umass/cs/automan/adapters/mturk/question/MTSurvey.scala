@@ -70,6 +70,40 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
     // return Set[(selection, ...
   }
 
+  def jsFunctions : String = {
+    s"""
+       |function getAssignmentID() {
+       |  return location.search.match(/assignmentId=([_0-9a-zA-Z]+)/)[1];
+       |}
+       |
+       |function previewMode() {
+       |  var assignment_id = getAssignmentID();
+       |  return assignment_id === 'ASSIGNMENT_ID_NOT_AVAILABLE';
+       |}
+       |
+       |function disableSubmitOnPreview() {
+       |  if (previewMode()) {
+       |    document.getElementById('submitButton').setAttribute('disabled', true);
+       |  }
+       |}
+       |
+       |function startup() {
+       |  disableSubmitOnPreview();
+       |  document.getElementById('assignmentId').value = getAssignmentID();
+       |  insertOptions();
+       |}
+       |
+       |function shuffle(array) {
+       |  if (array.length != 0) {
+       |    for (let i = array.length - 1; i != 0; i--) {
+       |      const j = Math.floor(Math.random() * (i + 1));
+       |      [array[i], array[j]] = [array[j], array[i]];
+       |    }
+       |  }
+       |}
+    """.stripMargin
+  }
+
 //  private def addNode(afterTerm: String, to: Node, newNode: Node): Node = {
 //    (to \ afterTerm) match {
 //      case Node(str, data, node) => {
@@ -82,13 +116,16 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
 //    <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
 //      { XMLBody(randomize) }
 //    </QuestionForm>
+    //<![CDATA[
+    //      <!DOCTYPE html>
     <HTMLQuestion xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2011-11-11/HTMLQuestion.xsd">
       <HTMLContent><![CDATA[
-      <!DOCTYPE html>
+          <!DOCTYPE html>
           <head>
             <title>Please fill out this survey</title>
             <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
             <script>{ jsFunctions }</script>
+
             {
             _layout match {
               case Some(layout) => layout
@@ -147,39 +184,6 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
     }
   }
 
-  def jsFunctions : String = {
-    s"""
-       |function getAssignmentID() {
-       |  return location.search.match(/assignmentId=([_0-9a-zA-Z]+)/)[1];
-       |}
-       |
-       |function previewMode() {
-       |  var assignment_id = getAssignmentID();
-       |  return assignment_id === 'ASSIGNMENT_ID_NOT_AVAILABLE';
-       |}
-       |
-       |function disableSubmitOnPreview() {
-       |  if (previewMode()) {
-       |    document.getElementById('submitButton').setAttribute('disabled', true);
-       |  }
-       |}
-       |
-       |function startup() {
-       |  disableSubmitOnPreview();
-       |  document.getElementById('assignmentId').value = getAssignmentID();
-       |  insertOptions();
-       |}
-       |
-       |function shuffle(array) {
-       |  if (array.length != 0) {
-       |    for (let i = array.length - 1; i != 0; i--) {
-       |      const j = Math.floor(Math.random() * (i + 1));
-       |      [array[i], array[j]] = [array[j], array[i]];
-       |    }
-       |  }
-       |}
-    """.stripMargin
-  }
 //  <p>
 //    <input type="submit" id="submitButton" value="Submit"/>
 //  </p>

@@ -230,19 +230,43 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
     */
   override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = {
     Seq(
-      toSurveyXML(randomize),
-    <FrameHeight>{ _iframe_height.toString }</FrameHeight>
+      toSurveyXML(randomize)//,
+    //<FrameHeight>{ _iframe_height.toString }</FrameHeight>
     )
   }//<HTMLContent>//</HTMLContent>,
 
   override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
     {
-      scala.xml.PCData(html())
+      <form>
+        <p>
+          {text}
+        </p>
+        {options.map(optToXML(_))}
+        <input type="radio" id={id.toString} name={id.toString}>
+      </input>
+      </form>
+      //scala.xml.PCData(html())
       //<HTMLContent>
-        //{ scala.xml.PCData(html()) }
+      //{ scala.xml.PCData(html()) }
       //</HTMLContent>
-        //<FrameHeight>{ _iframe_height.toString }</FrameHeight>
+      //<FrameHeight>{ _iframe_height.toString }</FrameHeight>
     }
+  }
+
+  /**
+    * Converts a single option to a RB XML
+    * @param option the option to convert
+    * @return an XML node
+    */
+    // all share a name
+  private def optToXML(option: QuestionOptionType): Node = {
+      {
+          <input type="radio" id={option.question_id.toString().drop(1)} name={id.toString.drop(1)} value={option.question_id.toString().drop(1)}/>
+          <label for={option.question_id.toString().drop(1)}>
+            {option.question_text}
+          </label>
+      }.asInstanceOf[Node]
+  }
 //    <Question>
 //      <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
 //      <IsRequired>true</IsRequired>
@@ -288,7 +312,7 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
 //        </SelectionAnswer>
 //      </AnswerSpecification>
 //    </Question>
-  }
+
   //Seq(
   //      <Question>
   //        <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
