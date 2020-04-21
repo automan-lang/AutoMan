@@ -57,7 +57,7 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
       }
       //val id = q.id.toString
       //(x \\ "Answer" \\ "QuestionIdentifier").filter { n => n.text == id} // should pull the answer that matches the UUID
-      val a = XML.surveyAnswerFilter(x, id) // gives answer
+      val a = XML.surveyAnswerFilter(x, id) // gives answer. ID should be question ID
       val ans = q.asInstanceOf[MTurkQuestion].fromXML(a)
       //val n = ((x \\ "SelectionIdentifier").text, q)
       val ansTup: (String, Question#A) = (id, ans.asInstanceOf[Question#A])
@@ -119,46 +119,37 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
     //<![CDATA[
     //      <!DOCTYPE html>
     <HTMLQuestion xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2011-11-11/HTMLQuestion.xsd">
-      <HTMLContent><![CDATA[
-          <!DOCTYPE html>
-          <head>
-            <title>Please fill out this survey</title>
-            <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-            <script>{ jsFunctions }</script>
-
-            {
-            _layout match {
-              case Some(layout) => layout
-              case None => NodeSeq.Empty
-            }
-            }
-            <script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
-          </head>
-          <body onload="startup()">
-            <div id="wrapper">
-              <div id="hit_content">
-                <crowd-form name="mturk_form" method="post" id="mturk_form" action={_action}>
-                  {
-                  var toInsert: NodeSeq = <div></div>
-                  for (q <- _question_list) {
-                    toInsert = toInsert ++ generateQuestionText(q.question)
-                    toInsert = toInsert ++ generateQuestionOpts(q.question)
-                  }
-                  //XMLBody(randomize)
-                  }
-                  <p>
-                    <input type="submit" id="submitButton" value="Submit"/>
-                  </p>
-                  </crowd-form>
-                </div>
-              </div>
-            </body>
-        </html>
-
-      ]]></HTMLContent>
+      <HTMLContent>
+        { scala.xml.PCData(html(randomize)) }
+      </HTMLContent>
       <FrameHeight>{ _iframe_height.toString }</FrameHeight>
     </HTMLQuestion>
   }
+
+  private def html(randomize: Boolean): String = {
+    String.format("<!DOCTYPE html>%n") + {
+      <form name='mturk_form' method='post' id='mturk_form' action={_action}>
+
+        { XMLBody(randomize) }
+        <p><input type='submit' id='submitButton' value='Submit'/></p>
+        <script language='Javascript'>turkSetAssignmentID();</script>
+      </form>
+    }
+  }
+//    <input type="hidden" value={id.toString} name="question_id" id="question_id"/>
+//      <input type="hidden" value="" name="assignmentId" id="assignmentId"/>
+
+  //      <html>
+  //        <head>
+  //          <script type='text/javascript' src='https://s3.amazonaws.com/mturk-public/externalHIT_v1.js'></script>
+  //        </head>
+  //        <body>
+  //          <script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
+  //          <crowd-form>
+  //            { XMLBody(randomize) }
+  //          </crowd-form>
+  //        </body>
+  //      </html>
 
   private def generateQuestionText(question: Question): Node = {
     <div>question.text</div>

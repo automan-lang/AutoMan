@@ -236,22 +236,50 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
   }//<HTMLContent>//</HTMLContent>,
 
   override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
-    {
-      <form>
-        <p>
-          {text}
-        </p>
-        {options.map(optToXML(_))}
-        <input type="radio" id={id.toString} name={id.toString}>
-      </input>
-      </form>
-      //scala.xml.PCData(html())
-      //<HTMLContent>
-      //{ scala.xml.PCData(html()) }
-      //</HTMLContent>
-      //<FrameHeight>{ _iframe_height.toString }</FrameHeight>
-    }
+    <div>
+      <input type="hidden" value={id.toString} name="question_id" id="question_id"/>
+      <input type="hidden" value="" name="assignmentId" id="assignmentId"/>
+      {
+      _image_url match {
+        case Some(url) => <p><img id="question_image" src={ url }/></p>
+        case None => NodeSeq.Empty
+      }
+      }
+      {
+      _text match {
+        case Some(text) => <p>{ text }</p>
+        case None => NodeSeq.Empty
+      }
+      }
+      { options.map(optToXML(_)) }
+
+    </div>
+//    <crowd-radio-group>
+//      <input type="hidden" value={id.toString} name="question_id" id="question_id"/>
+//      <input type="hidden" value="" name="assignmentId" id="assignmentId"/>
+//      <div>
+//        {
+//        _image_url match {
+//          case Some(url) => <p><img id="question_image" src={ url }/></p>
+//          case None => NodeSeq.Empty
+//        }
+//        }
+//        {
+//        _text match {
+//          case Some(text) => <p>{ text }</p>
+//          case None => NodeSeq.Empty
+//        }
+//        }
+//      </div>
+//      { options.map(optToXML(_)) }
+//    </crowd-radio-group>
   }
+  //scala.xml.PCData(html())
+  //<HTMLContent>
+  //{ scala.xml.PCData(html()) }
+  //</HTMLContent>
+  //<FrameHeight>{ _iframe_height.toString }</FrameHeight>
+
 
   /**
     * Converts a single option to a RB XML
@@ -260,12 +288,13 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
     */
     // all share a name
   private def optToXML(option: QuestionOptionType): Node = {
-      {
+      //<crowd-radio-button name={id.toString.drop(1)} value={option.question_id.toString().drop(1)}>{option.question_text}</crowd-radio-button>
+      <div>
           <input type="radio" id={option.question_id.toString().drop(1)} name={id.toString.drop(1)} value={option.question_id.toString().drop(1)}/>
           <label for={option.question_id.toString().drop(1)}>
             {option.question_text}
           </label>
-      }.asInstanceOf[Node]
+      </div>
   }
 //    <Question>
 //      <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
