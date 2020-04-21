@@ -171,6 +171,7 @@ object linda_test_survey extends App {
 
 
   def which_survey() = surveyGrammar(
+    survey_timeout_multiplier = 1000,
     budget = 8.00,
     questions = List(
 //      nop => multiestimate(
@@ -181,14 +182,16 @@ object linda_test_survey extends App {
         //minimum_spawn_policy = UserDefinableSpawnPolicy(0),
         question = lindaProd,
         variant = 435245353,
-        depth = 2
+        depth = 2,
+        question_timeout_multiplier = 1000
       )(nop),
       nop => radioGrammar(
         grammar = lindaG,
         //minimum_spawn_policy = UserDefinableSpawnPolicy(0),
         question = lindaProd1,
         variant = 0,
-        depth = 2
+        depth = 2,
+        question_timeout_multiplier = 1000
       )(nop)
     ),
     //minimum_spawn_policy = UserDefinableSpawnPolicy(5),
