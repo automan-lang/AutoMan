@@ -133,7 +133,7 @@ case class SurveyAnswers(values: Seq[Map[String,Question#A]], // final dist (no 
   /**
     * Generates a CSV file with the answer distribution
     */
-  override def toString: String = {
+  def toCSV = {
     val outputFile = new BufferedWriter(new FileWriter("./output.csv"))
     val csvWriter = new CSVWriter(outputFile)
     val csvFields = Array("question", "answer", "count")
@@ -150,11 +150,11 @@ case class SurveyAnswers(values: Seq[Map[String,Question#A]], // final dist (no 
 
       val responseString = question.prettyPrintAnswer(response.asInstanceOf[SurveyAnswers.this.question.A])
 
-      var numAlready = 0
+      val numAlready = 0
       if(ansMap contains ((qID, responseString))) {
-        numAlready = ansMap((qID, responseString))
+        val numAlready = ansMap((qID, responseString))
       }
-      ansMap += ((qID, responseString) -> (numAlready + 1))
+      ansMap += ((qID, responseString) -> numAlready)
     }
 
     // add fields to csv
@@ -186,22 +186,64 @@ case class SurveyAnswers(values: Seq[Map[String,Question#A]], // final dist (no 
     //val recordList: java.util.List[Array[String]] = listOfRecords
     csvWriter.writeAll(listOfRecords)
     outputFile.close()
-    listOfRecords.toString()
   }
 
-//  override def toString: String = {
-//    val toRet: StringBuilder = new StringBuilder()
-//    val pw = new PrintWriter(new File("answers.txt"))
-//    for(v <- values) { // map from String (question ID) to Response
-//      val s = v(question.id.toString)
-//      val toPrint: String = question.prettyPrintAnswer(s.asInstanceOf[SurveyAnswers.this.question.A])
-//      pw.write(toPrint + ",\n")
-//      println(s"adding ${toPrint} to file")
-//      toRet.append(toPrint)
+  override def toString: String = {
+    val toRet: StringBuilder = new StringBuilder()
+
+    //println("Dan is sort of right")
+    //val s = values.head("")
+    //val outputFile = new BufferedWriter(new FileWriter("answers.text"))
+    val pw = new PrintWriter(new File("answers.txt"))
+    //val csvWriter = new CSVWriter(outputFile)
+    //var toRecord: ListBuffer[Array[String]] = new ListBuffer[Array[String]]()
+    //var toRecord: ListBuffer[String] = new ListBuffer[String]()
+
+//    for(v <- distribution){
+//      v match {
+//        case r: Response[Set[(String,Question#A)]] => {
+//          val s: Map[String, Question#A] = r.value.flatMap(m => {
+//            m.map {
+//              case (str, q) => {
+//                str -> q
+//              }
+//            }
+//          })
+//          val s = v.value.get(question.name)
+//          val toPrint: String = question.prettyPrintAnswer(s.asInstanceOf[SurveyAnswers.this.question.A])
+//          pw.write(toPrint + ",")
+//          println(s"adding ${toPrint} to file")
+//          toRet.append(toPrint)
+//        }
+//      }
+    for(v <- values) { // map from String (question ID) to Response
+      val s = v(question.id.toString)
+      val toPrint: String = question.prettyPrintAnswer(s.asInstanceOf[SurveyAnswers.this.question.A])
+      pw.write(toPrint + ",\n")
+      println(s"adding ${toPrint} to file")
+      //csvWriter.write(toPrint)
+      //toRecord += Array(toPrint)
+      //toRecord += toPrint
+      toRet.append(toPrint)
+    }
+    pw.close()
+    //csvWriter.writeAll(toRecord.toList)
+
+//    val s: Set[(String, Question#A)] = values.flatMap(m => {
+//      m.map {
+//        case (key, value) => {
+//          (key, value)
+//        }
+//      }
+//    })
+//    val s = values.map {
+//      case (key -> value) => {
+//        (key,value)
+//      }
 //    }
-//    pw.close()
-//    toRet.toString()
-//  }
+    toRet.toString()
+    //question.prettyPrintAnswer(s.asInstanceOf[SurveyAnswers.this.question.A]) // survey A = Set[(String,Question#A)] values.asInstanceOf[this.question.A]
+  }
 }
 case class NoSurveyAnswers(override val question: Survey) // raw dist
   extends AbstractSurveyAnswer(0, question, Array[Response[Set[(String,Question#A)]]]())
