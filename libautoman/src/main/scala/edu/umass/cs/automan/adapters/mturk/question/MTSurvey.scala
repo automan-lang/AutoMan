@@ -80,14 +80,14 @@ class MTSurvey extends Survey with MTurkQuestion {
   // TODO apologies for object orientation
   override protected[automan] def prettyPrintAnswer(answer: Set[(String, Question#A)]): String = {
     val ansString: StringBuilder = new StringBuilder()
-    val ansMap: Map[String, Question#A] = answer.toMap
+    val ansMap: Map[String, Question#A] = answer.toMap // pretty sure map of WIDs to answers
     //var ans: Question#A = null
     for(o <- _question_list) {
       val q: Question = o.question // add VariantQ case
       q match {
         case vq: MTVariantQuestion => {
           val ans = vq.prettyPrintAnswer(ansMap(vq.newQ.id.toString).asInstanceOf[vq.A])
-          ansString.append(ans + "\n")
+          ansString.append(vq.newQ.id.toString + ": " + ans + "\n")
 //          val ans: Question#A = ansMap(vq.newQ.id.toString) // this is just a question identifier
 //          val ppans = q.prettyPrintAnswer(ans.asInstanceOf[q.A])
 //          ansString.append(ppans) //A: Set[(String,Question#A)] // so this is also getting the question ID

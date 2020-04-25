@@ -136,9 +136,10 @@ case class SurveyAnswers(values: Seq[Map[String,Question#A]], // final dist (no 
   override def toString: String = {
     val outputFile = new BufferedWriter(new FileWriter("./output.csv"))
     val csvWriter = new CSVWriter(outputFile)
-    val csvFields = Array("question", "answer", "count")
+    val csvFields = Array("question", "question_id: answer", "count")
 
     // construct distribution map
+    // aggregates at survey level
     var ansMap = Map[(String, String), Int]() // a map from the question ID and answers to the number of selections
     for(v <- values) {
       val qID = question.id.toString

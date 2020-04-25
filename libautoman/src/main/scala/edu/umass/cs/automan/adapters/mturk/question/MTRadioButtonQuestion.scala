@@ -62,7 +62,7 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
   }
 
   override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
-    //Seq(
+    //Seq( // if (randomize) id_string else ""
       <Question>
         <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
         <IsRequired>true</IsRequired>
@@ -93,10 +93,11 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
         <AnswerSpecification>
           <SelectionAnswer>
             <StyleSuggestion>radiobutton</StyleSuggestion>
-            <Selections>{ if(randomize) randomized_options.map { _.toXML } else options.map { _.toXML } }</Selections>
+            <Selections>{ options.map { _.toXML } }</Selections>
           </SelectionAnswer>
         </AnswerSpecification>
       </Question>
     //)
+    //if(randomize) randomized_options.map { _.toXML } else options.map { _.toXML }
   }
 }

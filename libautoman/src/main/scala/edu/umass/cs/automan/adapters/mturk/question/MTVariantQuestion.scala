@@ -9,7 +9,7 @@ import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.VariantOutcome
 import edu.umass.cs.automan.core.grammar.Rank.Grammar
 import edu.umass.cs.automan.core.grammar.Expand.Start
-import edu.umass.cs.automan.core.grammar.{Binding, Choice, Expression, Name, OptionProduction, QuestionProduction, Ref, Sequence, Terminal}
+import edu.umass.cs.automan.core.grammar.{Binding, Choice, Expression, Function, Name, OptionProduction, QuestionProduction, Ref, Sequence, Terminal}
 import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.question.{EstimationQuestion, Question, VariantQuestion}
@@ -68,6 +68,11 @@ class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
         }
         case Terminal(value) => {
           md5sum += value.hashCode
+          md5sum
+        }
+        case Function(fun, param, _) => {
+          md5sum += merkle_hash(g(param), g)
+          md5sum += fun.hashCode
           md5sum
         }
         case q: QuestionProduction => {
@@ -133,6 +138,8 @@ class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
       case QuestionType.FreeTextQuestion => {
         newQ = new MTFreeTextQuestion()
         newQ.text = bodyText
+        newQ.asInstanceOf[MTFreeTextQuestion].pattern = pattern
+        newQ.asInstanceOf[MTFreeTextQuestion].pattern_error_text = pattern_error_text
         newQ.asInstanceOf[MTFreeTextQuestion].toXML(randomize)
       }
       case QuestionType.FreeTextDistributionQuestion => {
@@ -145,6 +152,13 @@ class MTVariantQuestion extends VariantQuestion with MTurkQuestion {
         newQ.text = bodyText
         val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
         newQ.asInstanceOf[MTRadioButtonQuestion].options = options
+        image_url match {
+          case "" => {}
+          case _ => {
+            newQ.asInstanceOf[MTRadioButtonQuestion].image_url = image_url
+            newQ.asInstanceOf[MTRadioButtonQuestion].image_alt_text = image_alt_text
+          }
+        }
         newQ.asInstanceOf[MTRadioButtonQuestion].toXML(randomize)
       }
       case QuestionType.RadioButtonDistributionQuestion => {
@@ -192,6 +206,8 @@ override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
     case QuestionType.FreeTextQuestion => {
       newQ = new MTFreeTextQuestion()
       newQ.text = bodyText
+      newQ.asInstanceOf[MTFreeTextQuestion].pattern = pattern
+      newQ.asInstanceOf[MTFreeTextQuestion].pattern_error_text = pattern_error_text
       newQ.asInstanceOf[MTFreeTextQuestion].toSurveyXML(randomize)
     }
     case QuestionType.RadioButtonQuestion => {
@@ -199,6 +215,13 @@ override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
       newQ.text = bodyText
       val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
       newQ.asInstanceOf[MTRadioButtonQuestion].options = options
+      image_url match {
+        case "" => {}
+        case _ => {
+          newQ.asInstanceOf[MTRadioButtonQuestion].image_url = image_url
+          newQ.asInstanceOf[MTRadioButtonQuestion].image_alt_text = image_alt_text
+        }
+      }
       newQ.asInstanceOf[MTRadioButtonQuestion].toSurveyXML(randomize)
     }
     case QuestionType.RadioButtonDistributionQuestion => {

@@ -95,7 +95,10 @@ case class CheckboxesQuestionProduction(g: Grammar) extends QuestionProduction(g
 case class FreetextQuestionProduction(g: Grammar) extends QuestionProduction(g) {
   override val _questionType: QuestionType = QuestionType.FreeTextQuestion
 
-  override def toQuestionText(variation: Int, depth: Int): (String, List[String]) = ???
+  override def toQuestionText(variation: Int, depth: Int): (String, List[String]) = {
+    val (body, _) = Render.buildInstance(g, variation, depth)
+    (body, List[String]())
+  }
 }
 
 case class FreetextsQuestionProduction(g: Grammar) extends QuestionProduction(g) {

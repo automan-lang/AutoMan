@@ -770,6 +770,7 @@ trait DSL {
                                      confidence: Double = MagicNumbers.DefaultConfidence,
                                      before_filter: String => String = (a: String) => a,
                                      budget: BigDecimal = MagicNumbers.DefaultBudget,
+                                     depth: Int,
                                      dont_reject: Boolean = true,
                                      dry_run: Boolean = false,
                                      grammar: Grammar = null,
@@ -795,6 +796,7 @@ trait DSL {
       q.question = question
       q.grammar = grammar
       q.variant = variant
+      q.depth = depth
 
       // mandatory parameters with sane defaults
       q.allow_empty_pattern = allow_empty_pattern

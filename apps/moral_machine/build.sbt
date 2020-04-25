@@ -1,6 +1,4 @@
-//enablePlugins(PackPlugin)
-
-name := "linda_test_survey"
+name := "moral_machine"
 
 version := "0.1"
 

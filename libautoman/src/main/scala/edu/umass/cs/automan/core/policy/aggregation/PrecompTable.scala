@@ -21,7 +21,7 @@ class PrecompTable(val possibilities_sz: Int, val reward_sz: Int) extends Serial
 
   // np is numOpts: number of question possibilities(?)
   private def computeIndex(np: Int, reward: BigDecimal) : Int = {
-    assert(np >= 2) // todo failing here
+    assert(np >= 2)
 
     // convert reward to cents
     val cents: Int = (reward * BigDecimal(100)).toInt
