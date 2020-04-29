@@ -244,102 +244,180 @@ object Render {
 
   def main(args: Array[String]): Unit = {
     // Linda!
-    val pronouns = Map[String, String](
-      "Linda" -> "she",
-      "Dan" -> "he",
-      "Emmie" -> "she",
-      "Xavier the bloodsucking spider" -> "it"
-    )
+    val runLinda = true
+    val runMM = false
 
-    val articles = Map[String,String](
-      "bank teller" -> "a",
-      "almond paste mixer" -> "an",
-      "tennis scout" -> "a",
-      "lawyer" -> "a",
-      "professor" -> "a"
-    )
+    if(runLinda) {
+      val pronouns = Map[String, String](
+        "Linda" -> "she",
+        "Dan" -> "he",
+        "Emmie" -> "she",
+        "Xavier the bloodsucking spider" -> "it"
+      )
 
-    val lindaG = Map[Name, Expression](
-      Start -> ref("A"),
-      nt("A") -> seq(Array(
-        binding(nt("Name")),
-        term(" is "),
-        binding(nt("Age")),
-        term("  years old, single, outspoken, and very bright. She majored in "),
-        binding(nt("Major")),
-        term(". As a student, she was deeply concerned with issues of "),
-        binding(nt("Issue")),
-        term(", and also participated in "),
-        binding(nt("Demonstration")),
-        term(" demonstrations.\n Which is more probable?\n"),
-        opt(seq(Array(
+      val articles = Map[String, String](
+        "bank teller" -> "a",
+        "almond paste mixer" -> "an",
+        "tennis scout" -> "a",
+        "lawyer" -> "a",
+        "professor" -> "a"
+      )
+
+      val lindaG = Map[Name, Expression](
+        Start -> ref("A"),
+        nt("A") -> seq(Array(
           binding(nt("Name")),
-          term(" is a "),
-          binding(nt("Job")),
-          term(".")))),
-        //term("\n"),
-        opt(seq(Array(
-          binding(nt("Name")),
-          term(" is a "),
-          binding(nt("Job")),
-          term(" and is active in the "),
-          binding(nt("Movement")),
-          term(" movement.")
-        )))
-      )),
-      nt("Name") -> ch(Array(
-        term("Linda"),
-        term("Dan"),
-        term("Emmie"),
-        term("Xavier the bloodsucking spider")
-      )),
-      nt("Age") -> ch(Array(
-        term("21"),
-        term("31"),
-        term("41"),
-        term("51"),
-        term("61")
-      )),
-      nt("Major") -> ch(Array(
-        term("chemistry"),
-        term("psychology"),
-        term("english literature"),
-        term("philosophy"),
-        term("women's studies"),
-        term("underwater basket weaving")
-      )),
-      nt("Issue") -> ch(Array(
-        term("discrimination and social justice"),
-        term("fair wages"),
-        term("animal rights"),
-        term("white collar crime"),
-        term("unemployed circus workers")
-      )),
-      nt("Demonstration") -> ch(Array(
-        term("anti-nuclear"),
-        term("anti-war"),
-        term("pro-choice"),
-        term("anti-abortion"),
-        term("anti-animal testing")
-      )),
-      nt("Job") -> ch(Array(
-        term("bank teller"),
-        term("almond paste mixer"),
-        term("tennis scout"),
-        term("lawyer"),
-        term("professor")
-      )),
-      nt("Movement") -> ch(Array(
-        term("feminist"),
-        term("anti-plastic water bottle"),
-        term("pro-pretzel crisp"),
-        term("pro-metal straw"),
-        term("environmental justice")
-      ))
-    )
+          term(" is "),
+          binding(nt("Age")),
+          term("  years old, single, outspoken, and very bright. She majored in "),
+          binding(nt("Major")),
+          term(". As a student, she was deeply concerned with issues of "),
+          binding(nt("Issue")),
+          term(", and also participated in "),
+          binding(nt("Demonstration")),
+          term(" demonstrations.\n Which is more probable?\n"),
+          opt(seq(Array(
+            binding(nt("Name")),
+            term(" is a "),
+            binding(nt("Job")),
+            term(".")))),
+          //term("\n"),
+          opt(seq(Array(
+            binding(nt("Name")),
+            term(" is a "),
+            binding(nt("Job")),
+            term(" and is active in the "),
+            binding(nt("Movement")),
+            term(" movement.")
+          )))
+        )),
+        nt("Name") -> ch(Array(
+          term("Linda"),
+          term("Dan"),
+          term("Emmie"),
+          term("Xavier the bloodsucking spider")
+        )),
+        nt("Age") -> ch(Array(
+          term("21"),
+          term("31"),
+          term("41"),
+          term("51"),
+          term("61")
+        )),
+        nt("Major") -> ch(Array(
+          term("chemistry"),
+          term("psychology"),
+          term("english literature"),
+          term("philosophy"),
+          term("women's studies"),
+          term("underwater basket weaving")
+        )),
+        nt("Issue") -> ch(Array(
+          term("discrimination and social justice"),
+          term("fair wages"),
+          term("animal rights"),
+          term("white collar crime"),
+          term("unemployed circus workers")
+        )),
+        nt("Demonstration") -> ch(Array(
+          term("anti-nuclear"),
+          term("anti-war"),
+          term("pro-choice"),
+          term("anti-abortion"),
+          term("anti-animal testing")
+        )),
+        nt("Job") -> ch(Array(
+          term("bank teller"),
+          term("almond paste mixer"),
+          term("tennis scout"),
+          term("lawyer"),
+          term("professor")
+        )),
+        nt("Movement") -> ch(Array(
+          term("feminist"),
+          term("anti-plastic water bottle"),
+          term("pro-pretzel crisp"),
+          term("pro-metal straw"),
+          term("environmental justice")
+        ))
+      )
 
-    val (body1, opts1) = buildInstance(lindaG, 435245353, 2)
-    println(prettyPrintInstance(body1, opts1))
+      val (body1, opts1) = buildInstance(lindaG, 435245353, 2)
+      //println(prettyPrintInstance(body1, opts1))
+      val expLindaG = expand(lindaG, 2)
+      val lindaBases = Rank.generateBases(expLindaG)
+          //println("Linda: ")
+      println("bases: " + lindaBases.mkString(" "))
+      val variation = Rank.rank(Array(1,1,3,3,0,4,0), lindaBases)
+      println(variation)
+      val lindaAssignment = Rank.unrank(variation, lindaBases)
+      println("assignment: " + lindaAssignment.mkString(" "))
+      val lindaScope = Bind.bind(expLindaG, lindaAssignment)
+      val (body, opts) = renderInstance(lindaScope, expLindaG)
+      prettyPrintInstance(body, opts)
+    }
+
+    if(runMM) {
+      val scenarioGrammar = Map[Name, Expression](
+        Start -> seq(Array(
+          ref("A"),
+          ref("B"))),
+        nt("A") -> opt(seq(Array(ref("Scene"), ref("Deaths")))),
+        nt("B") -> opt(seq(Array(ref("Scene"), ref("Deaths")))),
+        nt("Scene") -> seq(
+          Array(
+            term("In the "),
+            ref("Side"),
+            term(" scenario, the self-driving car with sudden brake failure will "),
+            ref("Action"), term(" and "),
+            ref("DriveorCrash"),
+            term(" a "),
+            ref("Object"),
+            term(". This will result in ...\nDead:\n"))),
+        nt("Side") -> ch(Array(
+          term("left-hand"),
+          term("right-hand")
+        )),
+        nt("Action") -> ch(Array(
+          term("continue ahead"),
+          term("swerve")
+        )),
+        nt("DriveorCrash") -> ch(Array(
+          term("drive through"),
+          term("crash into")
+        )),
+        nt("Object") -> ch(Array(
+          term("pedestrian crossing"),
+          term("concrete barrier")
+        )),
+        nt("Deaths") -> ch(Array(
+          term("2 women\n1 boy\n"),
+          term("2 homeless people\n"),
+          term("1 male executive\n1 female executive\n")
+        ))
+      )
+
+      val expMM = expand(scenarioGrammar, 2)
+      val mmBases = Rank.generateBases(expMM)
+      println("bases: " + mmBases.mkString(" "))
+      val assign1 = Rank.rank(Array(0,0,0,0,0,1,1,1,1,0), mmBases)
+      println("assignment1: " + assign1)
+      val mmScope1 = Bind.bind(expMM, Array(0,0,0,0,0,1,1,1,1,0))
+      val (body1, opts1) = renderInstance(mmScope1, expMM)
+      println(prettyPrintInstance(body1, opts1))
+
+      val assign2 = Rank.rank(Array(0,0,0,0,2,1,1,0,0,1), mmBases)
+      println("assignment2: " + assign2)
+      val mmScope2 = Bind.bind(expMM, Array(0,0,0,0,2,1,1,0,0,1))
+      val (body2, opts2) = renderInstance(mmScope2, expMM)
+      println(prettyPrintInstance(body2, opts2))
+
+      val assign3 = Rank.rank(Array(0,0,0,0,1,1,1,0,0,2), mmBases)
+      println("assignment3: " + assign3)
+      val mmScope3 = Bind.bind(expMM, Array(0,0,0,0,1,1,1,0,0,2))
+      val (body3, opts3) = renderInstance(mmScope3, expMM)
+      println(prettyPrintInstance(body3, opts3))
+    }
     //val expLindaG = expand(lindaG, 2)
 //    //println(Expand.prettyPrint(expLindaG))
     //val lindaBases = Rank.generateBases(expLindaG)

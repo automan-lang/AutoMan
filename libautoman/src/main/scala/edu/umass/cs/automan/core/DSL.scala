@@ -579,6 +579,7 @@ trait DSL {
                                             confidence: Double = MagicNumbers.DefaultConfidence,
                                             budget: BigDecimal = MagicNumbers.DefaultBudget,
                                             default_sample_size: Int = -1,
+                                            depth: Int,
                                             dont_reject: Boolean = true,
                                             dry_run: Boolean = false,
                                             grammar: Grammar = null,
@@ -606,6 +607,7 @@ trait DSL {
       //q#O = o
       q.question = question
       q.grammar = grammar
+      q.depth = depth
       q.variant = variant
 
       // mandatory parameters with sane defaults
@@ -657,6 +659,7 @@ trait DSL {
                                            // no text, options
                                            confidence: Double = MagicNumbers.DefaultConfidence,
                                            budget: BigDecimal = MagicNumbers.DefaultBudget,
+                                           depth: Int,
                                            dont_reject: Boolean = true,
                                            dry_run: Boolean = false,
                                            grammar: Grammar = null,
@@ -679,6 +682,7 @@ trait DSL {
       // mandatory parameters
       q.question = question
       q.grammar = grammar
+      q.depth = depth
       q.variant = variant
 
       // mandatory parameters with sane defaults
@@ -713,6 +717,7 @@ trait DSL {
   def checkboxesGrammar[A <: AutomanAdapter, O](
                                           sample_size: Int = MagicNumbers.DefaultSampleSizeForDistrib,
                                           budget: BigDecimal = MagicNumbers.DefaultBudget,
+                                          depth: Int,
                                           dont_reject: Boolean = true,
                                           dry_run: Boolean = false,
                                           image_alt_text: String = null,
@@ -733,6 +738,7 @@ trait DSL {
       // mandatory parameters
       q.question = question
       q.grammar = grammar
+      q.depth = depth
       q.variant = variant
 
       // mandatory parameters with sane defaults
@@ -770,6 +776,7 @@ trait DSL {
                                      confidence: Double = MagicNumbers.DefaultConfidence,
                                      before_filter: String => String = (a: String) => a,
                                      budget: BigDecimal = MagicNumbers.DefaultBudget,
+                                     depth: Int,
                                      dont_reject: Boolean = true,
                                      dry_run: Boolean = false,
                                      grammar: Grammar = null,
@@ -794,6 +801,7 @@ trait DSL {
       q.pattern = pattern
       q.question = question
       q.grammar = grammar
+      q.depth = depth
       q.variant = variant
 
       // mandatory parameters with sane defaults
@@ -835,6 +843,7 @@ trait DSL {
                                       sample_size: Int = MagicNumbers.DefaultSampleSizeForDistrib,
                                       before_filter: String => String = (a: String) => a,
                                       budget: BigDecimal = MagicNumbers.DefaultBudget,
+                                      depth: Int,
                                       dont_reject: Boolean = true,
                                       dry_run: Boolean = false,
                                       image_alt_text: String = null,
@@ -858,6 +867,7 @@ trait DSL {
       // mandatory parameters
       q.question = question
       q.grammar = grammar
+      q.depth = depth
       q.variant = variant
 
       // mandatory parameters with sane defaults
@@ -961,6 +971,7 @@ trait DSL {
   def radiosGrammar[A <: AutomanAdapter, O](
                                       sample_size: Int = MagicNumbers.DefaultSampleSizeForDistrib,
                                       budget: BigDecimal = MagicNumbers.DefaultBudget,
+                                      depth: Int,
                                       dont_reject: Boolean = true,
                                       dry_run: Boolean = false,
                                       image_alt_text: String = null,
@@ -973,7 +984,7 @@ trait DSL {
                                       question: QuestionProduction,
                                       question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
                                       title: String = null,
-                                      variant: Integer,
+                                      variant: Integer, //todo why is this different Int?
                                       wage: BigDecimal = MagicNumbers.USFederalMinimumWage
                                     )
                                     (implicit a: A): VariantOutcome[_] = {
@@ -981,6 +992,7 @@ trait DSL {
       // mandatory parameters
       q.question = question
       q.grammar = grammar
+      q.depth = depth
       q.variant = variant
 
       // mandatory parameters with sane defaults

@@ -164,7 +164,6 @@ class MTVariantQuestion(sandbox: Boolean) extends VariantQuestion with MTurkQues
       case QuestionType.EstimationQuestion => {
         newQ = new MTEstimationQuestion()
         newQ.text = bodyText
-        //newQ.id = fixed_id
         newQ.asInstanceOf[MTEstimationQuestion].toXML(randomize)
       }
       case QuestionType.CheckboxQuestion => {
@@ -184,6 +183,8 @@ class MTVariantQuestion(sandbox: Boolean) extends VariantQuestion with MTurkQues
       case QuestionType.FreeTextQuestion => {
         newQ = new MTFreeTextQuestion()
         newQ.text = bodyText
+        newQ.asInstanceOf[MTFreeTextQuestion].pattern = pattern
+        newQ.asInstanceOf[MTFreeTextQuestion].pattern_error_text = pattern_error_text
         newQ.asInstanceOf[MTFreeTextQuestion].toXML(randomize)
       }
       case QuestionType.FreeTextDistributionQuestion => {
@@ -196,6 +197,13 @@ class MTVariantQuestion(sandbox: Boolean) extends VariantQuestion with MTurkQues
         newQ.text = bodyText
         val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
         newQ.asInstanceOf[MTRadioButtonQuestion].options = options
+        image_url match {
+          case "" => {}
+          case _ => {
+            newQ.asInstanceOf[MTRadioButtonQuestion].image_url = image_url
+            newQ.asInstanceOf[MTRadioButtonQuestion].image_alt_text = image_alt_text
+          }
+        }
         newQ.asInstanceOf[MTRadioButtonQuestion].toXML(randomize)
       }
       case QuestionType.RadioButtonDistributionQuestion => {
@@ -243,6 +251,8 @@ override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
     case QuestionType.FreeTextQuestion => {
       newQ = new MTFreeTextQuestion()
       newQ.text = bodyText
+      newQ.asInstanceOf[MTFreeTextQuestion].pattern = pattern
+      newQ.asInstanceOf[MTFreeTextQuestion].pattern_error_text = pattern_error_text
       newQ.asInstanceOf[MTFreeTextQuestion].toSurveyXML(randomize)
     }
     case QuestionType.RadioButtonQuestion => {
@@ -250,6 +260,13 @@ override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
       newQ.text = bodyText
       val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
       newQ.asInstanceOf[MTRadioButtonQuestion].options = options
+      image_url match {
+        case "" => {}
+        case _ => {
+          newQ.asInstanceOf[MTRadioButtonQuestion].image_url = image_url
+          newQ.asInstanceOf[MTRadioButtonQuestion].image_alt_text = image_alt_text
+        }
+      }
       newQ.asInstanceOf[MTRadioButtonQuestion].toSurveyXML(randomize)
     }
     case QuestionType.RadioButtonDistributionQuestion => {

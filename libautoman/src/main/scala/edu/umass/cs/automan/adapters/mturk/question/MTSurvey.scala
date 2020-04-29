@@ -90,7 +90,6 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
        |function startup() {
        |  disableSubmitOnPreview();
        |  document.getElementById('assignmentId').value = getAssignmentID();
-       |  insertOptions();
        |}
        |
        |function shuffle(array) {
@@ -103,7 +102,7 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
        |}
     """.stripMargin
   }
-
+//  insertOptions();
 //  private def addNode(afterTerm: String, to: Node, newNode: Node): Node = {
 //    (to \ afterTerm) match {
 //      case Node(str, data, node) => {
@@ -128,12 +127,26 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
 
   private def html(randomize: Boolean): String = {
     String.format("<!DOCTYPE html>%n") + {
-      <form name='mturk_form' method='post' id='mturk_form' action={_action}>
-
-        { XMLBody(randomize) }
-        <p><input type='submit' id='submitButton' value='Submit'/></p>
-        <script language='Javascript'>turkSetAssignmentID();</script>
-      </form>
+      <html>
+        <head>
+          <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+          <script>{ jsFunctions }</script>
+          {
+          _layout match {
+            case Some(layout) => layout
+            case None => NodeSeq.Empty
+          }
+          }
+        </head>
+        <body onload="startup()">
+          <form name='mturk_form' method='post' id='mturk_form' action={_action}>
+            <input type="hidden" value={id.toString} name="question_id" id="question_id"/>
+            <input type="hidden" value="" name="assignmentId" id="assignmentId"/>
+            { XMLBody(randomize) }
+            <p><input type='submit' id='submitButton' value='Submit'/></p>
+          </form>
+        </body>
+      </html>
     }
   }
 //    <input type="hidden" value={id.toString} name="question_id" id="question_id"/>
@@ -150,6 +163,7 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
   //          </crowd-form>
   //        </body>
   //      </html>
+  //<script language='Javascript'>turkSetAssignmentID();</script>
 
   private def generateQuestionText(question: Question): Node = {
     <div>question.text</div>
@@ -174,48 +188,6 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
       case _ => throw new Error("other question types not implemented")
     }
   }
-
-//  <p>
-//    <input type="submit" id="submitButton" value="Submit"/>
-//  </p>
-  //      val toAdd = {
-  //        <p>
-  //          <input type="submit" id="submitButton" value="Submit"/>
-  //        </p>
-  //      }
-  //
-  //      val bods: NodeSeq = (bod \ "body")
-  //        bods.tail ++= toAdd // added submit button to end
-  //
-  //        val topHTML = (bod \ "html")
-  //        topHTML match {
-  //          case Node(str, data, node) => topHTML = Node(str, data, bods)
-  //          //case Elem(_,_,_,_,child) => topHTML = Elem(_,_,_,_, bods)
-  //          //case Elem(_,_,_,child) => topHTML = Elem(_,_,_,bods)
-  //        }
-  //topHTML.child
-
-  //val toAdd = "</body><p><input type='submit' id='submitButton' value='Submit'/></p>"
-  //val bodString = bod.toString() // adding List
-  //var bodArr: ArrayBuffer[String] = ArrayBuffer()
-  // need to insert after last instance of </body>
-  //bodArr ++= bodString.split("</body>")
-  //assert(bodArr.length == 2)
-  //      bodArr.insert(bodArr.length - 1, toAdd)
-  //      val newBod = bodArr.toString()
-  //xml.XML.loadString(newBod)
-
-  //          bod = bod ++ {
-  //            <p>
-  //              <input type="submit" id="submitButton" value="Submit"/>
-  //            </p>
-  //          }
-  //val tl = bod.last
-  //      val bodyDiv: NodeSeq = (bod \ "body") // todo combine nodes into one node?
-  //      assert(bodyDiv.size == 1)
-  //      bodyDiv.head match {
-  //
-  //      }
 
   override def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")
