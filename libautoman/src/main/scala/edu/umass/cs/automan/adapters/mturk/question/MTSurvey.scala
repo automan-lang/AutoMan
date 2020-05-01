@@ -90,6 +90,24 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
        |function startup() {
        |  disableSubmitOnPreview();
        |  document.getElementById('assignmentId').value = getAssignmentID();
+       |  shuffleChildren();
+       |}
+       |
+       |function shuffleOptions(idArr) {
+       |  if (idArr.length != 0) {
+       |    for (let i = 0; i != idArr.length; i++) {
+       |      shuffleChildren(idArr[i]);
+       |    }
+       |  }
+       |}
+       |
+       |function shuffleChildren() {
+       |  var opts = document.querySelectorAll('opts');
+       |  opts.forEach(function(optSet) {
+       |    for (var i = optSet.children.length; i != 0; i--) {
+       |      opts.appendChild(opts.children[Math.random() * i | 0]);
+       |    }
+       |  });
        |}
        |
        |function shuffle(array) {
@@ -102,6 +120,14 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
        |}
     """.stripMargin
   }
+//  opts.forEach(function(optSet) {
+//    for (var i = optSet.children.length; i != 0; i--) {
+//      opts.appendChild(opts.children[Math.random() * i | 0]);
+//    }
+//  });
+//shuffleOptions(${generateQIDs()});
+//  var question = document.getElementById(id)
+//  var opts = question.querySelector('opts');
 //  insertOptions();
 //  private def addNode(afterTerm: String, to: Node, newNode: Node): Node = {
 //    (to \ afterTerm) match {
@@ -117,6 +143,8 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
 //    </QuestionForm>
     //<![CDATA[
     //      <!DOCTYPE html>
+    // todo match on q type
+    _question_list.foreach(_.question.asInstanceOf[MTVariantQuestion].initQuestion()) // todo not sure if this will work
     <HTMLQuestion xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2011-11-11/HTMLQuestion.xsd">
       <HTMLContent>
         { scala.xml.PCData(html(randomize)) }
@@ -126,7 +154,7 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
   }
 
   private def html(randomize: Boolean): String = {
-    String.format("<!DOCTYPE html>%n") + {
+    val toRet = String.format("<!DOCTYPE html>%n") + {
       <html>
         <head>
           <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
@@ -148,6 +176,8 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
         </body>
       </html>
     }
+    println(toRet)
+    toRet
   }
 //    <input type="hidden" value={id.toString} name="question_id" id="question_id"/>
 //      <input type="hidden" value="" name="assignmentId" id="assignmentId"/>
@@ -165,29 +195,20 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
   //      </html>
   //<script language='Javascript'>turkSetAssignmentID();</script>
 
-  private def generateQuestionText(question: Question): Node = {
-    <div>question.text</div>
-  }
-
-  private def generateQuestionOpts(question: Question): NodeSeq = {
-    val qName = s"option_${question.id}"
-    var toRet: NodeSeq = <div></div>
-
-    question.getQuestionType match {
-      case QuestionType.VariantQuestion => {
-        question.asInstanceOf[MTVariantQuestion].initQuestion()
-        generateQuestionOpts(question.asInstanceOf[MTVariantQuestion].getInternalQuestion)
-      }
-      case QuestionType.RadioButtonQuestion => {
-        for (o <- question.asInstanceOf[MTRadioButtonQuestion].options) {
-          var toApp = <crowd-radio-button name={qName.toString} id={question.id.toString}>{o.question_text}</crowd-radio-button>
-          toRet = toRet ++ toApp
-        }
-        toRet
-      }
-      case _ => throw new Error("other question types not implemented")
+  // Helper method to construct a JS array of all the Question IDs of this Survey
+  private def generateQIDs(): String = {
+    val toRet: StringBuilder = new StringBuilder("[")
+    for (i <- 0 until _question_list.size - 1) { // append first elems with commas
+    //for(q <- _question_list) {
+      val q = _question_list(i) // todo make more efficient
+      toRet.append("'" + q.question.asInstanceOf[MTVariantQuestion]._newQ.id.toString() + "','") // todo DANGER IF ONLY WORKS FOR MTVQ
     }
+    toRet.append(_question_list(_question_list.size - 1).question.id.toString()) // append last elem without a comma
+  //}
+    toRet.append("']")
+    toRet.toString()
   }
+
 
   override def memo_hash: String = {
     val md = MessageDigest.getInstance("md5")

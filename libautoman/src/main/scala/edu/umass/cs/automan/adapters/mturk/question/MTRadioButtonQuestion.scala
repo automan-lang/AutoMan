@@ -49,7 +49,8 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
     //    </Answer>
     DebugLog("MTRadioButtonQuestion: fromXML:\n" + x.toString,LogLevelDebug(),LogType.ADAPTER,id)
 
-    Symbol((x \\ "Answer" \\ "SelectionIdentifier").text)
+    Symbol((x \\ "Answer" \\ "FreeText").text) // todo separate fromSurveyXML?
+    //Symbol((x \\ "Answer" \\ "SelectionIdentifier").text)
   }
   // TODO: random checkbox fill
   override protected[mturk] def toXML(randomize: Boolean): scala.xml.Node = {
@@ -92,6 +93,7 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
       |  document.getElementById('assignmentId').value = getAssignmentID();
       |  insertOptions();
       |}
+      |
       |
       |function shuffle(array) {
       |  if (array.length != 0) {
@@ -170,56 +172,50 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
 //}
 
   //<title>Please fill out this survey</title>
-  def html() = {
-    String.format("<!DOCTYPE html>%n") + {
-//      <html>
-//        <head>
-//          <title>Please fill out this survey</title>
-//          <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-//          <script>{ jsFunctions }</script>
-//          {
-//          _layout match {
-//            case Some(layout) => layout
-//            case None => NodeSeq.Empty
-//          }
-//          }
-//          <script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
-//        </head>
-//        <body onload="startup()">
-//          <div id="wrapper">
-//            <div id="hit_content">
-//              <crowd-form name="mturk_form" method="post" id="mturk_form" action={_action}>
-              <div>
-                <input type="hidden" value={id.toString} name="question_id" id="question_id"/>
-                <input type="hidden" value="" name="assignmentId" id="assignmentId"/>
-                {
-                _image_url match {
-                  case Some(url) => <p><img id="question_image" src={ url }/></p>
-                  case None => NodeSeq.Empty
-                }
-                }
-                {
-                _text match {
-                  case Some(text) => <p>{ text }</p>
-                  case None => NodeSeq.Empty
-                }
-                }
-                { dimensions.map(renderQuestion) }
-              </div>
-
-//              </crowd-form>
-//            </div>
-//          </div>
-//        </body>
-//      </html>
-    }.toString
-  }
-  //]]>
-  //src="https://assets.crowd.aws/crowd-html-elements.js"
-//  <p>
-//    <input type="submit" id="submitButton" value="Submit"/>
-//  </p>
-  // inside form or body?
+//  def html() = {
+//    String.format("<!DOCTYPE html>%n") + {
+////      <html>
+////        <head>
+////          <title>Please fill out this survey</title>
+////          <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+////          <script>{ jsFunctions }</script>
+////          {
+////          _layout match {
+////            case Some(layout) => layout
+////            case None => NodeSeq.Empty
+////          }
+////          }
+////          <script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
+////        </head>
+////        <body onload="startup()">
+////          <div id="wrapper">
+////            <div id="hit_content">
+////              <crowd-form name="mturk_form" method="post" id="mturk_form" action={_action}>
+//              <div>
+//                <input type="hidden" value={id.toString} name="question_id" id="question_id"/>
+//                <input type="hidden" value="" name="assignmentId" id="assignmentId"/>
+//                {
+//                _image_url match {
+//                  case Some(url) => <p><img id="question_image" src={ url }/></p>
+//                  case None => NodeSeq.Empty
+//                }
+//                }
+//                {
+//                _text match {
+//                  case Some(text) => <p>{ text }</p>
+//                  case None => NodeSeq.Empty
+//                }
+//                }
+//                { dimensions.map(renderQuestion) }
+//              </div>
+//
+////              </crowd-form>
+////            </div>
+////          </div>
+////        </body>
+////      </html>
+//    }.toString
+//  }
 
   /**
     * Helper function to convert question into XML Question
@@ -238,7 +234,7 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
   override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
 //      <input type="hidden" value={id.toString} name="question_id" id="question_id"/>
 //        <input type="hidden" value="" name="assignmentId" id="assignmentId"/>
-    <div>
+    <div id={id.toString}>
       {
       _image_url match {
         case Some(url) => <p><img id="question_image" src={ url }/></p>
@@ -251,7 +247,9 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
         case None => NodeSeq.Empty
       }
       }
-      { options.map(optToXML(_)) }
+      <div name="opts">
+        {options.map(optToXML(_))}
+    </div>
 
     </div>
 //    <crowd-radio-group>
@@ -290,7 +288,7 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
   private def optToXML(option: QuestionOptionType): Node = {
       //<crowd-radio-button name={id.toString.drop(1)} value={option.question_id.toString().drop(1)}>{option.question_text}</crowd-radio-button>
       <div>
-          <input type="radio" id={option.question_id.toString().drop(1)} name={id.toString.drop(1)} value={option.question_id.toString().drop(1)}/>
+          <input type="radio" id={option.question_id.toString().drop(1)} name={id.toString} value={option.question_id.toString().drop(1)}/>
           <label for={option.question_id.toString().drop(1)}>
             {option.question_text}
           </label>

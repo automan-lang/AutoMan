@@ -137,6 +137,13 @@ class MTVariantQuestion(sandbox: Boolean) extends VariantQuestion with MTurkQues
         newQ.text = bodyText
         val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
         newQ.asInstanceOf[MTRadioButtonQuestion].options = options
+        image_url match {
+          case "" => {}
+          case _ => {
+            newQ.asInstanceOf[MTRadioButtonQuestion].image_url = image_url
+            newQ.asInstanceOf[MTRadioButtonQuestion].image_alt_text = image_alt_text
+          }
+        }
       }
       case QuestionType.RadioButtonDistributionQuestion => {
         newQ = new MTRadioButtonVectorQuestion()
@@ -230,50 +237,50 @@ override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
 
   question.questionType match {
     case QuestionType.EstimationQuestion => {
-      newQ = new MTEstimationQuestion()
-      newQ.text = bodyText
+//      newQ = new MTEstimationQuestion()
+//      newQ.text = bodyText
       newQ.asInstanceOf[MTEstimationQuestion].toSurveyXML(randomize)
     }
     case QuestionType.CheckboxQuestion => {
-      newQ = new MTCheckboxQuestion()
-      newQ.text = bodyText
-      val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
-      newQ.asInstanceOf[MTCheckboxQuestion].options = options
+//      newQ = new MTCheckboxQuestion()
+//      newQ.text = bodyText
+//      val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
+//      newQ.asInstanceOf[MTCheckboxQuestion].options = options
       newQ.asInstanceOf[MTCheckboxQuestion].toSurveyXML(randomize)
     }
     case QuestionType.CheckboxDistributionQuestion => {
-      newQ = new MTCheckboxVectorQuestion()
-      newQ.text = bodyText
-      val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
-      newQ.asInstanceOf[MTCheckboxVectorQuestion].options = options
+//      newQ = new MTCheckboxVectorQuestion()
+//      newQ.text = bodyText
+//      val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
+//      newQ.asInstanceOf[MTCheckboxVectorQuestion].options = options
       newQ.asInstanceOf[MTCheckboxVectorQuestion].toSurveyXML(randomize)
     }
     case QuestionType.FreeTextQuestion => {
-      newQ = new MTFreeTextQuestion()
-      newQ.text = bodyText
-      newQ.asInstanceOf[MTFreeTextQuestion].pattern = pattern
-      newQ.asInstanceOf[MTFreeTextQuestion].pattern_error_text = pattern_error_text
+//      newQ = new MTFreeTextQuestion()
+//      newQ.text = bodyText
+//      newQ.asInstanceOf[MTFreeTextQuestion].pattern = pattern
+//      newQ.asInstanceOf[MTFreeTextQuestion].pattern_error_text = pattern_error_text
       newQ.asInstanceOf[MTFreeTextQuestion].toSurveyXML(randomize)
     }
     case QuestionType.RadioButtonQuestion => {
-      newQ = new MTRadioButtonQuestion(sandbox)
-      newQ.text = bodyText
-      val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
-      newQ.asInstanceOf[MTRadioButtonQuestion].options = options
-      image_url match {
-        case "" => {}
-        case _ => {
-          newQ.asInstanceOf[MTRadioButtonQuestion].image_url = image_url
-          newQ.asInstanceOf[MTRadioButtonQuestion].image_alt_text = image_alt_text
-        }
-      }
+//      newQ = new MTRadioButtonQuestion(sandbox)
+//      newQ.text = bodyText
+//      val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
+//      newQ.asInstanceOf[MTRadioButtonQuestion].options = options
+//      image_url match {
+//        case "" => {}
+//        case _ => {
+//          newQ.asInstanceOf[MTRadioButtonQuestion].image_url = image_url
+//          newQ.asInstanceOf[MTRadioButtonQuestion].image_alt_text = image_alt_text
+//        }
+//      }
       newQ.asInstanceOf[MTRadioButtonQuestion].toSurveyXML(randomize)
     }
     case QuestionType.RadioButtonDistributionQuestion => {
-      newQ = new MTRadioButtonVectorQuestion()
-      newQ.text = bodyText
-      val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
-      newQ.asInstanceOf[MTRadioButtonVectorQuestion].options = options
+//      newQ = new MTRadioButtonVectorQuestion()
+//      newQ.text = bodyText
+//      val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
+//      newQ.asInstanceOf[MTRadioButtonVectorQuestion].options = options
       newQ.asInstanceOf[MTRadioButtonVectorQuestion].toSurveyXML(randomize)
     }
   }
