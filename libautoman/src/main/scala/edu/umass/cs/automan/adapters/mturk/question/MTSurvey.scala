@@ -88,10 +88,20 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
        |}
        |
        |function startup() {
-       |  console.log('starting up');
        |  disableSubmitOnPreview();
        |  document.getElementById('assignmentId').value = getAssignmentID();
+       |  shuffleQuestions();
        |  shuffleOptions(${generateQIDs()});
+       |}
+       |
+       |function shuffleQuestions() {
+       |  var form = document.getElementById('mturk_form');
+       |  var questions = document.getElementsByClassName('question');
+       |  for (var i = questions.length; i != 0; i--) {
+       |    form.appendChild(questions[Math.random() * i | 0]);
+       |  }
+       |  var submit = document.getElementById('submitButtonP');
+       |  form.appendChild(submit);
        |}
        |
        |function shuffleOptions(idArr) {
@@ -103,22 +113,10 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
        |}
        |
        |function shuffleOptionChildren(id) {
-       |  console.log('shuffling kids');
        |  var question = document.getElementById(id);
-       |  console.log('question' + question);
        |  var opts = document.getElementById('opts_' + id);
-       |  console.log('opt length ' + opts.length);
-       |  for (var j = opts.children.length; j != 0; j--) {
-       |    opts.appendChild(opts.children[Math.random() * j | 0]);
-       |  }
-       |}
-       |
-       |function shuffle(array) {
-       |  if (array.length != 0) {
-       |    for (let i = array.length - 1; i != 0; i--) {
-       |      const j = Math.floor(Math.random() * (i + 1));
-       |      [array[i], array[j]] = [array[j], array[i]];
-       |    }
+       |  for (var i = opts.children.length; i != 0; i--) {
+       |    opts.appendChild(opts.children[Math.random() * i | 0]);
        |  }
        |}
     """.stripMargin
@@ -189,7 +187,7 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
             <input type="hidden" value={id.toString} name="question_id" id="question_id"/>
             <input type="hidden" value="" name="assignmentId" id="assignmentId"/>
             { XMLBody(randomize) }
-            <p><input type='submit' id='submitButton' value='Submit'/></p>
+            <p id='submitButtonP'><input type='submit' id='submitButton' value='Submit'/></p>
           </form>
         </body>
       </html>

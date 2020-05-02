@@ -234,7 +234,7 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
   override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
 //      <input type="hidden" value={id.toString} name="question_id" id="question_id"/>
 //        <input type="hidden" value="" name="assignmentId" id="assignmentId"/>
-    <div id={id.toString}>
+    <div id={id.toString} class="question">
       {
       _image_url match {
         case Some(url) => <p><img id="question_image" src={ url }/></p>
