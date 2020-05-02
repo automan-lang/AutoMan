@@ -4,7 +4,7 @@ import java.io.{File, PrintWriter}
 import java.security.MessageDigest
 import java.util.{Date, UUID}
 
-import edu.umass.cs.automan.core.answer.Outcome
+import edu.umass.cs.automan.core.answer.{Outcome, VariantOutcome}
 import edu.umass.cs.automan.core.logging.{DebugLog, LogLevelDebug, LogType}
 import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.question.{Question, Survey}
@@ -88,26 +88,29 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
        |}
        |
        |function startup() {
+       |  console.log('starting up');
        |  disableSubmitOnPreview();
        |  document.getElementById('assignmentId').value = getAssignmentID();
-       |  shuffleChildren();
+       |  shuffleOptions(${generateQIDs()});
        |}
        |
        |function shuffleOptions(idArr) {
        |  if (idArr.length != 0) {
        |    for (let i = 0; i != idArr.length; i++) {
-       |      shuffleChildren(idArr[i]);
+       |      shuffleOptionChildren(idArr[i]);
        |    }
        |  }
        |}
        |
-       |function shuffleChildren() {
-       |  var opts = document.querySelectorAll('opts');
-       |  opts.forEach(function(optSet) {
-       |    for (var i = optSet.children.length; i != 0; i--) {
-       |      opts.appendChild(opts.children[Math.random() * i | 0]);
-       |    }
-       |  });
+       |function shuffleOptionChildren(id) {
+       |  console.log('shuffling kids');
+       |  var question = document.getElementById(id);
+       |  console.log('question' + question);
+       |  var opts = document.getElementById('opts_' + id);
+       |  console.log('opt length ' + opts.length);
+       |  for (var j = opts.children.length; j != 0; j--) {
+       |    opts.appendChild(opts.children[Math.random() * j | 0]);
+       |  }
        |}
        |
        |function shuffle(array) {
@@ -133,6 +136,21 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
 //    (to \ afterTerm) match {
 //      case Node(str, data, node) => {
 //        new Node(str, data, node ++ newNode)
+//      }
+//    }
+//  }
+
+//  function shuffleChildren() {
+//    console.log('shuffling kids');
+//    var opts = document.querySelectorAll('opts');
+//    console.log('opt length ' + opts.length);
+//    for (var i = 0; i != opts.length; i++){
+//      console.log(i);
+//      var curOpts = opts[i];
+//      console.log('option');
+//      console.log('option: ' + curOpts);
+//      for (var j = curOpts.children.length; j != 0; j--) {
+//        curOpts.appendChild(curOpts.children[Math.random() * j | 0]);
 //      }
 //    }
 //  }
@@ -201,10 +219,26 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
     for (i <- 0 until _question_list.size - 1) { // append first elems with commas
     //for(q <- _question_list) {
       val q = _question_list(i) // todo make more efficient
-      toRet.append("'" + q.question.asInstanceOf[MTVariantQuestion]._newQ.id.toString() + "','") // todo DANGER IF ONLY WORKS FOR MTVQ
+      q match {
+        case VariantOutcome(_, _) => {
+          toRet.append("'" + q.question.asInstanceOf[MTVariantQuestion]._newQ.id.toString + "','")
+        }
+        case _ => {
+          toRet.append("'" + q.question.id.toString + "','")
+        }
+      }
     }
-    toRet.append(_question_list(_question_list.size - 1).question.id.toString()) // append last elem without a comma
-  //}
+
+    // append last q
+    val finalQ = _question_list.last
+    finalQ match {
+      case VariantOutcome(_, _) => {
+        toRet.append(finalQ.question.asInstanceOf[MTVariantQuestion]._newQ.id.toString) // append last elem without a comma
+      }
+      case _ => {
+        toRet.append(finalQ.question.id.toString)
+      }
+    }
     toRet.append("']")
     toRet.toString()
   }
@@ -233,9 +267,6 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
         case vq: MTVariantQuestion => {
           val ans = vq.prettyPrintAnswer(ansMap(vq.newQ.id.toString).asInstanceOf[vq.A])
           ansString.append(ans + "\n")
-//          val ans: Question#A = ansMap(vq.newQ.id.toString) // this is just a question identifier
-//          val ppans = q.prettyPrintAnswer(ans.asInstanceOf[q.A])
-//          ansString.append(ppans) //A: Set[(String,Question#A)] // so this is also getting the question ID
         }
         case _ => {
           val ans: Question#A = ansMap(q.id.toString)
@@ -243,23 +274,8 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
           ansString.append(ppans + "\n") //A: Set[(String,Question#A)]
         }
       }
-      //val ans: Question#A = ansMap(q.id.toString)
-//      val ppans = q.prettyPrintAnswer(ans.asInstanceOf[q.A])
-//      println(s"printing ${q.id} answer: ${ppans}")
-      //ansString.append(ppans) //A: Set[(String,Question#A)]
     }
     ansString.toString()
-
-    //    var toRet: StringBuilder = new StringBuilder
-//    for(a <- answer){
-//      //val (_,(question_id,ans)) = a
-//      val (question_id,ans) = a
-//      toRet ++= s"${question_id}: ${ans}\n"
-//    }
-//    val toRetStr = toRet.toString()
-//    toRetStr
-////    val (_,(question_id,ans)) = answer
-////    s"${question_id}: ${ans}"
   }
 
   /**

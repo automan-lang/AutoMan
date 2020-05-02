@@ -247,7 +247,7 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
         case None => NodeSeq.Empty
       }
       }
-      <div name="opts">
+      <div id={s"opts_${id.toString}"}>
         {options.map(optToXML(_))}
     </div>
 
