@@ -76,7 +76,9 @@ class MTurkAdapter extends AutomanAdapter {
   def locale_=(l: Locale) { _locale = l }
   def use_mock: MockSetup = _use_mock match { case Some(ms) => ms; case None => ??? }
   def use_mock_=(mock_setup: MockSetup) { _use_mock = Some(mock_setup) }
-  def sandbox_mode = true
+  def sandbox_mode = {
+    _endpoint.getServiceEndpoint != PROD_ENDPOINT
+  }
   def sandbox_mode_=(b: Boolean) {
     b match {
       case true => _endpoint = new EndpointConfiguration(SANDBOX_ENDPOINT, SIGNING_REGION)

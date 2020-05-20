@@ -55,6 +55,7 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
   // TODO: random checkbox fill
   override protected[mturk] def toXML(randomize: Boolean): scala.xml.Node = {
     //<HTMLQuestion xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2011-11-11/HTMLQuestion.xsd">
+    //options = options.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
     <div>
       { XMLBody(randomize) }
     </div>
@@ -248,9 +249,8 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
       }
       }
       <div id={s"opts_${id.toString}"}>
-        {options.map(optToXML(_))}
-    </div>
-
+        {options.map(_.toRadioXML(id))}
+      </div>
     </div>
 //    <crowd-radio-group>
 //      <input type="hidden" value={id.toString} name="question_id" id="question_id"/>
@@ -279,21 +279,22 @@ class MTRadioButtonQuestion(sandbox: Boolean) extends RadioButtonQuestion with M
   //<FrameHeight>{ _iframe_height.toString }</FrameHeight>
 
 
-  /**
-    * Converts a single option to a RB XML
-    * @param option the option to convert
-    * @return an XML node
-    */
+//  /**
+//    * Converts a single option to a RB XML
+//    * @param option the option to convert
+//    * @return an XML node
+//    */
     // all share a name
-  private def optToXML(option: QuestionOptionType): Node = {
-      //<crowd-radio-button name={id.toString.drop(1)} value={option.question_id.toString().drop(1)}>{option.question_text}</crowd-radio-button>
-      <div>
-          <input type="radio" id={option.question_id.toString().drop(1)} name={id.toString} value={option.question_id.toString().drop(1)}/>
-          <label for={option.question_id.toString().drop(1)}>
-            {option.question_text}
-          </label>
-      </div>
-  }
+    // todo bad because no longer relying on QO toXML
+//  private def optToXML(option: QuestionOptionType): Node = {
+//      //<crowd-radio-button name={id.toString.drop(1)} value={option.question_id.toString().drop(1)}>{option.question_text}</crowd-radio-button>
+//      <div>
+//          <input type="radio" id={option.question_id.toString().drop(1)} name={id.toString} value={option.question_id.toString().drop(1)} required="required"/>
+//          <label for={option.question_id.toString().drop(1)}>
+//            {option.question_text}
+//          </label>
+//      </div>
+//  }
 //    <Question>
 //      <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
 //      <IsRequired>true</IsRequired>

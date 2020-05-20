@@ -1,8 +1,10 @@
 import edu.umass.cs.automan.adapters.mturk.DSL._
 import edu.umass.cs.automan.adapters.mturk.question.MTSurvey
-import edu.umass.cs.automan.core.answer.SurveyAnswers
-import edu.umass.cs.automan.core.grammar.Expand.{Start, binding, ch, nt, opt, ref, seq, term, fun}
-import edu.umass.cs.automan.core.grammar.{CheckboxQuestionProduction, CheckboxesQuestionProduction, EstimateQuestionProduction, Expression, FreetextQuestionProduction, FreetextsQuestionProduction, Name, OptionProduction, RadioQuestionProduction, RadiosQuestionProduction, Sequence, Terminal}
+import edu.umass.cs.automan.core.AutomanAdapter
+import edu.umass.cs.automan.core.answer.{SurveyAnswers, SurveyOutcome}
+import edu.umass.cs.automan.core.grammar.Expand.{Start, binding, ch, fun, nt, opt, ref, seq, term}
+import edu.umass.cs.automan.core.grammar.Rank.Grammar
+import edu.umass.cs.automan.core.grammar.{CheckboxQuestionProduction, CheckboxesQuestionProduction, EstimateQuestionProduction, Expression, FreetextQuestionProduction, FreetextsQuestionProduction, Name, OptionProduction, QuestionProduction, RadioQuestionProduction, RadiosQuestionProduction, Sequence, Terminal}
 import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
 import edu.umass.cs.automan.core.question.Dimension
 import edu.umass.cs.automan.core.util.Utilities
@@ -80,7 +82,7 @@ object linda_test_survey extends App {
 //            ))
 //        )
 
-  val lindaG = Map[Name, Expression](
+  val lindaGrammar = Map[Name, Expression](
     Start -> ref("A"),
     nt("A") -> seq(Array(
       binding(nt("Name")),
@@ -96,7 +98,7 @@ object linda_test_survey extends App {
       binding(nt("Issue")),
       term(", and also participated in "),
       binding(nt("Demonstration")),
-      term(" demonstrations.\n Which is more probable?\n"),
+      term(" demonstrations.\nWhich is more probable?\n"),
       ref("Opt1"),
       term("\n"),
       ref("Opt2")
@@ -166,12 +168,26 @@ object linda_test_survey extends App {
     )))
   )
 
-  val lindaProd: RadioQuestionProduction = new RadioQuestionProduction(lindaG)
-  val lindaProd1: RadioQuestionProduction = new RadioQuestionProduction(lindaG)
+  val lindaQuestionProduction: RadioQuestionProduction = new RadioQuestionProduction(lindaGrammar)
+  val lindaProd1: RadioQuestionProduction = new RadioQuestionProduction(lindaGrammar)
 
 
+//  def which_survey() = surveyGrammar(
+//    budget = 12.00,
+//    questions = List(
+//      nop => radioGrammar(
+//        grammar = lindaG,
+//        question = lindaProd,
+//        depth = 2,
+//        variant = 5625
+//      )(nop)
+//    ),
+//    initial_worker_timeout_in_s = 30,
+//    minimum_spawn_policy = UserDefinableSpawnPolicy(2),
+//    text = "Quick survey"
+//  )
+/**
   def which_survey() = surveyGrammar(
-    survey_timeout_multiplier = 1000,
     budget = 8.00,
     questions = List(
 //      nop => multiestimate(
@@ -182,32 +198,80 @@ object linda_test_survey extends App {
         //minimum_spawn_policy = UserDefinableSpawnPolicy(0),
         question = lindaProd,
         variant = 435245353,
-        depth = 2,
-        question_timeout_multiplier = 1000
+        depth = 2
       )(nop),
       nop => radioGrammar(
         grammar = lindaG,
         //minimum_spawn_policy = UserDefinableSpawnPolicy(0),
         question = lindaProd1,
         variant = 0,
-        depth = 2,
-        question_timeout_multiplier = 1000
+        depth = 2
       )(nop)
+//      ,
+//      nop => radio(
+//        text = "test",
+//        options = (
+//          choice('a,"a"),
+//          choice('b,"b"),
+//          choice('c,"c")
+//        )
+//      )(nop)
     ),
-    //minimum_spawn_policy = UserDefinableSpawnPolicy(5),
-    text = "Quick survey"
+    minimum_spawn_policy = UserDefinableSpawnPolicy(1),
+    text = "Quick survey",
+    initial_worker_timeout_in_s = 900
   )
-
+*/
   def which_radio() = radioGrammar(
-    grammar = lindaG,
+    grammar = lindaGrammar,
     minimum_spawn_policy = UserDefinableSpawnPolicy(0),
-    question = lindaProd,
+    question = lindaQuestionProduction,
     variant = 435245353,
     depth = 2
   )
 
+  def radioG(grammar: Grammar, question: QuestionProduction, depth: Int, variant: Int) = {
+    nop: AutomanAdapter => radioGrammar(
+      grammar = grammar,
+      question = question,
+      depth = depth,
+      variant = variant
+    )(nop)
+  }
+
+  def which_survey(): SurveyOutcome = surveyGrammar(
+    budget = 12.00,
+    questions = List(
+      radioG(
+        grammar = lindaGrammar,
+        question = lindaQuestionProduction,
+        depth = 2,
+        variant = 5625
+      )
+    ),
+    initial_worker_timeout_in_s = 30,
+    text = "Quick survey"
+  )
+
+
+  def how_many_things() = radio (
+    text = "How many things are in this picture?",
+    options = (
+      choice('oscar, "Oscar the Grouch", "http://tinyurl.com/qfwlx56"),
+      choice('kermit, "Kermit the Frog", "http://tinyurl.com/nuwyz3u"),
+      choice('spongebob, "Spongebob Squarepants", "http://tinyurl.com/oj6wzx6"),
+      choice('cookiemonster, "Cookie Monster", "http://tinyurl.com/otb6thl"),
+      choice('thecount, "The Count", "http://tinyurl.com/nfdbyxa")
+    ),
+    minimum_spawn_policy = UserDefinableSpawnPolicy(0)
+  )
 
   automan(a) {
+//    val outcome = how_many_things()
+//    outcome.answer match {
+//      case a:Answer[Symbol] => println("answer: " + a.value)
+//      case _ => ()
+//    }
     val outcome = which_survey()//which_radio() //which_survey()
     outcome.answer match {//outcome.answer match {
       case answers: SurveyAnswers =>

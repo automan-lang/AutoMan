@@ -1,0 +1,3 @@
+https://mturk-moral-machine.s3.us-east-2.amazonaws.com/swerve_car.png
+https://mturk-moral-machine.s3.us-east-2.amazonaws.com/swerve_execs.png
+https://mturk-moral-machine.s3.us-east-2.amazonaws.com/swerve_homeless.png

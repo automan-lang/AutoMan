@@ -153,6 +153,14 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
 //    }
 //  }
 
+  private def initQ(q: Outcome[_]): Unit = {
+    q.question.getQuestionType match {
+      case QuestionType.VariantQuestion => {
+        q.question.asInstanceOf[MTVariantQuestion].initQuestion(sandbox)
+      }
+      case _ => {}
+    }}
+
   override protected[mturk] def toXML(randomize: Boolean): Node = {
 //    <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
 //      { XMLBody(randomize) }
@@ -160,7 +168,11 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
     //<![CDATA[
     //      <!DOCTYPE html>
     // todo match on q type
-    _question_list.foreach(_.question.asInstanceOf[MTVariantQuestion].initQuestion()) // todo not sure if this will work
+
+    _question_list.foreach(initQ(_))
+
+      //_.question.asInstanceOf[MTVariantQuestion].initQuestion()
+    //) // todo not sure if this will work
     <HTMLQuestion xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2011-11-11/HTMLQuestion.xsd">
       <HTMLContent>
         { scala.xml.PCData(html(randomize)) }
@@ -214,27 +226,37 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
   // Helper method to construct a JS array of all the Question IDs of this Survey
   private def generateQIDs(): String = {
     val toRet: StringBuilder = new StringBuilder("[")
-    for (i <- 0 until _question_list.size - 1) { // append first elems with commas
-    //for(q <- _question_list) {
-      val q = _question_list(i) // todo make more efficient
+
+    if(_question_list.size == 1) { // todo make less hacky
+      val q = _question_list.head // todo make more efficient
       q match {
         case VariantOutcome(_, _) => {
-          toRet.append("'" + q.question.asInstanceOf[MTVariantQuestion]._newQ.id.toString + "','")
+          toRet.append("'" + q.question.asInstanceOf[MTVariantQuestion]._newQ.id.toString)
+        }
+      }
+    } else {
+      for (i <- 0 until _question_list.size - 1) { // append first elems with commas
+        //for(q <- _question_list) {
+        val q = _question_list(i) // todo make more efficient
+        q match {
+          case VariantOutcome(_, _) => {
+            toRet.append("'" + q.question.asInstanceOf[MTVariantQuestion]._newQ.id.toString)
+          }
+          case _ => {
+            toRet.append("'" + q.question.id.toString + "','")
+          }
+        }
+      }
+
+      // append last q
+      val finalQ = _question_list.last
+      finalQ match {
+        case VariantOutcome(_, _) => {
+          toRet.append(finalQ.question.asInstanceOf[MTVariantQuestion]._newQ.id.toString) // append last elem without a comma
         }
         case _ => {
-          toRet.append("'" + q.question.id.toString + "','")
+          toRet.append(finalQ.question.id.toString)
         }
-      }
-    }
-
-    // append last q
-    val finalQ = _question_list.last
-    finalQ match {
-      case VariantOutcome(_, _) => {
-        toRet.append(finalQ.question.asInstanceOf[MTVariantQuestion]._newQ.id.toString) // append last elem without a comma
-      }
-      case _ => {
-        toRet.append(finalQ.question.id.toString)
       }
     }
     toRet.append("']")

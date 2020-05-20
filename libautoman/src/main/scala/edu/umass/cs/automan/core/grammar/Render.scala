@@ -244,7 +244,7 @@ object Render {
 
   def main(args: Array[String]): Unit = {
     // Linda!
-    val runLinda = true
+    val runLinda = false
     val runMM = false
 
     if(runLinda) {
@@ -418,6 +418,21 @@ object Render {
       val (body3, opts3) = renderInstance(mmScope3, expMM)
       println(prettyPrintInstance(body3, opts3))
     }
+
+    val presentationGrammar = Map[Name, Expression](
+      Start -> ref("A"),
+      nt("A") -> seq(Array(ref("B"), ref("C"))),
+      nt("B") -> ref("A"),
+      nt("C") -> ch(Array(term("y"), term("z")))
+    )
+    val expPG = expand(presentationGrammar, 2)
+    println(Expand.prettyPrint(expPG))
+    val pgBases = Rank.generateBases(expPG)
+    println("bases: " + pgBases.mkString(" "))
+    val pAssign = Rank.unrank(2, pgBases)
+    println(pAssign.mkString(" "))
+    val (body1, opts1) = buildInstance(expPG, 2, 2)
+    println(prettyPrintInstance(body1, opts1))
     //val expLindaG = expand(lindaG, 2)
 //    //println(Expand.prettyPrint(expLindaG))
     //val lindaBases = Rank.generateBases(expLindaG)
