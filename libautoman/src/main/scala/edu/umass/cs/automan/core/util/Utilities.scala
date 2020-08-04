@@ -3,9 +3,7 @@ package edu.umass.cs.automan.core.util
 import java.io.File
 import java.text.NumberFormat
 import java.util.{Calendar, Date, Locale, UUID}
-
 import edu.umass.cs.automan.core.logging.{LogType, LogLevel}
-
 import scala.annotation.elidable
 import scala.reflect.ClassTag
 
@@ -16,7 +14,7 @@ object Utilities {
   def removeAt[A](n: Int, ls: List[A]): (List[A], A) = ls.splitAt(n) match {
     case (Nil, _) if n < 0 => throw new NoSuchElementException
     case (pre, e :: post)  => (pre ::: post, e)
-    case (pre, Nil)        => throw new NoSuchElementException
+    case (_, Nil)        => throw new NoSuchElementException
   }
 
   // borrowed from: http://aperiodic.net/phil/scala/s-99/p23.scala
@@ -126,9 +124,8 @@ object Utilities {
 
   def base64Encode(file: File) : String = {
     import java.nio.file.Files
-    import javax.xml.bind.DatatypeConverter
-
-    DatatypeConverter.printBase64Binary(Files.readAllBytes(file.toPath))
+    import java.util.Base64
+    Base64.getEncoder.encodeToString(Files.readAllBytes(file.toPath))
   }
 
   def dateToTimestamp(d: java.util.Date) : Long = {

@@ -9,7 +9,7 @@ licenses := Seq("GPL-2.0" -> url("http://opensource.org/licenses/GPL-2.0"))
 
 homepage := Some(url("http://github.com/dbarowy/AutoMan"))
 
-scalaVersion := "2.13.3"
+scalaVersion := "2.12.12"
 
 exportJars := true
 
@@ -31,10 +31,10 @@ libraryDependencies := {
   val sprayVer  = "1.3.2"
   Seq(
     "org.scala-lang.modules"     %% "scala-xml"             % "2.0.0-M1",
-    "org.scalatest"              %% "scalatest"             % "3.2.0" % Test,
+    "org.scalatest"              %% "scalatest"             % "3.0.8" % Test,
     "log4j"                      % "log4j"                  % "1.2.17",
     "org.specs2"                 %% "specs2-core"           % "4.10.2" % Test,
-    "com.typesafe.slick"         %% "slick"                 % "3.3.2",
+    "com.typesafe.slick"         %% "slick"                 % "2.1.0",
     "software.amazon.awssdk"     % "mturk"                  % "2.9.5",
     "com.amazonaws"              % "aws-java-sdk-mechanicalturkrequester" % "1.11.637",
     "com.h2database"             % "h2"                     % "1.4.189",
