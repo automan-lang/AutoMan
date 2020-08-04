@@ -5,7 +5,6 @@ import java.util.{Date, UUID}
 import edu.umass.cs.automan.adapters.mturk.mock.CheckboxMockResponse
 import edu.umass.cs.automan.adapters.mturk.policy.aggregation.MTurkMinimumSpawnPolicy
 import edu.umass.cs.automan.core.logging._
-import edu.umass.cs.automan.core.policy.aggregation.MinimumSpawnPolicy
 import edu.umass.cs.automan.core.question.CheckboxQuestion
 import edu.umass.cs.automan.core.util.Utilities
 import java.security.MessageDigest
@@ -42,7 +41,6 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
     //    </Answer>
     DebugLog("MTCheckboxQuestion: fromXML:\n" + x.toString,LogLevelDebug(),LogType.ADAPTER,id)
 
-    //println("PRINTING STUFF: " + ((x \\ "Answer" \\ "SelectionIdentifier").map{si => Symbol(si.text)}.toSet).toString)
     (x \\ "Answer" \\ "SelectionIdentifier").map{si => Symbol(si.text)}.toSet
   }
   // TODO: random checkbox fill

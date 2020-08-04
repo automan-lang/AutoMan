@@ -21,12 +21,12 @@ abstract class AggregationPolicy(question: Question) {
   def allow_early_termination() : Boolean = false
 
   /**
-   * Returns a list of blacklisted worker_ids given a
+   * Returns a list of banned worker_ids given a
    * set of tasks, completed or not.
    * @param tasks The complete list of tasks.
    * @return A list of worker IDs.
    */
-  def blacklisted_workers(tasks: List[Task]): List[String] = {
+  def banned_workers(tasks: List[Task]): List[String] = {
     tasks.flatMap(_.worker_id).distinct
   }
 

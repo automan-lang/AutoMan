@@ -16,7 +16,7 @@ class MTurkRadioTest extends FlatSpec with Matchers {
     implicit val mt = mturk (
       access_key_id = UUID.randomUUID().toString,
       secret_access_key = UUID.randomUUID().toString,
-      use_mock = MockSetup(budget = 8.00),
+      use_mock = MockSetup(balance = 8.00),
       logging = LogConfig.NO_LOGGING,
       log_verbosity = LogLevelDebug()
     )

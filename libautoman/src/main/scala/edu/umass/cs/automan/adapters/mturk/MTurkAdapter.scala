@@ -148,7 +148,7 @@ class MTurkAdapter extends AutomanAdapter {
     val rs = _use_mock match {
       case Some(mock_setup) =>
         val mss = MockServiceState(
-          mock_setup.budget.bigDecimal,
+          mock_setup.balance.bigDecimal,
           Map.empty,
           Map.empty,
           Map.empty,

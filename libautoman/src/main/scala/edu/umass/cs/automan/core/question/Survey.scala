@@ -1,6 +1,6 @@
 package edu.umass.cs.automan.core.question
 import edu.umass.cs.automan.core.AutomanAdapter
-import edu.umass.cs.automan.core.answer.{AbstractSurveyAnswer, Answers, Outcome, SurveyAnswers, SurveyOutcome}
+import edu.umass.cs.automan.core.answer.{Outcome, SurveyAnswers, SurveyOutcome}
 import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
 import edu.umass.cs.automan.core.policy.aggregation.{SimpleSurveyPolicy, SurveyPolicy, VectorPolicy}

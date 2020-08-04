@@ -1,24 +1,10 @@
 package edu.umass.cs.automan.adapters.mturk.mock
 
-import java.{lang, util}
-import java.lang.{Boolean, Double}
-
-import com.amazonaws.partitions.model.Service
-
+import java.lang
 import scala.collection.JavaConverters._
 import com.amazonaws.{AmazonWebServiceRequest, ClientConfiguration, Request, ResponseMetadata}
-import com.amazonaws.services.mturk.{AmazonMTurk, model}
-import com.amazonaws.services.mturk.model.{AcceptQualificationRequestRequest, AcceptQualificationRequestResult, ApproveAssignmentRequest, ApproveAssignmentResult, AssignmentStatus, AssociateQualificationWithWorkerRequest, AssociateQualificationWithWorkerResult, CreateAdditionalAssignmentsForHITRequest, CreateAdditionalAssignmentsForHITResult, CreateHITRequest, CreateHITResult, CreateHITTypeRequest, CreateHITTypeResult, CreateHITWithHITTypeRequest, CreateHITWithHITTypeResult, CreateQualificationTypeRequest, CreateQualificationTypeResult, CreateWorkerBlockRequest, CreateWorkerBlockResult, DeleteHITRequest, DeleteHITResult, DeleteQualificationTypeRequest, DeleteQualificationTypeResult, DeleteWorkerBlockRequest, DeleteWorkerBlockResult, DisassociateQualificationFromWorkerRequest, DisassociateQualificationFromWorkerResult, GetAccountBalanceRequest, GetAccountBalanceResult, GetAssignmentRequest, GetAssignmentResult, GetFileUploadURLRequest, GetFileUploadURLResult, GetHITRequest, GetHITResult, GetQualificationScoreRequest, GetQualificationScoreResult, GetQualificationTypeRequest, GetQualificationTypeResult, ListAssignmentsForHITRequest, ListAssignmentsForHITResult, ListBonusPaymentsRequest, ListBonusPaymentsResult, ListHITsForQualificationTypeRequest, ListHITsForQualificationTypeResult, ListHITsRequest, ListHITsResult, ListQualificationRequestsRequest, ListQualificationRequestsResult, ListQualificationTypesRequest, ListQualificationTypesResult, ListReviewPolicyResultsForHITRequest, ListReviewPolicyResultsForHITResult, ListReviewableHITsRequest, ListReviewableHITsResult, ListWorkerBlocksRequest, ListWorkerBlocksResult, ListWorkersWithQualificationTypeRequest, ListWorkersWithQualificationTypeResult, NotifyWorkersRequest, NotifyWorkersResult, QualificationRequest, QualificationType, RejectAssignmentRequest, RejectAssignmentResult, RejectQualificationRequestRequest, RejectQualificationRequestResult, SendBonusRequest, SendBonusResult, SendTestEventNotificationRequest, SendTestEventNotificationResult, UpdateExpirationForHITRequest, UpdateExpirationForHITResult, UpdateHITReviewStatusRequest, UpdateHITReviewStatusResult, UpdateHITTypeOfHITRequest, UpdateHITTypeOfHITResult, UpdateNotificationSettingsRequest, UpdateNotificationSettingsResult, UpdateQualificationTypeRequest, UpdateQualificationTypeResult}
-import edu.umass.cs.automan.adapters.mturk.worker.MTurkMethods
-//import edu.umass.cs.automan.adapters.mturk.mock.AssignmentStatus.AssignmentStatus //TODO: change this?
-
-//import com.amazonaws.Request
+import com.amazonaws.services.mturk.model._
 import com.amazonaws.services.mturk.model.{Assignment, HIT, HITReviewStatus, HITStatus}
-
-//import com.amazonaws.mturk.requester._
-//import com.amazonaws.mturk.service.axis.RequesterService
-//import com.amazonaws.mturk.service.exception.ServiceException
-//import com.amazonaws.mturk.util.ClientConfig
 import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
 import edu.umass.cs.automan.adapters.mturk.worker.WorkerRunnable
 import edu.umass.cs.automan.core.question.Question
@@ -27,7 +13,6 @@ import java.util.{Calendar, Date, UUID}
 
 import com.amazonaws.services.mturk.AmazonMTurk
 import com.amazonaws.services.mturk.model.{QualificationRequirement, ServiceException}
-//import com.sun.deploy.config.ClientConfig
 
 /**
  * An object used to simulate a Mechanical Turk backend. Can be used by
@@ -39,7 +24,6 @@ import com.amazonaws.services.mturk.model.{QualificationRequirement, ServiceExce
  *  config an Amazon SDK ClientConfiguration object; not actually used.
  */
 
-//private[mturk] abstract class MockRequesterService(initial_state: MockServiceState, config: ClientConfiguration) extends AmazonMTurk { //TODO: what about config? (originally RequestorService(config))
 private[mturk] class MockRequesterService(initial_state: MockServiceState) extends AmazonMTurk {
   private var _state = initial_state
   private var _transaction_count = 0
@@ -53,10 +37,10 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState) exten
     }
   }
 
-//  override def forceExpireHIT(hitId: String): Unit = synchronized {
-//    // NOP
-//    diePeriodically()
-//  }
+  def forceExpireHIT(hitId: String): Unit = synchronized {
+    // NOP
+    diePeriodically()
+  }
 
   def createHIT(hitTypeId: String,
                          title: String,
@@ -94,35 +78,12 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState) exten
         .withExpiration(expiry.getTime)
         .withAssignmentDurationInSeconds(hit_type.assignmentDurationInSeconds)
         .withRequesterAnnotation(requesterAnnotation)
-        .withQualificationRequirements(qualificationRequirements.toList.asJava)//java.util.Arrays.asList(qualificationRequirements))//(qualificationRequirements.toList)//(new util.LinkedList[QualificationRequirement]().addAll(0, hit_type.qualRequirements)) //hit_type.qualRequirements.toList)) //TODO: wut
+        .withQualificationRequirements(qualificationRequirements.toList.asJava)
         .withHITReviewStatus(HITReviewStatus.NotReviewed)
         .withNumberOfAssignmentsPending(0)
         .withNumberOfAssignmentsAvailable(maxAssignments)
         .withNumberOfAssignmentsCompleted(0)
     java.util.Arrays.asList(qualificationRequirements)
-//        null,                                       // request
-//        hit_id,                                     // HIT ID
-//        hitTypeId,                                  // HIT Type ID
-//        null,                                       // HIT Group ID
-//        null,                                       // HIT Layout ID
-//        now,                                        // creationTime
-//        hit_type.title,                             // title
-//        hit_type.description,                       // description
-//        question_xml,                               // question
-//        hit_type.keywords,                          // keywords
-//        HITStatus.Assignable,                       // HIT Status
-//        maxAssignments,                             // maxAssignments
-//        new Price(new java.math.BigDecimal(hit_type.reward), "USD", "$"),  // reward
-//        hit_type.autoApprovalDelayInSeconds,        // autoApprovalDelayInSeconds
-//        expiry,                                     // expiration
-//        hit_type.assignmentDurationInSeconds,       // assignmentDurationInSeconds
-//        requesterAnnotation,                        // requesterAnnotation
-//        hit_type.qualRequirements,                  // qualificationRequirements
-//        HITReviewStatus.NotReviewed,                // HITReviewStatus
-//        0,                                          // numberOfAssignmentsPending
-//        maxAssignments,                             // numberOfAssignmentsAvailable
-//        0                                           // numberOfAssignmentsCompleted
-//      )
     _state = _state.addHIT(question_id, hit)
     hit
   }
@@ -143,21 +104,11 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState) exten
     diePeriodically()
     _state = _state.updateAssignmentStatus(UUID.fromString(rejectAssignmentRequest.getAssignmentId), AssignmentStatus.REJECTED)
      new RejectAssignmentResult
-     //rejectAssignmentRequest
-//    new RejectAssignmentRequest()
-//      .withAssignmentId(UUID.fromString(_state.assignmentId))
-
   }
-//  (assignmentId: String, requesterFeedback: String): Unit = synchronized {
-//    diePeriodically()
-//    _state = _state.updateAssignmentStatus(UUID.fromString(assignmentId), AssignmentStatus.REJECTED)
-//  }
 
   def getAllAssignmentsForHIT(hitId: String): Array[Assignment] = synchronized {
     diePeriodically()
     val question_id = UUID.fromString(_state.getHITforHITId(hitId).getRequesterAnnotation)
-
-    val question = _state.question_by_question_id(question_id).asInstanceOf[MTurkQuestion]
 
     // grab our assignments
     val assn_ids2: List[UUID] =
@@ -182,9 +133,7 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState) exten
         assn_id.toString,
         mock_response.workerId.toString,
         hitId,
-        //com.amazonaws.mturk.requester.AssignmentStatus.Submitted,
         "Submitted",
-        //AssignmentStatus.withName("Submitted"), //TODO: how to set status?
         Utilities.calInSeconds(mock_response.responseTime, 16400),
         null,
         mock_response.responseTime,
@@ -228,19 +177,6 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState) exten
       .withDeadline(deadline.getTime)
       .withAnswer(answer)
       .withRequesterFeedback(requesterFeedback)
-//      request,
-//      assignmentId,
-//      workerId,
-//      HITId,
-//      assignmentStatus,
-//      autoApprovalTime,
-//      acceptTime,
-//      submitTime,
-//      approvalTime,
-//      rejectionTime,
-//      deadline,
-//      answer,
-//      requesterFeedback
   }
 
   def rejectQualificationRequest(qualificationRequestId: String,
@@ -388,7 +324,11 @@ private[mturk] class MockRequesterService(initial_state: MockServiceState) exten
 
   override def disassociateQualificationFromWorker(disassociateQualificationFromWorkerRequest: DisassociateQualificationFromWorkerRequest): DisassociateQualificationFromWorkerResult = ???
 
-  override def getAccountBalance(getAccountBalanceRequest: GetAccountBalanceRequest): GetAccountBalanceResult = ???
+  override def getAccountBalance(getAccountBalanceRequest: GetAccountBalanceRequest): GetAccountBalanceResult = {
+    val res = new GetAccountBalanceResult()
+    res.setAvailableBalance(initial_state.budget.toString)
+    res
+  }
 
   override def getAssignment(getAssignmentRequest: GetAssignmentRequest): GetAssignmentResult = ???
 

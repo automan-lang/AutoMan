@@ -185,9 +185,8 @@ object MTurkMethods {
   }
 
   private[worker] def mturk_getAccountBalance(backend: AmazonMTurk): BigDecimal = {
-    //new BigDecimal(backend.getAccountBalance(new GetAccountBalanceRequest).toString())
     val bal: String = backend.getAccountBalance(new GetAccountBalanceRequest).getAvailableBalance
-    new java.math.BigDecimal(bal) //TODO: change back to bigdecimal?
+    new java.math.BigDecimal(bal)
   }
 
   private[worker] def mturk_disposeQualificationType(qual_id: QualificationID, backend: AmazonMTurk) : Unit = {
@@ -364,7 +363,7 @@ object MTurkMethods {
     // when these properties change from what we've seen before
     // (including the possibility that we've never seen any of these
     // tasks before) we need to create a new HITType;
-    // Note that simply adding blacklisted/excluded workers to an existing group
+    // Note that simply adding banned/excluded workers to an existing group
     // is not sufficient to trigger the creation of a new HITType, nor do we want
     // it to, because MTurk's extendHIT is sufficient to prevent re-participation
     // for a given HIT.

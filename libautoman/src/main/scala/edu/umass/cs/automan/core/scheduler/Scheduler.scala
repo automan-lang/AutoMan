@@ -74,10 +74,10 @@ class Scheduler(val question: Question,
 
     private def schPost(tasks: List[Task], sufferedTimeout: Boolean, time: Time, num_comparisons: Int) : (List[Task],List[Task],Time,Int,Boolean) = {
       // get list of workers who may not re-participate
-      val __blacklist = VP.blacklisted_workers(tasks)
+      val __banned = VP.banned_workers(tasks)
 
       // post more tasks as needed
-      val (__new_tasks, num_comparisons2, done) = post_as_needed(tasks, backend, question, sufferedTimeout, __blacklist, num_comparisons)
+      val (__new_tasks, num_comparisons2, done) = post_as_needed(tasks, backend, question, sufferedTimeout, __banned, num_comparisons)
 
       // update _time with time of future timeouts
       val time2 = if (use_virt) {
@@ -252,6 +252,7 @@ class Scheduler(val question: Question,
    * @param tasks The complete list of tasks.
    * @param question Question data.
    * @param suffered_timeout True if any tasks suffered a timeout on the last iteration.
+   * @param banned Banned worker IDs.
    * @param num_comparisons The number of times we've called is_done, inclusive
    * @return A list of newly-created tasks, the number of comparisons, and whether we're done
    */
@@ -259,10 +260,8 @@ class Scheduler(val question: Question,
                      backend: AutomanAdapter,
                      question: Question,
                      suffered_timeout: Boolean,
-                     blacklist: List[String],
+                     banned: List[String],
                      num_comparisons: Int) : (List[Task],Int,Boolean) = {
-    val s = question.validation_policy_instance // todo why not use VP?
-
     // if we suffered a timeout, we might as well
     // check to see if we can terminate early
     val (done, num_comparisons2) = if (suffered_timeout) {
@@ -287,7 +286,7 @@ class Scheduler(val question: Question,
         throw new OverBudgetException(cost, question.budget)
       } else {
         // yes, so post and return all posted tasks
-        val posted = failUnWrap(backend.post(new_tasks, blacklist))
+        val posted = failUnWrap(backend.post(new_tasks, banned))
         DebugLog("Posting " + posted.size + " tasks to backend.", LogLevelInfo(), LogType.SCHEDULER, question.id)
         (posted, num_comparisons2, done)
       }
