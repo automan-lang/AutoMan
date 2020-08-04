@@ -1,31 +1,25 @@
 package edu.umass.cs.automan.core.question
 import java.util.{Date, UUID}
 
-import edu.umass.cs.automan.adapters.mturk.question.{MTCheckboxQuestion, MTEstimationQuestion}
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.{AbstractAnswer, Outcome, VariantOutcome}
 import edu.umass.cs.automan.core.grammar.QuestionProduction
 import edu.umass.cs.automan.core.grammar.Rank.Grammar
 import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
-import edu.umass.cs.automan.core.question.EstimationQuestion
 import edu.umass.cs.automan.core.mock.MockResponse
-import edu.umass.cs.automan.core.policy.aggregation.AggregationPolicy
-import edu.umass.cs.automan.core.policy.price.{MLEPricePolicy, PricePolicy}
-import edu.umass.cs.automan.core.policy.timeout.{DoublingTimeoutPolicy, TimeoutPolicy}
 import edu.umass.cs.automan.core.question.confidence.{ConfidenceInterval, UnconstrainedCI}
 
 abstract class VariantQuestion extends Question {
   type QuestionOptionType <: QuestionOption
-  //type O = Question#O
   type O = VariantOutcome[A]
 
-//  type A <: Any			// return type of the function (what you get when you call .value)
+//  type A <: Any			            // return type of the function (what you get when you call .value)
 //  type AA <: AbstractAnswer[A]	// an instance of scheduler
-//  type O <: Outcome[A]		// outcome is value returned by the scheduler
+//  type O <: Outcome[A]		      // outcome is value returned by the scheduler
 //  type AP <: AggregationPolicy	// how to derive a scalar value of type A from the distribution of values
-//  type PP <: PricePolicy	// how to determine reward
-//  type TP <: TimeoutPolicy	// how long to run the job
+//  type PP <: PricePolicy	      // how to determine reward
+//  type TP <: TimeoutPolicy	    // how long to run the job
 
   override private[automan] def validation_policy_instance = newQ.validation_policy_instance.asInstanceOf[AP]
 
@@ -109,15 +103,6 @@ abstract class VariantQuestion extends Question {
   def sample_size_=(n: Int) { _sample_size = n }
   def sample_size : Int = _sample_size
 
-  // MultiEstimate stuff
-//  private val _action = if (sandbox) {
-//    "https://workersandbox.mturk.com/mturk/externalSubmit"
-//  } else {
-//    "https://www.mturk.com/mturk/externalSubmit"
-//  }
-//  private var _iframe_height = 450
-//  private var _layout: Option[scala.xml.Node] = None
-
   def confidence_interval_=(ci: ConfidenceInterval) { _confidence_interval = ci }
   def confidence_interval: ConfidenceInterval = _confidence_interval
   def default_sample_size: Int = _default_sample_size
@@ -136,38 +121,21 @@ abstract class VariantQuestion extends Question {
   def min_value_=(min: Double) { _min_value = Some(min) }
 
   override protected[automan] def getQuestionType: QuestionType = QuestionType.VariantQuestion
-  //override protected[automan] def getQuestionType(): QuestionType = { question.questionType }
 
   // Methods
   override private[automan] def init_validation_policy(): Unit = {
     newQ.init_validation_policy()
-    //      question.questionType match {
-    //        case QuestionType.EstimationQuestion => {
-    //          this.asInstanceOf[MTEstimationQuestion].init_validation_policy()
-    //        }
-    //      }
   }
 
   override private[automan] def init_price_policy(): Unit = {
     newQ.init_price_policy()
-    //      question.questionType match {
-    //        case QuestionType.EstimationQuestion => {
-    //          this.asInstanceOf[MTEstimationQuestion].init_price_policy()
-    //        }
-    //      }
   }
 
   override private[automan] def init_timeout_policy(): Unit = {
     newQ.init_timeout_policy()
-    //      question.questionType match {
-    //        case QuestionType.EstimationQuestion => {
-    //          this.asInstanceOf[MTEstimationQuestion].init_timeout_policy()
-    //        }
-    //      }
   }
 
   override protected[automan] def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID): MockResponse = {
-    //newQ.toMockResponse(question_id, response_time, a, worker_id)
     question.questionType match { // todo changed from MTQs to regular Qs
       case QuestionType.EstimationQuestion => {
         newQ.asInstanceOf[EstimationQuestion].toMockResponse(question_id, response_time, a.asInstanceOf[EstimationQuestion#A], worker_id)

@@ -60,7 +60,7 @@ class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
   override protected[automan] def cloneWithConfidence(conf: Double): EstimationQuestion = {
     val mteq = new MTEstimationQuestion
     mteq._before_filter = this._before_filter
-    mteq._blacklisted_workers = this._blacklisted_workers
+    mteq._banned_workers = this._banned_workers
     mteq._budget = this._budget
     mteq._confidence = conf
     mteq._confidence_interval = this._confidence_interval

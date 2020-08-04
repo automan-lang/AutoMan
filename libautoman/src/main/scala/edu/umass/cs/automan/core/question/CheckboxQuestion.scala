@@ -49,7 +49,5 @@ abstract class CheckboxQuestion extends DiscreteScalarQuestion {
     for(o <- options) optionMap += (o.question_id -> o.question_text)
 
     "(" + answer.map(optionMap(_)).mkString(", ") + ")"
-
-    //"(" + answer.map(_.toString().drop(1)).mkString(", ") + ")"
   }
 }

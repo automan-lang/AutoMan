@@ -1,12 +1,8 @@
 package edu.umass.cs.automan.core.question
-import java.util.{Date, UUID}
-
-import edu.umass.cs.automan.adapters.mturk.question.MTVariantQuestion
 import edu.umass.cs.automan.core.AutomanAdapter
 import edu.umass.cs.automan.core.answer.{AbstractSurveyAnswer, Answers, Outcome, SurveyAnswers, SurveyOutcome}
 import edu.umass.cs.automan.core.info.QuestionType
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
-import edu.umass.cs.automan.core.mock.MockResponse
 import edu.umass.cs.automan.core.policy.aggregation.{SimpleSurveyPolicy, SurveyPolicy, VectorPolicy}
 import edu.umass.cs.automan.core.policy.price.MLEPricePolicy
 import edu.umass.cs.automan.core.policy.timeout.DoublingTimeoutPolicy
@@ -27,9 +23,6 @@ abstract class Survey extends Question {
   def question_list: List[Outcome[_]] = _question_list
   def sample_size_=(n: Int) { _sample_size = n }
   def sample_size : Int = _sample_size
-
-  // hash of something in Q so memoizer knows when Qs are the same; def at implementation level
-  //override def memo_hash: String = ???
 
   // TODO: AP SurveyPolicy? (Will just accept answers for now; later may reject/mark outliers)
   override private[automan] def init_validation_policy(): Unit = {
@@ -65,9 +58,6 @@ abstract class Survey extends Question {
         case vq: VariantQuestion => {
           val ans = vq.prettyPrintAnswer(ansMap(vq.newQ.id.toString).asInstanceOf[vq.A])
           ansString.append(ans + "\n")
-          //          val ans: Question#A = ansMap(vq.newQ.id.toString) // this is just a question identifier
-          //          val ppans = q.prettyPrintAnswer(ans.asInstanceOf[q.A])
-          //          ansString.append(ppans) //A: Set[(String,Question#A)] // so this is also getting the question ID
         }
         case q: Question => {
           val ans: Question#A = ansMap(q.id.toString)
@@ -75,16 +65,12 @@ abstract class Survey extends Question {
           ansString.append(ppans + "\n") //A: Set[(String,Question#A)]
         }
       }
-//      val q: Question = o.question
-//      val ans: Question#A = ansMap(q.id.toString)
-//      val ppans = q.prettyPrintAnswer(ans.asInstanceOf[q.A])
-//      println(s"printing ${q.id} answer: ${ppans}")
-//      ansString.append(ppans) //A: Set[(String,Question#A)]
     }
     ansString.toString()
   }
 
-  // TODO: Do we need?
+  // TODO: (Emmie) Do we need?
+  // TODO: (Dan) Yes, for multiestimates.
   protected[automan] def composeOutcome(o: O, adapter: AutomanAdapter): O = ???
   //{
 //    // unwrap future from previous Outcome

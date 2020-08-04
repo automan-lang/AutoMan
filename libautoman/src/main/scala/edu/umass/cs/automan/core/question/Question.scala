@@ -2,7 +2,6 @@ package edu.umass.cs.automan.core.question
 
 import java.io.File
 import java.util.{Date, UUID}
-
 import edu.umass.cs.automan.core.{AutomanAdapter, MagicNumbers}
 import edu.umass.cs.automan.core.answer._
 import edu.umass.cs.automan.core.info.QuestionType.QuestionType
@@ -11,7 +10,6 @@ import edu.umass.cs.automan.core.policy.price.PricePolicy
 import edu.umass.cs.automan.core.policy.timeout.TimeoutPolicy
 import edu.umass.cs.automan.core.policy.aggregation.{AggregationPolicy, MinimumSpawnPolicy, UserDefinableSpawnPolicy}
 import edu.umass.cs.automan.core.scheduler.Scheduler
-
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -27,7 +25,7 @@ trait Question {
 
   protected var _before_filter: A => A = (a: A) => a
   protected var _budget: Option[BigDecimal] = None
-  protected var _blacklisted_workers = List[String]()
+  protected var _banned_workers = List[String]()
   protected var _dry_run: Boolean = false
   protected var _dont_reject: Boolean = false
   protected var _dont_randomize_options: Boolean = false
@@ -36,13 +34,11 @@ trait Question {
   protected var _image_alt_text: Option[String] = None
   protected var _image_url: Option[String] = None
   protected var _initial_worker_timeout_in_s: Int = 30
-  //protected var _grammar: Option[Grammar] = None
   protected var _max_replicas: Option[Int] = None
   protected var _mock_answers = Iterable[MockAnswer[A]]()
   protected var _name: String = "" // name of question (default title?)
   protected var _payOnFailure: Boolean = true
   protected var _question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier
-  //protected var _scope: Option[Scope] = None
   protected var _text: Option[String] = None
   protected var _title: Option[String] = None
   protected var _time_value_per_hour: Option[BigDecimal] = None
@@ -60,15 +56,14 @@ trait Question {
 
   def before_filter_=(f: A => A) { _before_filter = f }
   def before_filter: A => A = _before_filter
-  def blacklist_worker(worker_id: String) { _blacklisted_workers = worker_id :: _blacklisted_workers }
-  def blacklisted_workers = _blacklisted_workers
+  def ban_worker(worker_id: String) { _banned_workers = worker_id :: _banned_workers }
+  def banned_workers = _banned_workers
   def budget: BigDecimal = _budget match { case Some(b) => b; case None => 1.00 }
   def budget_=(b: BigDecimal) { _budget = Some(b) }
   def dont_reject_=(r: Boolean) { _dont_reject = r }
   def dont_reject: Boolean = _dont_reject
   def dry_run_=(dr: Boolean) { _dry_run = dr }
   def dry_run: Boolean = _dry_run
-  //def grammar: Option[Grammar] = _grammar
   def id: UUID = _id
   def id_=(id: UUID) { _id = id }
   def id_string: String = _id.toString
@@ -91,7 +86,6 @@ trait Question {
   def pay_all_on_failure: Boolean = _payOnFailure
   def question_timeout_multiplier_=(t: Double) { _question_timeout_multiplier = t }
   def question_timeout_multiplier: Double = _question_timeout_multiplier
-  //def scope: Option[Scope] = _scope
   def strategy = _validation_policy match { case Some(vs) => vs; case None => null }
   def strategy_=(s: Class[AP]) { _validation_policy = Some(s) }
   def text: String = _text match { case Some(t) => t; case None => "Question not specified." }
