@@ -9,7 +9,7 @@ licenses := Seq("GPL-2.0" -> url("http://opensource.org/licenses/GPL-2.0"))
 
 homepage := Some(url("http://github.com/dbarowy/AutoMan"))
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.13.3"
 
 exportJars := true
 
@@ -17,23 +17,24 @@ exportJars := true
 crossScalaVersions := Seq("2.11.7")
 
 // REQUIRE JAVA 1.8
-javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint")
+//javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint")
 
-initialize := {
-  val _ = initialize.value
-  if (sys.props("java.specification.version") != "1.8")
-    sys.error("Java 8 is required for this project.")
-}
+//initialize := {
+//  val _ = initialize.value
+//  if (sys.props("java.specification.version") != "1.8")
+//    sys.error("Java 8 is required for this project.")
+//}
 
 // DEPENDENCIES
 libraryDependencies := {
   val akkaVer   = "2.3.7"
   val sprayVer  = "1.3.2"
   Seq(
-    "org.scalatest"              %%  "scalatest"            % "2.2.1"    % "test",
+    "org.scala-lang.modules"     %% "scala-xml"             % "2.0.0-M1",
+    "org.scalatest"              %% "scalatest"             % "3.2.0" % Test,
     "log4j"                      % "log4j"                  % "1.2.17",
-    "org.specs2"                 %%  "specs2-core"          % "2.3.11" % "test",
-    "com.typesafe.slick"         %% "slick"                 % "2.1.0",
+    "org.specs2"                 %% "specs2-core"           % "4.10.2" % Test,
+    "com.typesafe.slick"         %% "slick"                 % "3.3.2",
     "software.amazon.awssdk"     % "mturk"                  % "2.9.5",
     "com.amazonaws"              % "aws-java-sdk-mechanicalturkrequester" % "1.11.637",
     "com.h2database"             % "h2"                     % "1.4.189",
@@ -44,14 +45,14 @@ libraryDependencies := {
 }
 
 // add scala-xml if scala major version >= 11
-libraryDependencies := {
-  CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, scalaMajor)) if scalaMajor >= 11 =>
-      libraryDependencies.value :+ "org.scala-lang.modules" %% "scala-xml" % "1.0.2"
-    case _ =>
-      libraryDependencies.value
-  }
-}
+//libraryDependencies := {
+//  CrossVersion.partialVersion(scalaVersion.value) match {
+//    case Some((2, scalaMajor)) if scalaMajor >= 11 =>
+//      libraryDependencies.value :+ "org.scala-lang.modules" %% "scala-xml" % "1.0.2"
+//    case _ =>
+//      libraryDependencies.value
+//  }
+//}
 
 // CUSTOM TASKS
 val memoClean = TaskKey[Unit]("memo-clean", "Deletes AutoMan memo database files.")
