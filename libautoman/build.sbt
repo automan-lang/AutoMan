@@ -16,15 +16,6 @@ exportJars := true
 // SUPPORTED SCALA VERSIONS
 crossScalaVersions := Seq("2.11.7")
 
-// REQUIRE JAVA 1.8
-//javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint")
-
-//initialize := {
-//  val _ = initialize.value
-//  if (sys.props("java.specification.version") != "1.8")
-//    sys.error("Java 8 is required for this project.")
-//}
-
 // DEPENDENCIES
 libraryDependencies := {
   val akkaVer   = "2.3.7"
@@ -43,16 +34,6 @@ libraryDependencies := {
     "au.com.bytecode"            % "opencsv"                % "2.4"
   )
 }
-
-// add scala-xml if scala major version >= 11
-//libraryDependencies := {
-//  CrossVersion.partialVersion(scalaVersion.value) match {
-//    case Some((2, scalaMajor)) if scalaMajor >= 11 =>
-//      libraryDependencies.value :+ "org.scala-lang.modules" %% "scala-xml" % "1.0.2"
-//    case _ =>
-//      libraryDependencies.value
-//  }
-//}
 
 // CUSTOM TASKS
 val memoClean = TaskKey[Unit]("memo-clean", "Deletes AutoMan memo database files.")
