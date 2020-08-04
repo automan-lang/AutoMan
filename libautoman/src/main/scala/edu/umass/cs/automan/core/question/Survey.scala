@@ -54,17 +54,10 @@ abstract class Survey extends Question {
     val ansString: StringBuilder = new StringBuilder()
     val ansMap: Map[String, Question#A] = answer.toMap
     for(o <- _question_list) {
-      o match {
-        case vq: VariantQuestion => {
-          val ans = vq.prettyPrintAnswer(ansMap(vq.newQ.id.toString).asInstanceOf[vq.A])
-          ansString.append(ans + "\n")
-        }
-        case q: Question => {
-          val ans: Question#A = ansMap(q.id.toString)
-          val ppans = q.prettyPrintAnswer(ans.asInstanceOf[q.A])
-          ansString.append(ppans + "\n") //A: Set[(String,Question#A)]
-        }
-      }
+      val q = o.question
+      val ans: Question#A = ansMap(q.id.toString)
+      val ppans = q.prettyPrintAnswer(ans.asInstanceOf[q.A])
+      ansString.append(ppans + "\n")
     }
     ansString.toString()
   }

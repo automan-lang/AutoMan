@@ -1,20 +1,7 @@
 package edu.umass.cs.automan.adapters.mturk
 
-import java.util
 import java.util.{Date, Locale}
-
-import com.amazonaws.ClientConfiguration
-import com.amazonaws.auth.{AWSCredentialsProvider, AWSStaticCredentialsProvider, BasicAWSCredentials}
-import com.amazonaws.client.AwsSyncClientParams
-import com.amazonaws.handlers.RequestHandler2
-import com.amazonaws.metrics.RequestMetricCollector
-import com.amazonaws.monitoring.{CsmConfigurationProvider, MonitoringListener}
-
-//import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
-//import com.sun.deploy.config.ClientConfig
-import software.amazon.awssdk.services.mturk._
-import com.amazonaws.ClientConfiguration
-import com.amazonaws.client.builder._
+import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.services.mturk.{AmazonMTurk, AmazonMTurkClientBuilder}
 import edu.umass.cs.automan.adapters.mturk.worker.WorkerRunnable.RetryState
@@ -23,11 +10,9 @@ import edu.umass.cs.automan.adapters.mturk.logging.MTMemo
 import edu.umass.cs.automan.adapters.mturk.mock.{MockRequesterService, MockServiceState, MockSetup}
 import edu.umass.cs.automan.adapters.mturk.question._
 import edu.umass.cs.automan.core.logging.{DebugLog, LogLevelDebug, LogType}
-import edu.umass.cs.automan.core.question.{Dimension, Question}
-import edu.umass.cs.automan.core.scheduler.SchedulerState._
+import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 import edu.umass.cs.automan.core.AutomanAdapter
-import software.amazon.awssdk.services.mturk.model.HIT
 
 object MTurkAdapter {
   def apply(init: MTurkAdapter => Unit) : MTurkAdapter = {
@@ -132,8 +117,7 @@ class MTurkAdapter extends AutomanAdapter {
   }
   protected[automan] def retrieve(ts: List[Task], current_time: Date) = {
     assert(ts.forall(_.state == SchedulerState.RUNNING))
-    val toRet = run_if_initialized((p: TurkWorker) => p.retrieve(ts, current_time)) // todo return to original
-    toRet // why is this empty?
+    run_if_initialized((p: TurkWorker) => p.retrieve(ts, current_time))
   }
   protected[automan] def requesterService = _service
   override protected[automan] def question_startup_hook(q: Question, t: Date): Unit = {
@@ -173,10 +157,7 @@ class MTurkAdapter extends AutomanAdapter {
           Map.empty,
           List.empty
         )
-        //this.toClientConfig
-        //new MockRequesterService() {}
         new MockRequesterService(mss)
-        //throw new Exception("TODO: Mock setup")
       case None => {
         val builder: AmazonMTurkClientBuilder = AmazonMTurkClientBuilder.standard
         builder.setEndpointConfiguration(_endpoint)
@@ -194,29 +175,13 @@ class MTurkAdapter extends AutomanAdapter {
   }
 
   private def toClientConfig = {
-    import scala.collection.JavaConversions
-    //TODO make sure it's not actually communicating with backend
-//    val _config = new ClientConfig // what is this?
-//    _config.setAccessKeyId(_access_key_id match { case Some(k) => k; case None => throw InvalidKeyIDException("access_key_id must be defined")})
-//    _config.setSecretAccessKey(_secret_access_key match { case Some(k) => k; case None => throw InvalidSecretKeyException("secret_access_key must be defined")})
-//    _config.setServiceURL(_endpoint)
-//    _config
-//  }
-    //val _config = new ClientConfiguration()
-    val _creds = new AWSStaticCredentialsProvider(new BasicAWSCredentials(_access_key_id.getOrElse(""), _secret_access_key.getOrElse("")))
-    val _config: AmazonMTurkClientBuilder = AmazonMTurkClientBuilder.standard //TODO: .standard?
+    val _creds = new AWSStaticCredentialsProvider(
+                  new BasicAWSCredentials(_access_key_id.getOrElse(""), _secret_access_key.getOrElse(""))
+                 )
+    val _config: AmazonMTurkClientBuilder = AmazonMTurkClientBuilder.standard
     _config.setEndpointConfiguration(_endpoint)
     _config.setCredentials(_creds)
-    _config.build() // TODO: figure out if I need stuff below
-//    _config.setAccessKeyId(_access_key_id match { case Some(k) => k; case None => throw InvalidKeyIDException("access_key_id must be defined")})
-//    _config.setSecretAccessKey(_secret_access_key match { case Some(k) => k; case None => throw InvalidSecretKeyException("secret_access_key must be defined")})
-//    _config.setServiceURL(_endpoint)
-//    _config
-//  }Config // what is this?
-//      _config.setAccessKeyId(_access_key_id match { case Some(k) => k; case None => throw InvalidKeyIDException("access_key_id must be defined")})
-//      _config.setSecretAccessKey(_secret_access_key match { case Some(k) => k; case None => throw InvalidSecretKeyException("secret_access_key must be defined")})
-//      _config.setServiceURL(_endpoint)
-//      _config
+    _config.build()
    }
 
   override protected[automan] def close(): Unit = {
