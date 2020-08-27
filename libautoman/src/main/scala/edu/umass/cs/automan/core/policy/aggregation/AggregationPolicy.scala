@@ -102,10 +102,11 @@ abstract class AggregationPolicy(question: Question) {
    *
    * @param tasks The complete list of previously-scheduled tasks
    * @param suffered_timeout True if any of the latest batch of tasks suffered a timeout.
+   * @param num_comparisons How many times we've performed a power analysis, INCLUDING THIS TIME.
    * @return A list of new tasks to schedule on the backend.
    */
   def spawn(tasks: List[Task], suffered_timeout: Boolean, num_comparisons: Int): List[Task] = {
-    // determine current round
+    // determine current round (starts at zero)
     val cRound = currentRound(tasks)
 
     // determine timeouts
@@ -117,6 +118,7 @@ abstract class AggregationPolicy(question: Question) {
 
     // determine number to spawn
     val num_to_spawn = if (tasks.count(_.state == SchedulerState.RUNNING) == 0) {
+      // there are no running tasks
       val min_to_spawn = num_to_run(tasks, num_comparisons, reward)
       // this is an ugly hack for MTurk;
       // TODO: think of better way to deal with MTurk's HIT extension policy

@@ -4,6 +4,7 @@ import edu.umass.cs.automan.core.logging.DebugLog;
 import edu.umass.cs.automan.core.logging.LogLevelInfo;
 import edu.umass.cs.automan.core.logging.LogType;
 import java.util.Random;
+import java.util.UUID;
 
 /**
  * Goal of simulation: to calculate how many trials are
@@ -42,7 +43,7 @@ public final class AgreementSimulation {
      * @param numSims The number of simulations to run
      * @return The minimum agreement threshold
      */
-    public static int minToWin(int c, int t, double conf, int numSims) {
+    public static int minToWin(int c, int t, double conf, int numSims, UUID question_id) {
         Random r = new Random();
 
         // object to track frequency of outcomes
@@ -54,7 +55,7 @@ public final class AgreementSimulation {
         }
 
         // Calculate and return minimum number of trials
-        return tailThreshold(t, 1.0 - conf, freq);
+        return tailThreshold(t, 1.0 - conf, freq, question_id);
     }
 
     /**
@@ -89,12 +90,14 @@ public final class AgreementSimulation {
      * @param r A random number generator.
      */
     private static void simulation(int c, int t, ChoiceFreq freq, Random r) {
+        assert(t > 0);  // sanity check
+
+        // {random num from [0..choices-1], random num from [0..choices-1], ...} // # = trials
         int[] choice = new int[t];
-        // {[0..choices-1], [0..choices-1], ...} // # = trials
 
         // make a choice for every trial
         for (int j = 0; j < t; j++) {
-            choice[j] = Math.abs(r.nextInt(Integer.MAX_VALUE)) % c;
+            choice[j] = r.nextInt(c);
         }
 
         // Make a histogram, adding up occurrences of each choice.
@@ -108,7 +111,8 @@ public final class AgreementSimulation {
             histogram[choice[z]] += 1;
         }
 
-        // Find the most popular choice
+        // Find the most popular choice (the biggest bar),
+        // i.e., the array element containing the largest value.
         int max = 0;
         for (int k = 0; k < c; k++) {
             if (histogram[k] > max) {
@@ -148,7 +152,7 @@ public final class AgreementSimulation {
      * @param freq The outcome for a set of simulations.
      * @return The minimal number of trials needed.
      */
-    private static int tailThreshold(int t, double alpha, ChoiceFreq freq) {
+    private static int tailThreshold(int t, double alpha, ChoiceFreq freq, UUID question_id) {
         int i = 1;
         double pr = 1.0;
         while ((i <= t) && (pr > alpha)) {
@@ -164,7 +168,7 @@ public final class AgreementSimulation {
                             Integer.toString(i),
                             Integer.toString(t)
                     );
-            DebugLog.apply(msg, LogLevelInfo.apply(), LogType.STRATEGY(), null);
+            DebugLog.apply(msg, LogLevelInfo.apply(), LogType.STRATEGY(), question_id);
             return i;
             // Otherwise
         } else {
