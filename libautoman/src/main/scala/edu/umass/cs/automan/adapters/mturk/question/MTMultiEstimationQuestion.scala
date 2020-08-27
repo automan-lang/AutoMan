@@ -36,7 +36,8 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
   }
   def iframe_height_=(height: Int) { _iframe_height = height }
   def iframe_height: Int = _iframe_height
-  override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
+//  override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
+  override def group_id: String = title
 
   // private API
   override def toMockResponse(question_id: UUID, response_time: Date, as: A, worker_id: UUID) : MultiEstimationMockResponse = {

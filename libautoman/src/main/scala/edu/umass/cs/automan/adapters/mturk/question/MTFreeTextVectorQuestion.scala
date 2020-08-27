@@ -22,7 +22,8 @@ class MTFreeTextVectorQuestion extends FreeTextVectorQuestion with MTurkQuestion
     new String(Hex.encodeHex(md.digest(toXML(randomize = false).toString().getBytes)))
   }
   override def description: String = _description match { case Some(d) => d; case None => this.title }
-  override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
+//  override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
+  override def group_id: String = title
 
   // private API
   _minimum_spawn_policy = MTurkMinimumSpawnPolicy

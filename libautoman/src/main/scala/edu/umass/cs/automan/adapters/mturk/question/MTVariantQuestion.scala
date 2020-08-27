@@ -91,7 +91,8 @@ class MTVariantQuestion(sandbox: Boolean) extends VariantQuestion with MTurkQues
   //override type A = VariantQuestion#A
 
   override def description: String = _description match { case Some(d) => d; case None => this.title }
-  override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
+//  override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
+  override def group_id: String = title
   //override def randomized_options: List[QuestionOptionType] = Utilities.randomPermute(options)
 
   /**

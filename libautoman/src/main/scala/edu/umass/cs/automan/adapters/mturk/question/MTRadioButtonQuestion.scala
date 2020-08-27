@@ -24,7 +24,8 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
   }
   override def randomized_options: List[QuestionOptionType] = Utilities.randomPermute(options)
   override def description: String = _description match { case Some(d) => d; case None => this.title }
-  override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
+//  override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
+  override def group_id: String = title
 
   // private API
   _minimum_spawn_policy = MTurkMinimumSpawnPolicy
@@ -39,7 +40,7 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
     //    </Answer>
     DebugLog("MTRadioButtonQuestion: fromXML:\n" + x.toString,LogLevelDebug(),LogType.ADAPTER,id)
 
-    Symbol((x \\ "Answer" \\ "SelectionIdentifier").text)
+    Symbol((x \\ "Answer" \\ "SelectionIdentifier").text.drop(1))
   }
 
   // TODO: random checkbox fill

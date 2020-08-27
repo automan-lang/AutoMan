@@ -23,7 +23,8 @@ class MTCheckboxVectorQuestion extends CheckboxVectorQuestion with MTurkQuestion
     new String(Hex.encodeHex(md.digest(toXML(randomize = false).toString().getBytes)))
   }
   override def description: String = _description match { case Some(d) => d; case None => this.title }
-  override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
+//  override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
+  override def group_id: String = title
   override def randomized_options: List[QuestionOptionType] = Utilities.randomPermute(options)
 
   // private API

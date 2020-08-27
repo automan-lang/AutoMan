@@ -19,7 +19,8 @@ import scala.xml.{Elem, Node, NodeSeq}
 class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
 
   override def description: String = _description match { case Some(d) => d; case None => this.title }
-  override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
+//  override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
+  override def group_id: String = title
 
   private var _iframe_height = 450
 
