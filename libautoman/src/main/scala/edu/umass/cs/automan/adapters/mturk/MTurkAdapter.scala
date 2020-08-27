@@ -1,7 +1,7 @@
 package edu.umass.cs.automan.adapters.mturk
 
 import java.util.{Date, Locale}
-import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
+import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials, AWSCredentialsProvider, AWSCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.services.mturk.{AmazonMTurk, AmazonMTurkClientBuilder}
 import edu.umass.cs.automan.adapters.mturk.worker.WorkerRunnable.RetryState
@@ -13,6 +13,17 @@ import edu.umass.cs.automan.core.logging.{DebugLog, LogLevelDebug, LogType}
 import edu.umass.cs.automan.core.question.Question
 import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
 import edu.umass.cs.automan.core.AutomanAdapter
+
+/* some fiddly classes to keep the AWS backend happy */
+case class AutoManCredentialsProvider(awsAccessKeyId: String, awsSecretKey: String) extends AWSCredentialsProvider {
+  override def getCredentials: AWSCredentials = AutoManCredentials(awsAccessKeyId, awsSecretKey)
+  override def refresh(): Unit = ()
+}
+
+case class AutoManCredentials(awsAccessKeyId: String, awsSecretKey: String) extends AWSCredentials {
+  override def getAWSAccessKeyId: String = awsAccessKeyId
+  override def getAWSSecretKey: String = awsSecretKey
+}
 
 object MTurkAdapter {
   def apply(init: MTurkAdapter => Unit) : MTurkAdapter = {
@@ -44,16 +55,16 @@ class MTurkAdapter extends AutomanAdapter {
   private val PROD_ENDPOINT = "https://mturk-requester.us-east-1.amazonaws.com"
   private val SIGNING_REGION = "us-east-1"
 
-  private var _access_key_id: Option[String] = Some("") // Changed from option because amazon takes care of it
+  private var _access_key_id: Option[String] = None
   private var _backend_update_frequency_ms : Int = 4500 // lower than 1 second is inadvisable
   private var _worker : Option[TurkWorker] = None
-  private var _secret_access_key: Option[String] = Some("")
+  private var _secret_access_key: Option[String] = None
   private var _endpoint : EndpointConfiguration = new EndpointConfiguration(SANDBOX_ENDPOINT, SIGNING_REGION)
   private var _service : Option[AmazonMTurk] = None
   private var _use_mock: Option[MockSetup] = None
 
   // user-visible getters and setters
-  def access_key_id: String = _access_key_id match { case Some(id) => id; case None => "" } //TODO: figure this out
+  def access_key_id: String = _access_key_id match { case Some(id) => id; case None => "" }
   def access_key_id_=(id: String) { _access_key_id = Some(id) }
   def backend_update_frequency_ms = _backend_update_frequency_ms
   def backend_update_frequency_ms_=(ms: Int) { _backend_update_frequency_ms = ms }
@@ -143,6 +154,12 @@ class MTurkAdapter extends AutomanAdapter {
     }
   }
 
+  // credentials provider helper-- needed to set static credentials
+  // for MTurk backend
+  private def credentials: AutoManCredentialsProvider = {
+    AutoManCredentialsProvider(access_key_id, secret_access_key)
+  }
+
   // initialization routines
   private def setup() {
     val rs = _use_mock match {
@@ -161,6 +178,7 @@ class MTurkAdapter extends AutomanAdapter {
       case None => {
         val builder: AmazonMTurkClientBuilder = AmazonMTurkClientBuilder.standard
         builder.setEndpointConfiguration(_endpoint)
+        builder.setCredentials(credentials)
         builder.build()
       }
     }

@@ -10,7 +10,7 @@ object automan {
       a.database_path = "AutoManMemoDB_TEST_" + UUID.randomUUID()
     }
     a.in_memory_db = in_mem_db
-    val output = block
+    val output = block // block is evaluated here
     a.close()
     if (test_mode) {
       a.memo_delete()
