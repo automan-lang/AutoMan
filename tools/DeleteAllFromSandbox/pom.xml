@@ -9,8 +9,6 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
         <exec.mainClass>edu.williams.cs.DeleteAllFromSandbox</exec.mainClass>
     </properties>
 
@@ -18,7 +16,20 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk</artifactId>
-            <version>1.11.728</version>
+            <version>1.11.848</version>
         </dependency>
     </dependencies>
+
+    <build>
+      <plugins>
+	<plugin>
+	  <groupId>org.apache.maven.plugins</groupId>
+	  <artifactId>maven-compiler-plugin</artifactId>
+	  <version>3.8.1</version>
+	  <configuration>
+	    <release>12</release>
+	  </configuration>
+	</plugin>
+      </plugins>
+    </build>
 </project>
