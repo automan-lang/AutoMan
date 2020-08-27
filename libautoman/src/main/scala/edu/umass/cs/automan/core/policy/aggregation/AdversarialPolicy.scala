@@ -84,11 +84,16 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
     */
   private def expected_for_agreement(trials: Int, max_agr: Int, confidence: Double) : Int = {
     // do the computation
-    var to_run = 0
+    var to_run =
+      if (trials < 2) {
+        DebugLog("Running a minimum of 2 trials.", LogLevelInfo(), LogType.STRATEGY, question.id)
+        2
+      } else {
+        trials
+      }
     var done = false
     while(!done) {
-      val key = (numOpts, trials + to_run, confidence, 1000000)
-      val min_required = AgreementSimulation.minToWin(numOpts, trials + to_run, confidence, 1000000)
+      val min_required = AgreementSimulation.minToWin(numOpts, trials + to_run, confidence, 1000000, question.id)
       val expected = max_agr + to_run
       if (min_required < 0 || min_required > expected) {
         to_run += 1
@@ -171,10 +176,17 @@ class AdversarialPolicy(question: DiscreteScalarQuestion)
     // eliminate duplicates from the list of Tasks
     val tasks_no_dupes = tasks.filter(_.state != SchedulerState.DUPLICATE)
 
+    // using the number of comparisons, adjust our confidence level
     val adjusted_conf = bonferroni_confidence(question.confidence, num_comparisons)
 
-    // compute # expected for agreement
-    val expected = expected_for_agreement(tasks_no_dupes.size, max_agree(tasks_no_dupes), adjusted_conf)
+    // Compute # expected for agreement.
+    // Rationale:
+    //   This is a multinomial experiment.  Each task is a trial (for the two-choice case, a Bernoulli trial).
+    //   The experiment is repeated until random agreement is unlikely given the supplied confidence level.
+    //   We add the result of this trial to the number of tasks that already agree.
+    val expected = expected_for_agreement(trials = tasks_no_dupes.size,
+                                          max_agr = max_agree(tasks_no_dupes),
+                                          confidence = adjusted_conf)
 
     val biggest_bang =
       math.min(
