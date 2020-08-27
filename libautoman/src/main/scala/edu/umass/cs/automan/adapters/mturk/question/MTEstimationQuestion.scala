@@ -44,7 +44,7 @@ class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
 
   override protected[mturk] def toXML(randomize: Boolean): scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
-      { XMLBody(randomize) }
+      { toQuestionXML(randomize) }
     </QuestionForm>
   }
 
@@ -104,7 +104,7 @@ class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
     * @param randomize Randomize option order?
     * @return XML
     */
-  override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = {
+  override protected[mturk] def toQuestionXML(randomize: Boolean): Seq[Node] = {
     Seq(
       toSurveyXML(randomize)
     )

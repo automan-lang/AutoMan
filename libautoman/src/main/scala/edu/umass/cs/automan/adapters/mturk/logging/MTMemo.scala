@@ -41,26 +41,11 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
         .withAutoApprovalTime(this.autoApprovalTime.orNull.getTime())
         .withAcceptTime(this.acceptTime.orNull.getTime())
         .withSubmitTime(this.submitTime.orNull.getTime())
-        //.withApprovalTime(this.approvalTime.orNull.getTime())
         .withApprovalTime(this.approvalTime.orNull.getTime())
         .withRejectionTime(this.rejectionTime.orNull.getTime())
         .withDeadline(this.deadline.orNull.getTime())
         .withAnswer(this.answer)
         .withRequesterFeedback(this.requesterFeedback.orNull)
-//        null,
-//        this.assignmentId,
-//        this.workerId,
-//        this.HITId,
-//        this.assignmentStatus,
-//        this.autoApprovalTime.orNull,
-//        this.acceptTime.orNull,
-//        this.submitTime.orNull,
-//        this.approvalTime.orNull,
-//        this.rejectionTime.orNull,
-//        this.deadline.orNull,
-//        this.answer,
-//        this.requesterFeedback.orNull
-//      )
     }
   }
 

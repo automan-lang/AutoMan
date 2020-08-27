@@ -1,4 +1,5 @@
 import edu.umass.cs.automan.adapters.mturk.DSL._
+import edu.umass.cs.automan.core.logging.LogLevelDebug
 import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
 
 object SimpleSandboxTester extends App {
@@ -7,7 +8,9 @@ object SimpleSandboxTester extends App {
   implicit val a = mturk (
     access_key_id = opts('key),
     secret_access_key = opts('secret),
-    sandbox_mode = opts('sandbox).toBoolean
+    sandbox_mode = opts('sandbox).toBoolean,
+    log_verbosity = LogLevelDebug(),
+    database_path = "dbarowy_saved_hits"
   )
 
   def which_one() = radio (

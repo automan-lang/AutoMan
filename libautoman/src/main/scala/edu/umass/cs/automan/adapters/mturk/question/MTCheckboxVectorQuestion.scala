@@ -45,7 +45,7 @@ class MTCheckboxVectorQuestion extends CheckboxVectorQuestion with MTurkQuestion
   }
   override protected[mturk] def toXML(randomize: Boolean): scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
-      { XMLBody(randomize) }
+      { toQuestionXML(randomize) }
     </QuestionForm>
   }
 
@@ -56,13 +56,7 @@ class MTCheckboxVectorQuestion extends CheckboxVectorQuestion with MTurkQuestion
     * @param randomize Randomize option order?
     * @return XML
     */
-  override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = {
-    Seq(
-    toSurveyXML(randomize)
-    )
-  }
-
-  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
+  override protected[mturk] def toQuestionXML(randomize: Boolean): Seq[Node] = {
     <Question>
       <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
       <QuestionContent>
@@ -94,13 +88,15 @@ class MTCheckboxVectorQuestion extends CheckboxVectorQuestion with MTurkQuestion
           <StyleSuggestion>checkbox</StyleSuggestion>
           <Selections>{
             if(randomize) randomized_options.map {
-              _.toXML
+              _.toXML(false)
             } else options.map {
-              _.toXML
+              _.toXML(false)
             } }
           </Selections>
         </SelectionAnswer>
       </AnswerSpecification>
     </Question>
   }
+
+  override protected[mturk] def toSurveyXML(randomize: Boolean) = ???
 }

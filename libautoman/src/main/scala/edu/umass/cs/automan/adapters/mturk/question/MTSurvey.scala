@@ -198,7 +198,7 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
           <form name='mturk_form' method='post' id='mturk_form' action={_action}>
             <input type="hidden" value={id.toString} name="question_id" id="question_id"/>
             <input type="hidden" value="" name="assignmentId" id="assignmentId"/>
-            { XMLBody(randomize) }
+            { toQuestionXML(randomize) }
             <p id='submitButtonP'><input type='submit' id='submitButton' value='Submit'/></p>
           </form>
         </body>
@@ -305,7 +305,7 @@ class MTSurvey(sandbox: Boolean) extends Survey with MTurkQuestion {
     * @param randomize Randomize option order?
     * @return XML
     */
-  override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = {
+  override protected[mturk] def toQuestionXML(randomize: Boolean): Seq[Node] = {
     val node = _question_list.map(_.question.asInstanceOf[MTurkQuestion].toSurveyXML(randomize))
     node
   }

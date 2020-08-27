@@ -128,7 +128,7 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
 
   override protected[mturk] def toXML(randomize: Boolean): scala.xml.Node = {
     <HTMLQuestion xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2011-11-11/HTMLQuestion.xsd">
-      { XMLBody(randomize) }
+      { toQuestionXML(randomize) }
     </HTMLQuestion>
   }
 
@@ -139,7 +139,7 @@ class MTMultiEstimationQuestion(sandbox: Boolean) extends MultiEstimationQuestio
     * @param randomize Randomize option order?
     * @return XML
     */
-  override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = {
+  override protected[mturk] def toQuestionXML(randomize: Boolean): Seq[Node] = {
     {
         <HTMLContent> { scala.xml.PCData(html()) }
         </HTMLContent>

@@ -133,7 +133,7 @@ class MTVariantQuestion(sandbox: Boolean) extends VariantQuestion with MTurkQues
         newQ.text = bodyText
       }
       case QuestionType.RadioButtonQuestion => {
-        newQ = new MTRadioButtonQuestion(useSandbox)
+        newQ = new MTRadioButtonQuestion()
         newQ.text = bodyText
         val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
         newQ.asInstanceOf[MTRadioButtonQuestion].options = options
@@ -200,7 +200,7 @@ class MTVariantQuestion(sandbox: Boolean) extends VariantQuestion with MTurkQues
         newQ.asInstanceOf[MTFreeTextVectorQuestion].toXML(randomize)
       }
       case QuestionType.RadioButtonQuestion => {
-        newQ = new MTRadioButtonQuestion(sandbox)
+        newQ = new MTRadioButtonQuestion()
         newQ.text = bodyText
         val options: List[MTQuestionOption] = opts.map(MTQuestionOption(Symbol(UUID.randomUUID().toString), _, ""))
         newQ.asInstanceOf[MTRadioButtonQuestion].options = options
@@ -230,7 +230,7 @@ class MTVariantQuestion(sandbox: Boolean) extends VariantQuestion with MTurkQues
     * @param randomize Randomize option order?
     * @return XML
     */
-override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = ???
+override protected[mturk] def toQuestionXML(randomize: Boolean): Seq[Node] = ???
 override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
 //  val (body, opts) = _question.toQuestionText(variant, depth)
 //  val bodyText: String = body

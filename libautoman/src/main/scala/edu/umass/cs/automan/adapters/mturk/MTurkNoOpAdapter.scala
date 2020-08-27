@@ -30,7 +30,7 @@ class MTurkNoOpAdapter extends NoOpAdapter {
   protected def EQFactory()   = new MTEstimationQuestion
   protected def FTQFactory()  = new MTFreeTextQuestion
   protected def FTDQFactory() = new MTFreeTextVectorQuestion
-  protected def RBQFactory()  = new MTRadioButtonQuestion(true)
+  protected def RBQFactory()  = new MTRadioButtonQuestion()
   protected def RBDQFactory() = new MTRadioButtonVectorQuestion
   protected def SFactory()    = new MTSurvey(true)
   protected def VQFactory()   = new MTVariantQuestion(true)

@@ -590,16 +590,16 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
         // make and return tasks
         val tasks = results.map {
           case (task_id,
-          round,
-          timeout_in_s,
-          worker_timeout_in_s,
-          cost,
-          created_at,
-          state,
-          from_memo,
-          worker_id,
-          answer,
-          state_changed_at) =>
+                round,
+                timeout_in_s,
+                worker_timeout_in_s,
+                cost,
+                created_at,
+                state,
+                from_memo,
+                worker_id,
+                answer,
+                state_changed_at) =>
             Task(
               task_id,
               q,

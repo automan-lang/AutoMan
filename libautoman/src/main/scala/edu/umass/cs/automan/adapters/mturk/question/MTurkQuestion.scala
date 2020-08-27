@@ -55,7 +55,7 @@ trait MTurkQuestion {
   protected[mturk] def fromXML(x: scala.xml.Node) : A
 
   /**
-    * Converts question to XML QuestionForm
+    * Converts question to standalone XML QuestionForm
     * Calls XMLBody
     * @param randomize Randomize option order?
     * @return XML
@@ -63,12 +63,18 @@ trait MTurkQuestion {
   protected[mturk] def toXML(randomize: Boolean): scala.xml.Node
 
   /**
-    * Helper function to convert question into XML Question
-    * Not usually called directly
+    * Helper function to convert question into XML fragment.
+    * Not called directly.
     * @param randomize Randomize option order?
     * @return XML
     */
-  protected[mturk] def XMLBody(randomize: Boolean): Seq[scala.xml.Node]
+  protected[mturk] def toQuestionXML(randomize: Boolean): Seq[scala.xml.Node]
 
+  /**
+   * Converts question into a fragment suitable for embedding inside
+   * MTSurvey XML output.  Not called directly.
+   * @param randomize
+   * @return
+   */
   protected[mturk] def toSurveyXML(randomize: Boolean): scala.xml.Node
 }

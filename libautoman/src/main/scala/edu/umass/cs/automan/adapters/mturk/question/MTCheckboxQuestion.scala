@@ -11,7 +11,7 @@ import java.security.MessageDigest
 
 import org.apache.commons.codec.binary.Hex
 
-import scala.xml.Node
+import scala.xml.{Node, NodeSeq}
 
 class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
   type QuestionOptionType = MTQuestionOption
@@ -46,7 +46,7 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
   // TODO: random checkbox fill
   override protected[mturk] def toXML(randomize: Boolean): scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
-      { XMLBody(randomize) }
+      { toQuestionXML(randomize) }
     </QuestionForm>
   }
 
@@ -57,13 +57,7 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
     * @param randomize Randomize option order?
     * @return XML
     */
-  override protected[mturk] def XMLBody(randomize: Boolean): Seq[Node] = {
-    Seq(
-      toSurveyXML(randomize)
-    )
-  }
-
-  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
+  override protected[mturk] def toQuestionXML(randomize: Boolean): Seq[Node] = {
     <Question>
       <QuestionIdentifier>{ if (randomize) id_string else "" }</QuestionIdentifier>
       <QuestionContent>
@@ -93,9 +87,29 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
       <AnswerSpecification>
         <SelectionAnswer>
           <StyleSuggestion>checkbox</StyleSuggestion>
-          <Selections>{ if(randomize) randomized_options.map { _.toXML } else options.map { _.toXML } }</Selections>
+          <Selections>{ if(randomize) randomized_options.map { _.toXML(false) } else options.map { _.toXML(false) } }</Selections>
         </SelectionAnswer>
       </AnswerSpecification>
     </Question>
+  }
+
+  override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
+    <div id={id.toString} class="question">
+      {
+        _image_url match {
+          case Some(url) => <p><img id="question_image" src={ url }/></p>
+          case None => NodeSeq.Empty
+        }
+      }
+      {
+        _text match {
+          case Some(text) => <p>{ text }</p>
+          case None => NodeSeq.Empty
+        }
+      }
+      <div id={s"opts_${id.toString}"}>
+        {options.map(_.toSurveyXML(id))}
+      </div>
+    </div>
   }
 }

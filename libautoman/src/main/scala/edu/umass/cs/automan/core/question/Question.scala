@@ -73,6 +73,7 @@ trait Question {
   def image_url_=(s: String) { _image_url = Some(s) }
   def initial_worker_timeout_in_s_=(t: Int) { _initial_worker_timeout_in_s = t }
   def initial_worker_timeout_in_s: Int = _initial_worker_timeout_in_s
+  def isSurvey: Boolean = false // false by default; override in Survey
   def max_replicas: Option[Int] = _max_replicas
   def max_replicas_=(m: Int) { _max_replicas = Some(m) }
   def memo_hash: String
