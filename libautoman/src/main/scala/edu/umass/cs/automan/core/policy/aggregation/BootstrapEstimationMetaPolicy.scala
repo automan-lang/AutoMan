@@ -11,11 +11,11 @@ class BootstrapEstimationMetaPolicy(q: EstimationMetaQuestion, op: Double => Dou
   override type A = Double
   override type AA = AbstractEstimate
 
-  val NumBootstraps = 512 * 2
+  val NumBootstraps: Int = 512 * 2
 
   // cache to ensure that output matches test since the
   // bootstrap is a randomized algorithm
-  var bootCache = Map[(Seq[Double],Seq[Double],Int,Double),(Double,Double,Double)]()
+  var bootCache: Map[(Seq[Double],Seq[Double],Int,Double),(Double,Double,Double)]= Map()
 
   def metaAnswer(round: Int, backend: AutomanAdapter): AA = {
     // get adjusted confidence
@@ -61,6 +61,7 @@ class BootstrapEstimationMetaPolicy(q: EstimationMetaQuestion, op: Double => Dou
       case (_,e2:OverBudgetEstimate) => e2
       case (e1:LowConfidenceEstimate,_) => e1
       case (_,e2:LowConfidenceEstimate) => e2
+      case (_,_) => throw new Exception("Estimate failed in unknown manner!")
     }
   }
 
@@ -83,7 +84,7 @@ class BootstrapEstimationMetaPolicy(q: EstimationMetaQuestion, op: Double => Dou
       val theta_hat = op(Xstatistic(X))(Ystatistic(Y))
 
       // compute bootstrap replications
-      val replications = (1 to B).map { b =>
+      val replications = (1 to B).map { _ =>
         op(
           Xstatistic(resampleWithReplacement(X))
         )(
