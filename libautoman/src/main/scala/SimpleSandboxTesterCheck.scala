@@ -2,7 +2,7 @@ import edu.umass.cs.automan.adapters.mturk.DSL._
 import edu.umass.cs.automan.core.logging.LogLevelDebug
 import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
 
-object SimpleSandboxTester extends App {
+object SimpleSandboxTesterCheck extends App {
   val opts = Utilities.unsafe_optparse(args, "SimpleSandboxTester")
 
   implicit val a = mturk (
@@ -13,9 +13,9 @@ object SimpleSandboxTester extends App {
     database_path = "dbarowy_saved_hits"
   )
 
-  def which_one() = radio (
+  def which_one() = checkbox (
     budget = 8.00,
-    text = "Which one of these does not belong?",
+    text = "Which of these belong?",
     options = (
       choice('oscar, "Oscar the Grouch", "http://tinyurl.com/qfwlx56"),
       choice('kermit, "Kermit the Frog", "http://tinyurl.com/nuwyz3u"),
@@ -28,9 +28,9 @@ object SimpleSandboxTester extends App {
 
   automan(a) {
     which_one().answer match {
-      case answer: Answer[Symbol] =>
+      case answer: Answer[Set[Symbol]] =>
         println("The answer is: " + answer.value)
-      case lowconf: LowConfidenceAnswer[Symbol] =>
+      case lowconf: LowConfidenceAnswer[Set[Symbol]] =>
         println(
           "You ran out of money. The best answer is \"" +
             lowconf.value + "\" with a confidence of " + lowconf.confidence

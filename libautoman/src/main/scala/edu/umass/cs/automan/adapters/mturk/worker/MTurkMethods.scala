@@ -208,7 +208,6 @@ object MTurkMethods {
   }
 
   private[worker] def mturk_assignQualification(disqualification_id: String, worker_id: String, integerValue: Int, sendNotification: Boolean, backend: AmazonMTurk): Unit = {
-    //backend.assignQualification(disqualification_id, worker_id, integerValue, sendNotification)
     backend.associateQualificationWithWorker(new AssociateQualificationWithWorkerRequest()
         .withQualificationTypeId(disqualification_id)
         .withWorkerId(worker_id)

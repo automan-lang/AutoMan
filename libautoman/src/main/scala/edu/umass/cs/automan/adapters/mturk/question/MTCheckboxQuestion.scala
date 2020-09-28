@@ -42,7 +42,7 @@ class MTCheckboxQuestion extends CheckboxQuestion with MTurkQuestion {
     //    </Answer>
     DebugLog("MTCheckboxQuestion: fromXML:\n" + x.toString,LogLevelDebug(),LogType.ADAPTER,id)
 
-    (x \\ "Answer" \\ "SelectionIdentifier").map{si => Symbol(si.text)}.toSet
+    (x \\ "Answer" \\ "SelectionIdentifier").map{si => Symbol(si.text.drop(1))}.toSet
   }
   // TODO: random checkbox fill
   override protected[mturk] def toXML(randomize: Boolean): scala.xml.Node = {
