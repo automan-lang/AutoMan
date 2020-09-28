@@ -98,10 +98,10 @@ public class DeleteAllQualifications {
         System.out.println("Usage:");
         System.out.println("  You should use the \"run.sh\" shell script.");
         System.out.println();
-        System.out.println("  ./run <path to mturk.properties file> <sandbox mode true/false>");
+        System.out.println("  ./run.sh <path to mturk.properties file> <sandbox mode true/false>");
         System.out.println();
         System.out.println("  For example:");
-        System.out.println("    /run ~/mturk.properties false");
+        System.out.println("    /run.sh ~/mturk.properties false");
         System.out.println("Gory details:");
         System.out.println("  run.sh actually calls Maven, which performs the following incantation to Cthulhu:");
         System.out.println("  mvn -X exec:java -Dexec.args=\"<path to mturk.properties file>\"");

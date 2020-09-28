@@ -11,8 +11,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
-public class DeleteAllFromSandbox {
+public class DeleteAllHITs {
     private static final String SANDBOX_ENDPOINT = "mturk-requester-sandbox.us-east-1.amazonaws.com";
+    private static final String PRODUCTION_ENDPOINT = "https://mturk-requester.us-east-1.amazonaws.com";
     private static final String SIGNING_REGION = "us-east-1";
 
     private static class Tuple<X, Y> {
@@ -44,14 +45,19 @@ public class DeleteAllFromSandbox {
         }
     }
 
-    private static AmazonMTurk getSandboxClient(String path) {
+    private static AmazonMTurk getClient(String path, boolean useSandbox) {
         Tuple<String,String> creds = getCredentials(path);
         BasicAWSCredentials awsCreds = new BasicAWSCredentials(creds.first, creds.second);
         AmazonMTurkClientBuilder builder = AmazonMTurkClientBuilder.standard()
                 .withCredentials(new AWSStaticCredentialsProvider(awsCreds));
-        builder.setEndpointConfiguration(new EndpointConfiguration(SANDBOX_ENDPOINT, SIGNING_REGION));
+        if (useSandbox) {
+            builder.setEndpointConfiguration(new EndpointConfiguration(SANDBOX_ENDPOINT, SIGNING_REGION));
+        } else {
+            builder.setEndpointConfiguration(new EndpointConfiguration(PRODUCTION_ENDPOINT, SIGNING_REGION));
+        }
         return builder.build();
     }
+
 
     private static String getAccountBalance(AmazonMTurk client) {
         GetAccountBalanceRequest getBalanceRequest = new GetAccountBalanceRequest();
@@ -148,21 +154,28 @@ public class DeleteAllFromSandbox {
         System.out.println("Usage:");
         System.out.println("  You should use the \"run.sh\" shell script.");
         System.out.println();
-        System.out.println("  ./run <path to mturk.properties file>");
+        System.out.println("  ./run.sh <path to mturk.properties file> <sandbox mode true/false>");
         System.out.println();
+        System.out.println("  For example:");
+        System.out.println("    /run.sh ~/mturk.properties false");
         System.out.println("Gory details:");
         System.out.println("  run.sh actually calls Maven, which performs the following incantation to Cthulhu:");
         System.out.println("  mvn -X exec:java -Dexec.args=\"<path to mturk.properties file>\"");
     }
 
     public static void main(String[] args) {
-        if (args.length != 1) {
+        if (args.length != 1 && args.length != 2) {
             Usage();
             System.exit(1);
         }
 
-        final AmazonMTurk client = getSandboxClient(args[0]);
+        // sandbox mode?
+        final boolean sandbox = !(args.length == 2 && args[1].equals("false"));
 
+        // initialize client
+        final AmazonMTurk client = getClient(args[0], sandbox);
+
+        // obtain list of HITs
         List<HIT> hits = listHITs(client);
 
         if (hits.size() == 0) {
@@ -170,20 +183,49 @@ public class DeleteAllFromSandbox {
             System.exit(0);
         }
 
+        System.out.println("Removing " + hits.size() + " HITs.");
+        if (hits.size() > 20) {
+            System.out.println("This may take awhile.  Please be patient.");
+        }
+        System.out.print("Deleting ");
         for (HIT hit : hits) {
+            // delete
+            System.out.print(".");
+
             // cancel each HIT
             expireHIT(hit, client);
+
+            // rate limit
+            try {
+                Thread.sleep(500);
+            } catch (java.lang.InterruptedException e) {
+                // do nothing
+            }
 
             // change to reviewing
             setHITToReviewing(hit, client);
 
             // approve each assignment
             for (Assignment a : assignmentsForHIT(hit, client)) {
+                // rate limit
+                try {
+                    Thread.sleep(500);
+                } catch (java.lang.InterruptedException e) {
+                    // do nothing
+                }
                 approveAssignment(a, client);
             }
 
             // delete the HIT
             deleteHIT(hit, client);
+
+            // rate limit
+            try {
+                Thread.sleep(500);
+            } catch (java.lang.InterruptedException e) {
+                // do nothing
+            }
         }
+        System.out.println();
     }
 }

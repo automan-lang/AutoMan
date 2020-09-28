@@ -9,7 +9,7 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <exec.mainClass>edu.williams.cs.DeleteAllFromSandbox</exec.mainClass>
+        <exec.mainClass>edu.williams.cs.DeleteAllHITs</exec.mainClass>
     </properties>
 
     <dependencies>
