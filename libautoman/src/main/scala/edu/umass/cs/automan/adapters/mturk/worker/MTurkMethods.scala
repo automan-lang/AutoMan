@@ -7,6 +7,7 @@ import java.util.{Calendar, Date, UUID}
 import scala.collection.JavaConverters._
 import com.amazonaws.services.mturk.{AmazonMTurk, model}
 import com.amazonaws.services.mturk.model._
+import edu.umass.cs.automan.adapters.mturk.util.ServiceExceptionRetry
 
 import scala.collection.immutable.HashMap
 //import com.amazonaws.services.mturk.model.{HIT, Assignment, QualificationRequirement, UpdateQualificationTypeRequest, QualificationRequest, RejectQualificationRequestRequest} //TODO: figure out where these should come from
@@ -191,7 +192,19 @@ object MTurkMethods {
 
   private[worker] def mturk_disposeQualificationType(qual_id: QualificationID, backend: AmazonMTurk) : Unit = {
     DebugLog(s"Deleting disqualification ID: ${qual_id}.",LogLevelInfo(),LogType.ADAPTER,null)
-    backend.deleteQualificationType(new DeleteQualificationTypeRequest().withQualificationTypeId(qual_id)) // not sure what this should do?
+    // Does the qualification exist on the backend?  If so, delete.
+    try {
+      ServiceExceptionRetry (3) {
+        // First check that the qualification exists on the backend; throws exception when qualification does not exist
+        backend.getQualificationType(new GetQualificationTypeRequest().withQualificationTypeId((qual_id)))
+
+        // No exception thrown, so delete
+        backend.deleteQualificationType(new DeleteQualificationTypeRequest().withQualificationTypeId(qual_id))
+      }
+    } catch {
+      // qualification does not exist; do nothing
+      case e: RequestErrorException => ()
+    }
   }
 
   private[worker] def mturk_assignQualification(disqualification_id: String, worker_id: String, integerValue: Int, sendNotification: Boolean, backend: AmazonMTurk): Unit = {
