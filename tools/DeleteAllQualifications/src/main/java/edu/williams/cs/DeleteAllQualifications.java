@@ -59,8 +59,39 @@ public class DeleteAllQualifications {
     }
 
     private static List<QualificationType> listQualifications(AmazonMTurk client) {
-        ListQualificationTypesRequest req = new ListQualificationTypesRequest();
-        return client.listQualificationTypes(req).getQualificationTypes();
+        boolean more = true;
+        String paginationToken = null;
+        List<QualificationType> data = new ArrayList<>();
+
+        while (more) {
+            ListQualificationTypesRequest req =
+                    new ListQualificationTypesRequest()
+                            .withMustBeRequestable(false)
+                            .withMustBeOwnedByCaller(true);
+
+            // if we have a pagination token, use it
+            if (paginationToken != null) {
+                req.withNextToken(paginationToken);
+            }
+
+            // get results
+            ListQualificationTypesResult response = client.listQualificationTypes(req);
+
+            // get results
+            List<QualificationType> results = response.getQualificationTypes();
+
+            // are there more results?
+            if (response.getNumResults() == 0) {
+                more = false;
+            } else {
+                paginationToken = response.getNextToken();
+            }
+
+            // append to master list
+            data.addAll(results);
+        }
+
+        return data;
     }
 
     private static void Usage() {
@@ -78,7 +109,8 @@ public class DeleteAllQualifications {
 
     private static void deleteQualification(QualificationType qual, AmazonMTurk client) {
         // make request
-        DeleteQualificationTypeRequest req = new DeleteQualificationTypeRequest().withQualificationTypeId(qual.getQualificationTypeId());
+        DeleteQualificationTypeRequest req =
+                new DeleteQualificationTypeRequest().withQualificationTypeId(qual.getQualificationTypeId());
 
         // issue request
         client.deleteQualificationType(req);
@@ -103,9 +135,23 @@ public class DeleteAllQualifications {
             System.exit(0);
         }
 
+        System.out.println("Removing " + quals.size() + " qualification types.");
+        if (quals.size() > 20) {
+            System.out.println("This may take awhile.  Please be patient.");
+        }
+        System.out.print("Deleting ");
         for (QualificationType qual : quals) {
             // delete
+            System.out.print(".");
             deleteQualification(qual, client);
+
+            // rate limit
+            try {
+                Thread.sleep(500);
+            } catch (java.lang.InterruptedException e) {
+                // do nothing
+            }
         }
+        System.out.println();
     }
 }
