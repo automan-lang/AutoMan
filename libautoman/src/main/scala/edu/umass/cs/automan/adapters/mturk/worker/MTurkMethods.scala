@@ -8,21 +8,12 @@ import scala.collection.JavaConverters._
 import com.amazonaws.services.mturk.{AmazonMTurk, model}
 import com.amazonaws.services.mturk.model._
 import edu.umass.cs.automan.adapters.mturk.util.ServiceExceptionRetry
-
-import scala.collection.immutable.HashMap
-//import com.amazonaws.services.mturk.model.{HIT, Assignment, QualificationRequirement, UpdateQualificationTypeRequest, QualificationRequest, RejectQualificationRequestRequest} //TODO: figure out where these should come from
-
-//import software.amazon.awssdk.services.mturk.model.HIT
-//https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/mturk/model/Assignment.html
-//import software.amazon.awssdk.services.mturk.model.{HIT, UpdateQualificationTypeRequest, QualificationRequest, RejectQualificationRequestRequest} //https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/mturk/model/CreateHitRequest.html
-import edu.umass.cs.automan.adapters.mturk.mock.MockRequesterService
 import edu.umass.cs.automan.adapters.mturk.question.MTurkQuestion
-import edu.umass.cs.automan.adapters.mturk.util.Key
 import edu.umass.cs.automan.adapters.mturk.util.Key._
 import edu.umass.cs.automan.core.logging.{LogLevelDebug, LogType, LogLevelInfo, DebugLog}
 import edu.umass.cs.automan.core.question.Question
-import edu.umass.cs.automan.core.scheduler.{SchedulerState, Task}
-import edu.umass.cs.automan.core.util.{Stopwatch, Utilities}
+import edu.umass.cs.automan.core.scheduler.Task
+import edu.umass.cs.automan.core.util.Utilities.x_seconds_from_now
 import scala.collection.JavaConversions._
 
 /**
@@ -334,18 +325,22 @@ object MTurkMethods {
 
     // MTurk does not allow expiration dates sooner than
     // 60 seconds into the future
-    val expiry_s = Math.max(60, timeout_in_s).toLong
+    val expiry_s = Math.max(60, timeout_in_s)
 
     DebugLog(s"Extending HIT ID ${hitstate.HITId} with ${ts.size} new assignments and timeout ${expiry_s} sec", LogLevelDebug(), LogType.ADAPTER, ts.head.question.id)
 
     // Note that extending HITs is only useful when the only
     // parameters that can change are the 1) number of assignments and
     // the 2) expiration date.
-    //backend.extendHIT(hitstate.HITId, ts.size, expiry_s)
-    //backend.getHIT(new GetHITRequest().withHITId(hitstate.HITId))
-    backend.createAdditionalAssignmentsForHIT(new CreateAdditionalAssignmentsForHITRequest()
+    if (ts.nonEmpty) {
+      backend.createAdditionalAssignmentsForHIT(new CreateAdditionalAssignmentsForHITRequest()
+        .withHITId(hitstate.HITId)
+        .withNumberOfAdditionalAssignments(ts.size))
+    }
+    backend.updateExpirationForHIT(new UpdateExpirationForHITRequest()
       .withHITId(hitstate.HITId)
-      .withNumberOfAdditionalAssignments(ts.size)) //TODO: update expiry?
+      .withExpireAt(x_seconds_from_now(expiry_s)))
+
     // we immediately query the backend for the HIT's complete details
     // to update our cached data
 

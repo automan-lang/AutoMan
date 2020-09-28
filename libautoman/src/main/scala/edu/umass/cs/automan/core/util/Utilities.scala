@@ -66,6 +66,13 @@ object Utilities {
     c.add(Calendar.MINUTE, 30)
     c.getTime
   }
+  def x_seconds_from_now(seconds: Int): Date = {
+    val d = new Date()
+    val c = Calendar.getInstance()
+    c.setTime(d)
+    c.add(Calendar.SECOND, seconds)
+    c.getTime
+  }
 
   def xSecondsFromDate(x: Int, d: Date) : Date = {
     val c = Calendar.getInstance()
