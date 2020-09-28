@@ -187,10 +187,8 @@ public class DeleteAllHITs {
         if (hits.size() > 20) {
             System.out.println("This may take awhile.  Please be patient.");
         }
-        System.out.print("Deleting ");
         for (HIT hit : hits) {
             // delete
-            System.out.print(".");
 
             // cancel each HIT
             expireHIT(hit, client);
@@ -226,6 +224,5 @@ public class DeleteAllHITs {
                 // do nothing
             }
         }
-        System.out.println();
     }
 }
