@@ -1,5 +1,5 @@
 #!/bin/sh
 
-mvn clean
-mvn compile
-mvn -X exec:java -Dexec.args="$1 $2"
+mvn --quiet clean
+mvn --quiet compile
+mvn --quiet exec:java -Dexec.args="$1 $2"
