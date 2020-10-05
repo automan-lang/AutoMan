@@ -4,7 +4,7 @@ import java.util.UUID
 import java.awt.image.BufferedImage
 
 import com.amazonaws.client.builder.{AwsClientBuilder, AwsSyncClientBuilder}
-import edu.umass.cs.automan.core.util.Utilities
+import org.automanlang.core.util.Utilities
 
 package object bananalib {
   def getTinyURL(long_url: String) : String = {

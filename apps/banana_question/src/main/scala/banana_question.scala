@@ -1,10 +1,9 @@
-import edu.umass.cs.automan.adapters.mturk.DSL._
+import org.automanlang.adapters.mturk.DSL._
 import java.util.UUID
 import java.net.URL
-
 import javax.imageio._
 import bananalib._
-import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
+import org.automanlang.core.policy.aggregation.UserDefinableSpawnPolicy
 
 object banana_question extends App {
   val opts = my_optparse(args, "banana_question.jar")

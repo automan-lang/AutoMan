@@ -2,17 +2,17 @@ enablePlugins(PackPlugin)
 
 name := "BananaQuestion"
 
-version := "0.3"
+version := "0.4"
 
-organization := "edu.umass.cs"
+organization := "org.automanlang"
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.12.12"
 
 exportJars := true
 
 libraryDependencies ++= Seq(
-  "edu.umass.cs" %% "automan" % "1.3.0-SNAPSHOT",
-  "com.amazonaws"   %  "aws-java-sdk"	% "1.11.654",
+  "org.automanlang" %% "automan" % "1.4.0",
+  "com.amazonaws"   % "aws-java-sdk" % "1.11.875",
   "org.imgscalr"    %  "imgscalr-lib"	% "4.2",
-  "software.amazon.awssdk" % "mturk" % "2.9.5"
+  "software.amazon.awssdk" % "mturk" % "2.15.2"
 )
