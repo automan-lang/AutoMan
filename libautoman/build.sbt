@@ -61,7 +61,7 @@ val hashAsConstant = TaskKey[Unit]("hash-as-constant", "Creates a Scala source f
 hashAsConstant := {
   import java.io._
 
-  val path = "src/main/scala/edu/umass/cs/automan/core/util/GitHash.scala"
+  val path = "src/main/scala/org/automanlang/core/util/GitHash.scala"
 
   val clazz =
     "package org.automanlang.core.util\n\n" +
@@ -113,7 +113,7 @@ pomExtra := (
     <developer>
       <id>dbarowy</id>
       <name>Daniel Barowy</name>
-      <url>http://people.cs.umass.edu/~dbarowy</url>
+      <url>http://www.cs.williams.edu/~dbarowy</url>
     </developer>
   </developers>)
 
