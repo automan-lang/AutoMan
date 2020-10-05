@@ -3,7 +3,7 @@ name := "automan"
 
 version := "1.4.0"
 
-organization := "edu.umass.cs"
+organization := "org.automanlang"
 
 licenses := Seq("GPL-2.0" -> url("http://opensource.org/licenses/GPL-2.0"))
 
