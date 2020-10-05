@@ -14,7 +14,7 @@ import org.automanlang.core.scheduler.{SchedulerState, Task}
 class AdversarialPolicy(question: DiscreteScalarQuestion)
   extends ScalarPolicy(question) {
   protected[automanlang] val NumberOfSimulations = 1000000
-  protected[automanlang] val PrecompPath = "/edu/umass/cs/automan/core/policy/aggregation/PossibilitiesTable.dat"
+  protected[automanlang] val PrecompPath = "/org/automanlang/core/policy/aggregation/PossibilitiesTable.dat"
 
   val precompTable = PrecompTable.load(PrecompPath)
 
