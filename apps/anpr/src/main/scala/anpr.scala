@@ -1,4 +1,4 @@
-import edu.umass.cs.automan.adapters.mturk.DSL._
+import org.automanlang.adapters.mturk.DSL._
 import anprlib._
 
 object anpr extends App {

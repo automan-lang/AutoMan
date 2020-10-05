@@ -2,16 +2,15 @@ enablePlugins(PackPlugin)
 
 name := "ANPR"
 
-version := "0.2"
+version := "0.3"
 
-organization := "edu.umass.cs"
+organization := "org.automanlang"
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.12.12"
 
 exportJars := true
 
 libraryDependencies ++= Seq(
-  "edu.umass.cs" %% "automan" % "1.3.0-SNAPSHOT",
-  "com.amazonaws"   % "aws-java-sdk" % "1.11.637"
-  //"com.amazonaws" % "aws-java-sdk" % "1.7.5" exclude("org.apache.httpcomponents", "httpclient")
+  "org.automanlang" %% "automan" % "1.4.0",
+  "com.amazonaws"   % "aws-java-sdk" % "1.11.875"
 )

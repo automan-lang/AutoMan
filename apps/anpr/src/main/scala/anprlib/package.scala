@@ -1,7 +1,7 @@
-import edu.umass.cs.automan.adapters.mturk.DSL._
-import edu.umass.cs.automan.adapters.mturk._
-import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
-import edu.umass.cs.automan.core.util.Utilities
+import org.automanlang.adapters.mturk.DSL._
+import org.automanlang.adapters.mturk._
+import org.automanlang.core.policy.aggregation.UserDefinableSpawnPolicy
+import org.automanlang.core.util.Utilities
 
 import scala.io.Source
 
