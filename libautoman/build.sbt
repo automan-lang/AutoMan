@@ -1,7 +1,7 @@
 // METADATA
 name := "automan"
 
-version := "1.4.0-SNAPSHOT"
+version := "1.4.0"
 
 organization := "edu.umass.cs"
 
@@ -37,7 +37,9 @@ libraryDependencies := {
 
 // CUSTOM TASKS
 val memoClean = TaskKey[Unit]("memo-clean", "Deletes AutoMan memo database files.")
+val hashAsConstant = TaskKey[Unit]("hash-as-constant", "Creates a Scala source file containing the git hash for HEAD.")
 
+// memoClean task
 memoClean := {
   val dbs = Seq.concat(
     (baseDirectory.value ** "*.mv.db").get,
@@ -49,14 +51,13 @@ memoClean := {
   }
 }
 
+// gitHash task
 val gitHash = TaskKey[String]("githash", "Gets the git hash of HEAD.")
 
 gitHash := {
   import scala.sys.process._
   ("git rev-parse HEAD" !!).replace("\n","")
 }
-
-val hashAsConstant = TaskKey[Unit]("hash-as-constant", "Creates a Scala source file containing the git hash for HEAD.")
 
 hashAsConstant := {
   import java.io._
@@ -84,37 +85,36 @@ compile := ((compile in Compile) dependsOn hashAsConstant).value
 enablePlugins(PackPlugin)
 
 // MAVEN
+sonatypeBundleDirectory := (ThisBuild / baseDirectory).value / target.value.getName / "sonatype-staging" / s"${version.value}"
 
-// yes, we want Maven artifacts
+// this setting bundles all artifacts into a single JAR
+publishTo := sonatypePublishToBundle.value
+
+// set account profile name
+sonatypeProfileName := "org.automanlang"
+
+// To sync with Maven central, you need to supply the following information:
 publishMavenStyle := true
 
-// specify repository
-publishTo := {
-  val nexus = "https://oss.sonatype.org/"
-  if (isSnapshot.value)
-    Some("snapshots" at nexus + "content/repositories/snapshots")
-  else
-    Some("releases"  at nexus + "service/local/staging/deploy/maven2")
-}
+// license
+licenses := Seq("GPLv2" -> url("https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html"))
 
-// don't publish test artifacts
-publishArtifact in Test := false
+// SCM
+homepage := Some(url("https://automan-lang.github.io/"))
+scmInfo := Some(
+  ScmInfo(
+    url("https://github.com/automan-lang/AutoMan"),
+    "scm:git@github.com:automan-lang/AutoMan.git"
+  )
+)
+developers := List(
+  Developer(
+    id="dbarowy",
+    name="Daniel W. Barowy",
+    email="dbarowy@cs.williams.edu",
+    url=url("https://www.cs.williams.edu/~dbarowy")
+  )
+)
 
-// don't include optional repositories
-pomIncludeRepository := { _ => false }
-
-// POM body
-pomExtra := (
-  <scm>
-    <url>git@github.com:dbarowy/AutoMan.git</url>
-    <connection>scm:git:git@github.com:dbarowy/AutoMan.git</connection>
-  </scm>
-  <developers>
-    <developer>
-      <id>dbarowy</id>
-      <name>Daniel Barowy</name>
-      <url>http://www.cs.williams.edu/~dbarowy</url>
-    </developer>
-  </developers>)
-
+// don't trap System.exit() calls-- really quit SBT
 trapExit := false
