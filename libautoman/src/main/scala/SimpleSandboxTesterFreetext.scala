@@ -1,6 +1,7 @@
-import edu.umass.cs.automan.adapters.mturk.DSL.{Answer, LowConfidenceAnswer, Utilities, automan, freetext, mturk}
-import edu.umass.cs.automan.core.logging.LogLevelDebug
-import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
+import org.automanlang.adapters.mturk.DSL._
+import org.automanlang.core.logging.LogLevelDebug
+import org.automanlang.core.policy.aggregation.UserDefinableSpawnPolicy
+import org.automanlang.core.util.Utilities
 
 object SimpleSandboxTesterFreetext extends App {
   val opts = Utilities.unsafe_optparse(args, "SimpleSandboxTester")

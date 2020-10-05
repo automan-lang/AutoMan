@@ -64,7 +64,7 @@ hashAsConstant := {
   val path = "src/main/scala/edu/umass/cs/automan/core/util/GitHash.scala"
 
   val clazz =
-    "package edu.umass.cs.automan.core.util\n\n" +
+    "package org.automanlang.core.util\n\n" +
     "object GitHash {\n" +
     "  val value = \"" + gitHash.value + "\"\n" +
     "}"
