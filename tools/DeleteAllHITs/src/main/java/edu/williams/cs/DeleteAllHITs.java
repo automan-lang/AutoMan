@@ -116,7 +116,7 @@ public class DeleteAllHITs {
 
     private static void approveAssignment(Assignment a, AmazonMTurk client) {
         String status = a.getAssignmentStatus();
-        if (!status.equals("Approved")) {
+        if (status.equals("Submitted")) {
             System.err.println("INFO: Approving assignment with Assignment ID: " +
                     a.getAssignmentId() + " for HIT with HIT ID: " + a.getHITId());
             ApproveAssignmentRequest req = new ApproveAssignmentRequest();
@@ -125,7 +125,7 @@ public class DeleteAllHITs {
         } else {
             System.err.println("INFO: Assignment with Assignment ID: " +
                     a.getAssignmentId() + " for HIT with HIT ID: " + a.getHITId() +
-                    " already has status 'Approved'.  Skipping...");
+                    " already has status '" + status + "'.  Skipping...");
         }
 
     }
