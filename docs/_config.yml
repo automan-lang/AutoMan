@@ -3,7 +3,7 @@ id: dbarowy/AutoMan
 # name of the software
 name: AutoMan
 # current version of the software
-version: 1.2.0
+version: 1.4.1
 # licence of the software
 license: GPL v2.0
 licenseUrl: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
@@ -23,7 +23,7 @@ kramdown:
 # download.cdn.img is optional
 download:
   popup: false
-  url: https://mvnrepository.com/artifact/edu.umass.cs/automan_2.11
+  url: https://mvnrepository.com/artifact/org.automanlang/automan_2.12
 
 # set this to true to replace the generated header navbar by _includes/navbar.html
 customNavBar: true
