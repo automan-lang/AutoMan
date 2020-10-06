@@ -2,7 +2,7 @@ import org.automanlang.adapters.mturk.DSL._
 import org.automanlang.core.logging.LogLevelDebug
 import org.automanlang.core.policy.aggregation.UserDefinableSpawnPolicy
 
-object simple_checkbox_program extends App {
+object SimpleCheckboxProgram extends App {
   val opts = Utilities.unsafe_optparse(args, "simple_checkbox_program")
 
   implicit val a = mturk (
