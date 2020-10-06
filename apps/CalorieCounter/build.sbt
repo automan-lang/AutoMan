@@ -2,14 +2,14 @@ enablePlugins(PackPlugin)
 
 name := "CalorieCounter"
 
-version := "1.0"
+version := "1.1"
 
-organization := "edu.umass.cs"
+organization := "org.automanlang"
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.12.12"
 
 exportJars := true
 
 libraryDependencies ++= Seq(
-  "edu.umass.cs" %% "automan" % "1.3.0-SNAPSHOT"
+  "org.automanlang" %% "automan" % "1.4.0"
 )
