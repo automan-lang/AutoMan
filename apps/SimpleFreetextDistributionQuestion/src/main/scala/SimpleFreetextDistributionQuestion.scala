@@ -1,10 +1,10 @@
-import edu.umass.cs.automan.adapters.mturk.DSL._
-import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
+import org.automanlang.adapters.mturk.DSL._
+import org.automanlang.core.policy.aggregation.UserDefinableSpawnPolicy
 
-object SimpleFTDQuestion extends App {
+object SimpleFreetextDistributionQuestion extends App {
   val sample_size = 3
   
-  val opts = Utilities.unsafe_optparse(args, "SimpleFTDQuestion.scala")
+  val opts = Utilities.unsafe_optparse(args, "SimpleFreetextDistributionQuestion.scala")
 
   implicit val a = mturk (
     access_key_id = opts('key),
