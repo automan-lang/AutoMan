@@ -106,13 +106,13 @@ Other possible cases are `LowConfidenceAnswer` and `OverBudgetAnswer`.  If you r
 Note that, due to AutoMan's design, you must inform it when to shut down, otherwise it will continue to execute indefinitely and your program will hang:
 
 ``` scala
-a.close()
+mt.close()
 ```
 
 Alternately, you may wrap your program in an `automan` statement, and cleanup will happen automatically.  This feature was [inspired](https://msdn.microsoft.com/en-us/library/vstudio/yh598w02%28v=vs.100%29.aspx) by the C# `using` statement:
 
 ``` scala
-automan(a) {
+automan(mt) {
   ... your program ...
 }
 ```
