@@ -50,7 +50,7 @@ class MTRadioButtonVectorQuestion extends RadioButtonVectorQuestion with MTurkQu
     //    </Answer>
     DebugLog("MTRadioButtonDistributionQuestion: fromXML:\n" + x.toString, LogLevelDebug(), LogType.ADAPTER, id)
 
-    Symbol((x \\ "Answer" \\ "SelectionIdentifier").text)
+    Symbol((x \\ "Answer" \\ "SelectionIdentifier").text.drop(1))
   }
 
   override protected[mturk] def toXML(randomize: Boolean): scala.xml.Node = {

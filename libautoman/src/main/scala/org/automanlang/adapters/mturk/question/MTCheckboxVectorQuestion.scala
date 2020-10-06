@@ -42,7 +42,7 @@ class MTCheckboxVectorQuestion extends CheckboxVectorQuestion with MTurkQuestion
     //    </Answer>
     DebugLog("MTCheckboxDistributionQuestion: fromXML:\n" + x.toString,LogLevelDebug(),LogType.ADAPTER,id)
 
-    (x \\ "Answer" \\ "SelectionIdentifier").map{si => Symbol(si.text)}.toSet
+    (x \\ "Answer" \\ "SelectionIdentifier").map{si => Symbol(si.text.drop(1))}.toSet
   }
   override protected[mturk] def toXML(randomize: Boolean): scala.xml.Node = {
     <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">

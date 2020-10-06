@@ -1,11 +1,11 @@
-import edu.umass.cs.automan.adapters.mturk.DSL._
-import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
-import edu.umass.cs.automan.core.question.QuestionOption
+import org.automanlang.adapters.mturk.DSL._
+import org.automanlang.core.policy.aggregation.UserDefinableSpawnPolicy
+import org.automanlang.core.question.QuestionOption
 
-object SimpleCBDQuestion extends App {
+object SimpleCheckboxDistributionQuestion extends App {
   val sample_size = 3
   
-  val opts = Utilities.unsafe_optparse(args, "SimpleCBDQuestion.scala")
+  val opts = Utilities.unsafe_optparse(args, "SimpleCheckboxDistributionQuestion.scala")
 
   implicit val a = mturk (
     access_key_id = opts('key),
@@ -17,11 +17,6 @@ object SimpleCBDQuestion extends App {
     sample_size = sample_size,
     text = question,
     options = List[QuestionOption](
-//      new MTQuestionOption(null, "Oscar the Grouch", "http://tinyurl.com/qfwlx56"),
-//      new MTQuestionOption(null, "Kermit the Frog", "http://tinyurl.com/nuwyz3u"),
-//      new MTQuestionOption(null, "Spongebob Squarepants", "http://tinyurl.com/oj6wzx6"),
-//      new MTQuestionOption(null, "Cookie Monster", "http://tinyurl.com/otb6thl"),
-//      new MTQuestionOption(null, "The Count", "http://tinyurl.com/nfdbyxa")
       "Oscar the Grouch" -> "http://tinyurl.com/qfwlx56",
       "Kermit the Frog" -> "http://tinyurl.com/nuwyz3u",
       "Spongebob Squarepants" -> "http://tinyurl.com/oj6wzx6",
