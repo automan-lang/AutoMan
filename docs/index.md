@@ -24,17 +24,16 @@ AutoMan is being actively developed by [Daniel Barowy](http://www.cs.williams.ed
 
 The easiest way to get AutoMan is via the Maven Central Repository.  If you're using SBT:
 
-    libraryDependencies += "edu.umass.cs" %% "automan" % "1.1.7"
+    libraryDependencies += "org.automanlang" %% "automan" % "1.4.1"
 
 _or_ if you're using Maven:
 
     <dependency>
-      <groupId>edu.umass.cs</groupId>
-      <artifactId>automan_2.11</artifactId>
-      <version>1.2.0</version>
+      <groupId>org.automanlang</groupId>
+      <artifactId>automan_2.12</artifactId>
+      <version>1.4.1</version>
     </dependency>
 
-Sorry, we no longer support Scala 2.10 as AutoMan requires Java 8.
 
 <section class="bs-docs-section">
   <h1 id="bugs" class="page-header">Reporting bugs</h1>
@@ -46,7 +45,7 @@ Please report bugs using this repository's [issue tracker](https://github.com/db
   <h1 id="license" class="page-header">License</h1>
 </section>
 
-AutoMan is licensed under the GPLv2, Copyright (C) 2011-2017 The University of Massachusetts, Amherst.
+AutoMan is licensed under the GPLv2, Copyright (C) 2011-2020 The University of Massachusetts, Amherst / Williams College.
 
 <section class="bs-docs-section">
   <h1 id="using_automan" class="page-header">Using AutoMan</h1>
@@ -55,7 +54,7 @@ AutoMan is licensed under the GPLv2, Copyright (C) 2011-2017 The University of M
 In your source file, import the Mechanical Turk adapter (Scala syntax):
 
 ``` scala
-import edu.umass.cs.automan.adapters.mturk._
+import org.automanlang.adapters.mturk._
 ```
 
 After that, initialize the AutoMan runtime with an MTurk config:

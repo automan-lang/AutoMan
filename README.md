@@ -1,5 +1,3 @@
-[![Circle CI](https://circleci.com/gh/dbarowy/AutoMan.svg?style=shield)](https://circleci.com/gh/dbarowy/AutoMan)
-
 # AutoMan: Human-Computation Runtime
 
 AutoMan [documentation is here](https://automan-lang.github.io).
@@ -14,22 +12,24 @@ AutoMan is available as a library for Scala.
 
 The easiest way to get AutoMan is via the Maven Central Repository.  If you're using SBT:
 
-    libraryDependencies += "edu.umass.cs" %% "automan" % "1.1.7"
+    libraryDependencies += "org.automanlang" %% "automan" % "1.4.1"
 
 _or_ if you're using Maven:
 
     <dependency>
-      <groupId>edu.umass.cs</groupId>
-      <artifactId>automan_2.11</artifactId>
-      <version>1.2.0</version>
+      <groupId>org.automanlang</groupId>
+      <artifactId>automan_2.12</artifactId>
+      <version>1.4.1</version>
     </dependency>
 
-Sorry, we no longer support Scala 2.10 as AutoMan requires Java 8.
+AutoMan 1.4.0+ requires Scala 2.12.
 
 ## Latest Updates
 
 Lastest changes include:
 
+* 2020-10-06: Bugfix that caused crash for checkbox distribution questions.
+* 2020-10-05: Support for latest Amazon MTurk SDK.
 * Support for estimation queries and composed (i.e., "end-to-end") estimation queries.  Documentation coming soon!
 * Bug fixes.
 
@@ -39,4 +39,4 @@ Please report bugs using this repository's issue tracker.
 
 ## License
 
-AutoMan is licensed under the GPLv2, Copyright (C) 2011-2016 The University of Massachusetts, Amherst.
+AutoMan is licensed under the GPLv2, Copyright (C) 2011-2020 The University of Massachusetts, Amherst / Williams College.
