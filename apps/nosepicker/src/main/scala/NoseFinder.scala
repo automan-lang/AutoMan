@@ -1,13 +1,13 @@
 import java.io.File
 
-import edu.umass.cs.automan.adapters.mturk._
-import edu.umass.cs.automan.core.answer._
+import org.automanlang.adapters.mturk._
+import org.automanlang.core.answer._
 import com.github.tototoshi.csv._
-import edu.umass.cs.automan.automan
-import edu.umass.cs.automan.core.logging.LogLevelDebug
-import edu.umass.cs.automan.core.policy.aggregation.UserDefinableSpawnPolicy
-import edu.umass.cs.automan.core.question.Dim
-import edu.umass.cs.automan.core.question.confidence.SymmetricCI
+import org.automanlang.automan
+import org.automanlang.core.logging.LogLevelDebug
+import org.automanlang.core.policy.aggregation.UserDefinableSpawnPolicy
+import org.automanlang.core.question.Dim
+import org.automanlang.core.question.confidence.SymmetricCI
 
 import scala.io.Source
 import scala.util.Random
@@ -17,7 +17,7 @@ object NoseFinder extends App {
   val opts = new Conf(args)
 
   // emit hash
-  //println(s"Nose Finder benchmark ver. ${currentHash()} (AutoMan ver. ${edu.umass.cs.automan.core.util.GitHash.value}), starting up...")
+  //println(s"Nose Finder benchmark ver. ${currentHash()} (AutoMan ver. ${org.automanlang.core.util.GitHash.value}), starting up...")
 
   // init random
   val r = new Random()
