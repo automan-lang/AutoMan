@@ -29,9 +29,7 @@ AutoMan 1.4.0+ requires Scala 2.12.
 Lastest changes include:
 
 * 2020-10-06: Bugfix that caused crash for checkbox distribution questions.
-* 2020-10-05: Support for latest Amazon MTurk SDK.
-* Support for estimation queries and composed (i.e., "end-to-end") estimation queries.  Documentation coming soon!
-* Bug fixes.
+* 2020-10-05: Support for latest Amazon MTurk SDK (mostly due to [Emmie Hine](https://www.linkedin.com/in/emmie-hine/)!)
 
 ## Bug Reports.
 
