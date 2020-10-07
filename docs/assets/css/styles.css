@@ -58,8 +58,8 @@ a:focus {
 }
 
 code {
-  background: #222;
-  color: #fff;
+  background: #F0F8FF;
+  color: #000;
   font-size: 14px;
   font-weight: bold;
   font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
@@ -1461,4 +1461,9 @@ select {
   .main-search-box .search-form .search-input {
     width: 560px;
   }
+}
+hr.style12 {
+    height: 6px;
+    background: url(../images/hr-12.png) repeat-x 0 0;
+    border: 0;
 }
