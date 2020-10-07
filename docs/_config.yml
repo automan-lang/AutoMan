@@ -1,82 +1,55 @@
-# username/repository
-id: dbarowy/AutoMan
-# name of the software
-name: AutoMan
-# current version of the software
-version: 1.4.1
-# licence of the software
-license: GPL v2.0
-licenseUrl: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
-# extension of the favicon, blank to disable
-favicon: ico
+# Welcome to Jekyll!
+#
+# This config file is meant for settings that affect your whole blog, values
+# which you are expected to set up once and rarely edit after that. If you find
+# yourself editing this file very often, consider using Jekyll's data files
+# feature for the data you need to update frequently.
+#
+# For technical reasons, this file is *NOT* reloaded automatically when you use
+# 'bundle exec jekyll serve'. If you change this file, please restart the server process.
+#
+# If you need help with YAML syntax, here are some quick references for you: 
+# https://learn-the-web.algonquindesign.ca/topics/markdown-yaml-cheat-sheet/#yaml
+# https://learnxinyminutes.com/docs/yaml/
+#
+# Site settings
+# These are used to personalize your new site. If you look in the HTML files,
+# you will see them accessed via {{ site.title }}, {{ site.email }}, and so on.
+# You can create any custom variable you would like, and they will be accessible
+# in the templates via {{ site.myvariable }}.
 
-markdown: kramdown
+title: Your awesome title
+email: your-email@example.com
+description: >- # this means to ignore newlines until "baseurl:"
+  Write an awesome description for your new site here. You can edit this
+  line in _config.yml. It will appear in your document head meta (for
+  Google search results) and in your feed.xml site description.
+baseurl: "" # the subpath of your site, e.g. /blog
+url: "" # the base hostname & protocol for your site, e.g. http://example.com
+twitter_username: jekyllrb
+github_username:  jekyll
 
-kramdown:
-  input: GFM
-  syntax_highlighter: rouge
+# Build settings
+theme: minima
+plugins:
+  - jekyll-feed
 
-# download button
-# if download.popup is true, the download button will open a popup with several download options
-# otherwise it will simply open download.url and other options are ignored
-# if download.popup is true, any option is optional
-# download.cdn.img is optional
-download:
-  popup: false
-  url: https://mvnrepository.com/artifact/org.automanlang/automan_2.12
-
-# set this to true to replace the generated header navbar by _includes/navbar.html
-customNavBar: true
-
-# list of additional links on the right of the top menu
-headerLinks:
-  - title: GitHub
-    url: https://github.com/dbarowy/AutoMan
-
-# list if additional links on the footer
-footerLinks:
-  - title: GitHub
-    url: https://github.com/dbarowy/AutoMan
-  - title: Issues
-    url: https://github.com/dbarowy/AutoMan/issues
-
-# header
-header:
-  color1: "#080331"
-  color2: "#673051"
-  trianglify: true
-
-# google analytics
-analytics:
-  account:
-  domain:
-
-# github buttons
-#githubButton:
-#  user: dbarowy
-#  repo: AutoMan
-
-# twitter buttons
-twitter:
-  enabled: false
-  via:
-  hash:
-  account:
-
-# facebook buttons
-facebook:
-  enabled: false
-  profileUrl:
-
-
-exclude: ['README.md', 'LICENSE', 'bower.json', 'Gemfile.lock', 'Gemfile']
-
-gems:
-  - jekyll-mentions
-  - jemoji
-  - jekyll-redirect-from
-  - jekyll-sitemap
-
-collections:
-  pages:
-    output: true
+# Exclude from processing.
+# The following items will not be processed, by default.
+# Any item listed under the `exclude:` key here will be automatically added to
+# the internal "default list".
+#
+# Excluded items can be processed by explicitly listing the directories or
+# their entries' file path in the `include:` list.
+#
+# exclude:
+#   - .sass-cache/
+#   - .jekyll-cache/
+#   - gemfiles/
+#   - Gemfile
+#   - Gemfile.lock
+#   - node_modules/
+#   - vendor/bundle/
+#   - vendor/cache/
+#   - vendor/gems/
+#   - vendor/ruby/
