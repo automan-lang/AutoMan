@@ -1,7 +1,3 @@
----
-description: Domain-Specific Language for Crowdsourcing Tasks
----
-
 # AutoMan
 
 ## What is AutoMan? <a id="overview"></a>
@@ -41,5 +37,5 @@ Notice in the above declaration and function call, there was no need to specify 
 
 ## Learn More
 
-To get started, start with our **Installation Tutorial** in the **Getting Started** section of these docs.  See the navbar to the left, or click on the link below.
+To get started, see our [documentation](docs.automanlang.org).
 
