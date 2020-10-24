@@ -1,40 +1,45 @@
-# AutoMan: Human-Computation Runtime
+---
+description: Domain-Specific Language for Crowdsourcing Tasks
+---
 
-AutoMan [documentation is here](https://automan-lang.github.io).
+# AutoMan
 
-## What is AutoMan?
+## What is AutoMan? <a id="overview"></a>
 
-AutoMan is the first fully automatic _crowdprogramming_ system. AutoMan integrates human-based ("crowdsourced") computations into a standard programming language as ordinary function calls that can be intermixed freely with traditional functions. This abstraction lets  programmers focus on their programming logic. An AutoMan program specifies a _confidence level_ for the overall computation and a _budget_. The AutoMan runtime system then transparently manages all details necessary for scheduling, pricing, and quality control. AutoMan automatically schedules human tasks for each computation until it achieves the desired confidence level; monitors, reprices, and restarts human tasks as necessary; and maximizes parallelism across human workers while staying under budget.
+AutoMan is the first fully automatic **crowdprogramming** system. With AutoMan, you declaratively define **human functions** and use them just as you would ordinary functions. Focus on your application logic instead of MTurk code.
 
-AutoMan is available as a library for Scala.
+AutoMan is currently available as a library for [Scala](https://www.scala-lang.org/).
 
-## Getting AutoMan
+## Example
 
-The easiest way to get AutoMan is via the Maven Central Repository.  If you're using SBT:
+```scala
+  def which_one() = radio (
+    budget = 5.00,
+    text = "Which one of these does not belong?",
+    options = (
+      choice('oscar, "Oscar the Grouch", "https://tinyurl.com/y2nf2h76"),
+      choice('kermit, "Kermit the Frog", "https://tinyurl.com/yxh2emmr"),
+      choice('spongebob, "Spongebob Squarepants", "https://tinyurl.com/y3uv2oew"),
+      choice('cookiemonster, "Cookie Monster", "https://tinyurl.com/y68x9zvx"),
+      choice('thecount, "The Count", "https://tinyurl.com/y6na5a8a")
+    )
+  )
 
-    libraryDependencies += "org.automanlang" %% "automan" % "1.4.1"
+```
 
-_or_ if you're using Maven:
+This function produces an MTurk task that looks like this:
 
-    <dependency>
-      <groupId>org.automanlang</groupId>
-      <artifactId>automan_2.12</artifactId>
-      <version>1.4.1</version>
-    </dependency>
+![A &quot;radio button&quot; question with 5 options, including images.](.gitbook/assets/spongebob.png)
 
-AutoMan 1.4.0+ requires Scala 2.12.
+The function can be called like any other function in Scala:
 
-## Latest Updates
+```scala
+which_one()
+```
 
-Lastest changes include:
+Notice in the above declaration and function call, there was no need to specify task wages, the number of workers, how to handle network errors or other system failures, or how to determine whether answers are good.  AutoMan _automatically_ handles pricing, quality control, and task management.
 
-* 2020-10-06: Bugfix that caused crash for checkbox distribution questions.
-* 2020-10-05: Support for latest Amazon MTurk SDK (mostly due to [Emmie Hine](https://www.linkedin.com/in/emmie-hine/)!)
+## Learn More
 
-## Bug Reports.
+To get started, start with our **Installation Tutorial** in the **Getting Started** section of these docs.  See the navbar to the left, or click on the link below.
 
-Please report bugs using this repository's issue tracker.
-
-## License
-
-AutoMan is licensed under the GPLv2, Copyright (C) 2011-2020 The University of Massachusetts, Amherst / Williams College.
