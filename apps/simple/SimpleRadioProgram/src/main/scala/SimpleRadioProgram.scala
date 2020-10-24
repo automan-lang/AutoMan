@@ -14,11 +14,11 @@ object SimpleRadioProgram extends App {
     budget = 8.00,
     text = "Which one of these does not belong?",
     options = (
-      choice('oscar, "Oscar the Grouch", "http://tinyurl.com/qfwlx56"),
-      choice('kermit, "Kermit the Frog", "http://tinyurl.com/nuwyz3u"),
-      choice('spongebob, "Spongebob Squarepants", "http://tinyurl.com/oj6wzx6"),
-      choice('cookiemonster, "Cookie Monster", "http://tinyurl.com/otb6thl"),
-      choice('thecount, "The Count", "http://tinyurl.com/nfdbyxa")
+      choice('oscar, "Oscar the Grouch", "https://tinyurl.com/y2nf2h76"),
+      choice('kermit, "Kermit the Frog", "https://tinyurl.com/yxh2emmr"),
+      choice('spongebob, "Spongebob Squarepants", "https://tinyurl.com/y3uv2oew"),
+      choice('cookiemonster, "Cookie Monster", "https://tinyurl.com/y68x9zvx"),
+      choice('thecount, "The Count", "https://tinyurl.com/y6na5a8a")
     ),
     minimum_spawn_policy = UserDefinableSpawnPolicy(0)
   )
