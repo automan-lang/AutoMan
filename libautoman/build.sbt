@@ -1,7 +1,7 @@
 // METADATA
 name := "automan"
 
-version := "1.4.1"
+version := "1.4.2-SNAPSHOT"
 
 organization := "org.automanlang"
 

@@ -1,8 +1,8 @@
 enablePlugins(PackPlugin)
 
-name := "SimpleCheckboxProgram"
+name := "SuperDuperSimplest"
 
-version := "0.3"
+version := "0.3.1"
 
 organization := "org.automanlang"
 

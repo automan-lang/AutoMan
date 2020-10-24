@@ -11,7 +11,7 @@ scalaVersion := "2.12.12"
 exportJars := true
 
 libraryDependencies ++= Seq(
-  "org.automanlang" %% "automan" % "1.4.1",
+  "org.automanlang" %% "automan" % "1.4.2",
   "com.amazonaws"   % "aws-java-sdk" % "1.11.875",
   "org.imgscalr"    %  "imgscalr-lib"	% "4.2",
   "software.amazon.awssdk" % "mturk" % "2.15.2"

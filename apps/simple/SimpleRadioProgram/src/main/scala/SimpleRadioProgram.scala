@@ -24,6 +24,7 @@ object SimpleRadioProgram extends App {
   )
 
   automan(a) {
+    /*
     which_one().answer match {
       case answer: Answer[Symbol] =>
         println("The answer is: " + answer.value)
@@ -33,5 +34,7 @@ object SimpleRadioProgram extends App {
           lowconf.value + "\" with a confidence of " + lowconf.confidence
         )
     }
+    */
+    println("Answer is: " + which_one())
   }
 }
