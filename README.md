@@ -37,5 +37,5 @@ Notice in the above declaration and function call, there was no need to specify 
 
 ## Learn More
 
-To get started, see our [documentation](docs.automanlang.org).
+To get started, see our [documentation](https://docs.automanlang.org).
 
