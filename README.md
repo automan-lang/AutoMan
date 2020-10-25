@@ -39,3 +39,6 @@ Notice in the above declaration and function call, there was no need to specify 
 
 To get started, see our [documentation](https://docs.automanlang.org).
 
+## Acknowledgements
+
+This material is based on work supported by National Science Foundation Grant Nos. CCF-1144520 and CCF-0953754 and DARPA Award N10AP2026. Microsoft Research also generously supported research and development by funding experiments on Mechanical Turk.
