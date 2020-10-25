@@ -20,6 +20,7 @@ apps/HowManyThings/HowManyThings.properties
 **/.AppleDouble
 # ignore the SBT-generated git hash object
 libautoman/src/main/scala/edu/umass/cs/automan/core/util/GitHash.scala
+libautoman/src/main/scala/org/automanlang/core/util/GitHash.scala
 
 # for Jekyll
 docs/_site
