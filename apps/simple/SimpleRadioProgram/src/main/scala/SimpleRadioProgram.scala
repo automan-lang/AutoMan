@@ -20,10 +20,18 @@ object SimpleRadioProgram extends App {
       choice('cookiemonster, "Cookie Monster", "https://tinyurl.com/y68x9zvx"),
       choice('thecount, "The Count", "https://tinyurl.com/y6na5a8a")
     ),
+    /* The following setting instructs AutoMan to allow HITs with
+     * fewer than 10 assignments; the tradeoff is that no batch may
+     * ever have more than 10 assignments :(
+     */
     minimum_spawn_policy = UserDefinableSpawnPolicy(0)
   )
 
   automan(a) {
+    /* We use pattern-matching to handle exceptional outcomes.
+     * Refer to the API documentation for cases:
+     *   https://docs.automanlang.org/technical-documentation/automan-api-reference
+     */
     which_one().answer match {
       case answer: Answer[Symbol] =>
         println("The answer is: " + answer.value)
