@@ -24,17 +24,16 @@ object SimpleRadioProgram extends App {
   )
 
   automan(a) {
-    /*
     which_one().answer match {
       case answer: Answer[Symbol] =>
         println("The answer is: " + answer.value)
       case lowconf: LowConfidenceAnswer[Symbol] =>
-        println(
-          "You ran out of money. The best answer is \"" +
-          lowconf.value + "\" with a confidence of " + lowconf.confidence
-        )
+        println("You ran out of money. The best answer is \"" +
+                lowconf.value + "\" with a confidence of " + lowconf.confidence)
+      case oba: OverBudgetAnswer[Symbol] =>
+        println("You have $" + oba.have + " but you need $" + oba.need +
+	        " to start this task.");
+      case _ => println("Something went wrong!")
     }
-    */
-    println("Answer is: " + which_one())
   }
 }
