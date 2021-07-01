@@ -22,6 +22,8 @@ case class QuestionInfo(computation_id: UUID,
 
 object QuestionType extends Enumeration {
   type QuestionType = Value
+  val HugoQuestion = Value("HugoQuestion")
+  val FileDistributionQuestion = Value("FileDistributionQuestion")
   val CheckboxQuestion = Value("CheckboxQuestion")
   val CheckboxDistributionQuestion = Value("CheckboxDistributionQuestion")
   val MultiEstimationQuestion = Value("MultiEstimationQuestion")

@@ -173,6 +173,7 @@ class Scheduler(val question: Question,
     val answer = try {
       while(!_done) {
         val __duration = Stopwatch {
+
           DebugLog("Scheduler time is " + Time.format(_time.current_time) + ".", LogLevelInfo(), LogType.SCHEDULER, question.id)
 
           // marshal and unmarshal from backend

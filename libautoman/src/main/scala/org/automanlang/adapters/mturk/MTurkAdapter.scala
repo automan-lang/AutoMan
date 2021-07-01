@@ -40,6 +40,8 @@ class MTurkAdapter extends AutomanAdapter {
   // these types provide MTurk implementations for
   // AutomanAdapter virtual methods
   override type CBQ     = MTCheckboxQuestion
+  override type HQ      = MTHugoQuestion
+  override type FQ      = MTFileVectorQuestion
   override type CBDQ    = MTCheckboxVectorQuestion
   override type MEQ     = MTMultiEstimationQuestion
   override type EQ      = MTEstimationQuestion
@@ -83,6 +85,7 @@ class MTurkAdapter extends AutomanAdapter {
   def secret_access_key_=(s: String) { _secret_access_key = Some(s) }
 
   protected def CBQFactory()  = new MTCheckboxQuestion
+  protected def HQFactory()   = new MTHugoQuestion
   protected def CBDQFactory() = new MTCheckboxVectorQuestion
   protected def MEQFactory()  = new MTMultiEstimationQuestion(sandbox_mode)
   protected def EQFactory()   = new MTEstimationQuestion
@@ -90,6 +93,7 @@ class MTurkAdapter extends AutomanAdapter {
   protected def FTDQFactory() = new MTFreeTextVectorQuestion
   protected def RBQFactory()  = new MTRadioButtonQuestion()
   protected def RBDQFactory() = new MTRadioButtonVectorQuestion
+  protected def FQFactory()   = new MTFileVectorQuestion
 
   def Option(id: Symbol, text: String) = new MTQuestionOption(id, text, "")
   def Option(id: Symbol, text: String, image_url: String) = new MTQuestionOption(id, text, image_url)
@@ -124,7 +128,12 @@ class MTurkAdapter extends AutomanAdapter {
   }
   protected[automanlang] def retrieve(ts: List[Task], current_time: Date) = {
     assert(ts.forall(_.state == SchedulerState.RUNNING))
-    run_if_initialized((p: TurkWorker) => p.retrieve(ts, current_time))
+    println("task list")
+    println(ts)
+    val r = run_if_initialized((p: TurkWorker) => p.retrieve(ts, current_time))
+    println("r")
+    println("here in r " + r)
+    r
   }
   protected[automanlang] def requesterService = _service
   override protected[automanlang] def question_startup_hook(q: Question, t: Date): Unit = {

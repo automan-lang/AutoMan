@@ -51,6 +51,7 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
   implicit val javaUtilDateMapper = DBTaskHistory.javaUtilDateMapper
   implicit val symbolStringMapper = DBRadioButtonAnswer.symbolStringMapper
   implicit val symbolSetStringMapper = DBCheckboxAnswer.symbolSetStringMapper
+  implicit val symbolSetTupleStringMapper = DBHugoAnswer.symbolSetTupleStringMapper
   implicit val questionTypeMapper = DBQuestion.questionTypeMapper
   implicit val estimateArrayMapper = DBMultiEstimationAnswer.estimateArrayMapper
 
@@ -60,6 +61,7 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
   type DBQuestion = (UUID, String, QuestionType, String, String)
   type DBRadioButtonAnswer = (Int, Symbol, String)
   type DBCheckboxAnswer = (Int, Set[Symbol], String)
+  type DBHugoAnswer = (Int, (Set[Symbol], Set[Symbol]), String)
   type DBEstimationAnswer = (Int, Double, String)
   type DBFreeTextAnswer = (Int, String, String)
   type DBMultiEstimationAnswer = (Int, Array[Double], String)
@@ -76,6 +78,7 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
   protected[automanlang] val dbTask = TableQuery[org.automanlang.core.logging.tables.DBTask]
   protected[automanlang] val dbTaskHistory = TableQuery[org.automanlang.core.logging.tables.DBTaskHistory]
   protected[automanlang] val dbQuestion = TableQuery[org.automanlang.core.logging.tables.DBQuestion]
+  protected[automanlang] val dbHugoAnswer = TableQuery[org.automanlang.core.logging.tables.DBHugoAnswer]
   protected[automanlang] val dbCheckboxAnswer = TableQuery[org.automanlang.core.logging.tables.DBCheckboxAnswer]
   protected[automanlang] val dbEstimationAnswer = TableQuery[org.automanlang.core.logging.tables.DBEstimationAnswer]
   protected[automanlang] val dbFreeTextAnswer = TableQuery[org.automanlang.core.logging.tables.DBFreeTextAnswer]
@@ -140,6 +143,7 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
       dbTaskHistory.ddl ++
       dbQuestion.ddl ++
       dbCheckboxAnswer.ddl ++
+      dbHugoAnswer.ddl ++
       dbEstimationAnswer.ddl ++
       dbFreeTextAnswer.ddl ++
       dbRadioButtonAnswer.ddl ++
@@ -184,6 +188,27 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
             h.answer.?,
             th.state_change_time,
             QuestionType.CheckboxQuestion)
+          }.list.distinct
+        ts.map { t => new TaskSnapshot(t) }
+      case QuestionType.HugoQuestion =>
+        val ts = allTasksQuery()
+          .filter { case (q,(t,h)) => q.question_type === qt }
+          .leftJoin(dbHugoAnswer).on(_._2._2.history_id === _.history_id)
+          .map { case ((q,(t,th)),h) =>
+            ( t.task_id,
+              q.id,
+              q.title,
+              q.text,
+              t.round,
+              t.timeout_in_s,
+              t.worker_timeout_in_s,
+              t.cost,
+              t.creation_time,
+              th.scheduler_state,
+              h.worker_id.?,
+              h.answer.?,
+              th.state_change_time,
+              QuestionType.HugoQuestion)
           }.list.distinct
         ts.map { t => new TaskSnapshot(t) }
       case QuestionType.CheckboxDistributionQuestion =>
@@ -349,6 +374,7 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
       case Some(db) => {
         db.withSession { s =>
           restore_task_snapshots_of_type(QuestionType.CheckboxQuestion)(s) :::
+          restore_task_snapshots_of_type(QuestionType.HugoQuestion)(s) :::
           restore_task_snapshots_of_type(QuestionType.CheckboxDistributionQuestion)(s) :::
           restore_task_snapshots_of_type(QuestionType.EstimationQuestion)(s) :::
           restore_task_snapshots_of_type(QuestionType.FreeTextQuestion)(s) :::
@@ -431,6 +457,24 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
 
             }
           }
+          case HugoQuestion => {
+            (fQS_TS_THS leftJoin dbHugoAnswer on (_._2._2.history_id === _.history_id)).map {
+              case ((dbquestion, (dbtask, dbtaskhistory)), dbhugoanswer) =>
+                (dbtask.task_id,
+                  dbtask.round,
+                  dbtask.timeout_in_s,
+                  dbtask.worker_timeout_in_s,
+                  dbtask.cost,
+                  dbtask.creation_time,
+                  dbtaskhistory.scheduler_state,
+                  true,
+                  dbhugoanswer.worker_id.?,
+                  dbhugoanswer.answer.?,
+                  dbtaskhistory.state_change_time
+                )
+
+            }
+          }
           case CheckboxDistributionQuestion => {
             (fQS_TS_THS leftJoin dbCheckboxAnswer on (_._2._2.history_id === _.history_id)).map {
               case ((dbquestion, (dbtask, dbtaskhistory)), dbcbda) =>
@@ -498,6 +542,23 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
                   dbfreetextanswer.answer.?,
                   dbtaskhistory.state_change_time
                   )
+            }
+          }
+          case FileDistributionQuestion => {
+            (fQS_TS_THS leftJoin dbFreeTextAnswer on (_._2._2.history_id === _.history_id)).map {
+              case ((dbquestion, (dbtask, dbtaskhistory)), dbftda) =>
+                (dbtask.task_id,
+                  dbtask.round,
+                  dbtask.timeout_in_s,
+                  dbtask.worker_timeout_in_s,
+                  dbtask.cost,
+                  dbtask.creation_time,
+                  dbtaskhistory.scheduler_state,
+                  true,
+                  dbftda.worker_id.?,
+                  dbftda.answer.?,
+                  dbtaskhistory.state_change_time
+                )
             }
           }
           case FreeTextDistributionQuestion => {
@@ -671,6 +732,8 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
   protected[automanlang] def insertAnswerTable(ts: List[Task], histories: Seq[(UUID, Int)])(implicit session: DBSession) = {
     assert(ts.nonEmpty)
     ts.head.question.getQuestionType match {
+      case HugoQuestion =>
+        dbHugoAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBHugoAnswer]]
       case CheckboxQuestion =>
         dbCheckboxAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBCheckboxAnswer]]
       case CheckboxDistributionQuestion =>
@@ -682,6 +745,8 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
       case FreeTextQuestion =>
         dbFreeTextAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBFreeTextAnswer]]
       case FreeTextDistributionQuestion =>
+        dbFreeTextAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBFreeTextAnswer]]
+      case FileDistributionQuestion =>
         dbFreeTextAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBFreeTextAnswer]]
       case RadioButtonQuestion =>
         dbRadioButtonAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBRadioButtonAnswer]]

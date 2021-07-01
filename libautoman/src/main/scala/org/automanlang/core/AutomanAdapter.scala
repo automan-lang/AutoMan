@@ -12,6 +12,8 @@ abstract class AutomanAdapter {
   // question types are determined by adapter implementations
   // answer types are invariant
   type CBQ    <: CheckboxQuestion           // answer scalar
+  type HQ     <: HugoQuestion
+  type FQ     <: FileVectorQuestion
   type CBDQ   <: CheckboxVectorQuestion     // answer vector
   type MEQ    <: MultiEstimationQuestion    // answer multi-estimate
   type EQ     <: EstimationQuestion         // answer estimate
@@ -123,10 +125,12 @@ abstract class AutomanAdapter {
 
   // User API
   def CheckboxQuestion(init: CBQ => Unit) = schedule(CBQFactory(), init)
+  def HugoQuestion(init: HQ => Unit) = schedule(HQFactory(), init)
   def CheckboxDistributionQuestion(init: CBDQ => Unit) = schedule(CBDQFactory(), init)
   def MultiEstimationQuestion(init: MEQ => Unit) = schedule(MEQFactory(), init)
   def EstimationQuestion(init: EQ => Unit) = schedule(EQFactory(), init)
   def FreeTextQuestion(init: FTQ => Unit) = schedule(FTQFactory(), init)
+  def FileDistributionQuestion(init: FQ => Unit) = schedule(FQFactory(), init)
   def FreeTextDistributionQuestion(init: FTDQ => Unit) = schedule(FTDQFactory(), init)
   def RadioButtonQuestion(init: RBQ => Unit) = schedule(RBQFactory(), init)
   def RadioButtonDistributionQuestion(init: RBDQ => Unit) = schedule(RBDQFactory(), init)
@@ -233,10 +237,12 @@ abstract class AutomanAdapter {
   // the JVM erases our type parameters (RBQ) at runtime
   // and thus 'new RBQ' does not suffice in the DSL call above
   protected def CBQFactory() : CBQ
+  protected def HQFactory() : HQ
   protected def CBDQFactory() : CBDQ
   protected def MEQFactory() : MEQ
   protected def EQFactory() : EQ
   protected def FTQFactory() : FTQ
+  protected def FQFactory() : FQ
   protected def FTDQFactory() : FTDQ
   protected def RBQFactory() : RBQ
   protected def RBDQFactory() : RBDQ
