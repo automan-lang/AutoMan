@@ -37,8 +37,6 @@ case class Task(task_id: UUID,
   }
 
   def prettyPrintAnswer: String = {
-    println("question")
-    println(Task.this.question)
     this._answer match {
       case Some(a) => question.prettyPrintAnswer(a.asInstanceOf[Task.this.question.A])
       case None => "n/a"

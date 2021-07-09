@@ -111,6 +111,78 @@ trait DSL {
     a.EstimationQuestion(initf)
   }
 
+
+  def est[A <: AutomanAdapter](
+                                     confidence_interval: ConfidenceInterval = UnconstrainedCI(),
+                                     confidence: Double = MagicNumbers.DefaultConfidence,
+                                     budget: BigDecimal = MagicNumbers.DefaultBudget,
+                                     default_sample_size: Int = -1,
+                                     dont_reject: Boolean = true,
+                                     dry_run: Boolean = false,
+                                     estimator: Seq[Double] => Double = null,
+                                     image_alt_text: String = null,
+                                     image_url: String = null,
+                                     initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
+                                     max_value: Double = Double.MaxValue,
+                                     minimum_spawn_policy: MinimumSpawnPolicy = null,
+                                     min_value: Double = Double.MinValue,
+                                     mock_answers: Iterable[MockAnswer[Double]] = null,
+                                     pay_all_on_failure: Boolean = true,
+                                     question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
+                                     text: String,
+                                     title: String = null,
+                                     wage: BigDecimal = MagicNumbers.USFederalMinimumWage
+                                   )
+                                   (implicit a: A): EstimationQuestion = {
+    def initf[Q <: EstimationQuestion](q: Q) = {
+      // mandatory parameters
+      q.text = text
+
+      // mandatory parameters with sane defaults
+      q.confidence_interval = confidence_interval
+      q.confidence = confidence
+      q.budget = budget
+      q.dont_reject = dont_reject
+      q.dry_run = dry_run
+      q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
+      q.pay_all_on_failure = pay_all_on_failure
+      q.question_timeout_multiplier = question_timeout_multiplier
+
+      // optional parameters
+      if (default_sample_size != -1 && default_sample_size > 0) {
+        q.default_sample_size = default_sample_size
+      }
+      if (estimator != null) {
+        q.estimator = estimator
+      }
+      if (image_alt_text != null) {
+        q.image_alt_text = image_alt_text
+      }
+      if (image_url != null) {
+        q.image_url = image_url
+      }
+      if (max_value != Double.MaxValue) {
+        q.max_value = max_value
+      }
+      if (min_value != Double.MinValue) {
+        q.min_value = min_value
+      }
+      if (title != null) {
+        q.title = title
+      }
+      if (mock_answers != null) {
+        q.mock_answers = mock_answers
+      }
+      if (minimum_spawn_policy != null) {
+        q.minimum_spawn_policy = minimum_spawn_policy
+      }
+    }
+
+    a.EstQuestion(initf)
+  }
+
+
+
   def multiestimate[A <: AutomanAdapter](
                                           dimensions: Array[Dimension],
                                           confidence: Double = MagicNumbers.DefaultConfidence,
@@ -227,6 +299,68 @@ trait DSL {
 
     a.FreeTextQuestion(initf)
   }
+
+
+  def ftxt[A <: AutomanAdapter](
+                                     allow_empty_pattern: Boolean = false,
+                                     confidence: Double = MagicNumbers.DefaultConfidence,
+                                     before_filter: String => String = (a: String) => a,
+                                     budget: BigDecimal = MagicNumbers.DefaultBudget,
+                                     dont_reject: Boolean = true,
+                                     dry_run: Boolean = false,
+                                     image_alt_text: String = null,
+                                     image_url: String = null,
+                                     initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
+                                     minimum_spawn_policy: MinimumSpawnPolicy = null,
+                                     mock_answers: Iterable[MockAnswer[String]] = null,
+                                     pay_all_on_failure: Boolean = true,
+                                     pattern: String,
+                                     pattern_error_text: String = null,
+                                     question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
+                                     text: String,
+                                     title: String = null,
+                                     wage: BigDecimal = MagicNumbers.USFederalMinimumWage
+                                   )
+                                   (implicit a: A): FreeTextQuestion = {
+    def initf[Q <: FreeTextQuestion](q: Q) = {
+      // mandatory parameters
+      q.text = text
+      q.pattern = pattern
+
+      // mandatory parameters with sane defaults
+      q.allow_empty_pattern = allow_empty_pattern
+      q.confidence = confidence
+      q.budget = budget
+      q.dont_reject = dont_reject
+      q.dry_run = dry_run
+      q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
+      q.pay_all_on_failure = pay_all_on_failure
+      q.question_timeout_multiplier = question_timeout_multiplier
+
+      // optional parameters
+      if (image_alt_text != null) {
+        q.image_alt_text = image_alt_text
+      }
+      if (image_url != null) {
+        q.image_url = image_url
+      }
+      if (pattern_error_text != null) {
+        q.pattern_error_text = pattern_error_text
+      }
+      if (title != null) {
+        q.title = title
+      }
+      if (mock_answers != null) {
+        q.mock_answers = mock_answers
+      }
+      if (minimum_spawn_policy != null) {
+        q.minimum_spawn_policy = minimum_spawn_policy
+      }
+    }
+
+    a.FtxtQuestion(initf)
+  }
+
 
   def freetexts[A <: AutomanAdapter](
                                       allow_empty_pattern: Boolean = false,
@@ -408,6 +542,61 @@ trait DSL {
   }
 
 
+  // checkbox variant to be used within a survey
+  def chx[A <: AutomanAdapter, O](
+                                        confidence: Double = MagicNumbers.DefaultConfidence,
+                                        budget: BigDecimal = MagicNumbers.DefaultBudget,
+                                        dont_reject: Boolean = true,
+                                        dry_run: Boolean = false,
+                                        image_alt_text: String = null,
+                                        image_url: String = null,
+                                        initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
+                                        minimum_spawn_policy: MinimumSpawnPolicy = null,
+                                        mock_answers: Iterable[MockAnswer[Set[Symbol]]] = null,
+                                        options: List[AnyRef],
+                                        pay_all_on_failure: Boolean = true,
+                                        question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
+                                        text: String,
+                                        title: String = null,
+                                        wage: BigDecimal = MagicNumbers.USFederalMinimumWage
+                                      )
+                                      (implicit a: A): CheckboxQuestion = {
+    def initf[Q <: CheckboxQuestion](q: Q) = {
+      // mandatory parameters
+      q.text = text
+      q.options = options.asInstanceOf[List[q.QuestionOptionType]] // yeah... ugly
+
+      // mandatory parameters with sane defaults
+      q.confidence = confidence
+      q.budget = budget
+      q.dont_reject = dont_reject
+      q.dry_run = dry_run
+      q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
+      q.pay_all_on_failure = pay_all_on_failure
+      q.question_timeout_multiplier = question_timeout_multiplier
+
+      // optional parameters
+      if (image_alt_text != null) {
+        q.image_alt_text = image_alt_text
+      }
+      if (image_url != null) {
+        q.image_url = image_url
+      }
+      if (title != null) {
+        q.title = title
+      }
+      if (mock_answers != null) {
+        q.mock_answers = mock_answers
+      }
+      if (minimum_spawn_policy != null) {
+        q.minimum_spawn_policy = minimum_spawn_policy
+      }
+    }
+
+    a.ChxQuestion(initf)
+  }
+
+
   def hugo[A <: AutomanAdapter, O](
                                         confidence: Double = MagicNumbers.DefaultConfidence,
                                         budget: BigDecimal = MagicNumbers.DefaultBudget,
@@ -460,6 +649,68 @@ trait DSL {
 
     a.HugoQuestion(initf)
   }
+
+
+  def survey[A <: AutomanAdapter, O](
+                                    questions: List[Question] = List(),
+                                    confidence: Double = MagicNumbers.DefaultConfidence,
+                                    budget: BigDecimal = MagicNumbers.DefaultBudget,
+                                    dont_reject: Boolean = true,
+                                    dry_run: Boolean = false,
+                                    image_alt_text: String = null,
+                                    image_url: String = null,
+                                    initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
+                                    minimum_spawn_policy: MinimumSpawnPolicy = null,
+                                    mock_answers: Iterable[MockAnswer[List[Any]]] = null,
+                                    options: List[AnyRef],
+                                    pay_all_on_failure: Boolean = true,
+                                    question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
+                                    text: String,
+                                    title: String = null,
+                                    wage: BigDecimal = MagicNumbers.USFederalMinimumWage
+                                  )
+                                  (implicit a: A): ScalarOutcome[List[Any]] = {
+    def initf[Q <: SurveyQuestion](q: Q) = {
+
+      q.questions = questions
+
+      // mandatory parameters
+      q.text = text
+      q.options = options.asInstanceOf[List[q.QuestionOptionType]] // yeah... ugly
+
+      // mandatory parameters with sane defaults
+      q.confidence = confidence
+      q.budget = budget
+      q.dont_reject = dont_reject
+      q.dry_run = dry_run
+      q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
+      q.pay_all_on_failure = pay_all_on_failure
+      q.question_timeout_multiplier = question_timeout_multiplier
+
+      // optional parameters
+      if (image_alt_text != null) {
+        q.image_alt_text = image_alt_text
+      }
+      if (image_url != null) {
+        q.image_url = image_url
+      }
+      if (title != null) {
+        q.title = title
+      }
+      if (mock_answers != null) {
+        q.mock_answers = mock_answers
+      }
+      if (minimum_spawn_policy != null) {
+        q.minimum_spawn_policy = minimum_spawn_policy
+      }
+
+
+    }
+
+    a.SurveyQuestion(initf)
+
+  }
+
 
   def checkboxes[A <: AutomanAdapter, O](
                                           sample_size: Int = MagicNumbers.DefaultSampleSizeForDistrib,
@@ -514,6 +765,60 @@ trait DSL {
     a.CheckboxDistributionQuestion(initf)
   }
 
+
+
+  def rad[A <: AutomanAdapter, O](
+                                     confidence: Double = MagicNumbers.DefaultConfidence,
+                                     budget: BigDecimal = MagicNumbers.DefaultBudget,
+                                     dont_reject: Boolean = true,
+                                     dry_run: Boolean = false,
+                                     image_alt_text: String = null,
+                                     image_url: String = null,
+                                     initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
+                                     minimum_spawn_policy: MinimumSpawnPolicy = null,
+                                     mock_answers: Iterable[MockAnswer[Symbol]] = null,
+                                     options: List[AnyRef],
+                                     pay_all_on_failure: Boolean = true,
+                                     question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
+                                     text: String,
+                                     title: String = null,
+                                     wage: BigDecimal = MagicNumbers.USFederalMinimumWage
+                                   )
+                                   (implicit a: A): RadioButtonQuestion = {
+    def initf[Q <: RadioButtonQuestion](q: Q) = {
+      // mandatory parameters
+      q.text = text
+      q.options = options.asInstanceOf[List[q.QuestionOptionType]] // yeah... ugly
+
+      // mandatory parameters with sane defaults
+      q.confidence = confidence
+      q.budget = budget
+      q.dont_reject = dont_reject
+      q.dry_run = dry_run
+      q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
+      q.pay_all_on_failure = pay_all_on_failure
+      q.question_timeout_multiplier = question_timeout_multiplier
+
+      // optional parameters
+      if (image_alt_text != null) {
+        q.image_alt_text = image_alt_text
+      }
+      if (image_url != null) {
+        q.image_url = image_url
+      }
+      if (title != null) {
+        q.title = title
+      }
+      if (mock_answers != null) {
+        q.mock_answers = mock_answers
+      }
+      if (minimum_spawn_policy != null) {
+        q.minimum_spawn_policy = minimum_spawn_policy
+      }
+    }
+
+    a.RadQuestion(initf)
+  }
 
 
   def radio[A <: AutomanAdapter, O](

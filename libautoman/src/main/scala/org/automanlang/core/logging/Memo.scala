@@ -51,6 +51,7 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
   implicit val javaUtilDateMapper = DBTaskHistory.javaUtilDateMapper
   implicit val symbolStringMapper = DBRadioButtonAnswer.symbolStringMapper
   implicit val symbolSetStringMapper = DBCheckboxAnswer.symbolSetStringMapper
+  implicit val symbolListAnyStringMapper = DBSurveyAnswer.symbolListAnyStringMapper
   implicit val symbolSetTupleStringMapper = DBHugoAnswer.symbolSetTupleStringMapper
   implicit val questionTypeMapper = DBQuestion.questionTypeMapper
   implicit val estimateArrayMapper = DBMultiEstimationAnswer.estimateArrayMapper
@@ -62,6 +63,7 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
   type DBRadioButtonAnswer = (Int, Symbol, String)
   type DBCheckboxAnswer = (Int, Set[Symbol], String)
   type DBHugoAnswer = (Int, (Set[Symbol], Set[Symbol]), String)
+  type DBSurveyAnswer = (Int, List[Any], String)
   type DBEstimationAnswer = (Int, Double, String)
   type DBFreeTextAnswer = (Int, String, String)
   type DBMultiEstimationAnswer = (Int, Array[Double], String)
@@ -79,6 +81,7 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
   protected[automanlang] val dbTaskHistory = TableQuery[org.automanlang.core.logging.tables.DBTaskHistory]
   protected[automanlang] val dbQuestion = TableQuery[org.automanlang.core.logging.tables.DBQuestion]
   protected[automanlang] val dbHugoAnswer = TableQuery[org.automanlang.core.logging.tables.DBHugoAnswer]
+  protected[automanlang] val dbSurveyAnswer = TableQuery[org.automanlang.core.logging.tables.DBSurveyAnswer]
   protected[automanlang] val dbCheckboxAnswer = TableQuery[org.automanlang.core.logging.tables.DBCheckboxAnswer]
   protected[automanlang] val dbEstimationAnswer = TableQuery[org.automanlang.core.logging.tables.DBEstimationAnswer]
   protected[automanlang] val dbFreeTextAnswer = TableQuery[org.automanlang.core.logging.tables.DBFreeTextAnswer]
@@ -144,6 +147,7 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
       dbQuestion.ddl ++
       dbCheckboxAnswer.ddl ++
       dbHugoAnswer.ddl ++
+      dbSurveyAnswer.ddl ++
       dbEstimationAnswer.ddl ++
       dbFreeTextAnswer.ddl ++
       dbRadioButtonAnswer.ddl ++
@@ -209,6 +213,27 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
               h.answer.?,
               th.state_change_time,
               QuestionType.HugoQuestion)
+          }.list.distinct
+        ts.map { t => new TaskSnapshot(t) }
+      case QuestionType.SurveyQuestion =>
+        val ts = allTasksQuery()
+          .filter { case (q,(t,h)) => q.question_type === qt }
+          .leftJoin(dbSurveyAnswer).on(_._2._2.history_id === _.history_id)
+          .map { case ((q,(t,th)),h) =>
+            ( t.task_id,
+              q.id,
+              q.title,
+              q.text,
+              t.round,
+              t.timeout_in_s,
+              t.worker_timeout_in_s,
+              t.cost,
+              t.creation_time,
+              th.scheduler_state,
+              h.worker_id.?,
+              h.answer.?,
+              th.state_change_time,
+              QuestionType.SurveyQuestion)
           }.list.distinct
         ts.map { t => new TaskSnapshot(t) }
       case QuestionType.CheckboxDistributionQuestion =>
@@ -374,6 +399,7 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
       case Some(db) => {
         db.withSession { s =>
           restore_task_snapshots_of_type(QuestionType.CheckboxQuestion)(s) :::
+          restore_task_snapshots_of_type(QuestionType.SurveyQuestion)(s) :::
           restore_task_snapshots_of_type(QuestionType.HugoQuestion)(s) :::
           restore_task_snapshots_of_type(QuestionType.CheckboxDistributionQuestion)(s) :::
           restore_task_snapshots_of_type(QuestionType.EstimationQuestion)(s) :::
@@ -454,6 +480,24 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
                   dbcheckboxanswer.answer.?,
                   dbtaskhistory.state_change_time
                   )
+
+            }
+          }
+          case SurveyQuestion => {
+            (fQS_TS_THS leftJoin dbSurveyAnswer on (_._2._2.history_id === _.history_id)).map {
+              case ((dbquestion, (dbtask, dbtaskhistory)), dbsurveyanswer) =>
+                (dbtask.task_id,
+                  dbtask.round,
+                  dbtask.timeout_in_s,
+                  dbtask.worker_timeout_in_s,
+                  dbtask.cost,
+                  dbtask.creation_time,
+                  dbtaskhistory.scheduler_state,
+                  true,
+                  dbsurveyanswer.worker_id.?,
+                  dbsurveyanswer.answer.?,
+                  dbtaskhistory.state_change_time
+                )
 
             }
           }
@@ -734,6 +778,8 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
     ts.head.question.getQuestionType match {
       case HugoQuestion =>
         dbHugoAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBHugoAnswer]]
+      case SurveyQuestion =>
+        dbSurveyAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBSurveyAnswer]]
       case CheckboxQuestion =>
         dbCheckboxAnswer ++= task2TaskAnswerTuple(ts, histories).asInstanceOf[List[DBCheckboxAnswer]]
       case CheckboxDistributionQuestion =>

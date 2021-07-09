@@ -40,6 +40,7 @@ class MTurkAdapter extends AutomanAdapter {
   // these types provide MTurk implementations for
   // AutomanAdapter virtual methods
   override type CBQ     = MTCheckboxQuestion
+  override type SQ      = MTSurveyQuestion
   override type HQ      = MTHugoQuestion
   override type FQ      = MTFileVectorQuestion
   override type CBDQ    = MTCheckboxVectorQuestion
@@ -85,6 +86,7 @@ class MTurkAdapter extends AutomanAdapter {
   def secret_access_key_=(s: String) { _secret_access_key = Some(s) }
 
   protected def CBQFactory()  = new MTCheckboxQuestion
+  protected def SQFactory()   = new MTSurveyQuestion
   protected def HQFactory()   = new MTHugoQuestion
   protected def CBDQFactory() = new MTCheckboxVectorQuestion
   protected def MEQFactory()  = new MTMultiEstimationQuestion(sandbox_mode)
@@ -128,11 +130,7 @@ class MTurkAdapter extends AutomanAdapter {
   }
   protected[automanlang] def retrieve(ts: List[Task], current_time: Date) = {
     assert(ts.forall(_.state == SchedulerState.RUNNING))
-    println("task list")
-    println(ts)
     val r = run_if_initialized((p: TurkWorker) => p.retrieve(ts, current_time))
-    println("r")
-    println("here in r " + r)
     r
   }
   protected[automanlang] def requesterService = _service

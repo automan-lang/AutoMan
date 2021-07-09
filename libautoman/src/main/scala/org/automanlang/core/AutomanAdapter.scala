@@ -12,6 +12,7 @@ abstract class AutomanAdapter {
   // question types are determined by adapter implementations
   // answer types are invariant
   type CBQ    <: CheckboxQuestion           // answer scalar
+  type SQ     <: SurveyQuestion
   type HQ     <: HugoQuestion
   type FQ     <: FileVectorQuestion
   type CBDQ   <: CheckboxVectorQuestion     // answer vector
@@ -125,6 +126,7 @@ abstract class AutomanAdapter {
 
   // User API
   def CheckboxQuestion(init: CBQ => Unit) = schedule(CBQFactory(), init)
+  def SurveyQuestion(init: SQ => Unit) = schedule(SQFactory(), init)
   def HugoQuestion(init: HQ => Unit) = schedule(HQFactory(), init)
   def CheckboxDistributionQuestion(init: CBDQ => Unit) = schedule(CBDQFactory(), init)
   def MultiEstimationQuestion(init: MEQ => Unit) = schedule(MEQFactory(), init)
@@ -135,6 +137,19 @@ abstract class AutomanAdapter {
   def RadioButtonQuestion(init: RBQ => Unit) = schedule(RBQFactory(), init)
   def RadioButtonDistributionQuestion(init: RBDQ => Unit) = schedule(RBDQFactory(), init)
   def Option(id: Symbol, text: String) : QuestionOption
+
+  def ChxQuestion(init: CBQ => Unit) = returnQuestion(CBQFactory(), init)
+  def RadQuestion(init: RBQ => Unit) = returnQuestion(RBQFactory(), init)
+  def FtxtQuestion(init: FTQ => Unit) = returnQuestion(FTQFactory(), init)
+  def EstQuestion(init: EQ => Unit) = returnQuestion(EQFactory(), init)
+
+  // To be used for inner questions of a survey question. Initializes the question and returns it
+  protected[automanlang] def returnQuestion[Q <: Question](q: Q, init: Q => Unit) : Q = {
+
+    init(q)
+    q
+
+  }
 
   // state management
   protected[automanlang] def close() = {
@@ -237,6 +252,7 @@ abstract class AutomanAdapter {
   // the JVM erases our type parameters (RBQ) at runtime
   // and thus 'new RBQ' does not suffice in the DSL call above
   protected def CBQFactory() : CBQ
+  protected def SQFactory(): SQ
   protected def HQFactory() : HQ
   protected def CBDQFactory() : CBDQ
   protected def MEQFactory() : MEQ

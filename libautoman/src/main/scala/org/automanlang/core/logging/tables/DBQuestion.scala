@@ -19,6 +19,7 @@ object DBQuestion {
       case Survey => 8
       case HugoQuestion => 9
       case FileDistributionQuestion => 10
+      case SurveyQuestion => 11
     },
     {
       case 0 => CheckboxQuestion
@@ -32,6 +33,7 @@ object DBQuestion {
       case 8 => Survey
       case 9 => HugoQuestion
       case 10 => FileDistributionQuestion
+      case 11 => SurveyQuestion
     }
     )
 }
