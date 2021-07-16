@@ -126,7 +126,7 @@ abstract class AutomanAdapter {
 
   // User API
   def CheckboxQuestion(init: CBQ => Unit) = schedule(CBQFactory(), init)
-  def SurveyQuestion(init: SQ => Unit) = schedule(SQFactory(), init)
+  def SurveyQuestion(init: SQ => Unit): SQ#O = schedule(SQFactory(), init)
   def HugoQuestion(init: HQ => Unit) = schedule(HQFactory(), init)
   def CheckboxDistributionQuestion(init: CBDQ => Unit) = schedule(CBDQFactory(), init)
   def MultiEstimationQuestion(init: MEQ => Unit) = schedule(MEQFactory(), init)

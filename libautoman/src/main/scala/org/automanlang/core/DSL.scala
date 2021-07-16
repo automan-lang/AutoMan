@@ -652,8 +652,8 @@ trait DSL {
 
 
   def survey[A <: AutomanAdapter, O](
+                                    sample_size: Integer = 30,
                                     questions: List[Question] = List(),
-                                    confidence: Double = MagicNumbers.DefaultConfidence,
                                     budget: BigDecimal = MagicNumbers.DefaultBudget,
                                     dont_reject: Boolean = true,
                                     dry_run: Boolean = false,
@@ -669,21 +669,22 @@ trait DSL {
                                     title: String = null,
                                     wage: BigDecimal = MagicNumbers.USFederalMinimumWage
                                   )
-                                  (implicit a: A): ScalarOutcome[List[Any]] = {
+                                  (implicit a: A): VectorOutcome[List[Any]] = {
     def initf[Q <: SurveyQuestion](q: Q) = {
 
       q.questions = questions
+
+      q.sample_size = sample_size
 
       // mandatory parameters
       q.text = text
       q.options = options.asInstanceOf[List[q.QuestionOptionType]] // yeah... ugly
 
       // mandatory parameters with sane defaults
-      q.confidence = confidence
       q.budget = budget
       q.dont_reject = dont_reject
       q.dry_run = dry_run
-      q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
+      q.initial_worker_timeout_in_s = initial_worker_timeout_in_s * q.questions.length
       q.pay_all_on_failure = pay_all_on_failure
       q.question_timeout_multiplier = question_timeout_multiplier
 
