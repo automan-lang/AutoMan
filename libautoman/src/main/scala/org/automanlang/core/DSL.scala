@@ -6,6 +6,10 @@ import org.automanlang.core.question.confidence._
 import org.automanlang.core.policy.aggregation._
 import org.automanlang.core.mock._
 
+import java.io.{BufferedWriter, FileWriter}
+import collection.JavaConverters._
+import au.com.bytecode.opencsv.CSVWriter
+
 trait DSL {
   val automan = org.automanlang.automan
   val LogConfig = org.automanlang.core.logging.LogConfig
@@ -14,6 +18,7 @@ trait DSL {
   // to simplify imports
   type Answer[T] = org.automanlang.core.answer.Answer[T]
   type Answers[T] = org.automanlang.core.answer.Answers[T]
+  type AnswersM[T] = org.automanlang.core.answer.AnswersM[T]
   type AsymmetricCI = org.automanlang.core.question.confidence.AsymmetricCI
   type DistributionOutcome[T] = org.automanlang.core.answer.VectorOutcome[T]
   type Estimate = org.automanlang.core.answer.Estimate
@@ -40,6 +45,112 @@ trait DSL {
   val OverBudgetEstimate = org.automanlang.core.answer.OverBudgetEstimate
   val SymmetricCI = org.automanlang.core.question.confidence.SymmetricCI
   val UnconstrainedCI = org.automanlang.core.question.confidence.UnconstrainedCI
+
+//  def write_to_csv(question: MixedQuestion, a: AnswersM[List[Any]]): Unit = {
+//
+//    // get the file name
+//    val filename = question.csv_file
+//
+//    val out = new BufferedWriter(new FileWriter(filename))
+//    val writer = new CSVWriter(out)
+//
+//    // get the questions
+//    val questions = question.questions
+//
+//    // create the array of possibilities
+//    var possibilities: Array[Array[String]] = Array()
+//
+//    // figure out the format
+//    questions.foreach(q => {
+//
+//      q match {
+//        case chx: CheckboxQuestion => {
+//          var arr = chx.return_response_possibilities()
+//          possibilities = possibilities :+ arr
+//        }
+//        case rad: RadioButtonQuestion => {
+//          var arr = rad.return_response_possibilities()
+//          possibilities = possibilities :+ arr
+//        }
+//        case _ => {
+//          possibilities = possibilities :+ null
+//        }
+//      }
+//
+//    })
+//
+//    var l: List[Array[String]] = List()
+//
+//    // for each answer, create the csv row
+//    a.values.foreach(v => {
+//      var ar = Array[String]()
+//      // destructure. h is the worker id, t contains the answers
+//      val (h, t) = v
+//      ar = ar :+ h
+//
+//      var placeString = ""
+//      var placeIndex = 1
+//      val placeSize = t.size
+//
+//      // for sorting symbols
+//      implicit val symbolOrdering: Ordering[Symbol] = Ordering.by(_.name)
+//
+//      // format each individual answer within the bigger survey answer
+//      t.foreach(x => {
+//
+//        x match {
+//          case s: Set[Symbol] => {
+//            // checkbox question. Aggregate into a single string
+//            var str = ""
+//            var index = 1
+//            var size = s.size
+//
+//            // sort
+//            val ss = collection.immutable.SortedSet[Symbol]() ++ s
+//
+//            ss.foreach(sym => {
+//              str = str + sym.name
+//              if (index < size) {
+//                str = str + ", "
+//              }
+//              index = index + 1
+//            })
+//
+//            // calculate number
+//            val place = possibilities(placeIndex - 1).indexWhere(_ == str)
+//            placeString = placeString + place
+//            str = "[" + str + "]"
+//            ar = ar :+ str
+//          }
+//          case sym: Symbol => {
+//            ar = ar :+ sym.name
+//            val place = possibilities(placeIndex - 1).indexWhere(_ == sym.name)
+//            placeString = placeString + place
+//          }
+//          case d: Double => {
+//            ar = ar :+ d.toString()
+//            placeString = placeString + d.toString()
+//          }
+//          case _ => {
+//            ar = ar :+ x.toString()
+//          }
+//        }
+//
+//        if (placeIndex < placeSize) placeString = placeString + ", "
+//        placeIndex = placeIndex + 1
+//      })
+//      placeString = "[" + placeString + "]"
+//      ar = ar :+ placeString
+//      l = ar :: l
+//    })
+//
+//    val listOfRecords = l.reverse.asJava
+//    writer.writeAll(listOfRecords)
+//    out.close()
+//
+//    //
+//
+//  }
 
   // DSL constructs
   def estimate[A <: AutomanAdapter](
@@ -659,20 +770,24 @@ trait DSL {
                                     dry_run: Boolean = false,
                                     image_alt_text: String = null,
                                     image_url: String = null,
+                                    csv_file: String = null,
                                     initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
                                     minimum_spawn_policy: MinimumSpawnPolicy = null,
                                     mock_answers: Iterable[MockAnswer[List[Any]]] = null,
                                     options: List[AnyRef],
                                     pay_all_on_failure: Boolean = true,
                                     question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
+                                    grammar: Map[String, List[String]] = Map(),
                                     text: String,
                                     title: String = null,
                                     wage: BigDecimal = MagicNumbers.USFederalMinimumWage
                                   )
-                                  (implicit a: A): VectorOutcome[List[Any]] = {
+                                  (implicit a: A): MixedOutcome[List[Any]] = {
     def initf[Q <: SurveyQuestion](q: Q) = {
 
+
       q.questions = questions
+      q.grammar = grammar
 
       q.sample_size = sample_size
 
@@ -692,6 +807,9 @@ trait DSL {
       if (image_alt_text != null) {
         q.image_alt_text = image_alt_text
       }
+      if (csv_file != null) {
+        q.csv_file = csv_file
+      }
       if (image_url != null) {
         q.image_url = image_url
       }
@@ -708,7 +826,29 @@ trait DSL {
 
     }
 
-    a.SurveyQuestion(initf)
+    val o = a.SurveyQuestion(initf)
+
+    o.answer match {
+
+      case a: AnswersM[List[Any]] => {
+
+        // get the question
+        val question : SurveyQuestion = o.question.asInstanceOf[SurveyQuestion]
+
+        // function that does the csv writing
+        //write_to_csv(question, a)
+
+//        println("in answer")
+//        a.values.foreach(v => {
+//          println(v)
+//        })
+      }
+
+      case _ => println("oops")
+
+    }
+
+    o
 
   }
 

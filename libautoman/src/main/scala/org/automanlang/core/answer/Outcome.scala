@@ -74,3 +74,18 @@ case class VectorOutcome[T](_question: VectorQuestion,
     }
   }
 }
+
+
+case class MixedOutcome[T](_question: MixedQuestion,
+                           override protected[automanlang] val f: Future[AbstractMixedAnswer[T]])
+  extends Outcome[T](_question, f) {
+  override def toString: String = {
+    answer match {
+      case a: Answers[T] => a.values.toString
+      case a: IncompleteAnswers[T] => a.values.toString()
+      case _: OverBudgetAnswers[T] => "(no answers, over budget)"
+      case _: NoAnswers[T] => "(no answers)"
+      case _ => throw new Exception("MixedOutcome in unknown state.")
+    }
+  }
+}

@@ -28,6 +28,8 @@ sealed abstract class AbstractScalarAnswer[T](cost: BigDecimal, question: Discre
   extends AbstractAnswer[T](cost, question, distribution)
 sealed abstract class AbstractVectorAnswer[T](cost: BigDecimal, question: VectorQuestion, distribution: Array[Response[T]])
   extends AbstractAnswer[T](cost, question, distribution)
+sealed abstract class AbstractMixedAnswer[T](cost: BigDecimal, question: MixedQuestion, distribution: Array[Response[T]])
+  extends AbstractAnswer[T](cost, question, distribution)
 
 /**
   * MULTI-ESTIMATES
@@ -116,3 +118,24 @@ case class OverBudgetAnswers[T](need: BigDecimal,
                                 have: BigDecimal,
                                 override val question: VectorQuestion)
   extends AbstractVectorAnswer[T](need, question, Array())
+
+
+/**
+  *  Mixed
+  */
+case class AnswersM[T](values: Set[(String,T)], // set of mixed answers
+                      override val cost: BigDecimal,
+                      override val question: MixedQuestion,
+                      override val distribution: Array[Response[T]])
+  extends AbstractMixedAnswer[T](cost, question, distribution)
+case class NoAnswersM[T](override val question: MixedQuestion)
+  extends AbstractMixedAnswer[T](0, question, Array[Response[T]]())
+case class IncompleteAnswersM[T](values: Set[(String,T)],
+                                override val cost: BigDecimal,
+                                override val question: MixedQuestion,
+                                override val distribution: Array[Response[T]])
+  extends AbstractMixedAnswer[T](cost, question, distribution)
+case class OverBudgetAnswersM[T](need: BigDecimal,
+                                have: BigDecimal,
+                                override val question: MixedQuestion)
+  extends AbstractMixedAnswer[T](need, question, Array())

@@ -217,6 +217,7 @@ class Scheduler(val question: Question,
 
       // return answer
       answer
+
     } catch {
       case o: OverBudgetException =>
         val answer = VP.select_over_budget_answer(_all_tasks, o.need, o.have, _num_comparisons)
@@ -279,6 +280,7 @@ class Scheduler(val question: Question,
       //val new_tasks = s.spawn(tasks, suffered_timeout, num_comparisons2)
       val new_tasks = VP.spawn(tasks, suffered_timeout, num_comparisons2)
       assert(spawn_invariant(new_tasks))
+      // can we afford these?
       // can we afford these?
       val cost = total_cost(tasks ::: new_tasks)
       if (question.budget < cost) {

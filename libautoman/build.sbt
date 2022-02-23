@@ -23,10 +23,10 @@ libraryDependencies := {
   Seq(
     "org.scala-lang.modules"     %% "scala-xml"             % "2.0.0-M1",
     "org.scalatest"              %% "scalatest"             % "3.0.8" % Test,
-    "log4j"                      % "log4j"                  % "1.2.17",
+    "org.apache.logging.log4j"   % "log4j-core"             % "2.17.1",
     "org.specs2"                 %% "specs2-core"           % "4.10.2" % Test,
     "com.typesafe.slick"         %% "slick"                 % "2.1.0",
-    "software.amazon.awssdk"     % "mturk"                  % "2.15.2",
+    "software.amazon.awssdk"     % "mturk"                  % "2.17.134",
     "com.amazonaws"              % "aws-java-sdk-mechanicalturkrequester" % "1.11.875",
     "com.h2database"             % "h2"                     % "1.4.189",
     "org.slf4j"                  % "slf4j-nop"              % "1.6.4",

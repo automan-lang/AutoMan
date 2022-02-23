@@ -3,16 +3,25 @@ package org.automanlang.core.question
 import org.automanlang.core.info.QuestionType
 import org.automanlang.core.answer._
 
-abstract class SurveyQuestion extends VectorQuestion {
+abstract class SurveyQuestion extends MixedQuestion {
   type A = List[Any]
-  type AA = Answers[A]
-  type O = VectorOutcome[A]
+  type AA = AnswersM[A]
+  type O = MixedOutcome[A]
   type QuestionOptionType <: QuestionOption
 
   protected var _questions: List[Question] = List()
 
   def questions: List[Question] = _questions
   def questions_=(q: List[Question]) { _questions = q }
+
+  protected var _csv_file: String = null;
+
+  def csv_file: String = _csv_file
+  def csv_file_=(c: String) { _csv_file = c }
+
+  protected var _grammar: Map[String, List[String]] = Map()
+  def grammar: Map[String, List[String]] = _grammar
+  def grammar_=(g: Map[String, List[String]]) { _grammar = g }
 
   protected var _options: List[QuestionOptionType] = List[QuestionOptionType]()
 

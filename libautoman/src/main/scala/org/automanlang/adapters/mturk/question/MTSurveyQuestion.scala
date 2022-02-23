@@ -2,6 +2,7 @@ package org.automanlang.adapters.mturk.question
 
 import java.util.{Date, UUID}
 
+import scala.util.control.Breaks._
 import org.automanlang.adapters.mturk.mock.SurveyMockResponse
 import org.automanlang.adapters.mturk.policy.aggregation.MTurkMinimumSpawnPolicy
 import org.automanlang.core.logging._
@@ -27,6 +28,86 @@ class MTSurveyQuestion extends SurveyQuestion with MTurkQuestion {
   //  override def group_id: String = _title match { case Some(t) => t; case None => this.id.toString }
   override def group_id: String = title
 
+
+  // method to create the text using the grammar
+  def parseGrammar(t: String) : (String, scala.collection.mutable.Map[String,String]) = {
+
+    // mutable map to keep track of grammar bindings
+    val bindings = collection.mutable.Map[String,String]()
+
+    val r = scala.util.Random
+
+    val lengthOfString = t.length()
+
+    var preString = t
+
+    var postString  = ""
+
+    breakable {
+
+      while (true) {
+        var start = preString.indexOf("[")
+        var end = preString.indexOf("]")
+
+        // if there are no more brackets or they aren't in the right order, break the loop
+        if (start == -1 || end == -1 || end < start) {
+          break()
+        }
+
+        // get the variable
+        val v = preString.substring(start + 1, end)
+        // get the binding, if it exists
+        val b = bindings get v
+
+        var finalWord = ""
+
+        // see if it existed of not
+        b match {
+          case None => {
+            val listOfPossibilitiesOption = _grammar get v
+            var listOfPossibilities = List[String]()
+
+            listOfPossibilitiesOption match {
+              case None => {
+                throw new Exception("Invalid grammar!")
+              }
+              case Some(l) => listOfPossibilities = l
+            }
+
+            val length = listOfPossibilities.length
+
+
+            // get the length of the list that this variable is attached to
+            val randomNum = r.nextInt(length)
+
+            // get the random binding
+            finalWord = listOfPossibilities(randomNum)
+
+            // add the binding to the bindings map
+            bindings(v) = finalWord
+
+          }
+          case Some(n) => finalWord = n
+        }
+
+        // build up the postString using the binding
+        postString = postString + preString.substring(0,start) + finalWord
+
+        // push the index of the preString, if it's not the entire string
+
+        if (end + 1 < lengthOfString) {
+          preString = preString.substring(end + 1)
+        }
+
+      }
+
+    }
+    // update the postString
+
+    (postString, bindings)
+
+  }
+
   // private API
   _minimum_spawn_policy = MTurkMinimumSpawnPolicy
   override def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID) : SurveyMockResponse = {
@@ -44,8 +125,6 @@ class MTSurveyQuestion extends SurveyQuestion with MTurkQuestion {
 
     //(x \\ "Answer" \\ "SelectionIdentifier").map{si => Symbol(si.text.drop(1))}.toSet
 
-    println(x)
-
     val answers = (x \\ "Answer").toList
 
     // For each item in the answers array, get that item from the questions array and use its fromXML method
@@ -62,10 +141,17 @@ class MTSurveyQuestion extends SurveyQuestion with MTurkQuestion {
   }
   // TODO: random checkbox fill
   override protected[mturk] def toXML(randomize: Boolean): scala.xml.Node = {
-    val x = <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
+
+    val a = parseGrammar(text)
+    val newText = a._1
+    val bindings = a._2
+
+    <QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
+      <Overview>
+        <Text>{ this.text }</Text>
+      </Overview>
       { this.questions.map(q => q.asInstanceOf[MTurkQuestion].toQuestionXML(randomize)) }
     </QuestionForm>
-    x
   }
 
 
@@ -100,7 +186,7 @@ class MTSurveyQuestion extends SurveyQuestion with MTurkQuestion {
         // if formatted content is specified, use that instead of text field
         _formatted_content match {
           case Some(x) => <FormattedContent>{ scala.xml.PCData(x.toString) }</FormattedContent>
-          case None => <Text>{ text }</Text>
+          case None => <Text>{ _text }</Text>
         }
         }
       </QuestionContent>
@@ -112,6 +198,7 @@ class MTSurveyQuestion extends SurveyQuestion with MTurkQuestion {
       </AnswerSpecification>
     </Question>
   }
+
 
   override protected[mturk] def toSurveyXML(randomize: Boolean): Node = {
     <div id={id.toString} class="question">

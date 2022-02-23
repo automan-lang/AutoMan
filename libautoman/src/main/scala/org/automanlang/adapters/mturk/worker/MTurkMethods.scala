@@ -337,9 +337,15 @@ object MTurkMethods {
         .withHITId(hitstate.HITId)
         .withNumberOfAdditionalAssignments(ts.size))
     }
+    println("Error stuff")
+    println(hitstate)
+    println(hitstate.HITId)
+    println(expiry_s)
+    var x = x_seconds_from_now(expiry_s)
+    println(x)
     backend.updateExpirationForHIT(new UpdateExpirationForHITRequest()
       .withHITId(hitstate.HITId)
-      .withExpireAt(x_seconds_from_now(expiry_s)))
+      .withExpireAt(x))
 
     // we immediately query the backend for the HIT's complete details
     // to update our cached data
