@@ -84,7 +84,9 @@ class WorkerRunnable(tw: TurkWorker,
   }
 
   override def run() {
-    while (true) {
+    var keep_running = true
+
+    while (keep_running) {
 
       val time = Stopwatch {
 
@@ -96,7 +98,7 @@ class WorkerRunnable(tw: TurkWorker,
           work_item match {
             case req: ShutdownReq => {
               DebugLog("Connection pool shutdown requested.", LogLevelInfo(), LogType.ADAPTER, null)
-              return
+              keep_running = false
             }
             case req: AcceptReq => do_sync_action(req, () => scheduled_accept(req.ts))
             case req: BudgetReq => do_sync_action(req, () => scheduled_get_budget())
@@ -105,7 +107,6 @@ class WorkerRunnable(tw: TurkWorker,
             case req: CreateHITReq => do_sync_action(req, () => scheduled_post(req.ts, req.exclude_worker_ids))
             case req: RejectReq => do_sync_action(req, () => scheduled_reject(req.ts_reasons))
             case req: RetrieveReq => do_sync_action(req, () => scheduled_retrieve(req.ts, req.current_time))
-            //case req: ApproveReq =>
           }
         } catch {
           case t: Throwable => {

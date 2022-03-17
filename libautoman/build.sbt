@@ -16,6 +16,9 @@ exportJars := true
 // SUPPORTED SCALA VERSIONS
 crossScalaVersions := Seq("2.11.7")
 
+// SUPPORTED JAVA VERSIONS (to work around FasterXML InaccessibleObjectException issue)
+scalacOptions += "-target:jvm-1.8"
+
 // DEPENDENCIES
 libraryDependencies := {
   val akkaVer   = "2.3.7"
@@ -26,8 +29,8 @@ libraryDependencies := {
     "org.apache.logging.log4j"   % "log4j-core"             % "2.17.1",
     "org.specs2"                 %% "specs2-core"           % "4.10.2" % Test,
     "com.typesafe.slick"         %% "slick"                 % "2.1.0",
-    "software.amazon.awssdk"     % "mturk"                  % "2.17.134",
-    "com.amazonaws"              % "aws-java-sdk-mechanicalturkrequester" % "1.11.875",
+    "software.amazon.awssdk"     % "mturk"                  % "2.17.140",
+    "com.amazonaws"              % "aws-java-sdk-mechanicalturkrequester" % "1.12.169",
     "com.h2database"             % "h2"                     % "1.4.189",
     "org.slf4j"                  % "slf4j-nop"              % "1.6.4",
     "org.apache.logging.log4j"   % "log4j-core"             % "2.13.0",
