@@ -57,7 +57,7 @@ abstract class CheckboxQuestion extends DiscreteScalarQuestion {
   def return_response_possibilities() : Array[String] = {
 
     // flatten list of combinations
-    val textOptions = _options.map(o => o.question_text)
+    val textOptions = _options.map(o => o.question_id.name)
 
     // get all combinations
     val combinations = textOptions.toSet[String].subsets.map(_.toList).toList

@@ -11,6 +11,10 @@ abstract class SurveyQuestion extends MixedQuestion {
 
   protected var _questions: List[Question] = List()
 
+//  protected var _innerText: Option[String] = None
+//  def innerText: String = _innerText match { case Some(t) => t; case None => "Question not specified." }
+//  def innerText_=(s: String) { _innerText = Some(s) }
+
   def questions: List[Question] = _questions
   def questions_=(q: List[Question]) { _questions = q }
 

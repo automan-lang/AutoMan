@@ -252,7 +252,7 @@ class SurveyPolicy(question: MixedQuestion)
     val task : SurveyQuestion = tasks.head.question.asInstanceOf[SurveyQuestion]
 
     // get the file name
-    val filename = "test2.csv"
+    val filename = "test.csv"
 
     val out = new BufferedWriter(new FileWriter(filename))
     val writer = new CSVWriter(out)

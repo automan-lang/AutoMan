@@ -97,4 +97,5 @@ abstract class EstimationQuestion extends Question {
   }
 
   protected[automanlang] def cloneWithConfidence(conf: Double) : EstimationQuestion
+
 }

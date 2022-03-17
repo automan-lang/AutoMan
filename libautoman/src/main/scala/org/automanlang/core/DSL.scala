@@ -793,6 +793,8 @@ trait DSL {
 
       // mandatory parameters
       q.text = text
+      //q.innerText = innerText
+
       q.options = options.asInstanceOf[List[q.QuestionOptionType]] // yeah... ugly
 
       // mandatory parameters with sane defaults
