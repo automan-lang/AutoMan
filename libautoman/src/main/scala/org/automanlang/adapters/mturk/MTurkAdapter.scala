@@ -90,6 +90,7 @@ class MTurkAdapter extends AutomanAdapter {
   protected def FTDQFactory() = new MTFreeTextVectorQuestion
   protected def RBQFactory()  = new MTRadioButtonQuestion()
   protected def RBDQFactory() = new MTRadioButtonVectorQuestion
+  protected def SurveyFactory() = new MTFakeSurvey
 
   def Option(id: Symbol, text: String) = new MTQuestionOption(id, text, "")
   def Option(id: Symbol, text: String, image_url: String) = new MTQuestionOption(id, text, image_url)

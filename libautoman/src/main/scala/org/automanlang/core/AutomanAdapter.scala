@@ -132,6 +132,14 @@ abstract class AutomanAdapter {
   def RadioButtonDistributionQuestion(init: RBDQ => Unit) = schedule(RBDQFactory(), init)
   def Option(id: Symbol, text: String) : QuestionOption
 
+  def Survey(init: FakeSurvey => Unit): FakeSurvey#O = schedule(SurveyFactory(), init)
+
+  def CreateRadioButtonQuestion(init: RBQ => Unit): RBQ = {
+    var q = RBQFactory()
+    init(q)
+    q
+  }
+
   // state management
   protected[automanlang] def close() = {
     plugins_shutdown()
@@ -240,5 +248,6 @@ abstract class AutomanAdapter {
   protected def FTDQFactory() : FTDQ
   protected def RBQFactory() : RBQ
   protected def RBDQFactory() : RBDQ
+  protected def SurveyFactory() : FakeSurvey
   protected def MemoDBFactory() : MemoDB
 }
