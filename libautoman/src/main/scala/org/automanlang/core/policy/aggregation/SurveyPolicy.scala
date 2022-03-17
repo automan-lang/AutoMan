@@ -238,8 +238,6 @@ class SurveyPolicy(question: MixedQuestion)
 
   override def is_done(tasks: List[Task], num_comparisons: Int) : (Boolean, Int) = {
 
-    println("Running is_done")
-
     val done = completed_workerunique_tasks(tasks).size
 
     if (done < tasks.size ) {
@@ -424,19 +422,19 @@ class SurveyPolicy(question: MixedQuestion)
 
 //    println("question_types")
 //    println(question_types.mkString(","))
-    println("radixes")
-    println(radixes.mkString(","))
-    println("sample size")
-    println(sample_size)
-    println("number reps")
-    numberReps.foreach(r => {
-      println(r.mkString(","))
-    })
+//    println("radixes")
+//    println(radixes.mkString(","))
+//    println("sample size")
+//    println(sample_size)
+//    println("number reps")
+//    numberReps.foreach(r => {
+//      println(r.mkString(","))
+//    })
 
     // Run the algorithm
     val result = survey_algorithm(question_types, radixes, iterations = 10000, sample_size, numberReps)
 
-    println(result)
+    //println(result)
 
     val listOfRecords = l.reverse.asJava
     writer.writeAll(listOfRecords)
@@ -447,7 +445,7 @@ class SurveyPolicy(question: MixedQuestion)
   }
 
   override protected[policy] def num_to_run(tasks: List[Task], num_comparisons: Int, reward: BigDecimal): Int = {
-    println("running num_to_run")
+    //println("running num_to_run")
     // additional number needed to reach num_samples
     Math.max(question.sample_size - outstanding_tasks(tasks).size, 0)
   }

@@ -58,7 +58,6 @@ abstract class RadioButtonQuestion extends DiscreteScalarQuestion {
     // flatten list of combinations
     var arr: Array[String] = Array()
     _options.foreach(o => {
-      println(o.question_id.name)
       arr = arr :+ o.question_id.name
     })
 
