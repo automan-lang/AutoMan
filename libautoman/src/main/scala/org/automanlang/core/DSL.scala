@@ -24,6 +24,7 @@ trait DSL {
   type OverBudgetAnswers[T] = org.automanlang.core.answer.OverBudgetAnswers[T]
   type OverBudgetEstimate = org.automanlang.core.answer.OverBudgetEstimate
   type ScalarOutcome[T] = org.automanlang.core.answer.ScalarOutcome[T]
+  type SurveyOutcome[T] = org.automanlang.core.answer.SurveyOutcome[T]
   type Outcome[T] = org.automanlang.core.answer.Outcome[T]
 
   //type CBQuestion = org.automanlang.core.info.QuestionType.QuestionType

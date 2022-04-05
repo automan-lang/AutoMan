@@ -74,3 +74,17 @@ case class VectorOutcome[T](_question: VectorQuestion,
     }
   }
 }
+
+case class SurveyOutcome[T](_question: FakeSurvey,
+                            override protected[automanlang] val f: Future[AbstractSurveyAnswer[T]])
+  extends Outcome[T](_question, f) {
+  override def toString: String = {
+    answer match {
+      case a: SurveyAnswers[T] => a.values.toString
+      case a: SurveyIncompleteAnswers[T] => a.values.toString()
+      case _: SurveyOverBudgetAnswers[T] => "(no answers, over budget)"
+      case _: SurveyNoAnswers[T] => "(no answers)"
+      case _ => throw new Exception("SurveyOutcome in unknown state.")
+    }
+  }
+}

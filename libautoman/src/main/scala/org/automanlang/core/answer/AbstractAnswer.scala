@@ -29,6 +29,10 @@ sealed abstract class AbstractScalarAnswer[T](cost: BigDecimal, question: Discre
 sealed abstract class AbstractVectorAnswer[T](cost: BigDecimal, question: VectorQuestion, distribution: Array[Response[T]])
   extends AbstractAnswer[T](cost, question, distribution)
 
+sealed abstract class AbstractSurveyAnswer[T](cost: BigDecimal, question: FakeSurvey, distribution: Array[Response[T]])
+  extends AbstractAnswer[T](cost, question, distribution)
+
+
 /**
   * MULTI-ESTIMATES
   */
@@ -116,3 +120,24 @@ case class OverBudgetAnswers[T](need: BigDecimal,
                                 have: BigDecimal,
                                 override val question: VectorQuestion)
   extends AbstractVectorAnswer[T](need, question, Array())
+
+
+/**
+ * Survey Answer
+ */
+case class SurveyAnswers[T](values: Set[(String,T)], // set of vector answers
+                      override val cost: BigDecimal,
+                      override val question: FakeSurvey,
+                      override val distribution: Array[Response[T]])
+  extends AbstractSurveyAnswer[T](cost, question, distribution)
+case class SurveyNoAnswers[T](override val question: FakeSurvey)
+  extends AbstractSurveyAnswer[T](0, question, Array[Response[T]]())
+case class SurveyIncompleteAnswers[T](values: Set[(String,T)],
+                                override val cost: BigDecimal,
+                                override val question: FakeSurvey,
+                                override val distribution: Array[Response[T]])
+  extends AbstractSurveyAnswer[T](cost, question, distribution)
+case class SurveyOverBudgetAnswers[T](need: BigDecimal,
+                                have: BigDecimal,
+                                override val question: FakeSurvey)
+  extends AbstractSurveyAnswer[T](need, question, Array())
