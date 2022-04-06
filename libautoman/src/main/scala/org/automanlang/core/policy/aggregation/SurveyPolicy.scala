@@ -432,7 +432,7 @@ class SurveyPolicy(question: MixedQuestion)
 //    })
 
     // Run the algorithm
-    val result = survey_algorithm(question_types, radixes, iterations = 10000, sample_size, numberReps)
+    //val result = survey_algorithm(question_types, radixes, iterations = 10000, sample_size, numberReps)
 
     //println(result)
 
@@ -440,7 +440,8 @@ class SurveyPolicy(question: MixedQuestion)
     writer.writeAll(listOfRecords)
     out.close()
 
-    ((done >= question.sample_size) && result, num_comparisons + 1)
+    //((done >= question.sample_size) && result, num_comparisons + 1)
+    (done >= question.sample_size, num_comparisons + 1)
 
   }
 
