@@ -313,6 +313,8 @@ class SurveyPolicy(question: MixedQuestion)
     // For each task, analyze the answer, if it exists
     tasks.foreach(task => {
 
+      var workerId = task.worker_id
+
       estimate_radix_index = 0
 
       var answer = task.answer
@@ -324,6 +326,15 @@ class SurveyPolicy(question: MixedQuestion)
 
           // An array that stores all the information for each question of the survey
           var ar = Array[String]()
+
+          workerId match {
+            case Some(value) => {
+              ar = ar :+ value
+            }
+            case None => {
+              ar = ar :+ "undefined"
+            }
+          }
 
           // Number representation, as a string. E.g. "[1,5,3]"
           var placeString = ""
