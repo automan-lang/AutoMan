@@ -314,6 +314,8 @@ class SurveyPolicy(question: MixedQuestion)
     tasks.foreach(task => {
 
       var workerId = task.worker_id
+      var cost = task.cost
+      var time = task.state_changed_at
 
       estimate_radix_index = 0
 
@@ -327,6 +329,7 @@ class SurveyPolicy(question: MixedQuestion)
           // An array that stores all the information for each question of the survey
           var ar = Array[String]()
 
+          // include workerId in the output
           workerId match {
             case Some(value) => {
               ar = ar :+ value
@@ -335,6 +338,10 @@ class SurveyPolicy(question: MixedQuestion)
               ar = ar :+ "undefined"
             }
           }
+
+          // include cost and time in the output
+          ar = ar :+ cost.toString()
+          ar = ar :+ time.toString()
 
           // Number representation, as a string. E.g. "[1,5,3]"
           var placeString = ""
