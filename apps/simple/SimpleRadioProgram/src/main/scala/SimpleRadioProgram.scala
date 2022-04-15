@@ -45,10 +45,24 @@ object SimpleRadioProgram extends App {
     minimum_spawn_policy = UserDefinableSpawnPolicy(0)
   )
 
+  var cbq = checkboxQuestion(
+    budget = 8.00,
+    text = "Which of these DO NOT BELONG? (check all that apply)",
+    options = List[MTQuestionOption](
+      "Oscar the Grouch" -> "http://tinyurl.com/qfwlx56",
+      "Kermit the Frog" -> "http://tinyurl.com/nuwyz3u",
+      "Spongebob Squarepants" -> "http://tinyurl.com/oj6wzx6",
+      "Cookie Monster" -> "http://tinyurl.com/otb6thl",
+      "The Count" -> "http://tinyurl.com/nfdbyxa"
+    ),
+    minimum_spawn_policy = UserDefinableSpawnPolicy(0)
+  )
+
   // TODO
-  def which_one(): DSL.ScalarOutcome[List[Any]] = Survey(
-    questions = List(rbq1, rbq2),
+  def which_one(): DSL.SurveyOutcome[List[Any]] = Survey(
+    questions = List(rbq1, rbq2, cbq),
     text = "survey",
+    question_timeout_multiplier = 10000,
   )
 
   automan(a) {
@@ -57,16 +71,16 @@ object SimpleRadioProgram extends App {
      *   https://docs.automanlang.org/technical-documentation/automan-api-reference
      */
     println(which_one().answer)
-//    which_one().answer match {
-//      case answer: Answer[Symbol] =>
-//        println("The answer is: " + answer.value)
-//      case lowconf: LowConfidenceAnswer[Symbol] =>
-//        println("You ran out of money. The best answer is \"" +
-//          lowconf.value + "\" with a confidence of " + lowconf.confidence)
-//      case oba: OverBudgetAnswer[Symbol] =>
-//        println("You have $" + oba.have + " but you need $" + oba.need +
-//          " to start this task.");
-//      case _ => println("Something went wrong!")
-//    }
+    which_one().answer match {
+      case answer: SurveyAnswers[List[Any]] =>
+        println("The answer is: " + answer.values)
+      case incomplete: SurveyIncompleteAnswers[List[Any]] =>
+        // TODO: what about low confidence?
+        println("The incomplete answer is: " + incomplete.values)
+      case oba: SurveyOverBudgetAnswers[List[Any]] =>
+        println("You have $" + oba.have + " but you need $" + oba.need +
+          " to start this task.");
+      case _ => println("Something went wrong!")
+    }
   }
 }

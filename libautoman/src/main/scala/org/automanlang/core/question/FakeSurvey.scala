@@ -14,14 +14,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 abstract class FakeSurvey extends Question {
   //  perhaps AA = AbstractVectorAnswer[AbstractAnswer[Any]] ???
-  override type A = List[Any]
+  override type A = List[Any] // TODO: better type for returned answers
   override type AA = AbstractSurveyAnswer[A]
   override type O = SurveyOutcome[A]
 
   // TODO: New policies need to be added
-  override type AP = SimpleSurveyVectorPolicy
-  override type PP = FixedPricePolicy
-  override type TP = FixedTimeoutPolicy
+  override type AP = SimpleSurveyVectorPolicy // Answer Policy
+  override type PP = FixedPricePolicy // Price Policy
+  override type TP = FixedTimeoutPolicy // Timeout Policy
 
   private var _sample_size: Int = 30
 
@@ -51,7 +51,7 @@ abstract class FakeSurvey extends Question {
   }
 
   // list of questions
-  type Q <: Any // should be overridden by an adapter-specific question
+  type Q <: Question // should be overridden by an adapter-specific question
   private var _questions: List[Q] = List()
 
   def questions: List[Q] = _questions
@@ -61,7 +61,11 @@ abstract class FakeSurvey extends Question {
 
   override protected[automanlang] def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID): MockResponse = ???
 
-  override protected[automanlang] def prettyPrintAnswer(answer: A): String = ???
+  override protected[automanlang] def prettyPrintAnswer(answer: A): String = {
+    // TODO: possibly call questions' prettyPrintAnswer? However type "Any"
+    // cannot be passed in and explicit type casting is not possible
+    answer.mkString(" ")
+  }
 
   override protected[automanlang] def getOutcome(adapter: AutomanAdapter): O = {
     SurveyOutcome(this, schedulerFuture(adapter))

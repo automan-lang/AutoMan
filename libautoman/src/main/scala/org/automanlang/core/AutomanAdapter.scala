@@ -139,6 +139,11 @@ abstract class AutomanAdapter {
     init(q)
     q
   }
+  def CreateCheckboxQuestion(init: CBQ => Unit): CBQ = {
+    var q = CBQFactory()
+    init(q)
+    q
+  }
 
   // state management
   protected[automanlang] def close() = {

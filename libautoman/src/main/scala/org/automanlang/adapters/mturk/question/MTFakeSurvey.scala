@@ -4,6 +4,8 @@ import org.apache.commons.codec.binary.Hex
 import org.automanlang.core.question.FakeSurvey
 
 import java.security.MessageDigest
+import java.util.UUID
+import scala.collection.mutable.ListBuffer
 import scala.xml.Node
 
 class MTFakeSurvey extends FakeSurvey with MTurkQuestion {
@@ -27,7 +29,24 @@ class MTFakeSurvey extends FakeSurvey with MTurkQuestion {
    * @param x the XML
    * @return Answer value
    */
-  override protected[mturk] def fromXML(x: Node): List[Any] = ???
+  override protected[mturk] def fromXML(x: Node): A = {
+    val map = collection.mutable.Map[UUID, Q]()
+    for (q <- questions) {
+      map(q.id) = q
+    }
+
+    // parse <QuestionIdentifier> and match with questions(i).id
+    // note that we have edited trait MTurkQuestion to also extend Question
+
+    val ans = new ListBuffer[Any]()
+    val qs = x \\ "Answer"
+    qs.foreach { q =>
+      val ques = map(UUID.fromString((q \\ "QuestionIdentifier").text))
+      ans += ques.fromXML(q)
+    }
+
+    ans.toList
+  }
 
   /**
    * Converts question to standalone XML QuestionForm

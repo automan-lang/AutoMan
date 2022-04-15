@@ -1,5 +1,6 @@
 package org.automanlang.adapters.mturk.question
 
+import org.automanlang.core.question.Question
 import org.automanlang.core.scheduler.BackendResult
 
 import scala.xml.Node
@@ -9,7 +10,7 @@ import com.amazonaws.services.mturk.model.{QualificationRequirement, Assignment}
 import xml.XML
 
 // Adding MTurk stuff
-trait MTurkQuestion {
+trait MTurkQuestion extends Question{
   type A // answer type for backend result
 
   protected var _description: Option[String] = None // description of task shown to worker
