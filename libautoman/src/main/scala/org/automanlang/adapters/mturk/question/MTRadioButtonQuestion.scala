@@ -137,7 +137,7 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
         }
       } + s"""
       </div>
-      ${options.map(_.toSurveyHTML(id_string)).mkString}
+      ${options.map(_.toSurveyHTML(id_string, "radio")).mkString}
     </div>
     """
    }
@@ -152,7 +152,7 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
       val selected: Boolean = json.hcursor.downField(k).as[Boolean].toOption.get
 
       if (selected)
-        ans = Symbol(k)
+        ans = Symbol(k.drop(1))
     })
 
     ans

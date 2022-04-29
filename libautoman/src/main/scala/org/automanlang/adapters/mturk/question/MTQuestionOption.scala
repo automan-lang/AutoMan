@@ -43,6 +43,7 @@ case class MTQuestionOption(override val question_id: Symbol, override val quest
   }
 
   def toSurveyHTML(idFromQuestion: String, inputType: String): String = {
+    // TODO: make question_id unique (probably prepend idFromQuestion)
     if (inputType == "radio") {
       s"""<div>
          |<input type="radio" id=\"${question_id.toString()}\" name=\"${idFromQuestion}\" value=\"${question_id.toString()}\" required />

@@ -57,18 +57,26 @@ class MTFakeSurvey extends FakeSurvey with MTurkQuestion {
       map(q.id) = q
     }
 
-    val json = (x\\"FreeText").text
+    val json = (x \\ "FreeText").text
     val parsed = parse(json).getOrElse(Json.Null)
 
-    val ans = new ListBuffer[Any]()
+    // if the answer is not returned in JSON, set to default value
+    val ans = collection.mutable.Map[UUID, Any]().withDefault({ _ => "(No Answer)" })
 
     val cursor: HCursor = parsed.hcursor
     cursor.downArray.keys.get.foreach(k => {
-      val ques = map(UUID.fromString(k))
-      ans += ques.fromHTMLJson(parsed.findAllByKey(k).head)
+      val id = UUID.fromString(k)
+      val ques = map(id)
+      ans(id) = ques.fromHTMLJson(parsed.findAllByKey(k).head)
     })
 
-    ans.toList
+    // resort answer with input question order
+    val finalAns = new ListBuffer[Any]()
+    for (q <- questions) {
+      finalAns += ans(q.id)
+    }
+
+    finalAns.toList
   }
 
 
