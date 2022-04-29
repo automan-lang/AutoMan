@@ -2,6 +2,8 @@ package org.automanlang.adapters.mturk.question
 
 import java.util.UUID
 import org.automanlang.core.question.QuestionOption
+
+import java.security.InvalidParameterException
 import xml.Unparsed
 
 case class MTQuestionOption(override val question_id: Symbol, override val question_text: String, image_url: String) extends QuestionOption(question_id: Symbol, question_text: String) {
@@ -40,17 +42,31 @@ case class MTQuestionOption(override val question_id: Symbol, override val quest
     </div>
   }
 
-  def toSurveyHTML(idFromQuestion: String): String = {
-    s"""<div>
-       |<input type="radio" id=\"${question_id.toString()}\" name=\"${idFromQuestion}\" value=\"${question_id.toString()}\" required />
-       |<label for=\"${question_id.toString()}\">""".stripMargin +
-      {
-        if(image_url != "") {
-          "<table><tr><td><img src=\"" + image_url + "\" alt=\"" + question_text + "\"></img></td><td>" + question_text + "</td></tr></table>"
-        } else {
-          question_text
-        }
-      } +
-      "</label></div>"
+  def toSurveyHTML(idFromQuestion: String, inputType: String): String = {
+    if (inputType == "radio") {
+      s"""<div>
+         |<input type="radio" id=\"${question_id.toString()}\" name=\"${idFromQuestion}\" value=\"${question_id.toString()}\" required />
+         |<label for=\"${question_id.toString()}\">""".stripMargin +
+        {
+          if(image_url != "") {
+            "<table><tr><td><img src=\"" + image_url + "\" alt=\"" + question_text + "\"></img></td><td>" + question_text + "</td></tr></table>"
+          } else {
+            question_text
+          }
+        } +
+        "</label></div>"
+    } else if (inputType == "checkbox") {
+      // Cannot required here or it'll make everything required
+      s"""<div><crowd-checkbox name=\"${idFromQuestion}\" value=\"${question_id.toString()}\">""" +
+        {
+          if(image_url != "") {
+            "<table><tr><td><img src=\"" + image_url + "\" alt=\"" + question_text + "\"></img></td><td>" + question_text + "</td></tr></table>"
+          } else {
+            question_text
+          }
+        } + "</crowd-checkbox></div>"
+    } else {
+      throw new InvalidParameterException
+    }
   }
 }

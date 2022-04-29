@@ -1,15 +1,16 @@
 package org.automanlang.adapters.mturk.question
 
-import java.util.{Date, UUID}
+import io.circe.{HCursor, Json}
 
+import java.util.{Date, UUID}
 import org.automanlang.adapters.mturk.mock.EstimationMockResponse
 import org.automanlang.adapters.mturk.policy.aggregation.MTurkMinimumSpawnPolicy
 import org.automanlang.core.logging.DebugLog
 import org.automanlang.core.logging.LogLevelDebug
 import org.automanlang.core.logging.LogType
 import org.automanlang.core.question.{EstimationQuestion, FreeTextQuestion}
-import java.security.MessageDigest
 
+import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
 
 import scala.xml.Node
@@ -147,4 +148,36 @@ class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
       </AnswerSpecification>
     </Question>
   }
+
+  override protected[mturk] def toQuestionHTML(randomize: Boolean): String = {
+    s"""
+    <div id=${id_string}">
+      <div class="QuestionContent">
+     """ +
+      {
+        _image_url match {
+          case Some(url) => {
+            // manual style: max-width / max-height?
+            s"""<p><img class=\"question_image\" src=${url} alt=${image_alt_text} /></p>"""
+          }
+          case None => ""
+        }
+      } +
+      {
+        _formatted_content match {
+          case Some(x) => {
+            x.toString()
+          }
+          case None => s"<p>${text}</p>"
+        }
+      } + "</div>" +
+    // TODO: enforce min/max with form validation or JS
+    s"""<crowd-input name=\"${id_string}\" label=\"${text}\" required></crowd-input>""" +
+    "</div>"
+  }
+
+  override protected[mturk] def fromHTMLJson(json: Json): A = {
+    json.hcursor.as[A].toOption.get
+  }
+
 }

@@ -612,10 +612,79 @@ trait DSL {
     a.CreateCheckboxQuestion(initf)
   }
 
+  def estimateQuestion[A <: AutomanAdapter](
+                                     confidence_interval: ConfidenceInterval = UnconstrainedCI(),
+                                     confidence: Double = MagicNumbers.DefaultConfidence,
+                                     budget: BigDecimal = MagicNumbers.DefaultBudget,
+                                     default_sample_size: Int = -1,
+                                     dont_reject: Boolean = true,
+                                     dry_run: Boolean = false,
+                                     estimator: Seq[Double] => Double = null,
+                                     image_alt_text: String = null,
+                                     image_url: String = null,
+                                     initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
+                                     max_value: Double = Double.MaxValue,
+                                     minimum_spawn_policy: MinimumSpawnPolicy = null,
+                                     min_value: Double = Double.MinValue,
+                                     mock_answers: Iterable[MockAnswer[Double]] = null,
+                                     pay_all_on_failure: Boolean = true,
+                                     question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
+                                     text: String,
+                                     title: String = null,
+                                     wage: BigDecimal = MagicNumbers.USFederalMinimumWage
+                                   )
+                                   (implicit a: A): EstimationQuestion = {
+    def initf[Q <: EstimationQuestion](q: Q): Unit = {
+      // mandatory parameters
+      q.text = text
+
+      // mandatory parameters with sane defaults
+      q.confidence_interval = confidence_interval
+      q.confidence = confidence
+      q.budget = budget
+      q.dont_reject = dont_reject
+      q.dry_run = dry_run
+      q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
+      q.pay_all_on_failure = pay_all_on_failure
+      q.question_timeout_multiplier = question_timeout_multiplier
+
+      // optional parameters
+      if (default_sample_size != -1 && default_sample_size > 0) {
+        q.default_sample_size = default_sample_size
+      }
+      if (estimator != null) {
+        q.estimator = estimator
+      }
+      if (image_alt_text != null) {
+        q.image_alt_text = image_alt_text
+      }
+      if (image_url != null) {
+        q.image_url = image_url
+      }
+      if (max_value != Double.MaxValue) {
+        q.max_value = max_value
+      }
+      if (min_value != Double.MinValue) {
+        q.min_value = min_value
+      }
+      if (title != null) {
+        q.title = title
+      }
+      if (mock_answers != null) {
+        q.mock_answers = mock_answers
+      }
+      if (minimum_spawn_policy != null) {
+        q.minimum_spawn_policy = minimum_spawn_policy
+      }
+    }
+
+    a.CreateEstimateQuestion(initf)
+  }
 
   def Survey[A <: AutomanAdapter, O](
                                       questions: List[Question],
                                       budget: BigDecimal = MagicNumbers.DefaultBudget,
+                                      sample_size: Int = MagicNumbers.DefaultSampleSizeForDistrib,
                                       dont_reject: Boolean = true,
                                       dry_run: Boolean = false,
                                       initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
@@ -639,6 +708,7 @@ trait DSL {
       q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
       q.pay_all_on_failure = pay_all_on_failure
       q.question_timeout_multiplier = question_timeout_multiplier
+      q.sample_size = sample_size
 
       // optional parameters
 //      if (image_alt_text != null) {

@@ -144,6 +144,11 @@ abstract class AutomanAdapter {
     init(q)
     q
   }
+  def CreateEstimateQuestion(init: EQ => Unit): EQ = {
+    var q = EQFactory()
+    init(q)
+    q
+  }
 
   // state management
   protected[automanlang] def close() = {
