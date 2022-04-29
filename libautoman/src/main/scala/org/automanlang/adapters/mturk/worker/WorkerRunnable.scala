@@ -169,7 +169,7 @@ class WorkerRunnable(tw: TurkWorker,
               // process answer
               val ans = assignment.getAnswer
               val xml = scala.xml.XML.loadString(ans)
-              val prelim_answer = t.question.asInstanceOf[MTurkQuestion].fromXML(xml) // set looks fine here
+              val prelim_answer = t.question.asInstanceOf[MTurkQuestion].fromHTML(xml) // set looks fine here
               val answer = t.question.before_filter(prelim_answer.asInstanceOf[t.question.A])
 
               // it is possible, although unlikely, that a worker could submit

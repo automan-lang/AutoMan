@@ -35,8 +35,22 @@ case class MTQuestionOption(override val question_id: Symbol, override val quest
    */
   def toSurveyXML(idFromQuestion: UUID): xml.Node = {
     <div name="opt">
-      <input type="radio" id={question_id.toString().drop(1)} name={idFromQuestion.toString} value={question_id.toString().drop(1)} required="required"/>
+      <input type="radio" id={question_id.toString()} name={idFromQuestion.toString} value={question_id.toString()} />
       {toXML(true)}
     </div>
+  }
+
+  def toSurveyHTML(idFromQuestion: String): String = {
+    s"""<div>
+       |<input type="radio" id=\"${question_id.toString()}\" name=\"${idFromQuestion}\" value=\"${question_id.toString()}\" required />
+       |<label for=\"${question_id.toString()}\">""".stripMargin +
+      {
+        if(image_url != "") {
+          "<table><tr><td><img src=\"" + image_url + "\" alt=\"" + question_text + "\"></img></td><td>" + question_text + "</td></tr></table>"
+        } else {
+          question_text
+        }
+      } +
+      "</label></div>"
   }
 }

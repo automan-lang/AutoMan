@@ -1,5 +1,6 @@
 package org.automanlang.adapters.mturk.question
 
+import io.circe.Json
 import org.automanlang.core.question.Question
 import org.automanlang.core.scheduler.BackendResult
 
@@ -78,4 +79,19 @@ trait MTurkQuestion extends Question{
    * @return
    */
   protected[mturk] def toSurveyXML(randomize: Boolean): scala.xml.Node
+
+  /**
+   * Converts question to standalone HTMLQuestion
+   * @param randomize Randomize option order?
+   * @return HTML string
+   */
+  protected[mturk] def toHTML(randomize: Boolean): String = ???
+
+  // ??? for now as many do not implement it
+  protected[mturk] def toQuestionHTML(randomize: Boolean): String = ???
+
+  // parses HTML Answer in survey
+  protected[mturk] def fromHTML(x: scala.xml.Node) : A = ???
+  // parses HTML Answer in each question
+  protected[mturk] def fromHTMLJson(json: Json): A = ???
 }

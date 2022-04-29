@@ -287,14 +287,14 @@ object MTurkMethods {
     val (hit_type,state2) = get_or_create_hittype(question.title, q.description, q.keywords, batch_key, internal_state, backend)
     internal_state = state2
 
-    // render XML
-    val xml = question.asInstanceOf[MTurkQuestion].toXML(randomize = true).toString()
-    DebugLog("Posting task XML:\n" + xml, LogLevelDebug(), LogType.ADAPTER, question.id)
+    // render HTML
+    val html = question.asInstanceOf[MTurkQuestion].toHTML(randomize = true)
+    DebugLog("Posting task HTML:\n" + html, LogLevelDebug(), LogType.ADAPTER, question.id)
 
     var hit = backend.createHITWithHITType(
       new CreateHITWithHITTypeRequest()
         .withHITTypeId(hit_type.id)
-        .withQuestion(xml)
+        .withQuestion(html)
         .withLifetimeInSeconds(ts.head.timeout_in_s.toLong)
         .withMaxAssignments(ts.size)
         .withRequesterAnnotation(question.id.toString)

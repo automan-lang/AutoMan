@@ -8,6 +8,9 @@ import java.util.UUID
 import scala.collection.mutable.ListBuffer
 import scala.xml.Node
 
+import io.circe._, io.circe.parser._
+import io.circe.syntax._
+
 class MTFakeSurvey extends FakeSurvey with MTurkQuestion {
   override type Q = MTurkQuestion
 
@@ -48,6 +51,27 @@ class MTFakeSurvey extends FakeSurvey with MTurkQuestion {
     ans.toList
   }
 
+  override protected[mturk] def fromHTML(x: Node): A = {
+    val map = collection.mutable.Map[UUID, Q]()
+    for (q <- questions) {
+      map(q.id) = q
+    }
+
+    val json = (x\\"FreeText").text
+    val parsed = parse(json).getOrElse(Json.Null)
+
+    val ans = new ListBuffer[Any]()
+
+    val cursor: HCursor = parsed.hcursor
+    cursor.downArray.keys.get.foreach(k => {
+      val ques = map(UUID.fromString(k))
+      ans += ques.fromHTMLJson(parsed.findAllByKey(k).head)
+    })
+
+    ans.toList
+  }
+
+
   /**
    * Converts question to standalone XML QuestionForm
    * Calls XMLBody
@@ -83,4 +107,30 @@ class MTFakeSurvey extends FakeSurvey with MTurkQuestion {
    * @return
    */
   override protected[mturk] def toSurveyXML(randomize: Boolean): Node = ???
+
+  override protected[mturk] def toHTML(randomize: Boolean): String = {
+    s"""
+    <HTMLQuestion xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2011-11-11/HTMLQuestion.xsd">
+      <HTMLContent>
+        <![CDATA[
+          <!DOCTYPE html>
+            <body>
+              <script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
+              <crowd-form>
+                ${toQuestionHTML(randomize)}
+              </crowd-form>
+            </body>
+          </html>
+        ]]>
+      </HTMLContent>
+      <FrameHeight>0</FrameHeight>
+    </HTMLQuestion>
+    """
+  }
+
+  override protected[mturk] def toQuestionHTML(randomize: Boolean): String = {
+    questions.map(
+      _.toQuestionHTML(randomize)
+    ).mkString
+  }
 }

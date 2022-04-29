@@ -1,14 +1,15 @@
 package org.automanlang.adapters.mturk.question
 
-import java.util.{Date, UUID}
+import io.circe.{Decoder, DecodingFailure, HCursor, Json}
 
+import java.util.{Date, UUID}
 import org.automanlang.adapters.mturk.mock.RadioButtonMockResponse
 import org.automanlang.adapters.mturk.policy.aggregation.MTurkMinimumSpawnPolicy
 import org.automanlang.core.logging._
 import org.automanlang.core.question.RadioButtonQuestion
 import org.automanlang.core.util.Utilities
-import java.security.MessageDigest
 
+import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
 
 import scala.xml.{Node, NodeSeq}
@@ -112,4 +113,48 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
         {options.map(_.toSurveyXML(id))}
       </div>
     </div>
+
+  override protected[mturk] def toQuestionHTML(randomize: Boolean): String = {
+    s"""
+    <div id=${id_string}">
+      <div class="QuestionContent">
+     """ +
+      {
+        _image_url match {
+          case Some(url) => {
+            // manual style: max-width / max-height?
+            s"""<p><img class=\"question_image\" src=${url} alt=${image_alt_text} /></p>"""
+          }
+          case None => ""
+        }
+      } +
+      {
+        _formatted_content match {
+          case Some(x) => {
+            x.toString()
+          }
+          case None => s"<p>${text}</p>"
+        }
+      } + s"""
+      </div>
+      ${options.map(_.toSurveyHTML(id_string)).mkString}
+    </div>
+    """
+   }
+
+  override protected[mturk] def fromHTMLJson(json: Json) : A = {
+    // {"'cookiemonster":true,"'kermit":false,"'oscar":false,"'spongebob":false,"'thecount":false}
+
+    var ans: A = Symbol("Answer Parse Failure")
+
+    val cursor: HCursor = json.hcursor
+    cursor.keys.get.foreach(k => {
+      val selected: Boolean = json.hcursor.downField(k).as[Boolean].toOption.get
+
+      if (selected)
+        ans = Symbol(k)
+    })
+
+    ans
+  }
 }
