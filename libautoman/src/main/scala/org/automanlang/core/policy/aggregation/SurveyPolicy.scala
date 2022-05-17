@@ -202,8 +202,6 @@ class SurveyPolicy(question: MixedQuestion)
   // Uses the earth-mover's distance algorithm
   private[automanlang] def survey_algorithm(question_types: Array[String], radixes: Array[Int], iterations: Int, sample_size: Int, test_samples: Array[Array[Int]]): Boolean = {
 
-    val complexity = radixes.length
-
     val randomDistances = random_v_random(iterations, sample_size, radixes, question_types)
     val testDistances = test_v_random(test_samples, iterations, sample_size, radixes, question_types)
 
@@ -249,8 +247,11 @@ class SurveyPolicy(question: MixedQuestion)
     // Turn the answers into their number representations
     val task : SurveyQuestion = tasks.head.question.asInstanceOf[SurveyQuestion]
 
-    // get the file name
-    val filename = "test.csv"
+    var filename = "test.csv"
+
+    if (task.csv_file != null) {
+      filename = task.csv_file
+    }
 
     val out = new BufferedWriter(new FileWriter(filename))
     val writer = new CSVWriter(out)
@@ -270,7 +271,7 @@ class SurveyPolicy(question: MixedQuestion)
     // index for which estimate is being looked at. Need for figuring out radix
     var estimate_radix_index = 0
 
-    // keep track of the largest estimate
+    // keep track of the smallest and largest estimate
     var estimate_radix_largest : Array[Int] = Array()
 
     // figure out the format
@@ -293,7 +294,7 @@ class SurveyPolicy(question: MixedQuestion)
           possibilities = possibilities :+ null
           question_types = question_types :+ "estimate"
           radixes = radixes :+ 0
-          estimate_radix_largest = estimate_radix_largest :+ 0
+          estimate_radix_largest = estimate_radix_largest :+ -99999999
         }
         case _ => {
           possibilities = possibilities :+ null
@@ -401,8 +402,8 @@ class SurveyPolicy(question: MixedQuestion)
                 placeArray = placeArray :+ intValue
 
                 // Figure out radix
-                val soFar = estimate_radix_largest(estimate_radix_index)
-                if (intValue > soFar) {
+                val biggestSoFar = estimate_radix_largest(estimate_radix_index)
+                if (intValue > biggestSoFar) {
                   estimate_radix_largest(estimate_radix_index) = intValue
                 }
                 estimate_radix_index = estimate_radix_index + 1
