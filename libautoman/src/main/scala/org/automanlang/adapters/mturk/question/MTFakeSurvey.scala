@@ -124,6 +124,8 @@ class MTFakeSurvey extends FakeSurvey with MTurkQuestion {
           <!DOCTYPE html>
             <body>
               <script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
+              <h1>${title}</h1>
+              <p>${text}</p>
               <crowd-form>
                 <div id="container">
                 ${toQuestionHTML(randomize)}
