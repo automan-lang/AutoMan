@@ -1,7 +1,10 @@
 package org.automanlang.core.answer
 
+import com.github.tototoshi.csv._
 import org.automanlang.core.AutomanAdapter
 import org.automanlang.core.question._
+
+import java.io.{File, IOException}
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
@@ -10,6 +13,7 @@ sealed abstract class Outcome[T](_question: Question,
   def answer: AbstractAnswer[T] = {
     Await.result(f, Duration.Inf)
   }
+
   def question: Question = _question
 }
 
@@ -85,6 +89,33 @@ case class SurveyOutcome[T](_question: FakeSurvey,
       case _: SurveyOverBudgetAnswers[T] => "(no answers, over budget)"
       case _: SurveyNoAnswers[T] => "(no answers)"
       case _ => throw new Exception("SurveyOutcome in unknown state.")
+    }
+  }
+
+  def saveToCSV(): Unit = {
+    try {
+      val writer = CSVWriter.open(new File(_question.csv_output))
+
+      // CSV header
+      writer.writeRow("Worker ID" :: _question.questions.map(q => q.text))
+
+      // CSV content
+      answer match {
+        // TODO: Add a cost column (Something to do with Task?)
+        case a: SurveyAnswers[T] =>
+          a.asInstanceOf[SurveyAnswers[FakeSurvey#A]]
+            .values.foreach(ans => {
+            writer.writeRow(ans._1 :: ans._2)
+          })
+
+        case _ => throw new Exception("SurveyOutcome in unknown state.")
+      }
+
+      writer.close()
+    } catch {
+      case e: IOException =>
+        println(s"[ERROR] IOException while trying to open file ${_question.csv_output} for write.")
+        return
     }
   }
 }

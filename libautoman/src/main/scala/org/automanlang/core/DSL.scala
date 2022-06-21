@@ -694,6 +694,7 @@ trait DSL {
                                       question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
                                       text: String,
                                       title: String = null,
+                                      csv_output: String = null,
                                       wage: BigDecimal = MagicNumbers.USFederalMinimumWage
                                     )(implicit a: A): FakeSurvey#O = {
     def initf[Q <: FakeSurvey](q: Q): Unit = {
@@ -725,6 +726,10 @@ trait DSL {
 //      }
       if (minimum_spawn_policy != null) {
         q.minimum_spawn_policy = minimum_spawn_policy
+      }
+
+      if (csv_output != null) {
+        q.csv_output = csv_output
       }
     }
 

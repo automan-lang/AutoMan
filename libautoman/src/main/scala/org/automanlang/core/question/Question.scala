@@ -100,6 +100,11 @@ trait Question {
   def wage: BigDecimal = _wage
   def wage_=(w: BigDecimal) { _wage = w }
 
+  // Output path of CSV file
+  protected var _csv_output: Option[String] = None
+  def csv_output: String = _csv_output match { case Some(t) => t; case None => "Output not specified." }
+  def csv_output_=(s: String): Unit = { _csv_output = Some(s) }
+
   // private methods
   private[automanlang] def init_validation_policy(): Unit
   private[automanlang] def init_price_policy(): Unit

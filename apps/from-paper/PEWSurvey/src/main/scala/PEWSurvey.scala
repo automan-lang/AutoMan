@@ -89,7 +89,7 @@ object PEWSurvey extends App {
       )
     ),
     //    budget = 500.00,
-    //    csv_file = "pew_" + java.time.LocalDate.now.toString + ".csv",
+    csv_output = "pew_" + java.time.LocalDate.now.toString + ".csv",
     title = "How do you think young adults today compare with their parents\' generation on each of the following?",
     text = "For the following questions, is this action easier, harder, or the same for young adults today compared to their parents\' generation?",
     //    text = "PEWHTMLsurvey",
@@ -105,7 +105,10 @@ object PEWSurvey extends App {
      * Refer to the API documentation for cases:
      *   https://docs.automanlang.org/technical-documentation/automan-api-reference
      */
-    println(which_one().answer)
+
+    // println(which_one().answer)
+    which_one().saveToCSV()
+
     which_one().answer match {
       case answer: SurveyAnswers[List[Any]] =>
         println("The answer is: " + answer.values)
