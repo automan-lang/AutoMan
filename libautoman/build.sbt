@@ -1,7 +1,7 @@
 // METADATA
 name := "automan"
 
-version := "1.4.2"
+version := "1.4.3-SNAPSHOT"
 
 organization := "org.automanlang"
 
@@ -20,6 +20,7 @@ crossScalaVersions := Seq("2.11.7")
 libraryDependencies := {
   val akkaVer   = "2.3.7"
   val sprayVer  = "1.3.2"
+  val circeVersion = "0.14.1"
   Seq(
     "org.scala-lang.modules"     %% "scala-xml"             % "2.0.0-M1",
     "org.scalatest"              %% "scalatest"             % "3.0.8" % Test,
