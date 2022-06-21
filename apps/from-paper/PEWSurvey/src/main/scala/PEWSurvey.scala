@@ -1,7 +1,7 @@
 import org.automanlang.adapters.mturk.DSL._
 import org.automanlang.adapters.mturk.{DSL, MTurkAdapter}
 
-object SimpleRadioProgram extends App {
+object PEWSurvey extends App {
   val opts = Utilities.unsafe_optparse(args, "simple_program")
 
   implicit val a: MTurkAdapter = mturk(
