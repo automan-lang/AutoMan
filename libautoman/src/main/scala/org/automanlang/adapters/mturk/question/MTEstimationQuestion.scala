@@ -178,7 +178,21 @@ class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
   }
 
   override protected[mturk] def fromHTMLJson(json: Json): A = {
-    json.hcursor.as[A].toOption.get
+    try {
+      json.hcursor.as[A].toOption.get
+    } catch {
+      case e: NoSuchElementException => {
+        // Probably error converting input to type EstimationQuestion#A (which is likely a Double)
+        println("[WARNING] Cannot convert the following answer to an estimation question's output")
+        println(json)
+        0  // TODO: Generalize to return the default value of EstimationQuestion#A instead
+      }
+      case _: Throwable => {
+        println("[WARNING] Error parsing output with following answer")
+        println(json)
+        0  // TODO: Generalize to return the default value of EstimationQuestion#A instead
+      }
+    }
   }
 
 }
