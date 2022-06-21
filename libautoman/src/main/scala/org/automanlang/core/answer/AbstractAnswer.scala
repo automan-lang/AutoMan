@@ -2,7 +2,7 @@ package org.automanlang.core.answer
 
 import java.io.{BufferedWriter, File, FileWriter, PrintWriter}
 
-import au.com.bytecode.opencsv.CSVWriter
+//import au.com.bytecode.opencsv.CSVWriter
 import org.automanlang.core.question._
 import scala.collection.JavaConversions._
 

@@ -32,7 +32,7 @@ libraryDependencies := {
     "com.h2database"             % "h2"                     % "1.4.189",
     "org.slf4j"                  % "slf4j-nop"              % "1.6.4",
     "org.apache.logging.log4j"   % "log4j-core"             % "2.13.0",
-    "au.com.bytecode"            % "opencsv"                % "2.4",
+    "com.github.tototoshi"       %% "scala-csv"             % "1.3.10",
     "io.circe"                   %% "circe-core"            % circeVersion,     // for JSON parsing
     "io.circe"                   %% "circe-generic"         % circeVersion,
     "io.circe"                   %% "circe-parser"          % circeVersion
