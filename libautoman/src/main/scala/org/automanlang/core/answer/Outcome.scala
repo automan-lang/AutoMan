@@ -96,19 +96,20 @@ case class SurveyOutcome[T](_question: FakeSurvey,
     try {
       val writer = CSVWriter.open(new File(_question.csv_output))
 
-      // CSV header
-      writer.writeRow("Worker ID" :: _question.questions.map(q => q.text))
+      // CSV header: worker_id, metadata, questions
+      writer.writeRow(List("Worker ID", "cost") ::: _question.questions.map(q => q.text))
 
       // CSV content
       answer match {
         // TODO: Add a cost column (Something to do with Task?)
         case a: SurveyAnswers[T] =>
-          a.asInstanceOf[SurveyAnswers[FakeSurvey#A]]
-            .values.foreach(ans => {
-            writer.writeRow(ans._1 :: ans._2)
+          val a_typed = a.asInstanceOf[SurveyAnswers[FakeSurvey#A]]
+
+          a_typed.values.foreach(ans => {
+            writer.writeRow(List(ans._1, a_typed.metadatas(ans._1).cost) ::: ans._2)
           })
 
-        case _ => throw new Exception("SurveyOutcome in unknown state.")
+        case _ => throw new Exception("SurveyOutcome is not in ANSWERED state.")
       }
 
       writer.close()

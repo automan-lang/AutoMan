@@ -89,13 +89,13 @@ object PEWSurvey extends App {
       )
     ),
     //    budget = 500.00,
-    csv_output = "pew_" + java.time.LocalDate.now.toString + ".csv",
+    csv_output = "pew_" + java.time.LocalDateTime.now.toString + ".csv",
     title = "How do you think young adults today compare with their parents\' generation on each of the following?",
     text = "For the following questions, is this action easier, harder, or the same for young adults today compared to their parents\' generation?",
     //    text = "PEWHTMLsurvey",
     //    sample_size = 300,
     //    minimum_spawn_policy = UserDefinableSpawnPolicy(0),
-    sample_size = 1,
+    sample_size = 3,
     initial_worker_timeout_in_s = 360,
     question_timeout_multiplier = 10000,  // how does this work?
   )

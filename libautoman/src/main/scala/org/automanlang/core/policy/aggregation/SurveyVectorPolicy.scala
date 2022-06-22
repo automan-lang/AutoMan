@@ -20,10 +20,11 @@ abstract class SurveyVectorPolicy(question: FakeSurvey)
     val valid_tasks: List[Task] = completed_workerunique_tasks(tasks)
     // filtered dist
     val distribution: Set[(String,Question#A)] = valid_tasks.map { t => (t.worker_id.get, t.answer.get) }.toSet
+    val metadatas: Map[String, SurveyTaskMetadata] = valid_tasks.map {t => {(t.worker_id.get, SurveyTaskMetadata(t.worker_id.get, t.cost))}}.toMap
     // raw distribution
     val dist = getDistribution(tasks)
     val cost: BigDecimal = valid_tasks.filterNot(_.from_memo).foldLeft(BigDecimal(0)){ case (acc,t) => acc + t.cost }
-    SurveyAnswers(distribution, cost, question, dist).asInstanceOf[Question#AA]
+    SurveyAnswers(distribution, metadatas, cost, question, dist).asInstanceOf[Question#AA]
   }
   def select_over_budget_answer(tasks: List[Task], need: BigDecimal, have: BigDecimal, num_comparisons: Int) : Question#AA = {
     val valid_tasks: List[Task] = completed_workerunique_tasks(tasks)

@@ -126,6 +126,7 @@ case class OverBudgetAnswers[T](need: BigDecimal,
  * Survey Answer
  */
 case class SurveyAnswers[T](values: Set[(String,T)], // set of vector answers
+                           metadatas: Map[String, SurveyTaskMetadata], // worker_id => SurveyTaskMetadata
                       override val cost: BigDecimal,
                       override val question: FakeSurvey,
                       override val distribution: Array[Response[T]])
@@ -141,3 +142,6 @@ case class SurveyOverBudgetAnswers[T](need: BigDecimal,
                                 have: BigDecimal,
                                 override val question: FakeSurvey)
   extends AbstractSurveyAnswer[T](need, question, Array())
+
+
+case class SurveyTaskMetadata(worker_id: String, cost: BigDecimal)

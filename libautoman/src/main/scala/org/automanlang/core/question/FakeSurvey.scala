@@ -74,9 +74,10 @@ abstract class FakeSurvey extends Question {
   override protected[automanlang] def composeOutcome(o: O, adapter: AutomanAdapter): O = {
     // unwrap future from previous Outcome
     val f = o.f map {
-      case SurveyAnswers(values, _, id, dist) =>
+      case SurveyAnswers(values, metadatas, _, id, dist) =>
         SurveyAnswers(
           values,
+          metadatas,
           BigDecimal(0.00).setScale(2, math.BigDecimal.RoundingMode.FLOOR),
           id,
           dist

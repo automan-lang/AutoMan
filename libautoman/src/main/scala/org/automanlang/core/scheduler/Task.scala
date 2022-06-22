@@ -53,7 +53,7 @@ case class Task(task_id: UUID,
   }
   def copy_with_answer(ans: Question#A, wrk_id: String) = {
     _answer = Option(ans)
-    DebugLog("Task " + task_id.toString +  " changed to ANSWERED state with answer \"" + prettyPrintAnswer + "\"", LogLevelInfo(), LogType.SCHEDULER, question.id)
+    DebugLog("Task " + task_id.toString +  " changed to ANSWERED state with cost \"" + cost +"\" and answer \"" + prettyPrintAnswer + "\"", LogLevelInfo(), LogType.SCHEDULER, question.id)
     new Task(task_id, question, round, timeout_in_s, worker_timeout, cost, created_at, SchedulerState.ANSWERED, from_memo, Some(wrk_id), Some(ans), new Date())
   }
   def copy_as_duplicate() = {
