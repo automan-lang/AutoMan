@@ -4,9 +4,12 @@ import java.util.{UUID, Date}
 import org.automanlang.core.AutomanAdapter
 import org.automanlang.core.exception.{BackendFailureException, OverBudgetException}
 import org.automanlang.core.logging._
-import org.automanlang.core.question.Question
+import org.automanlang.core.question.{FakeSurvey, Question}
 import org.automanlang.core.policy.aggregation.AggregationPolicy
 import org.automanlang.core.util.Stopwatch
+import com.github.tototoshi.csv._
+
+import java.io.{File, IOException}
 
 /**
  * Controls scheduling of tasks for a given question.
@@ -72,7 +75,7 @@ class Scheduler(val question: Question,
       (ok, sufferedTimeout, time, num_comparisons)
     }
 
-    private def schPost(tasks: List[Task], sufferedTimeout: Boolean, time: Time, num_comparisons: Int) : (List[Task],List[Task],Time,Int,Boolean) = {
+    private def schPost(tasks: List[Task], sufferedTimeout: Boolean, time: Time, num_comparisons: Int) : (List[Task],List[Task],Time,Int,Boolean,Boolean) = {
       // get list of workers who may not re-participate
       val __banned = VP.banned_workers(tasks)
 
@@ -90,7 +93,52 @@ class Scheduler(val question: Question,
 
       assert(if (!sufferedTimeout) { running.nonEmpty } else { true })
 
-      (running, unrunning, time2, num_comparisons2, done)
+      (running, unrunning, time2, num_comparisons2, done, sufferedTimeout)
+    }
+
+    /**
+     * At the end of a round (either finished or time out), save to CSV
+     *
+     * Note that here we assume that tasks in both List[Task] are associated
+     * with the same question.
+     *
+     * This function accepts and returns the same parameters without changes
+     */
+    private def schSaveCSV(running: List[Task], unrunning: List[Task], time: Time, num_comparisons: Int, done: Boolean, sufferedTimeout: Boolean): (List[Task], List[Task], Time, Int, Boolean) = {
+      if (sufferedTimeout || done) {
+        question match {
+          // TODO: currently save to CSV supports only Surveys (not individual questions)
+          case survey: FakeSurvey =>
+            try {
+              val f = new File(survey.csv_output)
+              val append = f.isFile // if file f exists
+              val writer = CSVWriter.open(f, append = append)
+
+              // CSV header: worker_id, metadata, questions
+              if (!append) {
+                writer.writeRow(List("Worker ID", "cost", "updated", "round") ::: survey.questions.map(q => q.text))
+              }
+
+              // CSV content
+              // TODO: there may be duplicates. Can we filter only those answered in this round?
+              // maybe add a field in Task that says "csv_written" and do a filter here?
+              unrunning.foreach(task => {
+                val answer = task.answer.get.asInstanceOf[FakeSurvey#A]
+                writer.writeRow(List(task.worker_id, task.cost, time, task.round) :: answer)
+              })
+            } catch {
+              case e: IOException =>
+                println(s"[ERROR] IOException ${e.toString} while trying to open file ${question.csv_output} for write.")
+              case default: Throwable =>
+                throw default
+            }
+
+          case _ =>
+            println("[ERROR] save to CSV supports only Surveys (not individual questions)")
+        }
+      }
+
+      (running, unrunning, time, num_comparisons, done)
     }
 
     private def schRetrieve(running: List[Task], unrunning: List[Task], time: Time, num_comparisons: Int, done: Boolean) : (List[Task],List[Task],Time,Int,Boolean) = {
@@ -141,13 +189,15 @@ class Scheduler(val question: Question,
 
     private val timeout = (schTimeouts _).tupled
     private val post = (schPost _).tupled
+    private val saveCSV = (schSaveCSV _).tupled
     private val retrieve = (schRetrieve _).tupled
     private val dedup = (schDeDup _).tupled
     private val incrtime = (schIncrTime _).tupled
 
-    val marshal =
+    val marshal: ((List[Task], Time, Int)) => (List[Task], Time, Int, Boolean) =
       timeout andThen   // process timeouts
       post andThen      // post new tasks
+      saveCSV andThen   // saves (appends) tasks to CSV at end of round
       retrieve andThen  // retrieve task answers
       dedup andThen     // deduplicate
       incrtime          // advance clock
