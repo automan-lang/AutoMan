@@ -110,9 +110,8 @@ class Scheduler(val question: Question,
           // TODO: currently save to CSV supports only Surveys (not individual questions)
           case survey: FakeSurvey =>
             try {
-              val f = new File(survey.csv_output)
-              val append = f.isFile // if file f exists
-              val writer = CSVWriter.open(f, append = append)
+              val append = new File(survey.csv_output).isFile // if file exists
+              val writer = CSVWriter.open(new File(survey.csv_output), append = append)
 
               // CSV header: worker_id, metadata, questions
               if (!append) {
@@ -122,10 +121,12 @@ class Scheduler(val question: Question,
               // CSV content
               // TODO: there may be duplicates. Can we filter only those answered in this round?
               // maybe add a field in Task that says "csv_written" and do a filter here?
-              unrunning.foreach(task => {
+              VP.answered_tasks(unrunning).foreach(task => {
                 val answer = task.answer.get.asInstanceOf[FakeSurvey#A]
-                writer.writeRow(List(task.worker_id, task.cost, time, task.round) :: answer)
+                writer.writeRow(List(task.worker_id, task.cost, task.state_changed_at, task.round) ::: answer)
               })
+
+              writer.close()
             } catch {
               case e: IOException =>
                 println(s"[ERROR] IOException ${e.toString} while trying to open file ${question.csv_output} for write.")

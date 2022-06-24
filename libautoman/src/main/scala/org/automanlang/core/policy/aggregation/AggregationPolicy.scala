@@ -221,12 +221,21 @@ abstract class AggregationPolicy(question: Question) {
     }.toArray
   }
 
-  def outstanding_tasks(tasks: List[Task]) = {
-    // basically, not TIMEOUTs and REJECTs
+  // Tasks that are waiting for answers
+  def outstanding_tasks(tasks: List[Task]): List[Task] = {
     val outstanding = tasks.filter(t =>
       t.state == SchedulerState.READY ||
       t.state == SchedulerState.RUNNING
     )
     outstanding
+  }
+
+  // Tasks that are answered. Used to determine how many more tasks need to be
+  // spawned for new rounds.
+  def answered_tasks(tasks: List[Task]): List[Task] = {
+    tasks.filter(t =>
+      t.state == SchedulerState.ANSWERED ||
+      t.state == SchedulerState.ACCEPTED
+    )
   }
 }

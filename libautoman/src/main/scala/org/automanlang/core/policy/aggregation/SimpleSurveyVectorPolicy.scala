@@ -11,6 +11,6 @@ class SimpleSurveyVectorPolicy(question: FakeSurvey)
 
   override protected[policy] def num_to_run(tasks: List[Task], num_comparisons: Int, reward: BigDecimal): Int = {
     // additional number needed to reach num_samples
-    Math.max(question.sample_size - outstanding_tasks(tasks).size, 0)
+    Math.max(question.sample_size - outstanding_tasks(tasks).size - answered_tasks(tasks).size, 0)
   }
 }
