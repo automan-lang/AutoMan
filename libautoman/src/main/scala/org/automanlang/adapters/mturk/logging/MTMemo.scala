@@ -316,7 +316,8 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
       // something must be present in the ID field, but since it doesn't
       // matter what it is, we just use 1; the database subs in the
       // appropriate autoincremented ID.
-      (1, d.getQualificationTypeId, d.getIntegerValues.get(0).toInt, Comparator.fromValue(d.getComparator), d.getActionsGuarded, true, hittype.id)
+      // TODO: Ye Shu: I'm temporarily changing the number to 0 to prevent error
+      (1, d.getQualificationTypeId, 0, Comparator.fromValue(d.getComparator), d.getActionsGuarded, true, hittype.id)
     }
   }
 

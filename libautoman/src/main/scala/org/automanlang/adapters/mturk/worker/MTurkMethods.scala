@@ -123,8 +123,8 @@ object MTurkMethods {
     DebugLog(s"Creating disqualification ID: ${qual.getQualificationType.getQualificationTypeId}.",LogLevelInfo(),LogType.ADAPTER,null)
     new QualificationRequirement()
       .withQualificationTypeId(qual.getQualificationType.getQualificationTypeId)
-      .withComparator(model.Comparator.EqualTo)
-      .withIntegerValues(batch_no)
+      .withComparator(model.Comparator.DoesNotExist)
+//      .withIntegerValues(batch_no)
       .withActionsGuarded("Accept") //TODO: Check if this is what we want
 
     //model.Comparator.EqualTo, batch_no, null, false)
