@@ -14,6 +14,12 @@ abstract class PricePolicy(question: Question) {
 
   /**
    * Calculate the initial reward.
+   *
+   * It is done by multiplying the hourly wage with the initial worker timeout
+   * (both are constants set in question). We make the assumption that worker
+   * takes at most the worker timeout time and will be paid the full wage when
+   * they finish.
+   *
    * @return The price for the first round.
    */
   def calculateInitialReward() : BigDecimal = {

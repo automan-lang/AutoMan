@@ -7,9 +7,9 @@ import org.automanlang.core.policy.aggregation._
 import org.automanlang.core.mock._
 
 trait DSL {
-  val automan = org.automanlang.automan
-  val LogConfig = org.automanlang.core.logging.LogConfig
-  val Utilities = org.automanlang.core.util.Utilities
+  val automan: org.automanlang.automan.type = org.automanlang.automan
+  val LogConfig: logging.LogConfig.type = org.automanlang.core.logging.LogConfig
+  val Utilities: util.Utilities.type = org.automanlang.core.util.Utilities
 
   // to simplify imports
   type Answer[T] = org.automanlang.core.answer.Answer[T]
@@ -33,17 +33,17 @@ trait DSL {
   //type CBQuestion = org.automanlang.core.info.QuestionType.QuestionType
 
   // to simplify pattern matching
-  val Answer = org.automanlang.core.answer.Answer
-  val Answers = org.automanlang.core.answer.Answers
-  val Estimate = org.automanlang.core.answer.Estimate
-  val IncompleteAnswers = org.automanlang.core.answer.IncompleteAnswers
-  val LowConfidenceAnswer = org.automanlang.core.answer.LowConfidenceAnswer
-  val LowConfidenceEstimate = org.automanlang.core.answer.LowConfidenceEstimate
-  val OverBudgetAnswer = org.automanlang.core.answer.OverBudgetAnswer
-  val OverBudgetAnswers = org.automanlang.core.answer.OverBudgetAnswers
-  val OverBudgetEstimate = org.automanlang.core.answer.OverBudgetEstimate
-  val SymmetricCI = org.automanlang.core.question.confidence.SymmetricCI
-  val UnconstrainedCI = org.automanlang.core.question.confidence.UnconstrainedCI
+  val Answer: answer.Answer.type = org.automanlang.core.answer.Answer
+  val Answers: answer.Answers.type = org.automanlang.core.answer.Answers
+  val Estimate: answer.Estimate.type = org.automanlang.core.answer.Estimate
+  val IncompleteAnswers: answer.IncompleteAnswers.type = org.automanlang.core.answer.IncompleteAnswers
+  val LowConfidenceAnswer: answer.LowConfidenceAnswer.type = org.automanlang.core.answer.LowConfidenceAnswer
+  val LowConfidenceEstimate: answer.LowConfidenceEstimate.type = org.automanlang.core.answer.LowConfidenceEstimate
+  val OverBudgetAnswer: answer.OverBudgetAnswer.type = org.automanlang.core.answer.OverBudgetAnswer
+  val OverBudgetAnswers: answer.OverBudgetAnswers.type = org.automanlang.core.answer.OverBudgetAnswers
+  val OverBudgetEstimate: answer.OverBudgetEstimate.type = org.automanlang.core.answer.OverBudgetEstimate
+  val SymmetricCI: question.confidence.SymmetricCI.type = org.automanlang.core.question.confidence.SymmetricCI
+  val UnconstrainedCI: question.confidence.UnconstrainedCI.type = org.automanlang.core.question.confidence.UnconstrainedCI
 
   // DSL constructs
   def estimate[A <: AutomanAdapter](
@@ -68,7 +68,7 @@ trait DSL {
                                      wage: BigDecimal = MagicNumbers.USFederalMinimumWage
                                    )
                                    (implicit a: A): EstimationOutcome = {
-    def initf[Q <: EstimationQuestion](q: Q) = {
+    def initf[Q <: EstimationQuestion](q: Q): Unit = {
       // mandatory parameters
       q.text = text
 
@@ -134,7 +134,7 @@ trait DSL {
                                           wage: BigDecimal = MagicNumbers.USFederalMinimumWage
                                         )
                                         (implicit a: A): MultiEstimationOutcome = {
-    def initf[Q <: MultiEstimationQuestion](q: Q) = {
+    def initf[Q <: MultiEstimationQuestion](q: Q): Unit = {
       // mandatory parameters
       q.dimensions = dimensions
       q.text = text
@@ -193,7 +193,7 @@ trait DSL {
                                      wage: BigDecimal = MagicNumbers.USFederalMinimumWage
                                    )
                                    (implicit a: A): ScalarOutcome[String] = {
-    def initf[Q <: FreeTextQuestion](q: Q) = {
+    def initf[Q <: FreeTextQuestion](q: Q): Unit = {
       // mandatory parameters
       q.text = text
       q.pattern = pattern
@@ -253,7 +253,7 @@ trait DSL {
                                       wage: BigDecimal = MagicNumbers.USFederalMinimumWage
                                     )
                                     (implicit a: A): VectorOutcome[String] = {
-    def initf[Q <: FreeTextVectorQuestion](q: Q) = {
+    def initf[Q <: FreeTextVectorQuestion](q: Q): Unit = {
       // mandatory parameters
       q.text = text
 
@@ -312,7 +312,7 @@ trait DSL {
                                         wage: BigDecimal = MagicNumbers.USFederalMinimumWage
                                       )
                                       (implicit a: A): ScalarOutcome[Set[Symbol]] = {
-    def initf[Q <: CheckboxQuestion](q: Q) = {
+    def initf[Q <: CheckboxQuestion](q: Q): Unit = {
       // mandatory parameters
       q.text = text
       q.options = options.asInstanceOf[List[q.QuestionOptionType]] // yeah... ugly
@@ -365,7 +365,7 @@ trait DSL {
                                           wage: BigDecimal = MagicNumbers.USFederalMinimumWage
                                         )
                                         (implicit a: A): VectorOutcome[Set[Symbol]] = {
-    def initf[Q <: CheckboxVectorQuestion](q: Q) = {
+    def initf[Q <: CheckboxVectorQuestion](q: Q): Unit = {
       // mandatory parameters
       q.text = text
       q.options = options.asInstanceOf[List[q.QuestionOptionType]] // yeah... ugly
@@ -418,7 +418,7 @@ trait DSL {
                                      wage: BigDecimal = MagicNumbers.USFederalMinimumWage
                                    )
                                    (implicit a: A): ScalarOutcome[Symbol] = {
-    def initf[Q <: RadioButtonQuestion](q: Q) = {
+    def initf[Q <: RadioButtonQuestion](q: Q): Unit = {
       // mandatory parameters
       q.text = text
       q.options = options.asInstanceOf[List[q.QuestionOptionType]] // yeah... ugly
@@ -471,7 +471,7 @@ trait DSL {
                                       wage: BigDecimal = MagicNumbers.USFederalMinimumWage
                                     )
                                     (implicit a: A): VectorOutcome[Symbol] = {
-    def initf[Q <: RadioButtonVectorQuestion](q: Q) = {
+    def initf[Q <: RadioButtonVectorQuestion](q: Q): Unit = {
       // mandatory parameters
       q.text = text
       q.options = options.asInstanceOf[List[q.QuestionOptionType]] // yeah... ugly

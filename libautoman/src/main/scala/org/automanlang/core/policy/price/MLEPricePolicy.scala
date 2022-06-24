@@ -5,6 +5,11 @@ import org.automanlang.core.question.Question
 import org.automanlang.core.scheduler.{SchedulerState, Task}
 import org.automanlang.core.policy._
 
+/**
+ * Maximum likelihood estimation for Bernoulli distribution
+ *
+ * @see https://cacm.acm.org/magazines/2016/6/202648-automan/fulltext
+ */
 class MLEPricePolicy(question: Question) extends PricePolicy(question) {
   private def numAnswered(ts: List[Task]) : Int = {
     ts.count { t =>

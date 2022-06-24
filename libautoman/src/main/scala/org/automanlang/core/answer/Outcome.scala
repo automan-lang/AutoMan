@@ -34,12 +34,13 @@ case class MultiEstimationOutcome(_question: MultiEstimationQuestion,
 case class EstimationOutcome(_question: EstimationQuestion,
                              override protected[automanlang] val f: Future[AbstractEstimate])
   extends Outcome[Double](_question, f) {
-  def combineWith(e: EstimationOutcome)(op: Double => Double => Double)(implicit adapter: AutomanAdapter) : EstimationOutcome = {
+  def combineWith(e: EstimationOutcome)(op: Double => Double => Double)(implicit adapter: AutomanAdapter): EstimationOutcome = {
     // create combination question
     val mq = EstimationMetaQuestion(lhs = this._question, rhs = e._question, op = op)
     // schedule
     adapter.schedule[EstimationMetaQuestion](mq, mqp => Unit)
   }
+
   override def toString: String = {
     answer match {
       case e: Estimate => e.value.toString

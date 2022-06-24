@@ -1,12 +1,6 @@
 package org.automanlang.core.answer
 
-import java.io.{BufferedWriter, File, FileWriter, PrintWriter}
-
-//import au.com.bytecode.opencsv.CSVWriter
 import org.automanlang.core.question._
-import scala.collection.JavaConversions._
-
-import scala.collection.mutable.ListBuffer
 
 /**
  * Most abstract answer type.  Subtypes exist to make
@@ -144,4 +138,5 @@ case class SurveyOverBudgetAnswers[T](need: BigDecimal,
   extends AbstractSurveyAnswer[T](need, question, Array())
 
 
+// TODO: add finished time (if we can get it from Task)
 case class SurveyTaskMetadata(worker_id: String, cost: BigDecimal)

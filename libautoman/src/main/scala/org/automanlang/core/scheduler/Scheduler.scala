@@ -19,14 +19,14 @@ class Scheduler(val question: Question,
   // save startup time
   val VIRT_FREQ = 1 // ms
   val init_time = new Date()
-  val use_virt = question.mock_answers.nonEmpty
+  val use_virt: Boolean = question.mock_answers.nonEmpty
 
   // init policies
   question.init_validation_policy()
   question.init_price_policy()
   question.init_timeout_policy()
 
-  val VP = question.validation_policy_instance
+  val VP: question.AP = question.validation_policy_instance
 
   /** Crowdsources a task on the desired backend, scheduling and
     * rescheduling enough jobs until the chosen quality-control
