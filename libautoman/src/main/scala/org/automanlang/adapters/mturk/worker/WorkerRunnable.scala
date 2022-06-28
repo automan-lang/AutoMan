@@ -369,8 +369,10 @@ class WorkerRunnable(tw: TurkWorker,
         val group_key = hit_key._1
 
         // have we already posted a HIT for these tasks?
-        if (internal_state.hit_ids.contains(hit_key)) {
+        if (internal_state.hit_ids.contains(hit_key) && !internal_state.hit_states(internal_state.hit_ids(hit_key)).isCancelled) {
           // if so, get HITState and extend it
+          // Ye Shu note: if we are using FixedTimeoutPolicy, the newly created batch will have the same hit_key.
+          // However the HITState is cancelled so extending it will lead to failure. We should instead post a new HIT.
           internal_state = WorkerRunnable.turkRetry(() => MTurkMethods.mturk_extendHIT(tz, tz.head.timeout_in_s, hit_key, internal_state, tw.backend), timeoutState)
         } else {
           // if not, post a new HIT on MTurk

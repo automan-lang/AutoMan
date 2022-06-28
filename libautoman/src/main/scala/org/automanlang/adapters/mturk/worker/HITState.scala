@@ -24,9 +24,18 @@ object HITState {
   }
 }
 
-// Note that this class stores references to actual MTurk Assignment objects
-// but compares them by their Assignment IDs, in case Assignments
-// are fetched multiple times.
+
+
+/**
+ * Note that this class stores references to actual MTurk Assignment objects
+ * but compares them by their Assignment IDs, in case Assignments
+ * are fetched multiple times.
+ *
+ * @param hit the HIT object from the backend
+ * @param t_a_map task assignment map: maps tasks to assignments
+ * @param hittype HIT Type (wrapper for HIT Group)
+ * @param cancelled whether the HIT is cancelled
+ */
 case class HITState(hit: HIT, t_a_map: Map[UUID,Option[Assignment]], hittype: HITType, cancelled: Boolean) {
   val aid_t_map: Map[String, UUID] = t_a_map.flatMap { case (t, a_o) => a_o match { case Some(a) => Some(a.getAssignmentId -> t); case None => None }}
   // pulls UUIDs and maps assignment associated with it to UUID

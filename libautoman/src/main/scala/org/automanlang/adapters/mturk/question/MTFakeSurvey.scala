@@ -24,7 +24,7 @@ class MTFakeSurvey extends FakeSurvey with MTurkQuestion {
     case None => this.title
   }
 
-  override def group_id: String = title
+  override def group_id: String = _id.toString
 
   /**
    * Parses answer from XML
