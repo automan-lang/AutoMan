@@ -22,6 +22,7 @@ package object test {
       from_memo = false,
       None,
       None,
+      csv_written = false,
       now
     )
   }

@@ -105,6 +105,8 @@ class Scheduler(val question: Question,
      * This function accepts and returns the same parameters without changes
      */
     private def schSaveCSV(running: List[Task], unrunning: List[Task], time: Time, num_comparisons: Int, done: Boolean, sufferedTimeout: Boolean): (List[Task], List[Task], Time, Int, Boolean) = {
+      var unrunning_new: List[Task] = unrunning
+
       if (sufferedTimeout || done) {
         question match {
           // TODO: currently save to CSV supports only Surveys (not individual questions)
@@ -119,12 +121,18 @@ class Scheduler(val question: Question,
               }
 
               // CSV content
-              // TODO: there may be duplicates. Can we filter only those answered in this round?
-              // maybe add a field in Task that says "csv_written" and do a filter here?
-              VP.answered_tasks(unrunning).foreach(task => {
-                val answer = task.answer.get.asInstanceOf[FakeSurvey#A]
-                writer.writeRow(List(task.worker_id, task.cost, task.state_changed_at, task.round) ::: answer)
-              })
+              unrunning_new = unrunning.map { task =>
+                if (!task.csv_written &&
+                  (task.state == SchedulerState.ANSWERED || task.state == SchedulerState.ACCEPTED)) {
+                  // task is answered and not written to CSV, let's write it and mark it as written
+                  val answer = task.answer.get.asInstanceOf[FakeSurvey#A]
+                  writer.writeRow(List(task.worker_id.getOrElse("(ERROR)"), task.cost, task.state_changed_at, task.round) ::: answer)
+                  task.copy_as_csv_written()
+                } else {
+                  // do not write, keep as is
+                  task
+                }
+              }
 
               writer.close()
             } catch {
@@ -139,7 +147,7 @@ class Scheduler(val question: Question,
         }
       }
 
-      (running, unrunning, time, num_comparisons, done)
+      (running, unrunning_new, time, num_comparisons, done)
     }
 
     private def schRetrieve(running: List[Task], unrunning: List[Task], time: Time, num_comparisons: Int, done: Boolean) : (List[Task],List[Task],Time,Int,Boolean) = {

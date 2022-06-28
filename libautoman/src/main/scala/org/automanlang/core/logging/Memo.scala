@@ -615,6 +615,7 @@ class Memo(log_config: LogConfig.Value, database_name: String, in_mem_db: Boolea
               from_memo = true,
               worker_id,
               answer.asInstanceOf[Option[Question#A]],
+              csv_written = false, // TODO: read csv_written field from Memo
               state_changed_at
             )
         }

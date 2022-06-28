@@ -150,6 +150,7 @@ abstract class AggregationPolicy(question: Question) {
         from_memo = false,
         None,
         None,
+        false,
         now
       )
       t
