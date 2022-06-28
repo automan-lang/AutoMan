@@ -12,6 +12,7 @@ object Key {
   type WorkerID = String
   type GroupID = String
 
+  // TODO: group_id is not unique (just title), what about using id (UUID) instead?
   protected[mturk] def BatchKey(t: Task) : BatchKey =
     BatchKey(t.question.asInstanceOf[MTurkQuestion].group_id, t.cost, t.worker_timeout)
   protected[mturk] def BatchKey(group_id: String, cost: BigDecimal, timeout_in_s: Int) =

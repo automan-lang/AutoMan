@@ -117,12 +117,12 @@ object MTurkMethods {
                                         batch_no: Int,
                                         backend: AmazonMTurk): QualificationRequirement = {
     // get a simply-formatted date
-    val sdf = new SimpleDateFormat("yyyy-MM-dd:z")
+    val sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
     val datestr = sdf.format(new Date())
 
     // Creates qualification type
     val qualID: QualificationID = {
-      val qualtxt = s"AutoMan automatically generated Disqualification (title: \"$title\", date: $datestr)"  // , groupID: ${batchKey._1}
+      val qualtxt = s"""AutoMan automatically generated Disqualification (title: \"$title\", date: $datestr)"""  // , groupID: ${batchKey._1}
       // Commented out groupID in qualtxt since groupID is just title now.
 
       val qual = backend.createQualificationType(new CreateQualificationTypeRequest()
@@ -263,7 +263,7 @@ object MTurkMethods {
     val disqualification: QualificationRequirement =
     internal_state.qualificationRequirements.getOrElse(group_id, {
       val qual = mturk_createQualification(title, batch_key, batch_no, backend)
-      DebugLog(s"Created new disqualification with type ID ${qual.getQualificationTypeId} for group id " + group_id, LogLevelInfo(), LogType.ADAPTER, null)
+      DebugLog(s"""Created new disqualification with type ID ${qual.getQualificationTypeId} for group id \"${group_id}\"""", LogLevelInfo(), LogType.ADAPTER, null)
       // update qualifications so it can be reused for future batches
       internal_state = internal_state.addQualificationRequirement(group_id, qual)
       qual
