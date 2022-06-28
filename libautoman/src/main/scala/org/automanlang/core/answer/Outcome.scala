@@ -95,7 +95,7 @@ case class SurveyOutcome[T](_question: FakeSurvey,
 
   def saveToCSV(): Unit = {
     try {
-      val writer = CSVWriter.open(new File(_question.csv_output))
+      val writer = CSVWriter.open(new File(_question.csv_output + ".final"))
 
       // CSV header: worker_id, metadata, questions
       writer.writeRow(List("Worker ID", "cost") ::: _question.questions.map(q => q.text))

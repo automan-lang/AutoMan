@@ -95,9 +95,9 @@ object PEWSurvey extends App {
     //    text = "PEWHTMLsurvey",
     //    sample_size = 300,
     //    minimum_spawn_policy = UserDefinableSpawnPolicy(0),
-    sample_size = 3,
-    initial_worker_timeout_in_s = 360,
-    question_timeout_multiplier = 10000,  // how does this work?
+    sample_size = 300,
+    initial_worker_timeout_in_s = 160,
+    question_timeout_multiplier = 180,  // used to calculate the time of an epoch determining "TIMEOUT" sate
   )
 
   automan(a) {
@@ -107,7 +107,7 @@ object PEWSurvey extends App {
      */
 
     // println(which_one().answer)
-    which_one().saveToCSV()
+//    which_one().saveToCSV()
 
     which_one().answer match {
       case answer: SurveyAnswers[List[Any]] =>

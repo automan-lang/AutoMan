@@ -21,6 +21,7 @@ abstract class FakeSurvey extends Question {
   // TODO: New policies need to be added
   override type AP = SimpleSurveyVectorPolicy // Answer Policy
   override type PP = FixedPricePolicy // Price Policy
+//  override type TP = DoublingTimeoutPolicy // Timeout Policy
   override type TP = FixedTimeoutPolicy // Timeout Policy
 
   private var _sample_size: Int = 30
