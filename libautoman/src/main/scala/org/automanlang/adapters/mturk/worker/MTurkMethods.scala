@@ -40,6 +40,7 @@ object MTurkMethods {
     tg.head._1
   }
 
+  // Handle the user manual qualification requests
   private[worker] def mturk_grantQualifications(hitstate: HITState, state: MTState, backend: AmazonMTurk) : MTState = {
     var internal_state = state
 
@@ -68,6 +69,7 @@ object MTurkMethods {
       if (internal_state.worker_whitelist.contains(worker_id, group_id)) {
         // if that disqualification is not the same as the one they're asking for, sorry, reject;
         // granting this would violate i.i.d. guarantee
+        // note by Ye Shu: this is the case where disqualification has been granted for previous batch
         if (internal_state.getHITTypeForWhitelistedWorker(worker_id, group_id).id != hit_type_id) {
           backend.rejectQualificationRequest(new model.RejectQualificationRequestRequest()
             .withQualificationRequestId(request.getQualificationRequestId)
@@ -75,6 +77,7 @@ object MTurkMethods {
                         "that disqualifies you from participating in this HITType."))
           // otherwise, they're requesting something we've already granted; reject
         } else {
+          // note by Ye Shu: this is the case where disqualification has been granted for this branch
           backend.rejectQualificationRequest(new model.RejectQualificationRequestRequest()
             .withQualificationRequestId(request.getQualificationRequestId)
             .withReason("You cannot request this qualification more than once.")
@@ -82,6 +85,11 @@ object MTurkMethods {
         }
       } else {
         // if we don't know them, record the user and grant their disqualification request
+        // note by Ye Shu: this code is unlikely to be reached, because we are now using qualification requirement
+        // that "xxx has not been granted". So if a worker asks for qualification, they are likely already disqualified
+        // However I'm keeping this code here just in case
+        DebugLog(s"Granting qualification request: (worker ID: ${worker_id}, group ID: ${group_id}).", LogLevelInfo(), LogType.ADAPTER, null)
+
         internal_state = internal_state.updateWorkerWhitelist(worker_id, group_id, hit_type_id)
         // get the BatchKey associated with the HITType; guaranteed to exist
         val batchKey = internal_state.getBatchKeyByHITTypeId(hit_type_id).get
@@ -97,35 +105,44 @@ object MTurkMethods {
     internal_state
   }
 
+  /**
+   * Creates `QualificationRequirement` for a question.
+   *
+   * This QualificationRequirement is then reused for the entire question.
+   * It'll be set when a worker answers a question, so the worker will not be
+   * able to answer the recreated question in future batches.
+   */
   private[worker] def mturk_createQualification(title: String,
                                         batchKey: BatchKey,
                                         batch_no: Int,
-                                        backend: AmazonMTurk) : QualificationRequirement = {
+                                        backend: AmazonMTurk): QualificationRequirement = {
     // get a simply-formatted date
     val sdf = new SimpleDateFormat("yyyy-MM-dd:z")
     val datestr = sdf.format(new Date())
 
-    val qualtxt = s"AutoMan automatically generated Disqualification (title: $title, date: $datestr, batchKey: $batchKey, batch_no: $batch_no)"
-    //val qualRequest = new CreateQualificationTypeRequest()()
-    //qualRequest.setName("AutoMan").setKeywords()
-    //val id : UUID = UUID.randomUUID()
-    val qual = backend.createQualificationType(new CreateQualificationTypeRequest()
-        //.withName("AutoMan")
-        .withName("Automan " + UUID.randomUUID().toString)
-        //.setDescription(UUID.randomUUID())
+    // Creates qualification type
+    val qualID: QualificationID = {
+      val qualtxt = s"AutoMan automatically generated Disqualification (title: \"$title\", date: $datestr)"  // , groupID: ${batchKey._1}
+      // Commented out groupID in qualtxt since groupID is just title now.
+
+      val qual = backend.createQualificationType(new CreateQualificationTypeRequest()
+        .withName(qualtxt)
         .withKeywords("automan")
-        .withDescription(qualtxt)
+        .withDescription(s"Automan ${UUID.randomUUID().toString}: $qualtxt")
         //.withQualificationTypeStatus(QualificationTypeStatus.Inactive)
         .withQualificationTypeStatus(QualificationTypeStatus.Active)
-    ) : CreateQualificationTypeResult //UUID keyword?
-      //"AutoMan " + UUID.randomUUID(), "automan", qualtxt)
+      ) : CreateQualificationTypeResult //UUID keyword?
 
-    DebugLog(s"Creating disqualification ID: ${qual.getQualificationType.getQualificationTypeId}.",LogLevelInfo(),LogType.ADAPTER,null)
+      DebugLog(s"Created disqualification type ID: ${qual.getQualificationType.getQualificationTypeId}.",LogLevelInfo(),LogType.ADAPTER,null)
+      qual.getQualificationType.getQualificationTypeId
+    }
+
+    // Creates Qualification Requirement
     new QualificationRequirement()
-      .withQualificationTypeId(qual.getQualificationType.getQualificationTypeId)
+      .withQualificationTypeId(qualID)
       .withComparator(model.Comparator.DoesNotExist)
 //      .withIntegerValues(batch_no)
-      .withActionsGuarded("Accept") //TODO: Check if this is what we want
+      .withActionsGuarded("Accept")
 
     //model.Comparator.EqualTo, batch_no, null, false)
   }
@@ -238,22 +255,20 @@ object MTurkMethods {
     // get just-created batch number; guaranteed to exist because we just created it
     val batch_no = internal_state.getBatchNo(batch_key).get
 
-    // create disqualification for batch
+    // create disqualification for question
+    // if already exists (i.e. not first batch) then reuse disqualification
+    // This disqualification ensures that the question and its recreated version
+    // (with longer worker timeouts) are only answered once maximum by each worker
     // TODO: tinker with imports
-    val disqualification: QualificationRequirement = mturk_createQualification(title, batch_key, batch_no, backend)
-    DebugLog(s"Created disqualification ${disqualification.getQualificationTypeId} for batch key = " + batch_key, LogLevelDebug(), LogType.ADAPTER, null)
+    val disqualification: QualificationRequirement =
+    internal_state.qualificationRequirements.getOrElse(group_id, {
+      val qual = mturk_createQualification(title, batch_key, batch_no, backend)
+      DebugLog(s"Created new disqualification with type ID ${qual.getQualificationTypeId} for group id " + group_id, LogLevelInfo(), LogType.ADAPTER, null)
+      // update qualifications so it can be reused for future batches
+      internal_state = internal_state.addQualificationRequirement(group_id, qual)
+      qual
+    })
     // getQTId is in the doc...
-
-    // whenever we create a new group, we need to add the disqualification to the HITType
-    // EXCEPT if it's the very first time the group is posted
-    val qs: util.Collection[QualificationRequirement] =
-      if (batch_no != 1) {
-        DebugLog(s"Batch #${batch_no} run, using disqualification ${disqualification.getQualificationTypeId} for batch " + batch_key, LogLevelDebug(), LogType.ADAPTER, null)
-        List(disqualification)
-      } else {
-        DebugLog(s"Batch #${batch_no} run, using no qualifications for batch " + batch_key, LogLevelDebug(), LogType.ADAPTER, null)
-        Nil
-      }
 
     val autoApprovalDelayInSeconds = (3 * 24 * 60 * 60).toLong     // 3 days
 
@@ -264,7 +279,7 @@ object MTurkMethods {
       .withTitle(title)                                                      // title
       .withKeywords(keywords.mkString(","))                              // keywords
       .withDescription(desc)                                                      // description
-      .withQualificationRequirements(qs)                                                    // qualifications
+      .withQualificationRequirements(List(disqualification))                      // qualifications
     )
     val hittype = HITType(hit_type_id.getHITTypeId, disqualification, group_id)
 

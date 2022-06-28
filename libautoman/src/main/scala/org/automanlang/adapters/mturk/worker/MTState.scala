@@ -1,9 +1,9 @@
 package org.automanlang.adapters.mturk.worker
 
-import com.amazonaws.services.mturk.model.Assignment
+import com.amazonaws.services.mturk.model.{Assignment, QualificationRequirement}
 import org.automanlang.adapters.mturk.util.Key
 import org.automanlang.adapters.mturk.util.Key._
-import org.automanlang.core.logging.{LogType, LogLevelDebug, DebugLog}
+import org.automanlang.core.logging.{DebugLog, LogLevelDebug, LogType}
 import org.automanlang.core.scheduler.Task
 
 case class MTState(hit_types: Map[BatchKey,HITType],
@@ -11,6 +11,7 @@ case class MTState(hit_types: Map[BatchKey,HITType],
                    hit_ids: Map[HITKey,HITID],
                    worker_whitelist: Map[(WorkerID,GroupID),HITTypeID],
                    disqualifications: Map[QualificationID,HITTypeID],
+                   qualificationRequirements: Map[GroupID, QualificationRequirement], // question -> QualificationTypeID, so all batches verify against the same qualification type
                    batch_no: Map[GroupID, Map[BatchKey, Int]]) {
   def this() =
     this(
@@ -19,29 +20,34 @@ case class MTState(hit_types: Map[BatchKey,HITType],
       Map[HITKey,HITID](),
       Map[(WorkerID,GroupID),HITTypeID](),
       Map[QualificationID,HITTypeID](),
+      Map[GroupID, QualificationRequirement](),
       Map[GroupID,Map[BatchKey,Int]]()
     )
   def updateHITTypes(batch_key: BatchKey, hit_type: HITType) : MTState = {
-    MTState(hit_types + (batch_key -> hit_type), hit_states, hit_ids, worker_whitelist, disqualifications, batch_no)
+    MTState(hit_types + (batch_key -> hit_type), hit_states, hit_ids, worker_whitelist, disqualifications, qualificationRequirements, batch_no)
   }
   def updateHITStates(hit_id: HITID, hit_state: HITState) : MTState = {
-    MTState(hit_types, hit_states + (hit_id -> hit_state), hit_ids, worker_whitelist, disqualifications, batch_no)
+    MTState(hit_types, hit_states + (hit_id -> hit_state), hit_ids, worker_whitelist, disqualifications, qualificationRequirements, batch_no)
   }
   def updateHITStates(pairs: Seq[(HITID,HITState)]) : MTState = {
-    MTState(hit_types, hit_states ++ pairs, hit_ids, worker_whitelist, disqualifications, batch_no)
+    MTState(hit_types, hit_states ++ pairs, hit_ids, worker_whitelist, disqualifications, qualificationRequirements, batch_no)
   }
   def updateHITIDs(hit_key: HITKey, hit_id: HITID) : MTState = {
-    MTState(hit_types, hit_states, hit_ids + (hit_key -> hit_id), worker_whitelist, disqualifications, batch_no)
+    MTState(hit_types, hit_states, hit_ids + (hit_key -> hit_id), worker_whitelist, disqualifications, qualificationRequirements, batch_no)
   }
   def updateWorkerWhitelist(worker_id: WorkerID, group_id: GroupID, hit_type_id: HITTypeID) : MTState = {
-    MTState(hit_types, hit_states, hit_ids, worker_whitelist + ((worker_id,group_id) -> hit_type_id), disqualifications, batch_no)
+    MTState(hit_types, hit_states, hit_ids, worker_whitelist + ((worker_id,group_id) -> hit_type_id), disqualifications, qualificationRequirements, batch_no)
   }
   def addDisqualifications(qualificationID: QualificationID, hittypeid: HITTypeID) : MTState = {
-    MTState(hit_types, hit_states, hit_ids, worker_whitelist, disqualifications + (qualificationID -> hittypeid), batch_no)
+    MTState(hit_types, hit_states, hit_ids, worker_whitelist, disqualifications + (qualificationID -> hittypeid), qualificationRequirements, batch_no)
   }
   def deleteDisqualifications() : MTState = {
-    MTState(hit_types, hit_states, hit_ids, worker_whitelist, Map.empty, batch_no)
+    MTState(hit_types, hit_states, hit_ids, worker_whitelist, Map.empty, qualificationRequirements, batch_no)
   }
+  def addQualificationRequirement(groupID: GroupID, qualReq: QualificationRequirement) : MTState = {
+    MTState(hit_types, hit_states, hit_ids, worker_whitelist, disqualifications, qualificationRequirements + (groupID -> qualReq), batch_no)
+  }
+
   def updateBatchNo(batchKey: BatchKey) : MTState = {
     val groupID = batchKey._1
 
@@ -49,7 +55,7 @@ case class MTState(hit_types: Map[BatchKey,HITType],
       // first run
       DebugLog(s"First run for batch ${batchKey}; initializing batch_nor to 1.", LogLevelDebug(), LogType.ADAPTER, null)
       val batch_map = Map(batchKey -> 1)
-      MTState(hit_types, hit_states, hit_ids, worker_whitelist, disqualifications, batch_no + (groupID -> batch_map))
+      MTState(hit_types, hit_states, hit_ids, worker_whitelist, disqualifications, qualificationRequirements, batch_no + (groupID -> batch_map))
     } else {
       // not first run; is there an applicable batch number?
       val batch_map = batch_no(groupID)
@@ -64,7 +70,7 @@ case class MTState(hit_types: Map[BatchKey,HITType],
         val batchNo = batch_map.values.max + 1
         DebugLog(s"New batch ${batchKey} for group_id ${groupID}; incrementing batch_no to ${batchNo}.", LogLevelDebug(), LogType.ADAPTER, null)
         val batch_map2 = batch_map + (batchKey -> batchNo)
-        MTState(hit_types, hit_states, hit_ids, worker_whitelist, disqualifications, batch_no + (groupID -> batch_map2))
+        MTState(hit_types, hit_states, hit_ids, worker_whitelist, disqualifications, qualificationRequirements, batch_no + (groupID -> batch_map2))
       }
     }
   }

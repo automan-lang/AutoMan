@@ -93,6 +93,7 @@ class MTMemo(log_config: LogConfig.Value, database_path: String, in_mem_db: Bool
             hit_ids,
             getWorkerWhitelist,
             getQualifications,
+            Map[GroupID, QualificationRequirement](),  // TODO: read from memo
             getBatchNos
           )
         )
