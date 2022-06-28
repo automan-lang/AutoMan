@@ -5,9 +5,7 @@ import io.circe.{HCursor, Json}
 import java.util.{Date, UUID}
 import org.automanlang.adapters.mturk.mock.EstimationMockResponse
 import org.automanlang.adapters.mturk.policy.aggregation.MTurkMinimumSpawnPolicy
-import org.automanlang.core.logging.DebugLog
-import org.automanlang.core.logging.LogLevelDebug
-import org.automanlang.core.logging.LogType
+import org.automanlang.core.logging.{DebugLog, LogLevelDebug, LogLevelWarn, LogType}
 import org.automanlang.core.question.{EstimationQuestion, FreeTextQuestion}
 
 import java.security.MessageDigest
@@ -173,7 +171,7 @@ class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
         }
       } + "</div>" +
     // TODO: enforce min/max with form validation or JS
-    s"""<crowd-input name=\"${id_string}\" label=\"${text}\" required></crowd-input>""" +
+    s"""<crowd-input name=\"${id_string}\" label=\"${text}\" allowed-pattern="^\\d*$$" error-message="Please enter ONLY numbers" auto-validate required></crowd-input>""" +
     "</div>"
   }
 
@@ -183,13 +181,11 @@ class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
     } catch {
       case e: NoSuchElementException => {
         // Probably error converting input to type EstimationQuestion#A (which is likely a Double)
-        println("[WARNING] Cannot convert the following answer to an estimation question's output")
-        println(json)
+        DebugLog("Cannot convert the following answer to an estimation question's output: " + json, LogLevelWarn(), LogType.ADAPTER, id)
         0  // TODO: Generalize to return the default value of EstimationQuestion#A instead
       }
       case _: Throwable => {
-        println("[WARNING] Error parsing output with following answer")
-        println(json)
+        DebugLog("Error parsing output with following answer: " + json, LogLevelWarn(), LogType.ADAPTER, id)
         0  // TODO: Generalize to return the default value of EstimationQuestion#A instead
       }
     }

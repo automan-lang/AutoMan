@@ -149,6 +149,11 @@ abstract class AutomanAdapter {
     init(q)
     q
   }
+  def CreateFreeTextQuestion(init: FTQ => Unit): FTQ = {
+    var q = FTQFactory()
+    init(q)
+    q
+  }
 
   // state management
   protected[automanlang] def close() = {
