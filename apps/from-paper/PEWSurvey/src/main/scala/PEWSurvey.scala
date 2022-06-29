@@ -13,7 +13,6 @@ object PEWSurvey extends App {
   def which_one(): DSL.SurveyOutcome[List[Any]] = Survey(
     questions = List(
       radioQuestion(
-        budget = 5.00, // we should also get rid of per-question budgets-- not actually enforced, right?
         text = "Saving for the future",
         options = (
           choice('Easier, "Easier"),
@@ -22,7 +21,6 @@ object PEWSurvey extends App {
         )
       ),
       radioQuestion(
-        budget = 5.00,
         text = "Paying for college",
         options = (
           choice('Easier, "Easier"),
@@ -31,7 +29,6 @@ object PEWSurvey extends App {
         )
       ),
       radioQuestion(
-        budget = 5.00,
         text = "Buying a home",
         options = (
           choice('Easier, "Easier"),
@@ -40,7 +37,6 @@ object PEWSurvey extends App {
         )
       ),
       radioQuestion(
-        budget = 5.00,
         text = "Finding a spouse or partner",
         options = (
           choice('Easier, "Easier"),
@@ -49,7 +45,6 @@ object PEWSurvey extends App {
         )
       ),
       radioQuestion(
-        budget = 5.00,
         text = "Finding a job",
         options = (
           choice('Easier, "Easier"),
@@ -58,7 +53,6 @@ object PEWSurvey extends App {
         )
       ),
       radioQuestion(
-        budget = 5.00,
         text = "Getting into college",
         options = (
           choice('Easier, "Easier"),
@@ -67,7 +61,6 @@ object PEWSurvey extends App {
         )
       ),
       radioQuestion(
-        budget = 5.00,
         text = "Staying in touch with family and friends",
         options = (
           choice('Easier, "Easier"),
@@ -76,7 +69,6 @@ object PEWSurvey extends App {
         )
       ),
       radioQuestion(
-        budget = 5.00,
         text = "Do you currently live in the United States?",
         options = (
           choice('Yes, "Yes"),
@@ -88,7 +80,9 @@ object PEWSurvey extends App {
         text = "What is your age?"
       )
     ),
-    //    budget = 500.00,
+    budget = 150.00,  // this field is a hard limit per question/survey on how much the user will pay
+    // (the survey will terminate if total price of tasks increase beyond this limit and throw OverBudgetException`)
+    // TODO: set a different default value/function based on survey
     csv_output = "pew_" + java.time.LocalDateTime.now.toString + ".csv",
     title = "How do you think young adults today compare with their parents\' generation on each of the following?",
     text = "For the following questions, is this action easier, harder, or the same for young adults today compared to their parents\' generation?",
