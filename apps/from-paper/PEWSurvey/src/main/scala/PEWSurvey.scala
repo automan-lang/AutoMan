@@ -80,7 +80,7 @@ object PEWSurvey extends App {
         text = "What is your age?"
       )
     ),
-    budget = 150.00,  // this field is a hard limit per question/survey on how much the user will pay
+    budget = 1500.00,  // this field is a hard limit per question/survey on how much the user will pay
     // (the survey will terminate if total price of tasks increase beyond this limit and throw OverBudgetException`)
     // TODO: set a different default value/function based on survey
     csv_output = "pew_" + java.time.LocalDateTime.now.toString + ".csv",
@@ -89,7 +89,7 @@ object PEWSurvey extends App {
     //    text = "PEWHTMLsurvey",
     //    sample_size = 300,
     //    minimum_spawn_policy = UserDefinableSpawnPolicy(0),
-    sample_size = 300,
+    sample_size = 3000,
     initial_worker_timeout_in_s = 160,
     question_timeout_multiplier = 180,  // used to calculate the time of an epoch determining "TIMEOUT" sate
   )
@@ -101,7 +101,7 @@ object PEWSurvey extends App {
      */
 
     // println(which_one().answer)
-//    which_one().saveToCSV()
+    which_one().saveToCSV()
 
     which_one().answer match {
       case answer: SurveyAnswers[List[Any]] =>

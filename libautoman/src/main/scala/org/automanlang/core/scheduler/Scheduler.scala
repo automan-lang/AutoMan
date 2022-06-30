@@ -107,7 +107,7 @@ class Scheduler(val question: Question,
     private def schSaveCSV(running: List[Task], unrunning: List[Task], time: Time, num_comparisons: Int, done: Boolean, sufferedTimeout: Boolean): (List[Task], List[Task], Time, Int, Boolean) = {
       var unrunning_new: List[Task] = unrunning
 
-      if (sufferedTimeout || done) {
+//      if (sufferedTimeout || done) {
         question match {
           // TODO: currently save to CSV supports only Surveys (not individual questions)
           case survey: FakeSurvey =>
@@ -145,7 +145,7 @@ class Scheduler(val question: Question,
           case _ =>
             println("[ERROR] save to CSV supports only Surveys (not individual questions)")
         }
-      }
+//      }
 
       (running, unrunning_new, time, num_comparisons, done)
     }
