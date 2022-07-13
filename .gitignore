@@ -27,3 +27,23 @@ docs/Gemfile.lock
 docs/dist/bootstrap
 docs/dist/jquery
 docs/.idea
+
+# vscode
+.vscode
+.metals
+.bloop
+.bsp
+metals.sbt
+
+# IDEA
+.idea
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# vim
+*.swp
+
+# CSV task output
+*.csv
+*.csv.final
