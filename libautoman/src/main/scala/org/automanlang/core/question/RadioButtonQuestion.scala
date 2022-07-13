@@ -51,4 +51,17 @@ abstract class RadioButtonQuestion extends DiscreteScalarQuestion {
     for(o <- options) optionMap += (o.question_id -> o.question_text)
     optionMap(answer)
   }
+
+  // method that returns an array of the possible responses
+  def return_response_possibilities() : Array[String] = {
+
+    // flatten list of combinations
+    var arr: Array[String] = Array()
+    _options.foreach(o => {
+      arr = arr :+ o.question_id.name
+    })
+
+    arr
+
+  }
 }

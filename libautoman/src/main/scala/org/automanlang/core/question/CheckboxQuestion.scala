@@ -50,4 +50,46 @@ abstract class CheckboxQuestion extends DiscreteScalarQuestion {
 
     "(" + answer.map(optionMap(_)).mkString(", ") + ")"
   }
+
+  // method that returns an array of the possible responses
+  def return_response_possibilities() : Array[String] = {
+
+    // flatten list of combinations
+    val textOptions = _options.map(o => o.question_id.name)
+
+    // get all combinations
+    val combinations = textOptions.toSet[String].subsets.map(_.toList).toList
+
+    // flatten into string and turn into array
+    var arr: Array[String] = Array()
+
+    combinations.foreach(c => {
+
+      val sortedC = c.sorted
+
+      var word = ""
+      var length = sortedC.length
+      var index = 1
+
+      sortedC.foreach(part => {
+        word = word + part
+        if (index < length) {
+          word = word + ", "
+        }
+        index = index + 1
+      })
+
+      arr = arr :+ word
+
+    })
+
+//    arr.foreach(r => {
+//      println(r)
+//    })
+    arr
+
+
+  }
+
+
 }
