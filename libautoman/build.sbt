@@ -17,7 +17,8 @@ exportJars := true
 crossScalaVersions := Seq("2.11.7")
 
 // SUPPORTED JAVA VERSIONS (to work around FasterXML InaccessibleObjectException issue)
-scalacOptions += "-target:jvm-1.8"
+// Ye Shu note: I have not encountered this problem on OpenJDK 17, so commenting out for now
+// scalacOptions += "-target:jvm-1.8"
 
 // DEPENDENCIES
 libraryDependencies := {

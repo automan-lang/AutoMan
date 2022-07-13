@@ -1,42 +1,36 @@
 package org.automanlang.core.policy.aggregation
 
-import org.automanlang.core.logging.{LogLevelInfo, DebugLog, LogType}
-import org.automanlang.core.question.MixedQuestion
+import com.github.tototoshi.csv._
+import org.automanlang.core.logging.{DebugLog, LogLevelInfo, LogType}
 import org.automanlang.core.scheduler.Task
 import org.automanlang.core.question._
-import org.automanlang.core.answer._
-import org.automanlang.core.util.Stopwatch
 
 import scala.math._
+import java.io.{BufferedWriter, File, FileWriter}
 
-import java.io.{BufferedWriter, FileWriter}
-import collection.JavaConverters._
-import au.com.bytecode.opencsv.CSVWriter
+class SurveyPolicy(question: FakeSurvey)
+  extends SurveyVectorPolicy(question) {
 
-class SurveyPolicy(question: MixedQuestion)
-  extends MixedPolicy(question) {
+  DebugLog("Policy: survey policy", LogLevelInfo(), LogType.STRATEGY, question.id)
 
-  DebugLog("Policy: survey policy",LogLevelInfo(),LogType.STRATEGY, question.id)
+  private[automanlang] def standard_deviation(samples: Array[Double]): Double = {
 
-  private[automanlang] def standard_deviation(samples: Array[Double]) : Double = {
-
-    val mean = samples.sum/samples.length
-    val stdDev = Math.sqrt((samples.map( _ - mean)
-      .map(t => t*t).sum)/samples.length)
+    val mean = samples.sum / samples.length
+    val stdDev = Math.sqrt((samples.map(_ - mean).map(t => t * t).sum) / samples.length)
     stdDev
 
   }
 
   private[automanlang] def create_samples(sample_size: Int, radixes: Array[Int]): Array[Array[Int]] = {
 
-    var samples : Array[Array[Int]] = Array()
-    var length = radixes.length
+    var samples: Array[Array[Int]] = Array()
+    val length = radixes.length
 
     val r = new scala.util.Random
 
-    for (x <- 0 until sample_size) {
+    for (_ <- 0 until sample_size) {
 
-      var sample : Array[Int] = Array()
+      var sample: Array[Int] = Array()
 
       for (y <- 0 until length) {
 
@@ -56,7 +50,7 @@ class SurveyPolicy(question: MixedQuestion)
 
     var distances: Array[Double] = Array()
 
-    for (x <- 0 until iterations) {
+    for (_ <- 0 until iterations) {
 
       // Create the random samples
       val samples1 = create_samples(sample_size, radixes)
@@ -77,7 +71,7 @@ class SurveyPolicy(question: MixedQuestion)
 
     var distances: Array[Double] = Array()
 
-    for (x <- 0 until iterations) {
+    for (_ <- 0 until iterations) {
 
       // Create the random samples
       val samples1 = create_samples(sample_size, radixes)
@@ -96,7 +90,7 @@ class SurveyPolicy(question: MixedQuestion)
   private[automanlang] def earth_movers(samples1: Array[Array[Int]], samples2: Array[Array[Int]], sample_size: Int, complexity: Int, question_types: Array[String], radixes: Array[Int]): Double = {
 
     // Data is stored in this format: [((5,3),8), ((2,2),10)] where the inner tuple is the row and column in the "table" of this entry, and the other number is the distance
-    var data: Array[Tuple2[Tuple2[Int, Int], Double]] = Array()
+    var data: Array[((Int, Int), Double)] = Array()
 
     // exhaustively compute the distance between every pair
     for (x <- 0 until sample_size) {
@@ -118,19 +112,17 @@ class SurveyPolicy(question: MixedQuestion)
           q_type match {
 
             // for checkbox and radio questions, same is 0 and different is 1
-            case "checkbox" => {
+            case "checkbox" =>
               if (number1 != number2) {
                 total = total + 1
               }
-            }
 
-            case "radio" => {
+            case "radio" =>
               if (number1 != number2) {
                 total = total + 1
               }
-            }
 
-            case "estimate" => {
+            case "estimate" =>
               // Figure out the "percentile" of each number
               // The radix is the maximum possible number
               val radix = radixes(z)
@@ -139,28 +131,26 @@ class SurveyPolicy(question: MixedQuestion)
               val diff = per1 - per2
               total = total + (diff * diff)
 
-            }
-
           }
 
 
 
-// Version without normalizing
-//          val diff = s1(z) - s2(z)
-//          total = total + (diff * diff)
+          // Version without normalizing
+          //          val diff = s1(z) - s2(z)
+          //          total = total + (diff * diff)
         }
 
-        data = data :+ ((x,y),sqrt(total))
+        data = data :+ ((x, y), sqrt(total))
       }
     }
 
     // ordering
-    implicit val dataOrdering: Ordering[Tuple2[Tuple2[Int, Int], Double]] = Ordering.by(_._2)
+    implicit val dataOrdering: Ordering[((Int, Int), Double)] = Ordering.by(_._2)
 
     scala.util.Sorting.quickSort(data)
 
     // keep track of which rows and columns have been "removed"
-    var rows_used : Array[Int] = Array()
+    var rows_used: Array[Int] = Array()
     var columns_used: Array[Int] = Array()
 
     // number of items chosen
@@ -218,43 +208,45 @@ class SurveyPolicy(question: MixedQuestion)
 
     val stdAway = (meanTest - meanRandom) / std
 
-//    println("random distances")
-//    println(randomDistances.mkString(","))
-//    println("test distances")
-//    println(testDistances.mkString(","))
-//    println("meanRandom")
-//    println(meanRandom)
-//    println("meanTest")
-//    println(meanTest)
-//    println(std)
-//    println(stdAway)
+    //    println("random distances")
+    //    println(randomDistances.mkString(","))
+    //    println("test distances")
+    //    println(testDistances.mkString(","))
+    //    println("meanRandom")
+    //    println(meanRandom)
+    //    println("meanTest")
+    //    println(meanTest)
+    //    println(std)
+    //    println(stdAway)
     println(stdAway)
 
     stdAway > threshold
 
   }
 
-  override def is_done(tasks: List[Task], num_comparisons: Int) : (Boolean, Int) = {
+  override def is_done(tasks: List[Task], num_comparisons: Int): (Boolean, Int) = {
 
     val done = completed_workerunique_tasks(tasks).size
 
-    if (done < tasks.size ) {
+    if (done < tasks.size) {
       return (false, num_comparisons)
     }
 
     var sample_size = 0
 
     // Turn the answers into their number representations
-    val task : SurveyQuestion = tasks.head.question.asInstanceOf[SurveyQuestion]
+    val task: FakeSurvey = tasks.head.question.asInstanceOf[FakeSurvey]
 
-    var filename = "test.csv"
+    // TODO: may need better way to express this
+    var filename = "output.csv"
 
-    if (task.csv_file != null) {
-      filename = task.csv_file
+    // TODO: way to get around this magical string?
+    if (task.csv_output != "Output not specified.") {
+      filename = task.csv_output
     }
 
     val out = new BufferedWriter(new FileWriter(filename))
-    val writer = new CSVWriter(out)
+    val writer = CSVWriter.open(new File(filename + ".survey-policy"))
 
     // get the questions
     val questions = task.questions
@@ -272,41 +264,33 @@ class SurveyPolicy(question: MixedQuestion)
     var estimate_radix_index = 0
 
     // keep track of the smallest and largest estimate
-    var estimate_radix_largest : Array[Int] = Array()
+    var estimate_radix_largest: Array[Int] = Array()
 
     // figure out the format
-    questions.foreach(q => {
-
-      q match {
-        case chx: CheckboxQuestion => {
-          var arr = chx.return_response_possibilities()
-          possibilities = possibilities :+ arr
-          question_types = question_types :+ "checkbox"
-          radixes = radixes :+ arr.length
-        }
-        case rad: RadioButtonQuestion => {
-          var arr = rad.return_response_possibilities()
-          possibilities = possibilities :+ arr
-          question_types = question_types :+ "radio"
-          radixes = radixes :+ arr.length
-        }
-        case est: EstimationQuestion => {
-          possibilities = possibilities :+ null
-          question_types = question_types :+ "estimate"
-          radixes = radixes :+ 0
-          estimate_radix_largest = estimate_radix_largest :+ -99999999
-        }
-        case _ => {
-          possibilities = possibilities :+ null
-          question_types = question_types :+ "other"
-          radixes = radixes :+ -1
-        }
-      }
-
-    })
+    questions.foreach {
+      case chx: CheckboxQuestion =>
+        val arr = chx.return_response_possibilities()
+        possibilities = possibilities :+ arr
+        question_types = question_types :+ "checkbox"
+        radixes = radixes :+ arr.length
+      case rad: RadioButtonQuestion =>
+        val arr = rad.return_response_possibilities()
+        possibilities = possibilities :+ arr
+        question_types = question_types :+ "radio"
+        radixes = radixes :+ arr.length
+      case _: EstimationQuestion =>
+        possibilities = possibilities :+ null
+        question_types = question_types :+ "estimate"
+        radixes = radixes :+ 0
+        estimate_radix_largest = estimate_radix_largest :+ -99999999
+      case _ =>
+        possibilities = possibilities :+ null
+        question_types = question_types :+ "other"
+        radixes = radixes :+ -1
+    }
 
     // All the information, to be used for CSV file
-    var l: List[Array[String]] = List()
+    var l: List[List[String]] = List()
 
     // Just the number representations
     var numberReps: Array[Array[Int]] = Array()
@@ -314,35 +298,33 @@ class SurveyPolicy(question: MixedQuestion)
     // For each task, analyze the answer, if it exists
     tasks.foreach(task => {
 
-      var workerId = task.worker_id
-      var cost = task.cost
-      var time = task.state_changed_at
+      val workerId = task.worker_id
+      val cost = task.cost
+      val time = task.state_changed_at
 
       estimate_radix_index = 0
 
-      var answer = task.answer
+      val answer = task.answer
 
       answer match {
-        case Some(t: List[Any]) => {
+        case Some(t: List[Any]) =>
           // If the answer exists
           sample_size = sample_size + 1
 
-          // An array that stores all the information for each question of the survey
-          var ar = Array[String]()
+          // A list that stores all the information for each question of the survey
+          var ar = List[String]()
 
           // include workerId in the output
           workerId match {
-            case Some(value) => {
+            case Some(value) =>
               ar = ar :+ value
-            }
-            case None => {
+            case None =>
               ar = ar :+ "undefined"
-            }
           }
 
           // include cost and time in the output
-          ar = ar :+ cost.toString()
-          ar = ar :+ time.toString()
+          ar = ar :+ cost.toString
+          ar = ar :+ time.toString
 
           // Number representation, as a string. E.g. "[1,5,3]"
           var placeString = ""
@@ -361,11 +343,11 @@ class SurveyPolicy(question: MixedQuestion)
 
             x match {
               // Checkbox answer
-              case s: Set[Symbol] => {
+              case s: Set[Symbol] =>
                 // Aggregate into a single string
                 var str = ""
                 var index = 1
-                var size = s.size
+                val size = s.size
 
                 // sort
                 val ss = collection.immutable.SortedSet[Symbol]() ++ s
@@ -385,20 +367,18 @@ class SurveyPolicy(question: MixedQuestion)
                 str = "[" + str + "]"
                 ar = ar :+ str
                 placeArray = placeArray :+ place
-              }
 
               // Radio answer
-              case sym: Symbol => {
+              case sym: Symbol =>
                 ar = ar :+ sym.name
                 val place = possibilities(placeIndex - 1).indexWhere(_ == sym.name)
                 placeString = placeString + place
                 placeArray = placeArray :+ place
-              }
               // Estimate
-              case d: Double => {
+              case d: Double =>
                 val intValue = d.toInt
-                ar = ar :+ d.toString()
-                placeString = placeString + d.toString()
+                ar = ar :+ d.toString
+                placeString = placeString + d.toString
                 placeArray = placeArray :+ intValue
 
                 // Figure out radix
@@ -407,11 +387,9 @@ class SurveyPolicy(question: MixedQuestion)
                   estimate_radix_largest(estimate_radix_index) = intValue
                 }
                 estimate_radix_index = estimate_radix_index + 1
-              }
-              case _ => {
-                ar = ar :+ x.toString()
+              case _ =>
+                ar = ar :+ x.toString
                 //placeArray = placeArray :+ x.toString()
-              }
             }
 
             if (placeIndex < placeSize) placeString = placeString + ", "
@@ -421,41 +399,39 @@ class SurveyPolicy(question: MixedQuestion)
           ar = ar :+ placeString
           l = ar :: l
           numberReps = numberReps :+ placeArray
-        }
-        case _ => {
+        case _ =>
           println("None")
-        }
       }
 
     })
 
     // Edit radixes to take into account estimates
     var i = 0
-    for (j <- 0 until radixes.length) {
-      var current = radixes(j)
+    for (j <- radixes.indices) {
+      val current = radixes(j)
       if (current == 0) {
         radixes(j) = estimate_radix_largest(i) + 1
         i = i + 1
       }
     }
 
-//    println("question_types")
-//    println(question_types.mkString(","))
-//    println("radixes")
-//    println(radixes.mkString(","))
-//    println("sample size")
-//    println(sample_size)
-//    println("number reps")
-//    numberReps.foreach(r => {
-//      println(r.mkString(","))
-//    })
+    //    println("question_types")
+    //    println(question_types.mkString(","))
+    //    println("radixes")
+    //    println(radixes.mkString(","))
+    //    println("sample size")
+    //    println(sample_size)
+    //    println("number reps")
+    //    numberReps.foreach(r => {
+    //      println(r.mkString(","))
+    //    })
 
     // Run the algorithm
     //val result = survey_algorithm(question_types, radixes, iterations = 10000, sample_size, numberReps)
 
     //println(result)
 
-    val listOfRecords = l.reverse.asJava
+    val listOfRecords = l.reverse
     writer.writeAll(listOfRecords)
     out.close()
 
