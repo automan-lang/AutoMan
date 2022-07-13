@@ -122,8 +122,7 @@ object MTurkMethods {
 
     // Creates qualification type
     val qualID: QualificationID = {
-      val qualtxt = s"""AutoMan automatically generated Disqualification (title: \"$title\", date: $datestr)"""  // , groupID: ${batchKey._1}
-      // Commented out groupID in qualtxt since groupID is just title now.
+      val qualtxt = s"""This disqualification ensures that you respond to our HIT only once. Thank you for your participation. (AutoMan title: \"$title\", date: $datestr, groupID: ${batchKey._1})"""
 
       val qual = backend.createQualificationType(new CreateQualificationTypeRequest()
         .withName(qualtxt)
