@@ -1,6 +1,7 @@
 package org.automanlang.core.policy.aggregation
 
 import com.github.tototoshi.csv._
+import org.automanlang.core.info.QuestionType
 import org.automanlang.core.logging.{DebugLog, LogLevelInfo, LogType}
 import org.automanlang.core.scheduler.Task
 import org.automanlang.core.question._
@@ -21,29 +22,14 @@ class SurveyPolicy(question: FakeSurvey)
 
   }
 
-  private[automanlang] def create_samples(sample_size: Int, radixes: Array[Int]): Array[Array[Int]] = {
+  private[automanlang] def create_samples(sample_size: Int, radixes: Array[Double]): Array[Array[Double]] = {
+    val r = new java.util.Random
 
-    var samples: Array[Array[Int]] = Array()
-    val length = radixes.length
-
-    val r = new scala.util.Random
-
-    for (_ <- 0 until sample_size) {
-
-      var sample: Array[Int] = Array()
-
-      for (y <- 0 until length) {
-
-        // for each item, randomly choose
-        val radix = radixes(y)
-        val newNumber = r.nextInt(radix)
-
-        sample = sample :+ newNumber
-
+    radixes.map(radix => {
+      Array.fill(sample_size) {
+        r.nextDouble(radix)
       }
-      samples = samples :+ sample
-    }
-    samples
+    })
   }
 
   private[automanlang] def random_v_random(iterations: Int, sample_size: Int, radixes: Array[Int], question_types: Array[String]): Array[Double] = {
@@ -87,105 +73,96 @@ class SurveyPolicy(question: FakeSurvey)
 
   }
 
-  private[automanlang] def earth_movers(samples1: Array[Array[Int]], samples2: Array[Array[Int]], sample_size: Int, complexity: Int, question_types: Array[String], radixes: Array[Int]): Double = {
+  private[automanlang] def earth_movers(samples1: Array[Array[Double]], samples2: Array[Array[Double]], sample_size: Int, question_types: Array[QuestionType.QuestionType], radixes: Array[Double]): Double = {
+    // N*N matrix where distance[x][y] denotes distance between x-th sample in samples1 and y-th sample in samples2
+    val distances = Array.ofDim[Double](sample_size, sample_size)
+    // Memoizes and eliminates unnecessary computations. (z, valueInX) => Array of contributed cost (of length sample_size)
+    var memoMap: scala.collection.mutable.Map[(Int, Double), Array[Double]] = scala.collection.mutable.Map()
 
-    // Data is stored in this format: [((5,3),8), ((2,2),10)] where the inner tuple is the row and column in the "table" of this entry, and the other number is the distance
-    var data: Array[((Int, Int), Double)] = Array()
-
-    // exhaustively compute the distance between every pair
-    for (x <- 0 until sample_size) {
-      for (y <- 0 until sample_size) {
-        val s1 = samples1(x)
-        val s2 = samples2(y)
-
-        var total = 0.0
-
-        // Calculate Euclidean distance, but normalize between 0 and 1
-        for (z <- 0 until complexity) {
-
-          // First, check what kind of question is being compared here
-          val q_type = question_types(z)
-
-          val number1 = s1(z)
-          val number2 = s2(z)
-
-          q_type match {
-
-            // for checkbox and radio questions, same is 0 and different is 1
-            case "checkbox" =>
-              if (number1 != number2) {
-                total = total + 1
-              }
-
-            case "radio" =>
-              if (number1 != number2) {
-                total = total + 1
-              }
-
-            case "estimate" =>
-              // Figure out the "percentile" of each number
-              // The radix is the maximum possible number
-              val radix = radixes(z)
-              val per1 = number1.toFloat / (radix - 1)
-              val per2 = number2.toFloat / (radix - 1)
-              val diff = per1 - per2
-              total = total + (diff * diff)
-
+    for (z <- question_types.indices) {
+      // radio and checkbox question: distance = 1 if different else 0
+      // TODO: radio => XOR distance
+      if (question_types(z) == QuestionType.RadioButtonQuestion || question_types(z) == QuestionType.CheckboxQuestion) {
+        // TODO: .par?
+        samples1(z).zipWithIndex.foreach { case (value, x) =>
+          if (memoMap.contains(z, value)) {
+            distances(x) = distances(x).zip(memoMap((z, value))).map { case (left, right) => left + right }
+          } else {
+            val dis = samples2(z).map(v => if (v == value) 0.0 else 1.0)
+            memoMap.put((z, value), dis)
+            distances(x) = distances(x).zip(dis).map { case (left, right) => left + right }
           }
-
-
-
-          // Version without normalizing
-          //          val diff = s1(z) - s2(z)
-          //          total = total + (diff * diff)
         }
-
-        data = data :+ ((x, y), sqrt(total))
+      } else if (question_types(z) == QuestionType.EstimationQuestion) {
+        // TODO: .par?
+        samples1(z).zipWithIndex.foreach { case (value, x) =>
+          if (memoMap.contains(z, value)) {
+            distances(x) = distances(x).zip(memoMap((z, value))).map { case (left, right) => left + right }
+          } else {
+            val radix = radixes(z)
+            val dis = samples2(z).map(v => abs(v - value) / radix)
+            memoMap.put((z, value), dis)
+            distances(x) = distances(x).zip(dis).map { case (left, right) => left + right }
+          }
+        }
+      } else {
+        throw new NotImplementedError("EMD Distance: Question Type not supported")
       }
     }
 
-    // ordering
-    implicit val dataOrdering: Ordering[((Int, Int), Double)] = Ordering.by(_._2)
+    // Run Jonker-Volgenant Algorithm to solve the minimum-cost assignment problem
+    // The cost shall be the Earth Mover's Distance between two samples
+    val assignment = lapjv.execute(distances)
+    assignment.zipWithIndex.map { case (j, i) => distances(i)(j) }.sum
+  }
 
-    scala.util.Sorting.quickSort(data)
+  private[automanlang] def processTasks(tasks: List[Task]): (Array[Array[Double]], Array[Double]) = {
+    val answers = tasks.map(task => {
+      val answers = task.answer.get.asInstanceOf[question.A]
+      val row: Array[Double] = answers.zipWithIndex.map { case (answer, q) =>
+        val ques = question.questions(q)
+        ques.getQuestionType match {
+          case QuestionType.CheckboxQuestion =>
+            // Symbol.to_string -> 0...n
+            val optionMap = ques.asInstanceOf[CheckboxQuestion].options.
+              zipWithIndex.map { case (o, index) => o.question_id.toString() -> index }.toMap
 
-    // keep track of which rows and columns have been "removed"
-    var rows_used: Array[Int] = Array()
-    var columns_used: Array[Int] = Array()
+            val bitVector = answer.asInstanceOf[CheckboxQuestion#A].map(a => 1 << optionMap(a.toString()))
+            bitVector.sum.toDouble
+          case QuestionType.RadioButtonQuestion =>
+            // Symbol.to_string -> 0...n
+            val optionMap = ques.asInstanceOf[RadioButtonQuestion].options.
+              zipWithIndex.map { case (o, index) => o.question_id.toString() -> index }.toMap
 
-    // number of items chosen
-    var number_chosen = 0
+            optionMap(answer.asInstanceOf[RadioButtonQuestion#A].toString()).toDouble
+          case QuestionType.EstimationQuestion =>
+            answer.asInstanceOf[EstimationQuestion#A]
+          case _ =>
+            throw new NotImplementedError("SurveyPolicy: FreeTextQuestion is not supported for now.")
+        }
+      }.toArray
+      row
+    }).toArray.transpose // note that here we transpose the matrix to make it column-major
 
-    // total distance
-    var distance = 0.0
-
-    // current index
-    var index = 0
-
-    // Calculate earth-mover's distance
-    while (number_chosen < sample_size) {
-
-      // Get the current one
-      val current = data(index)
-
-      val row = current._1._1
-      val column = current._1._2
-
-      // Check to see if the row or column has been chosen yet
-      if (!(rows_used contains row) && !(columns_used contains column)) {
-
-        distance = distance + current._2
-        number_chosen = number_chosen + 1
-        rows_used = rows_used :+ row
-        columns_used = columns_used :+ column
-
+    // Ideally radixes should be Array[Int]. However EstimateQuestion may lead to radix of type Double
+    val radixes: Array[Double] = question.questions.zipWithIndex.map { case (q, i) =>
+      q.getQuestionType match {
+        case QuestionType.CheckboxQuestion =>
+          // there are 2^n options in total, where n is # of options
+          (1 << q.asInstanceOf[CheckboxQuestion].options.length).toDouble
+        case QuestionType.RadioButtonQuestion =>
+          q.asInstanceOf[RadioButtonQuestion].options.length.toDouble
+        case QuestionType.EstimationQuestion =>
+          // For EQ, we should decrement everything by min value to simplify calculation
+          val min = answers(i).min
+          answers(i) = answers(i).map(v => v - min)
+          answers(i).max
+        case _ =>
+          throw new NotImplementedError("SurveyPolicy: FreeTextQuestion is not supported for now.")
       }
-      index = index + 1
+    }.toArray
 
-    }
-
-    distance
-
+    (answers, radixes)
   }
 
   // Algorithm to determine if more answers are needed for the survey

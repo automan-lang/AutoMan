@@ -22,14 +22,14 @@ case class QuestionInfo(computation_id: UUID,
 
 object QuestionType extends Enumeration {
   type QuestionType = Value
-  val CheckboxQuestion = Value("CheckboxQuestion")
-  val CheckboxDistributionQuestion = Value("CheckboxDistributionQuestion")
-  val MultiEstimationQuestion = Value("MultiEstimationQuestion")
-  val EstimationQuestion = Value("EstimationQuestion")
-  val FreeTextQuestion = Value("FreeTextQuestion")
-  val FreeTextDistributionQuestion = Value("FreeTextDistributionQuestion")
-  val RadioButtonQuestion = Value("RadioButtonQuestion")
-  val RadioButtonDistributionQuestion = Value("RadioButtonDistributionQuestion")
-  val Survey = Value("Survey")
-  val VariantQuestion = Value("VariantQuestion")
+  val CheckboxQuestion: QuestionType = Value("CheckboxQuestion")
+  val CheckboxDistributionQuestion: QuestionType = Value("CheckboxDistributionQuestion")
+  val MultiEstimationQuestion: QuestionType = Value("MultiEstimationQuestion")
+  val EstimationQuestion: QuestionType = Value("EstimationQuestion")
+  val FreeTextQuestion: QuestionType = Value("FreeTextQuestion")
+  val FreeTextDistributionQuestion: QuestionType = Value("FreeTextDistributionQuestion")
+  val RadioButtonQuestion: QuestionType = Value("RadioButtonQuestion")
+  val RadioButtonDistributionQuestion: QuestionType = Value("RadioButtonDistributionQuestion")
+  val Survey: QuestionType = Value("Survey")
+  val VariantQuestion: QuestionType = Value("VariantQuestion")
 }
