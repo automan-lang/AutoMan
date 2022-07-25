@@ -5,6 +5,8 @@ import org.automanlang.core.info.QuestionType
 import org.automanlang.core.logging.{DebugLog, LogLevelInfo, LogType}
 import org.automanlang.core.scheduler.Task
 import org.automanlang.core.question._
+import org.automanlang.core.util.lapjv
+import org.automanlang.core.util.stat
 
 import scala.math._
 import java.io.{BufferedWriter, File, FileWriter}
@@ -13,14 +15,6 @@ class SurveyPolicy(question: FakeSurvey)
   extends SurveyVectorPolicy(question) {
 
   DebugLog("Policy: survey policy", LogLevelInfo(), LogType.STRATEGY, question.id)
-
-  private[automanlang] def standard_deviation(samples: Array[Double]): Double = {
-
-    val mean = samples.sum / samples.length
-    val stdDev = Math.sqrt((samples.map(_ - mean).map(t => t * t).sum) / samples.length)
-    stdDev
-
-  }
 
   private[automanlang] def create_samples(sample_size: Int, radixes: Array[Double]): Array[Array[Double]] = {
     val r = new java.util.Random
@@ -32,52 +26,11 @@ class SurveyPolicy(question: FakeSurvey)
     })
   }
 
-  private[automanlang] def random_v_random(iterations: Int, sample_size: Int, radixes: Array[Int], question_types: Array[String]): Array[Double] = {
-
-    var distances: Array[Double] = Array()
-
-    for (_ <- 0 until iterations) {
-
-      // Create the random samples
-      val samples1 = create_samples(sample_size, radixes)
-      val samples2 = create_samples(sample_size, radixes)
-
-
-      // Calculate distance
-      val dist = earth_movers(samples1, samples2, sample_size, radixes.length, question_types, radixes)
-      distances = distances :+ dist
-
-    }
-
-    distances
-
-  }
-
-  private[automanlang] def test_v_random(test_samples: Array[Array[Int]], iterations: Int, sample_size: Int, radixes: Array[Int], question_types: Array[String]): Array[Double] = {
-
-    var distances: Array[Double] = Array()
-
-    for (_ <- 0 until iterations) {
-
-      // Create the random samples
-      val samples1 = create_samples(sample_size, radixes)
-
-      // Calculate distance
-      val dist = earth_movers(samples1, test_samples, sample_size, radixes.length, question_types, radixes)
-
-      distances = distances :+ dist
-
-    }
-
-    distances
-
-  }
-
   private[automanlang] def earth_movers(samples1: Array[Array[Double]], samples2: Array[Array[Double]], sample_size: Int, question_types: Array[QuestionType.QuestionType], radixes: Array[Double]): Double = {
     // N*N matrix where distance[x][y] denotes distance between x-th sample in samples1 and y-th sample in samples2
     val distances = Array.ofDim[Double](sample_size, sample_size)
     // Memoizes and eliminates unnecessary computations. (z, valueInX) => Array of contributed cost (of length sample_size)
-    var memoMap: scala.collection.mutable.Map[(Int, Double), Array[Double]] = scala.collection.mutable.Map()
+    val memoMap: scala.collection.mutable.Map[(Int, Double), Array[Double]] = scala.collection.mutable.Map()
 
     for (z <- question_types.indices) {
       // radio and checkbox question: distance = 1 if different else 0
@@ -167,22 +120,31 @@ class SurveyPolicy(question: FakeSurvey)
 
   // Algorithm to determine if more answers are needed for the survey
   // Uses the earth-mover's distance algorithm
-  private[automanlang] def survey_algorithm(question_types: Array[String], radixes: Array[Int], iterations: Int, sample_size: Int, test_samples: Array[Array[Int]]): Boolean = {
+  private[automanlang] def survey_algorithm(question_types: Array[QuestionType.QuestionType], radixes: Array[Double], iterations: Int, sample_size: Int, test_samples: Array[Array[Double]]): Boolean = {
+    val distancesRandom = Array.ofDim[Double](sample_size)
+    val distancesTest = Array.ofDim[Double](sample_size)
 
-    val randomDistances = random_v_random(iterations, sample_size, radixes, question_types)
-    val testDistances = test_v_random(test_samples, iterations, sample_size, radixes, question_types)
+    (0 until iterations).foreach(i => {
+      val samples1 = create_samples(sample_size, radixes)
+      val samples2 = create_samples(sample_size, radixes)
 
-    val randomSum = randomDistances.sum
-    val meanRandom = randomSum / randomDistances.length
+      // Calculate distance
+      val dist_random = earth_movers(samples1, samples2, sample_size, question_types, radixes)
+      distancesRandom(i) = dist_random
 
-    val testSum = testDistances.sum
-    val meanTest = testSum / testDistances.length
+      val dist_test = earth_movers(samples1, test_samples, sample_size, question_types, radixes)
+      distancesTest(i) = dist_test
+    })
+
+    val meanRandom = distancesRandom.sum / sample_size
+    val meanTest = distancesTest.sum / sample_size
 
     // standard deviation of the random data
-    val std = standard_deviation(randomDistances)
+    // ==> shouldn't this be pooled std dev?
+    val std = stat.standardDeviation(distancesRandom)
 
+    // ==> shouldn't there be well-defined threshold of rejecting null hypothesis? (depending on degrees of freedom)
     val threshold = 3
-
     val stdAway = (meanTest - meanRandom) / std
 
     //    println("random distances")
@@ -198,7 +160,6 @@ class SurveyPolicy(question: FakeSurvey)
     println(stdAway)
 
     stdAway > threshold
-
   }
 
   override def is_done(tasks: List[Task], num_comparisons: Int): (Boolean, Int) = {
