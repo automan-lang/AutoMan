@@ -39,7 +39,8 @@ libraryDependencies := {
     "com.github.tototoshi"       %% "scala-csv"             % "1.3.10",
     "io.circe"                   %% "circe-core"            % circeVersion,     // for JSON parsing
     "io.circe"                   %% "circe-generic"         % circeVersion,
-    "io.circe"                   %% "circe-parser"          % circeVersion
+    "io.circe"                   %% "circe-parser"          % circeVersion,
+    "org.apache.commons"         % "commons-math3"          % "3.6.1"          // for stat tests. Note that 3.6.1, although the latest version, is no longer officially supported. Consider switching to v4 when it is released
   )
 }
 
