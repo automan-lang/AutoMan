@@ -63,6 +63,7 @@ class SurveyPolicy(question: FakeSurvey)
     // Run Jonker-Volgenant Algorithm to solve the minimum-cost assignment problem
     // The cost shall be the Earth Mover's Distance between two samples
     val assignment = lapjv.execute(distances)
+//    val assignment = new HungarianAlgorithm(distances).execute()
     assignment.zipWithIndex.map { case (j, i) => distances(i)(j) }.sum
   }
 
@@ -118,8 +119,8 @@ class SurveyPolicy(question: FakeSurvey)
   // Algorithm to determine if more answers are needed for the survey
   // Uses the earth-mover's distance algorithm
   private[automanlang] def survey_algorithm(question_types: Array[QuestionType.QuestionType], radixes: Array[Int], iterations: Int, sample_size: Int, test_samples: Array[Array[Int]]): Boolean = {
-    val distancesRandom = Array.ofDim[Double](sample_size)
-    val distancesTest = Array.ofDim[Double](sample_size)
+    val distancesRandom = Array.ofDim[Double](iterations)
+    val distancesTest = Array.ofDim[Double](iterations)
 
     (0 until iterations).foreach(i => {
       val samples1 = create_samples(sample_size, radixes)

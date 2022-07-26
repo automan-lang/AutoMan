@@ -159,6 +159,14 @@ public class lapjv
         int dim = assigncost.length;
         //int dim = Math.max(assigncost.length, assigncost[0].length);
 
+        // YE SHU NOTE: MAY GO INTO INFINITE LOOP AT L283 (`free[--k]`)
+        // READ https://github.com/hrldcpr/pyLAPJV#nota-bene
+        // The scale method does not work in our case since some distances are very close to zero (1E-7).
+        // Instead, I have used a patch inspired by https://github.com/Fil/lap-jv/blob/1e5857b5e7d764ced8f760eaac1657d5cc234819/lap.js
+        final double sum = Arrays.stream(assigncost)
+                .flatMapToDouble(Arrays::stream)
+                .sum();
+        final double epsilon = sum / dim / 10000;
         rowsol = new int[dim];
         colsol = new int[dim];
 //	  u = new double[assigncost.length];
@@ -208,7 +216,7 @@ public class lapjv
                 min = Double.MAX_VALUE;
                 for (j = 0; j < dim; j++)
                     if (j != j1)
-                        if (assigncost[i][j] - v[j] < min)
+                        if (assigncost[i][j] - v[j] < min + epsilon)
                             min = assigncost[i][j] - v[j];
                 v[j1] = v[j1] - min;
             }
@@ -252,10 +260,10 @@ public class lapjv
                 }
 
                 i0 = colsol[j1];
-                if (umin < usubmin)
+                if (umin < usubmin + epsilon)
                     // change the reduction of the minimum column to increase the minimum
                     // reduced cost in the row to the subminimum.
-                    v[j1] = v[j1] - (usubmin - umin);
+                    v[j1] = v[j1] - (usubmin - umin + epsilon);
                 else                   // minimum and subminimum equal.
                     if (i0 >= 0)         // minimum column j1 is assigned.
                     {
