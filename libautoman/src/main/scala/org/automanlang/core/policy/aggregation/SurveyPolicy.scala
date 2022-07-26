@@ -12,22 +12,22 @@ class SurveyPolicy(question: FakeSurvey)
 
   DebugLog("Policy: survey policy", LogLevelInfo(), LogType.STRATEGY, question.id)
 
-  private[automanlang] def create_samples(sample_size: Int, radixes: Array[Double]): Array[Array[Double]] = {
+  private[automanlang] def create_samples(sample_size: Int, radixes: Array[Int]): Array[Array[Int]] = {
     val r = new java.util.Random
 
     // number of question * number of sample_size. Also transposed
     radixes.map(radix => {
       Array.fill(sample_size) {
-        r.nextDouble(radix)
+        r.nextInt(radix)
       }
     })
   }
 
-  private[automanlang] def earth_movers(samples1: Array[Array[Double]], samples2: Array[Array[Double]], sample_size: Int, question_types: Array[QuestionType.QuestionType], radixes: Array[Double]): Double = {
+  private[automanlang] def earth_movers(samples1: Array[Array[Int]], samples2: Array[Array[Int]], sample_size: Int, question_types: Array[QuestionType.QuestionType], radixes: Array[Int]): Double = {
     // N*N matrix where distance[x][y] denotes distance between x-th sample in samples1 and y-th sample in samples2
     val distances = Array.ofDim[Double](sample_size, sample_size)
     // Memoizes and eliminates unnecessary computations. (z, valueInX) => Array of contributed cost (of length sample_size)
-    val memoMap: scala.collection.mutable.Map[(Int, Double), Array[Double]] = scala.collection.mutable.Map()
+    val memoMap: scala.collection.mutable.Map[(Int, Int), Array[Double]] = scala.collection.mutable.Map()
 
     for (z <- question_types.indices) {
       // radio and checkbox question: distance = 1 if different else 0
@@ -50,7 +50,7 @@ class SurveyPolicy(question: FakeSurvey)
             distances(x) = distances(x).zip(memoMap((z, value))).map { case (left, right) => left + right }
           } else {
             val radix = radixes(z)
-            val dis = samples2(z).map(v => math.abs(v - value) / radix)
+            val dis = samples2(z).map(v => math.abs(v.toDouble - value.toDouble) / radix)
             memoMap.put((z, value), dis)
             distances(x) = distances(x).zip(dis).map { case (left, right) => left + right }
           }
@@ -66,10 +66,10 @@ class SurveyPolicy(question: FakeSurvey)
     assignment.zipWithIndex.map { case (j, i) => distances(i)(j) }.sum
   }
 
-  private[automanlang] def processTasks(tasks: List[Task]): (Array[Array[Double]], Array[Double]) = {
+  private[automanlang] def processTasks(tasks: List[Task]): (Array[Array[Int]], Array[Int]) = {
     val answers = tasks.map(task => {
       val answers = task.answer.get.asInstanceOf[question.A]
-      val row: Array[Double] = answers.zipWithIndex.map { case (answer, q) =>
+      val row: Array[Int] = answers.zipWithIndex.map { case (answer, q) =>
         val ques = question.questions(q)
         ques.getQuestionType match {
           case QuestionType.CheckboxQuestion =>
@@ -78,15 +78,15 @@ class SurveyPolicy(question: FakeSurvey)
               zipWithIndex.map { case (o, index) => o.question_id.toString() -> index }.toMap
 
             val bitVector = answer.asInstanceOf[CheckboxQuestion#A].map(a => 1 << optionMap(a.toString()))
-            bitVector.sum.toDouble
+            bitVector.sum
           case QuestionType.RadioButtonQuestion =>
             // Symbol.to_string -> 0...n
             val optionMap = ques.asInstanceOf[RadioButtonQuestion].options.
               zipWithIndex.map { case (o, index) => o.question_id.toString() -> index }.toMap
 
-            optionMap(answer.asInstanceOf[RadioButtonQuestion#A].toString()).toDouble
+            optionMap(answer.asInstanceOf[RadioButtonQuestion#A].toString())
           case QuestionType.EstimationQuestion =>
-            answer.asInstanceOf[EstimationQuestion#A]
+            answer.asInstanceOf[EstimationQuestion#A].toInt
           case _ =>
             throw new NotImplementedError("SurveyPolicy: FreeTextQuestion is not supported for now.")
         }
@@ -95,13 +95,13 @@ class SurveyPolicy(question: FakeSurvey)
     }).toArray.transpose // note that here we transpose the matrix to make it column-major
 
     // Ideally radixes should be Array[Int]. However EstimateQuestion may lead to radix of type Double
-    val radixes: Array[Double] = question.questions.zipWithIndex.map { case (q, i) =>
+    val radixes: Array[Int] = question.questions.zipWithIndex.map { case (q, i) =>
       q.getQuestionType match {
         case QuestionType.CheckboxQuestion =>
           // there are 2^n options in total, where n is # of options
-          (1 << q.asInstanceOf[CheckboxQuestion].options.length).toDouble
+          1 << q.asInstanceOf[CheckboxQuestion].options.length
         case QuestionType.RadioButtonQuestion =>
-          q.asInstanceOf[RadioButtonQuestion].options.length.toDouble
+          q.asInstanceOf[RadioButtonQuestion].options.length
         case QuestionType.EstimationQuestion =>
           // For EQ, we should decrement everything by min value to simplify calculation
           val min = answers(i).min
@@ -117,7 +117,7 @@ class SurveyPolicy(question: FakeSurvey)
 
   // Algorithm to determine if more answers are needed for the survey
   // Uses the earth-mover's distance algorithm
-  private[automanlang] def survey_algorithm(question_types: Array[QuestionType.QuestionType], radixes: Array[Double], iterations: Int, sample_size: Int, test_samples: Array[Array[Double]]): Boolean = {
+  private[automanlang] def survey_algorithm(question_types: Array[QuestionType.QuestionType], radixes: Array[Int], iterations: Int, sample_size: Int, test_samples: Array[Array[Int]]): Boolean = {
     val distancesRandom = Array.ofDim[Double](sample_size)
     val distancesTest = Array.ofDim[Double](sample_size)
 
