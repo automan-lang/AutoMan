@@ -771,6 +771,7 @@ trait DSL {
       q.pay_all_on_failure = pay_all_on_failure
       q.question_timeout_multiplier = question_timeout_multiplier
       q.sample_size = sample_size
+      q.wage = wage
 
       // optional parameters
 //      if (image_alt_text != null) {
