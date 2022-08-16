@@ -123,6 +123,7 @@ class MTFakeSurvey extends FakeSurvey with MTurkQuestion {
         <![CDATA[
           <!DOCTYPE html>
             <body>
+              <script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
               <script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
               <h1>${title}</h1>
               <p>${text}</p>
@@ -165,39 +166,13 @@ class MTFakeSurvey extends FakeSurvey with MTurkQuestion {
        |  let seed = turkGetParam('workerId');
        |  console.log("[DEBUG] workerId" + seed);
        |
-       |  // a custom seeded PRNG function generator.
-       |  // Taken from https://stackoverflow.com/a/47593316/6604166
-       |  const xmur3 = (str) => {
-       |    for (var i = 0, h = 1779033703 ^ str.length; i < str.length; i++) {
-       |      h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
-       |      h = h << 13 | h >>> 19;
-       |    } return function () {
-       |      h = Math.imul(h ^ (h >>> 16), 2246822507);
-       |      h = Math.imul(h ^ (h >>> 13), 3266489909);
-       |      return (h ^= h >>> 16) >>> 0;
-       |    }
-       |  }
-       |
-       |  const sfc32 = (a, b, c, d) => {
-       |    return function () {
-       |      a >>>= 0; b >>>= 0; c >>>= 0; d >>>= 0;
-       |      var t = (a + b) | 0;
-       |      a = b ^ b >>> 9;
-       |      b = c + (c << 3) | 0;
-       |      c = (c << 21 | c >>> 11);
-       |      d = d + 1 | 0;
-       |      t = t + d | 0;
-       |      c = c + t | 0;
-       |      return (t >>> 0) / 4294967296;
-       |    }
-       |  }
-       |
+       |  // the Knuth shuffle, where prng returns [0..1)
        |  const shuffle = (items, prng) => {
        |    let cached = items.slice(0);
        |    let i = cached.length;
        |    let temp, rand;
-       |    while (--i) {
-       |      rand = Math.floor(i * prng());
+       |    while (--i > 0) {
+       |      rand = Math.floor((i+1) * prng());
        |      temp = cached[rand];
        |      cached[rand] = cached[i];
        |      cached[i] = temp;
@@ -205,22 +180,44 @@ class MTFakeSurvey extends FakeSurvey with MTurkQuestion {
        |    return cached;
        |  }
        |
-       |  // Create xmur3 state:
-       |  const seeder = xmur3(seed);
-       |  // Output four 32-bit hashes to provide the seed for sfc32.
-       |  const rand = sfc32(seeder(), seeder(), seeder(), seeder());
+       |  // From seedrandom library
+       |  let myrng = new Math.seedrandom(seed);
        |
-       |  // shuffle
+       |  // shuffle questions
        |  let nodes = list.children, i = 0;
        |  nodes = Array.prototype.slice.call(nodes);
-       |  nodes = shuffle(nodes, rand);
+       |  nodes = shuffle(nodes, myrng);
        |
-       |  // writeback
+       |  // writeback questions
        |  while (i < nodes.length) {
        |    list.appendChild(nodes[i]);
        |    ++i;
        |  }
-       |  console.log("[DEBUG] Finish shuffling elements")
+       |  console.log("[DEBUG] Finish shuffling questions");
+       |
+       |  // shuffle options within each question, if any
+       |  for (let index = 0; index < nodes.length; index++) {
+       |    const element = nodes[index];
+       |    let childNodes = element.getElementsByClassName("option"),
+       |      i = 0;
+       |
+       |    if (childNodes.length === 0) {
+       |      continue;
+       |    }
+       |
+       |    console.log(`[DEBUG] shuffling options for $${element.id}`);
+       |    childNodes = Array.prototype.slice.call(childNodes);
+       |    childNodes = shuffle(childNodes, myrng);
+       |
+       |    // writeback
+       |    while (i < childNodes.length) {
+       |      element.appendChild(childNodes[i]);
+       |      ++i;
+       |    }
+       |    console.log(`[DEBUG] written back options for $${element.id}`);
+       |  }
+       |
+       |  console.log("[DEBUG] Finish shuffling all");
        |}
        |
        |document.addEventListener('DOMContentLoaded', shuffleNodes, false);

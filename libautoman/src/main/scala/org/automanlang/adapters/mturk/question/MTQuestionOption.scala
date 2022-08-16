@@ -47,7 +47,7 @@ case class MTQuestionOption(override val question_id: Symbol, override val quest
     var prefix: String = idFromQuestion + "-"
 
     if (inputType == "radio") {
-      s"""<div>
+      s"""<div class="option">
          |<input type="radio" id=\"${prefix + question_id.toString()}\" name=\"${idFromQuestion}\" value=\"${question_id.toString()}\" required />
          |<label for=\"${prefix + question_id.toString()}\">""".stripMargin +
         {
@@ -60,7 +60,7 @@ case class MTQuestionOption(override val question_id: Symbol, override val quest
         "</label></div>"
     } else if (inputType == "checkbox") {
       // Cannot required here or it'll make everything required
-      s"""<div><crowd-checkbox name=\"${idFromQuestion}\" value=\"${question_id.toString()}\">""" +
+      s"""<div class="option"><crowd-checkbox name=\"${idFromQuestion}\" value=\"${question_id.toString()}\">""" +
         {
           if(image_url != "") {
             "<table><tr><td><img src=\"" + image_url + "\" alt=\"" + question_text + "\"></img></td><td>" + question_text + "</td></tr></table>"
