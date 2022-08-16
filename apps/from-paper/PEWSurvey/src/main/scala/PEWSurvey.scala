@@ -78,19 +78,52 @@ object PEWSurvey extends App {
       estimateQuestion(
         confidence_interval = UnconstrainedCI(),
         text = "What is your age?"
+      ),
+      estimateQuestion(
+        confidence_interval = UnconstrainedCI(),
+        text = "What do you think the median home price in the US is in 2021?"
+      ),
+      estimateQuestion(
+        confidence_interval = UnconstrainedCI(),
+        text = "What do you think is the average household income in the US for 2021?"
+      ),
+      estimateQuestion(
+        confidence_interval = UnconstrainedCI(),
+        text = "What is the gas price in your area?"
+      ),
+      estimateQuestion(
+        confidence_interval = UnconstrainedCI(),
+        text = "What is the acceptance percentage when applying to Harvard University as an undergraduate?"
+      ),
+      estimateQuestion(
+        confidence_interval = UnconstrainedCI(),
+        text = "What is the number of states in the United States?"
+      ),
+      estimateQuestion(
+        confidence_interval = UnconstrainedCI(),
+        text = "In the US, about how many people do you think use the internet in 2021, in millions?"
+      ),
+      estimateQuestion(
+        confidence_interval = UnconstrainedCI(),
+        text = "What do you think is the average annual tuition of public colleges in the US in 2021?"
+      ),
+      estimateQuestion(
+        confidence_interval = UnconstrainedCI(),
+        text = "In what year will the US will hold its next presidential election?"
       )
     ),
-    budget = 1500.00,  // this field is a hard limit per question/survey on how much the user will pay
+    budget = 500.00,  // this field is a hard limit per question/survey on how much the user will pay
     // (the survey will terminate if total price of tasks increase beyond this limit and throw OverBudgetException`)
     // TODO: set a different default value/function based on survey
     csv_output = "pew_" + java.time.LocalDateTime.now.toString + ".csv",
-    title = "How do you think young adults today compare with their parents\' generation on each of the following?",
+    title = "How do you think young adults today compare with their parents\' generation?",
     text = "For the following questions, is this action easier, harder, or the same for young adults today compared to their parents\' generation?",
     //    text = "PEWHTMLsurvey",
     //    sample_size = 300,
     //    minimum_spawn_policy = UserDefinableSpawnPolicy(0),
-    sample_size = 3000,
-    initial_worker_timeout_in_s = 160,
+    sample_size = 1000,
+    initial_worker_timeout_in_s = 320,
+    wage=3.625,
     question_timeout_multiplier = 180,  // used to calculate the time of an epoch determining "TIMEOUT" sate
   )
 
