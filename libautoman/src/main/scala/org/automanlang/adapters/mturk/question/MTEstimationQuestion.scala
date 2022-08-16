@@ -171,7 +171,7 @@ class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
         }
       } + "</div>" +
     // TODO: enforce min/max with form validation or JS
-    s"""<crowd-input name=\"${id_string}\" label=\"${text}\" allowed-pattern="^\\d*$$" error-message="Please enter ONLY numbers" auto-validate required></crowd-input>""" +
+    s"""<crowd-input name=\"${id_string}\" label=\"${text}\" allowed-pattern="\\d|[.]|[+]|-" pattern="^[+-]?(\\d+([.]\\d*)?|[.]\\d+)$$" error-message="Please enter ONLY numbers" auto-validate required></crowd-input>""" +
     "</div>"
   }
 
