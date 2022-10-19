@@ -139,4 +139,4 @@ case class SurveyOverBudgetAnswers[T](need: BigDecimal,
 
 
 // TODO: add finished time (if we can get it from Task)
-case class SurveyTaskMetadata(worker_id: String, cost: BigDecimal)
+case class SurveyTaskMetadata(worker_id: String, cost: BigDecimal, noise_score: Double, likely_noise: Boolean)

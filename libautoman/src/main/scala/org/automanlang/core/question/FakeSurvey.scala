@@ -29,6 +29,21 @@ abstract class FakeSurvey extends Question {
   def sample_size_=(n: Int): Unit = { _sample_size = n }
   def sample_size : Int = _sample_size
 
+  // Cohen's d threshold, used to determine if we have gathered enough responses
+  private var _d_threshold: Double = 12
+  def d_threshold_=(t: Double): Unit = { _d_threshold = t }
+  def d_threshold: Double = _d_threshold
+
+  // noise percentage, used to label responses as likely noise or not
+  private var _noise_percentage: Double = 0.2
+  def noise_percentage_=(t: Double): Unit = {
+    if (t < 0 || t > 1) {
+      throw new IllegalArgumentException("noise_percentage must be between 0 and 1")
+    }
+    _noise_percentage = t
+  }
+  def noise_percentage: Double = _noise_percentage
+
 
   override private[automanlang] def init_validation_policy(): Unit = {
     _validation_policy_instance = _validation_policy match {

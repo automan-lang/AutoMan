@@ -20,7 +20,7 @@ abstract class SurveyVectorPolicy(question: FakeSurvey)
     val valid_tasks: List[Task] = completed_workerunique_tasks(tasks)
     // filtered dist
     val distribution: Set[(String,Question#A)] = valid_tasks.map { t => (t.worker_id.get, t.answer.get) }.toSet
-    val metadatas: Map[String, SurveyTaskMetadata] = valid_tasks.map {t => {(t.worker_id.get, SurveyTaskMetadata(t.worker_id.get, t.cost))}}.toMap
+    val metadatas: Map[String, SurveyTaskMetadata] = valid_tasks.map {t => {(t.worker_id.get, SurveyTaskMetadata(t.worker_id.get, t.cost, 0, likely_noise = false))}}.toMap
     // raw distribution
     val dist = getDistribution(tasks)
     val cost: BigDecimal = valid_tasks.filterNot(_.from_memo).foldLeft(BigDecimal(0)){ case (acc,t) => acc + t.cost }
