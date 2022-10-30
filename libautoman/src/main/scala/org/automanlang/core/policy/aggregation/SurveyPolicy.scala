@@ -190,6 +190,9 @@ class SurveyPolicy(question: FakeSurvey)
     val result = survey_algorithm(question_types, radixes, iterations = 1000, sample_size, answerMatrix)
 
     // TODO: how much should we increase sample_size by if survey_algorithm does not pass?
+    if (!result) {
+      question.sample_size = (question.sample_size * 2).toInt
+    }
 
     // Terminate ONLY when fulfilled at least sample_size and pass survey_algorithm of statistical significance
     (result, num_comparisons + 1)
