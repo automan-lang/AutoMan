@@ -29,6 +29,13 @@ abstract class FakeSurvey extends Question {
   def sample_size_=(n: Int): Unit = { _sample_size = n }
   def sample_size : Int = _sample_size
 
+  // the sample size that we should collect so we can give users at least
+  // _sample_size sized responses that are unlikely to be random, based on our
+  // a priori noise_percentage
+  def sample_collect_size: Int = {
+    (sample_size * (1-noise_percentage)).toInt
+  }
+
   // Cohen's d threshold, used to determine if we have gathered enough responses
   private var _d_threshold: Double = 12
   def d_threshold_=(t: Double): Unit = { _d_threshold = t }

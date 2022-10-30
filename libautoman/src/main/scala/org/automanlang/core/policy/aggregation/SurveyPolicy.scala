@@ -177,7 +177,7 @@ class SurveyPolicy(question: FakeSurvey)
     }
 
     // Do not terminate less than sample_size
-    if (done < question.sample_size) {
+    if (done < question.sample_collect_size) {
       return (false, num_comparisons + 1)
     }
 
@@ -280,6 +280,6 @@ class SurveyPolicy(question: FakeSurvey)
 
   override protected[policy] def num_to_run(tasks: List[Task], num_comparisons: Int, reward: BigDecimal): Int = {
     // additional number needed to reach num_samples
-    math.max(question.sample_size - outstanding_tasks(tasks).size - answered_tasks(tasks).size, 0)
+    math.max(question.sample_collect_size - outstanding_tasks(tasks).size - answered_tasks(tasks).size, 0)
   }
 }
