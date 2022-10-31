@@ -10,6 +10,7 @@ import org.automanlang.core.policy.price.{FixedPricePolicy, MLEPricePolicy}
 import org.automanlang.core.policy.timeout.{DoublingTimeoutPolicy, FixedTimeoutPolicy}
 
 import java.util.{Date, UUID}
+import scala.collection.immutable.ListMap
 import scala.concurrent.ExecutionContext.Implicits.global
 
 abstract class FakeSurvey extends Question {
@@ -81,6 +82,12 @@ abstract class FakeSurvey extends Question {
 
   def questions_=(newQs: List[Any]): Unit = _questions = newQs.asInstanceOf[List[Q]] // ways to work around this ugly typecasting?
 
+  // list of candidates for mad-libs styled syntaxs
+  private var _words_candidates: ListMap[String, Array[String]] = ListMap()
+  def words_candidates: ListMap[String, Array[String]] = _words_candidates
+  def words_candidates_=(new_c: ListMap[String, Array[String]]): Unit = {
+    _words_candidates = new_c
+  }
 
   override protected[automanlang] def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID): MockResponse = ???
 

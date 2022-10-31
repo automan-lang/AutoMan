@@ -125,14 +125,13 @@ class MTFakeSurvey extends FakeSurvey with MTurkQuestion {
             <body>
               <script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
               <script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
-              <h1>${title}</h1>
-              <p>${text}</p>
+              <div id="header-container">
+              </div>
               <crowd-form>
                 <div id="container">
-                ${toQuestionHTML(randomize)}
                 </div>
               </crowd-form>
-              ${randomizeScript()}
+              ${randomizeScript(randomize)}
             </body>
           </html>
         ]]>
@@ -142,15 +141,26 @@ class MTFakeSurvey extends FakeSurvey with MTurkQuestion {
     """
   }
 
+  def generateMadLibsChoices(): String = {
+    val choices = words_candidates.map( candidate =>{
+      val choices = candidate._2.map(x=>s""""$x"""").mkString(",")
+      s"[$choices]"
+    }).mkString(",")
+    s"[${choices}]"
+  }
+
+  def generateMadLibsAssignment(): String = {
+    words_candidates.zipWithIndex.map{ case (candidate, i) =>
+      s"let ${candidate._1} = choices[${i}][assignment[${i}]];"
+    }.mkString("\n")
+  }
+
   // https://stackoverflow.com/questions/23215162/assignmentid-not-visible-in-mturk-accept-url
   //
-  def randomizeScript(): String = {
+  def randomizeScript(randomize: Boolean): String = {
     s"""
        |<script>
        |const shuffleNodes = () => {
-       |  console.log("[DEBUG] Start shuffling elements");
-       |  const list = document.getElementById("container");
-       |
        |  function turkGetParam( name ) {
        |    var regexS = "[\\?&]"+name+"=([^&#]*)";
        |    var regex = new RegExp( regexS );
@@ -166,6 +176,44 @@ class MTFakeSurvey extends FakeSurvey with MTurkQuestion {
        |  let seed = turkGetParam('workerId');
        |  console.log("[DEBUG] workerId" + seed);
        |
+       |  // From seedrandom library
+       |  let myrng = new Math.seedrandom(seed);
+       |
+       |  console.log("[DEBUG] Start mad libs randomization");
+       |  const unrank = (variant, bases) => {
+       |    return bases.map((base,index) => {
+       |      let prod = 1;
+       |      for (let i = 0; i < bases.length-index-1; i++) {
+       |        prod *= bases[index+1+i];
+       |      }
+       |      let quotient = Math.floor(variant / prod);
+       |      // assignment for current index
+       |      return quotient % base;
+       |    })
+       |  }
+       |
+       |  // here scala generate choices (nested array of target phrases)
+       |  let choices = ${generateMadLibsChoices()}
+       |  let bases = choices.map(c => c.length);
+       |
+       |  let max = bases.reduce( (a,b) => a * b );
+       |  let assignment = unrank(Math.floor(myrng() * max), bases);
+       |  console.log(`[DEBUG] mad libs assignment: $${assignment}`);
+       |
+       |  // TODO: scala generate variable => choices
+       |  // let mad = choices[0][assignment[0]]
+       |  // let libs = choices[1][assignment[1]]
+       |  // now these words should be available to use in js template strings
+       |  ${generateMadLibsAssignment()}
+       |
+       |  // insert into DOM
+       |  document.getElementById('container').innerHTML += `${toQuestionHTML(randomize)}`;
+       |
+       |  document.getElementById('header-container').innerHTML += `<h1>${title}</h1><p>${text}</p>`;
+       |
+       |  console.log("[DEBUG] Start shuffling elements");
+       |  const list = document.getElementById("container");
+       |
        |  // the Knuth shuffle, where prng returns [0..1)
        |  const shuffle = (items, prng) => {
        |    let cached = items.slice(0);
@@ -179,9 +227,6 @@ class MTFakeSurvey extends FakeSurvey with MTurkQuestion {
        |    }
        |    return cached;
        |  }
-       |
-       |  // From seedrandom library
-       |  let myrng = new Math.seedrandom(seed);
        |
        |  // shuffle questions
        |  let nodes = list.children, i = 0;

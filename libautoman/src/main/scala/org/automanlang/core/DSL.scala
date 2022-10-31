@@ -6,6 +6,8 @@ import org.automanlang.core.question.confidence._
 import org.automanlang.core.policy.aggregation._
 import org.automanlang.core.mock._
 
+import scala.collection.immutable.ListMap
+
 trait DSL {
   val automan: org.automanlang.automan.type = org.automanlang.automan
   val LogConfig: logging.LogConfig.type = org.automanlang.core.logging.LogConfig
@@ -750,13 +752,15 @@ trait DSL {
                                       dry_run: Boolean = false,
                                       initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
                                       minimum_spawn_policy: MinimumSpawnPolicy = null,
-                                      mock_answers: Iterable[MockAnswer[Symbol]] = null,
                                       pay_all_on_failure: Boolean = true,
                                       question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
                                       text: String,
                                       title: String = null,
                                       csv_output: String = null,
-                                      wage: BigDecimal = MagicNumbers.USFederalMinimumWage
+                                      wage: BigDecimal = MagicNumbers.USFederalMinimumWage,
+                                      cohen_d_threshold: Double = 12,
+                                      noise_percentage: Double = 0.2,
+                                      words_candidates: ListMap[String, Array[String]] = ListMap()
                                     )(implicit a: A): FakeSurvey#O = {
     def initf[Q <: FakeSurvey](q: Q): Unit = {
       // mandatory parameters
@@ -793,6 +797,10 @@ trait DSL {
       if (csv_output != null) {
         q.csv_output = csv_output
       }
+
+      q.d_threshold = cohen_d_threshold
+      q.noise_percentage = noise_percentage
+      q.words_candidates = words_candidates
     }
 
     a.Survey(initf)
