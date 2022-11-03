@@ -1,0 +1,758 @@
+{
+  "Opt2" : {
+    "type" : "OptionProduction",
+    "text" : {
+      "type" : "Sequence",
+      "sentence" : [
+        {
+          "type" : "Binding",
+          "nt" : {
+            "text" : "Person",
+            "depth" : -1,
+            "fullname" : "Person"
+          }
+        },
+        {
+          "type" : "Terminal",
+          "value" : " is a "
+        },
+        {
+          "type" : "Binding",
+          "nt" : {
+            "text" : "Job",
+            "depth" : -1,
+            "fullname" : "Job"
+          }
+        },
+        {
+          "type" : "Terminal",
+          "value" : " and is active in the "
+        },
+        {
+          "type" : "Binding",
+          "nt" : {
+            "text" : "Movement",
+            "depth" : -1,
+            "fullname" : "Movement"
+          }
+        },
+        {
+          "type" : "Terminal",
+          "value" : " movement."
+        }
+      ]
+    }
+  },
+  "Opt2_0" : {
+    "type" : "OptionProduction",
+    "text" : {
+      "type" : "Sequence",
+      "sentence" : [
+        {
+          "type" : "Binding",
+          "nt" : {
+            "text" : "Person",
+            "depth" : 0,
+            "fullname" : "Person_0"
+          }
+        },
+        {
+          "type" : "Terminal",
+          "value" : " is a "
+        },
+        {
+          "type" : "Binding",
+          "nt" : {
+            "text" : "Job",
+            "depth" : 0,
+            "fullname" : "Job_0"
+          }
+        },
+        {
+          "type" : "Terminal",
+          "value" : " and is active in the "
+        },
+        {
+          "type" : "Binding",
+          "nt" : {
+            "text" : "Movement",
+            "depth" : 0,
+            "fullname" : "Movement_0"
+          }
+        },
+        {
+          "type" : "Terminal",
+          "value" : " movement."
+        }
+      ]
+    }
+  },
+  "A" : {
+    "type" : "Sequence",
+    "sentence" : [
+      {
+        "type" : "Binding",
+        "nt" : {
+          "text" : "Person",
+          "depth" : -1,
+          "fullname" : "Person"
+        }
+      },
+      {
+        "type" : "Terminal",
+        "value" : " is "
+      },
+      {
+        "type" : "Binding",
+        "nt" : {
+          "text" : "Age",
+          "depth" : -1,
+          "fullname" : "Age"
+        }
+      },
+      {
+        "type" : "Terminal",
+        "value" : " years old, single, outspoken, and very bright. "
+      },
+      {
+        "type" : "Function",
+        "fun" : {
+          "Linda" : "she",
+          "Dan" : "he",
+          "Emmie" : "she",
+          "Xavier the bloodsucking spider" : "it"
+        },
+        "param" : {
+          "text" : "Person",
+          "depth" : -1,
+          "fullname" : "Person"
+        },
+        "capitalize" : true
+      },
+      {
+        "type" : "Terminal",
+        "value" : " majored in "
+      },
+      {
+        "type" : "Binding",
+        "nt" : {
+          "text" : "Major",
+          "depth" : -1,
+          "fullname" : "Major"
+        }
+      },
+      {
+        "type" : "Terminal",
+        "value" : ". As a student, "
+      },
+      {
+        "type" : "Function",
+        "fun" : {
+          "Linda" : "she",
+          "Dan" : "he",
+          "Emmie" : "she",
+          "Xavier the bloodsucking spider" : "it"
+        },
+        "param" : {
+          "text" : "Person",
+          "depth" : -1,
+          "fullname" : "Person"
+        },
+        "capitalize" : false
+      },
+      {
+        "type" : "Terminal",
+        "value" : " was deeply concerned with issues of "
+      },
+      {
+        "type" : "Binding",
+        "nt" : {
+          "text" : "Issue",
+          "depth" : -1,
+          "fullname" : "Issue"
+        }
+      },
+      {
+        "type" : "Terminal",
+        "value" : ", and also participated in "
+      },
+      {
+        "type" : "Binding",
+        "nt" : {
+          "text" : "Demonstration",
+          "depth" : -1,
+          "fullname" : "Demonstration"
+        }
+      },
+      {
+        "type" : "Terminal",
+        "value" : " demonstrations.\nWhich is more probable?\n"
+      },
+      {
+        "type" : "Ref",
+        "nt" : {
+          "text" : "Opt1",
+          "depth" : -1,
+          "fullname" : "Opt1"
+        }
+      },
+      {
+        "type" : "Terminal",
+        "value" : "\n"
+      },
+      {
+        "type" : "Ref",
+        "nt" : {
+          "text" : "Opt2",
+          "depth" : -1,
+          "fullname" : "Opt2"
+        }
+      }
+    ]
+  },
+  "A_0" : {
+    "type" : "Sequence",
+    "sentence" : [
+      {
+        "type" : "Binding",
+        "nt" : {
+          "text" : "Person",
+          "depth" : 0,
+          "fullname" : "Person_0"
+        }
+      },
+      {
+        "type" : "Terminal",
+        "value" : " is "
+      },
+      {
+        "type" : "Binding",
+        "nt" : {
+          "text" : "Age",
+          "depth" : 0,
+          "fullname" : "Age_0"
+        }
+      },
+      {
+        "type" : "Terminal",
+        "value" : " years old, single, outspoken, and very bright. "
+      },
+      {
+        "type" : "Function",
+        "fun" : {
+          "Linda" : "she",
+          "Dan" : "he",
+          "Emmie" : "she",
+          "Xavier the bloodsucking spider" : "it"
+        },
+        "param" : {
+          "text" : "Person",
+          "depth" : 0,
+          "fullname" : "Person_0"
+        },
+        "capitalize" : true
+      },
+      {
+        "type" : "Terminal",
+        "value" : " majored in "
+      },
+      {
+        "type" : "Binding",
+        "nt" : {
+          "text" : "Major",
+          "depth" : 0,
+          "fullname" : "Major_0"
+        }
+      },
+      {
+        "type" : "Terminal",
+        "value" : ". As a student, "
+      },
+      {
+        "type" : "Function",
+        "fun" : {
+          "Linda" : "she",
+          "Dan" : "he",
+          "Emmie" : "she",
+          "Xavier the bloodsucking spider" : "it"
+        },
+        "param" : {
+          "text" : "Person",
+          "depth" : 0,
+          "fullname" : "Person_0"
+        },
+        "capitalize" : false
+      },
+      {
+        "type" : "Terminal",
+        "value" : " was deeply concerned with issues of "
+      },
+      {
+        "type" : "Binding",
+        "nt" : {
+          "text" : "Issue",
+          "depth" : 0,
+          "fullname" : "Issue_0"
+        }
+      },
+      {
+        "type" : "Terminal",
+        "value" : ", and also participated in "
+      },
+      {
+        "type" : "Binding",
+        "nt" : {
+          "text" : "Demonstration",
+          "depth" : 0,
+          "fullname" : "Demonstration_0"
+        }
+      },
+      {
+        "type" : "Terminal",
+        "value" : " demonstrations.\nWhich is more probable?\n"
+      },
+      {
+        "type" : "Ref",
+        "nt" : {
+          "text" : "Opt1",
+          "depth" : 0,
+          "fullname" : "Opt1_0"
+        }
+      },
+      {
+        "type" : "Terminal",
+        "value" : "\n"
+      },
+      {
+        "type" : "Ref",
+        "nt" : {
+          "text" : "Opt2",
+          "depth" : 0,
+          "fullname" : "Opt2_0"
+        }
+      }
+    ]
+  },
+  "Major_0" : {
+    "type" : "Choice",
+    "choices" : [
+      {
+        "type" : "Terminal",
+        "value" : "chemistry"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "psychology"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "english literature"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "philosophy"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "women's studies"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "underwater basket weaving"
+      }
+    ]
+  },
+  "Major" : {
+    "type" : "Choice",
+    "choices" : [
+      {
+        "type" : "Terminal",
+        "value" : "chemistry"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "psychology"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "english literature"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "philosophy"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "women's studies"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "underwater basket weaving"
+      }
+    ]
+  },
+  "Start" : {
+    "type" : "Ref",
+    "nt" : {
+      "text" : "A",
+      "depth" : 0,
+      "fullname" : "A_0"
+    }
+  },
+  "Job_0" : {
+    "type" : "Choice",
+    "choices" : [
+      {
+        "type" : "Terminal",
+        "value" : "bank teller"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "almond paste mixer"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "tennis scout"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "lawyer"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "professor"
+      }
+    ]
+  },
+  "Job" : {
+    "type" : "Choice",
+    "choices" : [
+      {
+        "type" : "Terminal",
+        "value" : "bank teller"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "almond paste mixer"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "tennis scout"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "lawyer"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "professor"
+      }
+    ]
+  },
+  "Age_0" : {
+    "type" : "Choice",
+    "choices" : [
+      {
+        "type" : "Terminal",
+        "value" : "21"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "31"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "41"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "51"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "61"
+      }
+    ]
+  },
+  "Age" : {
+    "type" : "Choice",
+    "choices" : [
+      {
+        "type" : "Terminal",
+        "value" : "21"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "31"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "41"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "51"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "61"
+      }
+    ]
+  },
+  "Person_0" : {
+    "type" : "Choice",
+    "choices" : [
+      {
+        "type" : "Terminal",
+        "value" : "Linda"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "Dan"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "Emmie"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "Xavier the bloodsucking spider"
+      }
+    ]
+  },
+  "Person" : {
+    "type" : "Choice",
+    "choices" : [
+      {
+        "type" : "Terminal",
+        "value" : "Linda"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "Dan"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "Emmie"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "Xavier the bloodsucking spider"
+      }
+    ]
+  },
+  "Demonstration_0" : {
+    "type" : "Choice",
+    "choices" : [
+      {
+        "type" : "Terminal",
+        "value" : "anti-nuclear"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "anti-war"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "pro-choice"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "anti-abortion"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "anti-animal testing"
+      }
+    ]
+  },
+  "Demonstration" : {
+    "type" : "Choice",
+    "choices" : [
+      {
+        "type" : "Terminal",
+        "value" : "anti-nuclear"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "anti-war"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "pro-choice"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "anti-abortion"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "anti-animal testing"
+      }
+    ]
+  },
+  "Issue_0" : {
+    "type" : "Choice",
+    "choices" : [
+      {
+        "type" : "Terminal",
+        "value" : "discrimination and social justice"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "fair wages"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "animal rights"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "white collar crime"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "unemployed circus workers"
+      }
+    ]
+  },
+  "Issue" : {
+    "type" : "Choice",
+    "choices" : [
+      {
+        "type" : "Terminal",
+        "value" : "discrimination and social justice"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "fair wages"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "animal rights"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "white collar crime"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "unemployed circus workers"
+      }
+    ]
+  },
+  "Movement_0" : {
+    "type" : "Choice",
+    "choices" : [
+      {
+        "type" : "Terminal",
+        "value" : "feminist"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "anti-plastic water bottle"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "pro-pretzel crisp"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "pro-metal straw"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "environmental justice"
+      }
+    ]
+  },
+  "Movement" : {
+    "type" : "Choice",
+    "choices" : [
+      {
+        "type" : "Terminal",
+        "value" : "feminist"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "anti-plastic water bottle"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "pro-pretzel crisp"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "pro-metal straw"
+      },
+      {
+        "type" : "Terminal",
+        "value" : "environmental justice"
+      }
+    ]
+  },
+  "Opt1_0" : {
+    "type" : "OptionProduction",
+    "text" : {
+      "type" : "Sequence",
+      "sentence" : [
+        {
+          "type" : "Binding",
+          "nt" : {
+            "text" : "Person",
+            "depth" : 0,
+            "fullname" : "Person_0"
+          }
+        },
+        {
+          "type" : "Terminal",
+          "value" : " is a "
+        },
+        {
+          "type" : "Binding",
+          "nt" : {
+            "text" : "Job",
+            "depth" : 0,
+            "fullname" : "Job_0"
+          }
+        },
+        {
+          "type" : "Terminal",
+          "value" : "."
+        }
+      ]
+    }
+  },
+  "Opt1" : {
+    "type" : "OptionProduction",
+    "text" : {
+      "type" : "Sequence",
+      "sentence" : [
+        {
+          "type" : "Binding",
+          "nt" : {
+            "text" : "Person",
+            "depth" : -1,
+            "fullname" : "Person"
+          }
+        },
+        {
+          "type" : "Terminal",
+          "value" : " is a "
+        },
+        {
+          "type" : "Binding",
+          "nt" : {
+            "text" : "Job",
+            "depth" : -1,
+            "fullname" : "Job"
+          }
+        },
+        {
+          "type" : "Terminal",
+          "value" : "."
+        }
+      ]
+    }
+  }
+}

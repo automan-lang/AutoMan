@@ -1,6 +1,11 @@
 package org.automanlang.core.grammar
 
 import org.automanlang.core.grammar.Expand._
+import io.circe.syntax._
+import org.automanlang.core.grammar.JsonEncoder._
+
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Paths}
 
 object LindaGrammar {
   def main(args: Array[String]): Unit = {
@@ -22,15 +27,15 @@ object LindaGrammar {
     val lindaGrammar = Map[Name, Expression](
       Start -> ref("A"),
       nt("A") -> seq(Array(
-        binding(nt("Name")),
+        binding(nt("Person")),
         term(" is "),
         binding(nt("Age")),
         term(" years old, single, outspoken, and very bright. "),
-        fun(pronouns, nt("Name"), capitalize = true),
+        fun(pronouns, nt("Person"), capitalize = true),
         term(" majored in "),
         binding(nt("Major")),
         term(". As a student, "),
-        fun(pronouns, nt("Name"), capitalize = false),
+        fun(pronouns, nt("Person"), capitalize = false),
         term(" was deeply concerned with issues of "),
         binding(nt("Issue")),
         term(", and also participated in "),
@@ -40,7 +45,7 @@ object LindaGrammar {
         term("\n"),
         ref("Opt2")
       )),
-      nt("Name") -> ch(Array(
+      nt("Person") -> ch(Array(
         term("Linda"),
         term("Dan"),
         term("Emmie"),
@@ -90,13 +95,13 @@ object LindaGrammar {
         term("environmental justice")
       )),
       nt("Opt1") -> opt(seq(Array(
-        binding(nt("Name")),
+        binding(nt("Person")),
         term(" is a "),
         binding(nt("Job")),
         term(".")
       ))),
       nt("Opt2") -> opt(seq(Array(
-        binding(nt("Name")),
+        binding(nt("Person")),
         term(" is a "),
         binding(nt("Job")),
         term(" and is active in the "),
@@ -105,9 +110,17 @@ object LindaGrammar {
       )))
     )
 
-    val lindaQuestionProduction: RadioQuestionProduction = new RadioQuestionProduction(lindaGrammar)
+    val lindaQuestionProduction: RadioQuestionProduction = RadioQuestionProduction(lindaGrammar)
     val text = lindaQuestionProduction.toQuestionText(24375, 2)
 //    val text = lindaQuestionProduction.toQuestionText(5625, 2)
     println(text)
+
+    val lindaJson = lindaGrammar.asJson
+    println(lindaJson.toString())
+    Files.write(Paths.get("lindaGrammar.json"), lindaJson.toString().getBytes(StandardCharsets.UTF_8))
+
+    val expandedLindaGrammar = expand(lindaGrammar, 2)
+    val expandedLindaGrammarJson = expandedLindaGrammar.asJson
+    Files.write(Paths.get("lindaGrammar_expanded.json"), expandedLindaGrammarJson.toString().getBytes(StandardCharsets.UTF_8))
   }
 }
