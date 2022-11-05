@@ -70,7 +70,7 @@ const bind = (g, assignment) => {
  * @param {boolean} doAppend 
  * @param {number} index 
  * @param {Map<String, String>} boundVars 
- * @returns 
+ * @returns {{bodSoFar: Array<any>, optsSoFar: Array<Array<any>>, boundVarsSoFar: Map<String, String>, position: number}}
  */
 const firstRender = (expr, g, scope, generatingBod, generatingOpts, doAppend, index, boundVars) => {
   // TODO: we should be able to remove these variables
@@ -104,8 +104,10 @@ const firstRender = (expr, g, scope, generatingBod, generatingOpts, doAppend, in
       })
       return {bodSoFar, optsSoFar, boundVarsSoFar, position};
     case "OptionProduction":
-      // TODO: should be renderHelper
-      return {bodSoFar, optsSoFar, boundVarsSoFar, position};
+      // here we reuse firstRender instead of reimplementing Emmie's renderHelper
+      // the core idea is to treat the options as body, and reuse the function logic to construct a body 
+      let {bodSoFar: newOpt, boundVarsSoFar: newBound, position: newPos } = firstRender(expr["text"], g, scope, [], [], doAppend, position, boundVarsSoFar);
+      return {bodSoFar, optsSoFar: optsSoFar.concat([newOpt]), boundVarsSoFar: newBound, position: newPos};
     case "Binding":
       let startArr = Array.from(bodSoFar);
 
@@ -167,7 +169,6 @@ const secondRender = (bodArr, optsArr, bingdingMap) => {
  * @returns 
  */
 const renderInstance = (scope, grammar) => {
-  // TODO:
   let {bodSoFar, optsSoFar, boundVarsSoFar, _} = firstRender(grammar["Start"], grammar, scope, Array(), Array(), true, -1, new Map())
   // By now, all grammar should be left with only terminals and functions, we should secondRender to concatenate them and apply functions
   return secondRender(bodSoFar, optsSoFar, boundVarsSoFar);
