@@ -126,6 +126,40 @@ const firstRender = (expr, g, scope, generatingBod, generatingOpts, doAppend, in
 }
 
 /**
+ * Helper method to generate a string from the Expression arrays by appending Terminals and calling Functions
+ * @param {Array<any>} instArr 
+ * @param {Map<String, String>} bingdingMap 
+ * @returns {String}
+ */
+const secondRenderHelper = (instArr, bingdingMap) => {
+  let instance = [];
+  instArr.forEach(e => {
+    switch (e["type"]) {
+      case "Terminal":
+        instance.push(e["value"]);
+        break;
+      case "Function":
+        let text = e["fun"][bingdingMap.get(e["param"]["text"])];
+        if (e["capitalize"]) {
+          text = text.charAt(0).toUpperCase() + text.slice(1)
+        }
+        instance.push(text);
+        break;
+      default:
+        break;
+    }
+  })
+  return instance.join("");
+}
+
+const secondRender = (bodArr, optsArr, bingdingMap) => {
+  return {
+    bod: secondRenderHelper(bodArr, bingdingMap),
+    opts: optsArr.map(o => secondRenderHelper(o, bingdingMap))
+  }
+}
+
+/**
  * Creates a string of the experiment instance specified by the Scope.
  *
  * @param {Map<Number, any>} scope 
@@ -135,10 +169,8 @@ const firstRender = (expr, g, scope, generatingBod, generatingOpts, doAppend, in
 const renderInstance = (scope, grammar) => {
   // TODO:
   let {bodSoFar, optsSoFar, boundVarsSoFar, _} = firstRender(grammar["Start"], grammar, scope, Array(), Array(), true, -1, new Map())
-  console.log(bodSoFar);
-  console.log(optsSoFar);
-  console.log(boundVarsSoFar);
-  // return secondRender(instArr, choiceArrs, binMap);
+  // By now, all grammar should be left with only terminals and functions, we should secondRender to concatenate them and apply functions
+  return secondRender(bodSoFar, optsSoFar, boundVarsSoFar);
 }
 
 grammar = JSON.parse(grammarText)
@@ -159,6 +191,8 @@ Map(7) {
 }
 */
 let scope = bind(grammar, assignment);
-console.log(scope);
+console.log("scope:", scope);
 
-renderInstance(scope, grammar);
+let {bod, opts} = renderInstance(scope, grammar);
+console.log("body:", bod)
+console.log("options:", opts)
