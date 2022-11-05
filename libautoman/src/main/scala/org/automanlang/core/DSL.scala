@@ -1,6 +1,8 @@
 package org.automanlang.core
 
 import org.automanlang.core.answer._
+import org.automanlang.core.grammar.Rank.Grammar
+import org.automanlang.core.info.QuestionType.QuestionType
 import org.automanlang.core.question._
 import org.automanlang.core.question.confidence._
 import org.automanlang.core.policy.aggregation._
@@ -805,4 +807,60 @@ trait DSL {
 
     a.Survey(initf)
   }
+
+  def GrammarSurvey[A <: AutomanAdapter, O](
+                                      grammar: List[Grammar],
+                                      questionType: List[QuestionType],
+                                      depth: Int,
+                                      budget: BigDecimal = MagicNumbers.DefaultBudget,
+                                      sample_size: Int = MagicNumbers.DefaultSampleSizeForDistrib,
+                                      dont_reject: Boolean = true,
+                                      dry_run: Boolean = false,
+                                      initial_worker_timeout_in_s: Int = MagicNumbers.InitialWorkerTimeoutInS,
+                                      minimum_spawn_policy: MinimumSpawnPolicy = null,
+                                      pay_all_on_failure: Boolean = true,
+                                      question_timeout_multiplier: Double = MagicNumbers.QuestionTimeoutMultiplier,
+                                      text: String,
+                                      title: String = null,
+                                      csv_output: String = null,
+                                      wage: BigDecimal = MagicNumbers.USFederalMinimumWage,
+                                      cohen_d_threshold: Double = 12,
+                                      noise_percentage: Double = 0.2,
+                                    )(implicit a: A): GrammarSurvey#O = {
+    def initf[Q <: GrammarSurvey](q: Q): Unit = {
+      // mandatory parameters
+      q.text = text
+      q.grammars = grammar
+      q.types = questionType
+      q.variant = grammar.map(_ => 0)
+      q.depth = depth
+
+      // mandatory parameters with sane defaults
+      q.budget = budget
+      q.dont_reject = dont_reject
+      q.dry_run = dry_run
+      q.initial_worker_timeout_in_s = initial_worker_timeout_in_s
+      q.pay_all_on_failure = pay_all_on_failure
+      q.question_timeout_multiplier = question_timeout_multiplier
+      q.sample_size = sample_size
+      q.wage = wage
+
+      if (title != null) {
+        q.title = title
+      }
+      if (minimum_spawn_policy != null) {
+        q.minimum_spawn_policy = minimum_spawn_policy
+      }
+
+      if (csv_output != null) {
+        q.csv_output = csv_output
+      }
+
+      q.d_threshold = cohen_d_threshold
+      q.noise_percentage = noise_percentage
+    }
+
+    a.GrammarSurvey(initf)
+  }
+
 }

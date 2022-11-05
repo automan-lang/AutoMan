@@ -10,7 +10,7 @@ import org.automanlang.adapters.mturk.logging.MTMemo
 import org.automanlang.adapters.mturk.mock.{MockRequesterService, MockServiceState, MockSetup}
 import org.automanlang.adapters.mturk.question._
 import org.automanlang.core.logging.{DebugLog, LogLevelDebug, LogType}
-import org.automanlang.core.question.Question
+import org.automanlang.core.question.{GrammarSurvey, Question}
 import org.automanlang.core.scheduler.{SchedulerState, Task}
 import org.automanlang.core.AutomanAdapter
 
@@ -91,6 +91,7 @@ class MTurkAdapter extends AutomanAdapter {
   protected def RBQFactory()  = new MTRadioButtonQuestion()
   protected def RBDQFactory() = new MTRadioButtonVectorQuestion
   protected def SurveyFactory() = new MTFakeSurvey
+  protected def GrammarSurveyFactory(): GrammarSurvey = new MTGrammarSurvey
 
   def Option(id: Symbol, text: String) = new MTQuestionOption(id, text, "")
   def Option(id: Symbol, text: String, image_url: String) = new MTQuestionOption(id, text, image_url)

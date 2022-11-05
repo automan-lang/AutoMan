@@ -133,6 +133,7 @@ abstract class AutomanAdapter {
   def Option(id: Symbol, text: String) : QuestionOption
 
   def Survey(init: FakeSurvey => Unit): FakeSurvey#O = schedule(SurveyFactory(), init)
+  def GrammarSurvey(init: GrammarSurvey => Unit): GrammarSurvey#O = schedule(GrammarSurveyFactory(), init)
 
   def CreateRadioButtonQuestion(init: RBQ => Unit): RBQ = {
     var q = RBQFactory()
@@ -264,5 +265,6 @@ abstract class AutomanAdapter {
   protected def RBQFactory() : RBQ
   protected def RBDQFactory() : RBDQ
   protected def SurveyFactory() : FakeSurvey
+  protected def GrammarSurveyFactory() : GrammarSurvey
   protected def MemoDBFactory() : MemoDB
 }

@@ -97,7 +97,7 @@ const firstRender = (expr, g, scope, generatingBod, generatingOpts, doAppend, in
       choices.forEach(e => {
         let doApp = false;
         // TODO: assuming index comparison works (it will be our simplified version of hashing)
-        if (doAppend && scope.get(position)["index"] == e["index"]) {
+        if (doAppend && scope.get(position)["index"] === e["index"]) {
           doApp = true;
         }
         ({bodSoFar, optsSoFar, boundVarsSoFar, position} = firstRender(e, g, scope, bodSoFar, optsSoFar, doApp, position, boundVarsSoFar));
@@ -169,7 +169,7 @@ const secondRender = (bodArr, optsArr, bingdingMap) => {
  * @returns 
  */
 const renderInstance = (scope, grammar) => {
-  let {bodSoFar, optsSoFar, boundVarsSoFar, _} = firstRender(grammar["Start"], grammar, scope, Array(), Array(), true, -1, new Map())
+  let {bodSoFar, optsSoFar, boundVarsSoFar} = firstRender(grammar["Start"], grammar, scope, Array(), Array(), true, -1, new Map())
   // By now, all grammar should be left with only terminals and functions, we should secondRender to concatenate them and apply functions
   return secondRender(bodSoFar, optsSoFar, boundVarsSoFar);
 }
