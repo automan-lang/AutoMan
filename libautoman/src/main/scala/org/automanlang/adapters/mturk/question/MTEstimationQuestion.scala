@@ -150,7 +150,7 @@ class MTEstimationQuestion extends EstimationQuestion with MTurkQuestion {
   override protected[mturk] def toQuestionHTML(randomize: Boolean): String = {
     // note that here we set margin-bottom to negative to remove the white space at top of <crowd-input>
     s"""
-    <div id=${id_string}">
+    <div id="${id_string}">
       <div class="QuestionContent" style="margin-bottom: -2em;">
      """ +
       {

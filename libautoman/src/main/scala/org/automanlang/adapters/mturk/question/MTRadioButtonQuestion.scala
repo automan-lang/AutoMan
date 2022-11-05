@@ -116,7 +116,7 @@ class MTRadioButtonQuestion extends RadioButtonQuestion with MTurkQuestion {
 
   override protected[mturk] def toQuestionHTML(randomize: Boolean): String = {
     s"""
-    <div id=${id_string}">
+    <div id="${id_string}">
       <div class="QuestionContent">
      """ +
       {
