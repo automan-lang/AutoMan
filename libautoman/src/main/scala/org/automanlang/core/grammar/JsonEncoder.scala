@@ -38,7 +38,9 @@ object JsonEncoder {
     )
     case Choice(choices) => Json.obj(
       ("type", Json.fromString("Choice")),
-      ("choices", choices.asJson)
+      ("choices", choices.zipWithIndex.map{ case (e, i) =>
+        e.asJson.deepMerge(Map("index"->i).asJson)
+      }.asJson)
     )
     case Sequence(sentence) => Json.obj(
       ("type", Json.fromString("Sequence")),

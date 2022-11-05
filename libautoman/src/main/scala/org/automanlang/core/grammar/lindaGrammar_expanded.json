@@ -337,26 +337,32 @@
     "type" : "Choice",
     "choices" : [
       {
+        "index" : 0,
         "type" : "Terminal",
         "value" : "chemistry"
       },
       {
+        "index" : 1,
         "type" : "Terminal",
         "value" : "psychology"
       },
       {
+        "index" : 2,
         "type" : "Terminal",
         "value" : "english literature"
       },
       {
+        "index" : 3,
         "type" : "Terminal",
         "value" : "philosophy"
       },
       {
+        "index" : 4,
         "type" : "Terminal",
         "value" : "women's studies"
       },
       {
+        "index" : 5,
         "type" : "Terminal",
         "value" : "underwater basket weaving"
       }
@@ -366,26 +372,32 @@
     "type" : "Choice",
     "choices" : [
       {
+        "index" : 0,
         "type" : "Terminal",
         "value" : "chemistry"
       },
       {
+        "index" : 1,
         "type" : "Terminal",
         "value" : "psychology"
       },
       {
+        "index" : 2,
         "type" : "Terminal",
         "value" : "english literature"
       },
       {
+        "index" : 3,
         "type" : "Terminal",
         "value" : "philosophy"
       },
       {
+        "index" : 4,
         "type" : "Terminal",
         "value" : "women's studies"
       },
       {
+        "index" : 5,
         "type" : "Terminal",
         "value" : "underwater basket weaving"
       }
@@ -403,22 +415,27 @@
     "type" : "Choice",
     "choices" : [
       {
+        "index" : 0,
         "type" : "Terminal",
         "value" : "bank teller"
       },
       {
+        "index" : 1,
         "type" : "Terminal",
         "value" : "almond paste mixer"
       },
       {
+        "index" : 2,
         "type" : "Terminal",
         "value" : "tennis scout"
       },
       {
+        "index" : 3,
         "type" : "Terminal",
         "value" : "lawyer"
       },
       {
+        "index" : 4,
         "type" : "Terminal",
         "value" : "professor"
       }
@@ -428,22 +445,27 @@
     "type" : "Choice",
     "choices" : [
       {
+        "index" : 0,
         "type" : "Terminal",
         "value" : "bank teller"
       },
       {
+        "index" : 1,
         "type" : "Terminal",
         "value" : "almond paste mixer"
       },
       {
+        "index" : 2,
         "type" : "Terminal",
         "value" : "tennis scout"
       },
       {
+        "index" : 3,
         "type" : "Terminal",
         "value" : "lawyer"
       },
       {
+        "index" : 4,
         "type" : "Terminal",
         "value" : "professor"
       }
@@ -453,22 +475,27 @@
     "type" : "Choice",
     "choices" : [
       {
+        "index" : 0,
         "type" : "Terminal",
         "value" : "21"
       },
       {
+        "index" : 1,
         "type" : "Terminal",
         "value" : "31"
       },
       {
+        "index" : 2,
         "type" : "Terminal",
         "value" : "41"
       },
       {
+        "index" : 3,
         "type" : "Terminal",
         "value" : "51"
       },
       {
+        "index" : 4,
         "type" : "Terminal",
         "value" : "61"
       }
@@ -478,22 +505,27 @@
     "type" : "Choice",
     "choices" : [
       {
+        "index" : 0,
         "type" : "Terminal",
         "value" : "21"
       },
       {
+        "index" : 1,
         "type" : "Terminal",
         "value" : "31"
       },
       {
+        "index" : 2,
         "type" : "Terminal",
         "value" : "41"
       },
       {
+        "index" : 3,
         "type" : "Terminal",
         "value" : "51"
       },
       {
+        "index" : 4,
         "type" : "Terminal",
         "value" : "61"
       }
@@ -503,18 +535,22 @@
     "type" : "Choice",
     "choices" : [
       {
+        "index" : 0,
         "type" : "Terminal",
         "value" : "Linda"
       },
       {
+        "index" : 1,
         "type" : "Terminal",
         "value" : "Dan"
       },
       {
+        "index" : 2,
         "type" : "Terminal",
         "value" : "Emmie"
       },
       {
+        "index" : 3,
         "type" : "Terminal",
         "value" : "Xavier the bloodsucking spider"
       }
@@ -524,18 +560,22 @@
     "type" : "Choice",
     "choices" : [
       {
+        "index" : 0,
         "type" : "Terminal",
         "value" : "Linda"
       },
       {
+        "index" : 1,
         "type" : "Terminal",
         "value" : "Dan"
       },
       {
+        "index" : 2,
         "type" : "Terminal",
         "value" : "Emmie"
       },
       {
+        "index" : 3,
         "type" : "Terminal",
         "value" : "Xavier the bloodsucking spider"
       }
@@ -545,22 +585,27 @@
     "type" : "Choice",
     "choices" : [
       {
+        "index" : 0,
         "type" : "Terminal",
         "value" : "anti-nuclear"
       },
       {
+        "index" : 1,
         "type" : "Terminal",
         "value" : "anti-war"
       },
       {
+        "index" : 2,
         "type" : "Terminal",
         "value" : "pro-choice"
       },
       {
+        "index" : 3,
         "type" : "Terminal",
         "value" : "anti-abortion"
       },
       {
+        "index" : 4,
         "type" : "Terminal",
         "value" : "anti-animal testing"
       }
@@ -570,22 +615,27 @@
     "type" : "Choice",
     "choices" : [
       {
+        "index" : 0,
         "type" : "Terminal",
         "value" : "anti-nuclear"
       },
       {
+        "index" : 1,
         "type" : "Terminal",
         "value" : "anti-war"
       },
       {
+        "index" : 2,
         "type" : "Terminal",
         "value" : "pro-choice"
       },
       {
+        "index" : 3,
         "type" : "Terminal",
         "value" : "anti-abortion"
       },
       {
+        "index" : 4,
         "type" : "Terminal",
         "value" : "anti-animal testing"
       }
@@ -595,22 +645,27 @@
     "type" : "Choice",
     "choices" : [
       {
+        "index" : 0,
         "type" : "Terminal",
         "value" : "discrimination and social justice"
       },
       {
+        "index" : 1,
         "type" : "Terminal",
         "value" : "fair wages"
       },
       {
+        "index" : 2,
         "type" : "Terminal",
         "value" : "animal rights"
       },
       {
+        "index" : 3,
         "type" : "Terminal",
         "value" : "white collar crime"
       },
       {
+        "index" : 4,
         "type" : "Terminal",
         "value" : "unemployed circus workers"
       }
@@ -620,22 +675,27 @@
     "type" : "Choice",
     "choices" : [
       {
+        "index" : 0,
         "type" : "Terminal",
         "value" : "discrimination and social justice"
       },
       {
+        "index" : 1,
         "type" : "Terminal",
         "value" : "fair wages"
       },
       {
+        "index" : 2,
         "type" : "Terminal",
         "value" : "animal rights"
       },
       {
+        "index" : 3,
         "type" : "Terminal",
         "value" : "white collar crime"
       },
       {
+        "index" : 4,
         "type" : "Terminal",
         "value" : "unemployed circus workers"
       }
@@ -645,22 +705,27 @@
     "type" : "Choice",
     "choices" : [
       {
+        "index" : 0,
         "type" : "Terminal",
         "value" : "feminist"
       },
       {
+        "index" : 1,
         "type" : "Terminal",
         "value" : "anti-plastic water bottle"
       },
       {
+        "index" : 2,
         "type" : "Terminal",
         "value" : "pro-pretzel crisp"
       },
       {
+        "index" : 3,
         "type" : "Terminal",
         "value" : "pro-metal straw"
       },
       {
+        "index" : 4,
         "type" : "Terminal",
         "value" : "environmental justice"
       }
@@ -670,22 +735,27 @@
     "type" : "Choice",
     "choices" : [
       {
+        "index" : 0,
         "type" : "Terminal",
         "value" : "feminist"
       },
       {
+        "index" : 1,
         "type" : "Terminal",
         "value" : "anti-plastic water bottle"
       },
       {
+        "index" : 2,
         "type" : "Terminal",
         "value" : "pro-pretzel crisp"
       },
       {
+        "index" : 3,
         "type" : "Terminal",
         "value" : "pro-metal straw"
       },
       {
+        "index" : 4,
         "type" : "Terminal",
         "value" : "environmental justice"
       }
