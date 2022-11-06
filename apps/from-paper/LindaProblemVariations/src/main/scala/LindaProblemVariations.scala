@@ -25,7 +25,6 @@ object LindaProblemVariations extends App {
     ),
     budget = 100.00,  // this field is a hard limit per question/survey on how much the user will pay
     // (the survey will terminate if total price of tasks increase beyond this limit and throw OverBudgetException`)
-    // TODO: set a different default value/function based on survey
     csv_output = "linda_variation_" + java.time.LocalDateTime.now.toString + ".csv",
     title = "Which is more probable?",
     text = "${description}",
@@ -72,10 +71,12 @@ object LindaProblemVariations extends App {
         "town drunk"->"${name} struggles with drinking, but mostly manages to hold it together; ${pronoun} lives in a modest house, alone, having alienated ${possessive} family. ${name} manages to stay sober whenever ${possessive} young daughter comes to visit.",
       )),
     ),
-    sample_size = 10,
+    sample_size = 100,
     initial_worker_timeout_in_s = 120,
-    wage=3.625,
+    wage=7.25,
     question_timeout_multiplier = 180,  // used to calculate the time of an epoch determining "TIMEOUT" sate
+    noise_percentage = 0.4,
+    cohen_d_threshold = 0
   )
 
   automan(a) {

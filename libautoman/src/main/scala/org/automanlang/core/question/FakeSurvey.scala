@@ -5,7 +5,7 @@ import org.automanlang.core.answer.{AbstractSurveyAnswer, SurveyAnswers, SurveyO
 import org.automanlang.core.info.QuestionType
 import org.automanlang.core.info.QuestionType.QuestionType
 import org.automanlang.core.mock.MockResponse
-import org.automanlang.core.policy.aggregation.{AdversarialPolicy, SimpleSurveyVectorPolicy}
+import org.automanlang.core.policy.aggregation.{AdversarialPolicy, SimpleSurveyVectorPolicy, SurveyPolicy}
 import org.automanlang.core.policy.price.{FixedPricePolicy, MLEPricePolicy}
 import org.automanlang.core.policy.timeout.{DoublingTimeoutPolicy, FixedTimeoutPolicy}
 
@@ -20,7 +20,7 @@ abstract class FakeSurvey extends Question {
   override type O = SurveyOutcome[A]
 
   // TODO: New policies need to be added
-  override type AP = SimpleSurveyVectorPolicy // Answer Policy
+  override type AP = SurveyPolicy // Answer Policy
   override type PP = FixedPricePolicy // Price Policy
 //  override type TP = DoublingTimeoutPolicy // Timeout Policy
   override type TP = FixedTimeoutPolicy // Timeout Policy
