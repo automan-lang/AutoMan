@@ -98,7 +98,7 @@ case class SurveyOutcome[T](_question: FakeSurvey,
       val writer = CSVWriter.open(new File(_question.csv_output + ".final"))
 
       // CSV header: worker_id, metadata, questions
-      writer.writeRow(List("Worker ID", "cost") ::: _question.questions.map(q => q.text))
+      writer.writeRow(List("Worker ID", "cost", "noise score", "is_noise") ::: _question.questions.map(q => q.text))
 
       // CSV content
       answer match {
@@ -107,7 +107,7 @@ case class SurveyOutcome[T](_question: FakeSurvey,
           val a_typed = a.asInstanceOf[SurveyAnswers[FakeSurvey#A]]
 
           a_typed.values.foreach(ans => {
-            writer.writeRow(List(ans._1, a_typed.metadatas(ans._1).cost) ::: ans._2)
+            writer.writeRow(List(ans._1, a_typed.metadatas(ans._1).cost, a_typed.metadatas(ans._1).noise_score, a_typed.metadatas(ans._1).likely_noise) ::: ans._2)
           })
 
         case _ => throw new Exception("SurveyOutcome is not in ANSWERED state.")
