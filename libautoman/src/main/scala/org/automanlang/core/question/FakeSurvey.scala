@@ -34,7 +34,7 @@ abstract class FakeSurvey extends Question {
   // _sample_size sized responses that are unlikely to be random, based on our
   // a priori noise_percentage
   def sample_collect_size: Int = {
-    (sample_size * (1-noise_percentage)).toInt
+    (sample_size / (1-noise_percentage)).toInt
   }
 
   // Cohen's d threshold, used to determine if we have gathered enough responses

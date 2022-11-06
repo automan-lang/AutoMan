@@ -162,8 +162,8 @@ class SurveyPolicy(question: FakeSurvey)
     // Null Hypothesis: two population means are equal.
     // val pValue = tTest(distancesRandom, distancesTest)
 
-    val dValue = stat.cohen_d(distancesRandom, distancesTest)
-    DebugLog(s"Policy: the Cohen's d for different means is $dValue.", LogLevelInfo(), LogType.STRATEGY, question.id)
+    val dValue = stat.cohen_d(distancesTest, distancesRandom)
+    DebugLog(s"Policy: the Cohen's d for different means is $dValue. The threshold is ${question.d_threshold}", LogLevelInfo(), LogType.STRATEGY, question.id)
 
     // whether the Cohen's d exceeds the predefined threshold
     dValue >= question.d_threshold

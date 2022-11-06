@@ -8,10 +8,14 @@ import org.apache.commons.math3.stat.StatUtils
  * However, these codes are marked as deprecated and kept just in case.
  */
 object stat {
-  @Deprecated
-  def variance(samples: Array[Double]): Double = {
+  def mean(samples: Array[Double]): Double = {
     val mean = samples.sum / samples.length
-    samples.map(t => math.pow(t - mean, 2)).sum / samples.length
+    mean
+  }
+
+  def variance(samples: Array[Double]): Double = {
+    val mean = mean(samples)
+    samples.map(t => math.pow(t - mean, 2)).sum / (samples.length - 1)
   }
 
   @Deprecated
@@ -59,9 +63,9 @@ object stat {
     val dof = nx + ny - 2
 
     // note that StatUtils.variance is error-corrected (subtracting 1 from size)
-    val d = (StatUtils.mean(x) - StatUtils.mean(y)) / Math.sqrt(
-      ((nx-1) * Math.pow(StatUtils.variance(x), 2) +
-        (ny-1) * Math.pow(StatUtils.variance(y), 2)
+    val d = (mean(x) - mean(y)) / Math.sqrt(
+      ((nx-1) * Math.pow(variance(x), 2) +
+        (ny-1) * Math.pow(variance(y), 2)
       ) / dof)
     d
   }
