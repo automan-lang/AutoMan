@@ -746,6 +746,7 @@ trait DSL {
   }
 
 
+
   def Survey[A <: AutomanAdapter, O](
                                       questions: List[Question],
                                       budget: BigDecimal = MagicNumbers.DefaultBudget,
@@ -762,7 +763,8 @@ trait DSL {
                                       wage: BigDecimal = MagicNumbers.USFederalMinimumWage,
                                       cohen_d_threshold: Double = 12,
                                       noise_percentage: Double = 0.2,
-                                      words_candidates: ListMap[String, Array[String]] = ListMap()
+                                      words_candidates: ListMap[String, Array[String]] = ListMap(),
+                                      functions: ListMap[String, (String, Map[String, String])] = ListMap()
                                     )(implicit a: A): FakeSurvey#O = {
     def initf[Q <: FakeSurvey](q: Q): Unit = {
       // mandatory parameters
@@ -803,6 +805,7 @@ trait DSL {
       q.d_threshold = cohen_d_threshold
       q.noise_percentage = noise_percentage
       q.words_candidates = words_candidates
+      q.functions = functions
     }
 
     a.Survey(initf)

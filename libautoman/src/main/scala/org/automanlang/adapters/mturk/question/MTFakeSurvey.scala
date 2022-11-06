@@ -149,10 +149,26 @@ class MTFakeSurvey extends FakeSurvey with MTurkQuestion {
     s"[${choices}]"
   }
 
+  def generateMadLibsFunctions(): String = {
+    val choices_f = functions.map( f => {
+      val content = f._2._2.map(o => s"""["${o._1}","${o._2}"]""").mkString(",")
+      s"new Map([$content])"
+    } ).mkString(",")
+    s"[${choices_f}]"
+  }
+
   def generateMadLibsAssignment(): String = {
-    words_candidates.zipWithIndex.map{ case (candidate, i) =>
+    // let mad = choices[0][assignment[0]]
+    // let libs = choices[1][assignment[1]]
+    val str_words = words_candidates.zipWithIndex.map{ case (candidate, i) =>
       s"let ${candidate._1} = choices[${i}][assignment[${i}]];"
     }.mkString("\n")
+
+    val str_funcs = functions.zipWithIndex.map { case (f, i) =>
+      s"let ${f._1} = functions[${i}].get(${f._2._1});"
+    }.mkString("\n")
+
+    str_words + "\n" + str_funcs
   }
 
   // https://stackoverflow.com/questions/23215162/assignmentid-not-visible-in-mturk-accept-url
@@ -193,16 +209,15 @@ class MTFakeSurvey extends FakeSurvey with MTurkQuestion {
        |  }
        |
        |  // here scala generate choices (nested array of target phrases)
-       |  let choices = ${generateMadLibsChoices()}
-       |  let bases = choices.map(c => c.length);
+       |  const choices = ${generateMadLibsChoices()}
+       |  const functions = ${generateMadLibsFunctions()}
+       |  const bases = choices.map(c => c.length);
        |
-       |  let max = bases.reduce( (a,b) => a * b );
-       |  let assignment = unrank(Math.floor(myrng() * max), bases);
+       |  const max = bases.reduce( (a,b) => a * b );
+       |  const assignment = unrank(Math.floor(myrng() * max), bases);
        |  console.log(`[DEBUG] mad libs assignment: $${assignment}`);
        |
-       |  // TODO: scala generate variable => choices
-       |  // let mad = choices[0][assignment[0]]
-       |  // let libs = choices[1][assignment[1]]
+       |  // scala generate variable => choices
        |  // now these words should be available to use in js template strings
        |  ${generateMadLibsAssignment()}
        |

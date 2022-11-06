@@ -89,6 +89,17 @@ abstract class FakeSurvey extends Question {
     _words_candidates = new_c
   }
 
+  // output_var => (input_var, choice)
+  // where choice is a Map of [input_var_value => output_var_value] pairs
+  private var _functions: ListMap[String, (String, Map[String, String])] = ListMap()
+
+  def functions: ListMap[String, (String, Map[String, String])] = _functions
+
+  def functions_=(new_f: ListMap[String, (String, Map[String, String])]): Unit = {
+    _functions = new_f
+  }
+
+
   override protected[automanlang] def toMockResponse(question_id: UUID, response_time: Date, a: A, worker_id: UUID): MockResponse = ???
 
   override protected[automanlang] def prettyPrintAnswer(answer: A): String = {

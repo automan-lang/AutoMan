@@ -17,8 +17,8 @@ object LindaProblem extends App {
       radioQuestion(
         text = "Which is more probable?",
         options = (
-          choice('A, "Linda is a bank teller"),
-          choice('B, "Linda is a bank teller and is active in the feminist movement"),
+          choice('A, "${name} is a bank teller"),
+          choice('B, "${name} is a bank teller and is active in the feminist movement"),
         )
       ),
     ),
@@ -27,12 +27,14 @@ object LindaProblem extends App {
     // TODO: set a different default value/function based on survey
     csv_output = "linda_" + java.time.LocalDateTime.now.toString + ".csv",
     title = "Which is more probable?",
-    text = "Linda is ${description}. She majored in ${major}. As a student, she ${activity}.",
+    text = "${name} is ${description}. ${gender} majored in ${major}. As a student, ${gender} ${activity}.",
     words_candidates = ListMap[String, Array[String]](
+      "name" -> Array("Linda", "Bill"),
       "description" -> Array("31 years old", "single", "outspoken", "very bright"),
       "major" -> Array("philosophy","computer science","comparative literature","economics","psychology"),
       "activity" -> Array("was deeply concerned with issues of discrimination and social justice", "participated in anti-nuclear demonstrations")
     ),
+    functions = ListMap("gender" -> ("name", Map("Linda"->"she", "Bill"->"he"))),
     sample_size = 10,
     initial_worker_timeout_in_s = 320,
     wage=3.625,
