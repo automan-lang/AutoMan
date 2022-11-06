@@ -165,7 +165,9 @@ class MTFakeSurvey extends FakeSurvey with MTurkQuestion {
     }.mkString("\n")
 
     val str_funcs = functions.zipWithIndex.map { case (f, i) =>
-      s"let ${f._1} = functions[${i}].get(${f._2._1});"
+//      s"let ${f._1} = functions[${i}].get(${f._2._1});"
+//      Enable eval because we want to nest variables in func for LindaVariation
+      s"let ${f._1} = eval('`'+functions[${i}].get(${f._2._1})+'`');"
     }.mkString("\n")
 
     str_words + "\n" + str_funcs
