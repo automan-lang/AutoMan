@@ -14,8 +14,8 @@ object stat {
   }
 
   def variance(samples: Array[Double]): Double = {
-    val mean = mean(samples)
-    samples.map(t => math.pow(t - mean, 2)).sum / (samples.length - 1)
+    val meanV = mean(samples)
+    samples.map(t => math.pow(t - meanV, 2)).sum / (samples.length - 1)
   }
 
   @Deprecated
