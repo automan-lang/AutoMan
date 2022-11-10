@@ -30,9 +30,6 @@ object LindaProblem extends App {
     text = "${description}",
     words_candidates = ListMap[String, Array[String]](
       "name" -> Array("Linda", "Bill"),
-      "description" -> Array("31 years old", "single", "outspoken", "very bright"),
-      "major" -> Array("philosophy","computer science","comparative literature","economics","psychology"),
-      "activity" -> Array("was deeply concerned with issues of discrimination and social justice", "participated in anti-nuclear demonstrations")
     ),
     functions = ListMap(
       "description" -> ("name", Map(
