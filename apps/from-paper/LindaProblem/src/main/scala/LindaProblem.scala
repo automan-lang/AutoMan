@@ -22,7 +22,7 @@ object LindaProblem extends App {
         )
       ),
     ),
-    budget = 100.00,  // this field is a hard limit per question/survey on how much the user will pay
+    budget = 50.00,  // this field is a hard limit per question/survey on how much the user will pay
     // (the survey will terminate if total price of tasks increase beyond this limit and throw OverBudgetException`)
     // TODO: set a different default value/function based on survey
     csv_output = "linda_" + java.time.LocalDateTime.now.toString + ".csv",
@@ -49,7 +49,7 @@ object LindaProblem extends App {
       )),
     ),
     sample_size = 100,
-    initial_worker_timeout_in_s = 320,
+    initial_worker_timeout_in_s = 120,
     wage=7.25,
     question_timeout_multiplier = 180,  // used to calculate the time of an epoch determining "TIMEOUT" sate
     noise_percentage = 0.4,
