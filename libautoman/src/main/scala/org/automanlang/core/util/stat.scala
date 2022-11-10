@@ -67,6 +67,6 @@ object stat {
       ((nx-1) * Math.pow(variance(x), 2) +
         (ny-1) * Math.pow(variance(y), 2)
       ) / dof)
-    d
+    d.abs
   }
 }

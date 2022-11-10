@@ -17,8 +17,8 @@ object LindaProblem extends App {
       radioQuestion(
         text = "Which is more probable?",
         options = (
-          choice('A, "${name} is a bank teller"),
-          choice('B, "${name} is a bank teller and is active in the feminist movement"),
+          choice('A, "${choiceA}"),
+          choice('B, "${choiceB}"),
         )
       ),
     ),
@@ -27,18 +27,33 @@ object LindaProblem extends App {
     // TODO: set a different default value/function based on survey
     csv_output = "linda_" + java.time.LocalDateTime.now.toString + ".csv",
     title = "Which is more probable?",
-    text = "${name} is ${description}. ${gender} majored in ${major}. As a student, ${gender} ${activity}.",
+    text = "${description}",
     words_candidates = ListMap[String, Array[String]](
       "name" -> Array("Linda", "Bill"),
       "description" -> Array("31 years old", "single", "outspoken", "very bright"),
       "major" -> Array("philosophy","computer science","comparative literature","economics","psychology"),
       "activity" -> Array("was deeply concerned with issues of discrimination and social justice", "participated in anti-nuclear demonstrations")
     ),
-    functions = ListMap("gender" -> ("name", Map("Linda"->"she", "Bill"->"he"))),
-    sample_size = 10,
+    functions = ListMap(
+      "description" -> ("name", Map(
+        "Linda"->"Linda is 31 years old, single, outspoken, and very bright. She majored in philosophy. As a student, she was deeply concerned with issues of discrimination and social justice, and also participated in anti-nuclear demonstrations.",
+        "Bill"->"Bill is 34 years old. He is intelligent, but unimaginative, compulsive and generally lifeless. In school, he was strong in mathematics but weak in social studies and humanities."
+      )),
+      "choiceA" -> ("name", Map(
+        "Linda" -> "Linda is a bank teller.",
+        "Bill" -> "Bill plays jazz for a hobby."
+      )),
+      "choiceB" -> ("name", Map(
+        "Linda" -> "Linda is a bank teller and is active in the feminist movement.",
+        "Bill" -> "Bill is an accountant that plays jazz for a hobby."
+      )),
+    ),
+    sample_size = 100,
     initial_worker_timeout_in_s = 320,
-    wage=3.625,
+    wage=7.25,
     question_timeout_multiplier = 180,  // used to calculate the time of an epoch determining "TIMEOUT" sate
+    noise_percentage = 0.4,
+    cohen_d_threshold = -1
   )
 
   automan(a) {
