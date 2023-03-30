@@ -23,7 +23,7 @@ object LindaProblem extends App {
         text = "Which is more probable?",
         options = (
           choice('A, "${name} is a ${profession}"),
-          choice('B, "${name} is a ${profession} and ${activity}"))),
+          choice('B, "${name} is a ${profession} and ${cause}"))),
     ),
     words_candidates = Map(
       "name" -> Array("Linda", "Bill"),
@@ -38,7 +38,7 @@ object LindaProblem extends App {
         "Linda" -> "was concerned with issues of discrimination and social justice",
         "Bill" -> "was strong in mathematics but weak in humanities")),
       "profession" -> ("name" -> Map("bank teller", "physician")),
-      "activity" -> ("name" -> Map(
+      "cause" -> ("name" -> Map(
         "Linda" -> "is active in the feminist movement",
         "Bill" -> "plays jazz for a hobby"))
     ),
