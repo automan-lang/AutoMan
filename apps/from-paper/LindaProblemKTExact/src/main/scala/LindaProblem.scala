@@ -12,36 +12,40 @@ object LindaProblem extends App {
     sandbox_mode = opts('sandbox).toBoolean
   )
 
-  def conjunction_fallacy() = survey(
-    budget = 100.00,
-    sample_size = 200,
-    title = "Which is more probable?",
-    text = "${name} is ${description}. ${pronoun} majored in ${major}. " +
-           "As a student, ${pronoun} ${activity}.",
-    questions = List(
-      radio(
-        text = "Which is more probable?",
-        options = (
-          choice('A, "${name} is a ${profession}"),
-          choice('B, "${name} is a ${profession} and ${cause}"))),
-    ),
-    words_candidates = Map(
-      "name" -> Array("Linda", "Bill"),
-    ),
-    functions = Map(
-      "pronoun" -> ("name", Map("Linda" -> "she", "Bill" -> "he"))
-      "major" -> ("name", Map("Linda" -> "philosophy", "Bill" -> "accounting")),
-      "description" -> ("name", Map(
-        "Linda" -> "31 years old, single, outspoken, and very bright",
-        "Bill" -> "intelligent, but unimaginative, compulsive, and generally lifeless")),
-      "activity" -> ("name" -> Map(
-        "Linda" -> "was concerned with issues of discrimination and social justice",
-        "Bill" -> "was strong in mathematics but weak in humanities")),
-      "profession" -> ("name" -> Map("bank teller", "physician")),
-      "cause" -> ("name" -> Map(
-        "Linda" -> "is active in the feminist movement",
-        "Bill" -> "plays jazz for a hobby"))
-    ),
+	def conjunction_fallacy() = survey(
+	  budget = 100.00,
+	  sample_size = 200,
+	  title = "Which is more probable?",
+	  text = "${name} is ${description}. ${pronoun} majored in ${major}. " +
+	         "As a student, ${pronoun} ${activity}.",
+	  questions = List(
+	    radio(
+	      text = "Which is more probable?",
+	      options = (
+	        choice('A, "${name} is a ${profession}"),
+	        choice('B, "${name} is a ${profession} and ${cause}"))),
+	  ),
+	  words_candidates = Map(
+	    "name" -> Array("Linda", "Bill"),
+	  ),
+	  functions = Map(
+	    "pronoun" -> ("name", Map(
+	      "Linda" -> "she",
+	      "Bill"  -> "he")),
+	    "major"   -> ("name", Map(
+	      "Linda" -> "philosophy",
+	      "Bill"  -> "accounting")),
+	    "description" -> ("name", Map(
+	      "Linda" -> "31 years old, single, outspoken, and very bright",
+	      "Bill"  -> "intelligent, but unimaginative, compulsive, and generally lifeless")),
+	    "activity" -> ("name", Map(
+	      "Linda" -> "was concerned with issues of discrimination and social justice",
+	      "Bill"  -> "was strong in mathematics but weak in humanities")),
+	    "profession" -> ("name", Map("bank teller", "physician")),
+	    "cause"   -> ("name", Map(
+	      "Linda" -> "is active in the feminist movement",
+	      "Bill"  -> "plays jazz for a hobby"))
+	  ),
     csv_output = "linda_" + java.time.LocalDateTime.now.toString + ".csv",
     initial_worker_timeout_in_s = 120,
     question_timeout_multiplier = 180,
