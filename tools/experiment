@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# this program lets you redirect stderr and stdout to different
+# timestamped files while also displaying everything on screen
+# as usual
+
+("$@" | tee stdout-`date "+%F-%T"`.log) 3>&1 1>&2 2>&3 | tee stderr-`date "+%F-%T"`.log

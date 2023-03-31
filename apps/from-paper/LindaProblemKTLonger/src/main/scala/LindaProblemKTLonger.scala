@@ -1,9 +1,8 @@
 import org.automanlang.adapters.mturk.DSL._
 import org.automanlang.adapters.mturk.{DSL, MTurkAdapter}
-
 import scala.collection.immutable.ListMap
 
-object LindaProblem extends App {
+object LindaProblemKTLonger extends App {
   val opts = Utilities.unsafe_optparse(args, "simple_program")
 
   implicit val a: MTurkAdapter = mturk(
@@ -12,21 +11,25 @@ object LindaProblem extends App {
     sandbox_mode = opts('sandbox).toBoolean
   )
 
+	def ktQuestions(n: Int) = {
+		(for (i <- 0 until n) yield
+			radioQuestion(
+				text = "Which is more probable?",
+				options = (
+					choice('A, "${name} is a ${profession}"),
+					choice('B, "${name} is a ${profession} and ${attribute}")
+				)
+			)
+		).toList
+	}
+
 	def conjunction_fallacy() = Survey(
 	  budget = 100.00,
 	  sample_size = 200,
 	  title = "Which is more probable?",
 	  text = "${name} is ${description}. ${pronoun} majored in ${major}. " +
 	         "As a student, ${pronoun} ${activity}.",
-	  questions = List(
-	    radioQuestion(
-	      text = "Which is more probable?",
-	      options = (
-	        choice('A, "${name} is a ${profession}"),
-	        choice('B, "${name} is a ${profession} and ${attribute}")
-				)
-			),
-	  ),
+		questions = ktQuestions(5), // launch 5 ktQuestions
 		words_candidates = ListMap(
 			"name" -> Array("Linda", "Bill"),
 		),

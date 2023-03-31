@@ -1,6 +1,6 @@
 enablePlugins(PackPlugin)
 
-name := "LindaProblemKTExact"
+name := "LindaProblemKTLonger"
 
 version := "0.1"
 
