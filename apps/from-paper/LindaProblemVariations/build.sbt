@@ -1,6 +1,6 @@
 enablePlugins(PackPlugin)
 
-name := "PEWSurvey"
+name := "LindaProblemVariations"
 
 version := "0.1"
 

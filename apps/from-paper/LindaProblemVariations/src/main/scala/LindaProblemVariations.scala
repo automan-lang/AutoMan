@@ -72,7 +72,7 @@ object LindaProblemVariations extends App {
       )),
     ),
     sample_size = 100,
-    initial_worker_timeout_in_s = 120,
+    initial_worker_timeout_in_s = 60,
     wage=7.25,
     question_timeout_multiplier = 180,  // used to calculate the time of an epoch determining "TIMEOUT" sate
     noise_percentage = 0.4,
