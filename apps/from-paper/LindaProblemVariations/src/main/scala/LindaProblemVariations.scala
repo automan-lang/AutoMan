@@ -4,7 +4,7 @@ import org.automanlang.adapters.mturk.{DSL, MTurkAdapter}
 import scala.collection.immutable.ListMap
 
 object LindaProblemVariations extends App {
-  val opts = Utilities.unsafe_optparse(args, "simple_program")
+  val opts = Utilities.unsafe_optparse(args, "LindaProblemVariations")
 
   implicit val a: MTurkAdapter = mturk(
     access_key_id = opts('key),
@@ -71,12 +71,11 @@ object LindaProblemVariations extends App {
         "town drunk"->"${name} struggles with drinking, but mostly manages to hold it together; ${pronoun} lives in a modest house, alone, having alienated ${possessive} family. ${name} manages to stay sober whenever ${possessive} young daughter comes to visit.",
       )),
     ),
-    sample_size = 100,
+    sample_size = 200,
     initial_worker_timeout_in_s = 60,
-    wage=7.25,
     question_timeout_multiplier = 180,  // used to calculate the time of an epoch determining "TIMEOUT" sate
     noise_percentage = 0.4,
-    cohen_d_threshold = 0
+    cohen_d_threshold = -1000
   )
 
   automan(a) {
