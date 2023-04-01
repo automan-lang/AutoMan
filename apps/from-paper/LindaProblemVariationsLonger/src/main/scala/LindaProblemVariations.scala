@@ -4,6 +4,7 @@ import scala.collection.immutable.ListMap
 
 object LindaProblemVariations extends App {
   val opts = Utilities.unsafe_optparse(args, "LindaProblemVariations")
+  val TRIALS = 5
 
   implicit val a: MTurkAdapter = mturk(
     access_key_id = opts('key),
@@ -119,16 +120,16 @@ object LindaProblemVariations extends App {
   }
 
   def which_one(): DSL.SurveyOutcome[List[Any]] = Survey(
-    questions = ktQuestions(5),
-    functions = ktFunctions(5),
-    words_candidates = ktWords(5),
+    questions = ktQuestions(TRIALS),
+    functions = ktFunctions(TRIALS),
+    words_candidates = ktWords(TRIALS),
     budget = 100.00,  // this field is a hard limit per question/survey on how much the user will pay
     // (the survey will terminate if total price of tasks increase beyond this limit and throw OverBudgetException`)
     csv_output = "linda_variation_" + java.time.LocalDateTime.now.toString + ".csv",
     title = "Which is more probable?",
     text = "Which is more probable?",
     sample_size = 200,
-    initial_worker_timeout_in_s = 60,
+    initial_worker_timeout_in_s = 60*TRIALS,
     question_timeout_multiplier = 180,  // used to calculate the time of an epoch determining "TIMEOUT" sate
     noise_percentage = 0.4,
     cohen_d_threshold = -1000
