@@ -23,25 +23,25 @@ object LindaProblemVariations extends App {
     ).toList
   }
 
-  def ktFunctions(n: Int):  Map[String, (String, Map[String, String])] = {
+  def ktFunctions(n: Int):  ListMap[String, (String, ListMap[String, String])] = {
     val list_of_maps = {
       (for (i <- 0 until n) yield {
         val i_str = i.toString
         val ktMap =
-          Map(
-            "pronoun" + i_str -> ("name" + i_str, Map(
+          ListMap(
+            "pronoun" + i_str -> ("name" + i_str, ListMap(
               "Liam" -> "he", "Noah" -> "he", "Oliver" -> "he", "Elijah" -> "he", "James" -> "he",
               "Olivia" -> "she", "Emma" -> "she", "Charlotte" -> "she", "Amelia" -> "she", "Ava" -> "she"
             )),
-            "possessive" + i_str -> ("name" + i_str, Map(
+            "possessive" + i_str -> ("name" + i_str, ListMap(
               "Liam" -> "his", "Noah" -> "his", "Oliver" -> "his", "Elijah" -> "his", "James" -> "his",
               "Olivia" -> "her", "Emma" -> "her", "Charlotte" -> "her", "Amelia" -> "her", "Ava" -> "her"
             )),
-            "determiner" + i_str -> ("name" + i_str, Map(
+            "determiner" + i_str -> ("name" + i_str, ListMap(
               "Liam" -> "him", "Noah" -> "him", "Oliver" -> "him", "Elijah" -> "him", "James" -> "him",
               "Olivia" -> "her", "Emma" -> "her", "Charlotte" -> "her", "Amelia" -> "her", "Ava" -> "her"
             )),
-            "attribute" + i_str -> ("sketch" + i_str, Map(
+            "attribute" + i_str -> ("sketch" + i_str, ListMap(
               "absent-minded professor" -> "often publicly points out other people's mistakes",
               "annoying neighbor" -> ("is opposed to efforts to build high density housing in ${possessive" + i_str + "} neighborhood"),
               "curmudgeon" -> "wants to make America great again",
@@ -53,7 +53,7 @@ object LindaProblemVariations extends App {
               "reluctant hero" -> "does not want to get in a fight but won't back down when challenged",
               "town drunk" -> ("despite appearances, would do anything for ${possessive" + i_str + "} daughter"),
             )),
-            "description" + i_str -> ("sketch" + i_str, Map(
+            "description" + i_str -> ("sketch" + i_str, ListMap(
               "absent-minded professor" -> ("${name" + i_str + "} is an eccentric genius; ${pronoun" + i_str + "} is very focused on ${possessive" + i_str + "} work, but tends to forget to do ordinary things like combing ${possessive" + i_str + "} hair or saying hello to ${possessive" + i_str + "} neighbors."),
               "annoying neighbor" -> ("${name" + i_str + "} spends a lot of time working in ${possessive" + i_str + "} garden; ${pronoun" + i_str + "} also spends a lot of time criticizing the state of ${possessive" + i_str + "} neighbor's houses, and many of ${name" + i_str + "}'s neighbors do not like ${determiner" + i_str + "}."),
               "curmudgeon" -> ("${name" + i_str + "} is an elderly resident who spends much of ${possessive" + i_str + "} time at the local donut shop arguing with other patrons about politics. ${name" + i_str + "} sometimes makes inappropriate remarks to young patrons of the shop, much to the chagrin of the shop owners who let ${determiner" + i_str + "} stay around because ${pronoun" + i_str + "} is a good customer."),
@@ -69,7 +69,7 @@ object LindaProblemVariations extends App {
         ktMap
       }).toList
     }
-    val d = scala.collection.mutable.ListMap[String, (String, Map[String, String])]()
+    val d = scala.collection.mutable.ListMap[String, (String, ListMap[String, String])]()
     for (map <- list_of_maps) {
       for (kvp <- map) {
         val (key, value) = kvp
@@ -83,15 +83,17 @@ object LindaProblemVariations extends App {
         }
       }
     }
-    d.toMap
+    // convert to immutable listmap
+    val immutableListMap = ListMap[String, (String, ListMap[String, String])](d.toSeq: _*)
+    immutableListMap
   }
 
-  def ktWords(n: Int): Map[String, Array[String]] = {
+  def ktWords(n: Int): ListMap[String, Array[String]] = {
     val list_of_maps = {
       (for (i <- 0 until n) yield {
         val i_str = i.toString
         val ktMap =
-          Map[String, Array[String]](
+          ListMap[String, Array[String]](
             "name" + i_str -> Array("Liam", "Olivia", "Noah", "Emma", "Oliver", "Charlotte", "Elijah", "Amelia", "James", "Ava"),
             "profession" + i_str -> Array("a teacher", "a bartender", "a police officer", "an electrician", "a carpenter", "a software developer", "a lawyer", "a doctor", "a server", "a janitor", "a farmer", "a photographer"),
             "sketch" + i_str -> Array("absent-minded professor", "annoying neighbor", "curmudgeon", "hipster", "gung-ho", "romantic", "jock", "nerd", "reluctant hero", "town drunk")
@@ -111,7 +113,9 @@ object LindaProblemVariations extends App {
         }
       }
     }
-    d.toMap
+    // convert to immutable listmap
+    val immutableListMap = ListMap[String, Array[String]](d.toSeq: _*)
+    immutableListMap
   }
 
   def which_one(): DSL.SurveyOutcome[List[Any]] = Survey(
