@@ -226,7 +226,7 @@ class MTFakeSurvey extends FakeSurvey with MTurkQuestion {
        |  // insert into DOM
        |  document.getElementById('container').innerHTML += `${toQuestionHTML(randomize)}`;
        |
-       |  document.getElementById('header-container').innerHTML += `<h1>${title}</h1><p>${text}</p>`;
+       |  document.getElementById('header-container').innerHTML += `<h1>${title}</h1><p>${text}</p><hr /><br />`;
        |
        |  console.log("[DEBUG] Start shuffling elements");
        |  const list = document.getElementById("container");
@@ -253,6 +253,7 @@ class MTFakeSurvey extends FakeSurvey with MTurkQuestion {
        |  // writeback questions
        |  while (i < nodes.length) {
        |    list.appendChild(nodes[i]);
+       |    list.appendChild(document.createElement("hr"))
        |    ++i;
        |  }
        |  console.log("[DEBUG] Finish shuffling questions");
