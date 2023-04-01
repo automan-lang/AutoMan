@@ -14,7 +14,7 @@ object LindaProblemVariations extends App {
   def ktQuestions(n: Int) = {
     (for (i <- 0 until n) yield
       radioQuestion(
-        text = "Which is more probable?",
+        text = "${description" + i + "}<br><br>Which is more probable?",
         options = (
           choice('A, "${name" + i + "} is a ${profession" + i + "}"),
           choice('B, "${name" + i + "} is a ${profession" + i + "} and ${attribute" + i + "}")
@@ -86,19 +86,43 @@ object LindaProblemVariations extends App {
     d.toMap
   }
 
+  def ktWords(n: Int): Map[String, Array[String]] = {
+    val list_of_maps = {
+      (for (i <- 0 until n) yield {
+        val i_str = i.toString
+        val ktMap =
+          Map[String, Array[String]](
+            "name" + i_str -> Array("Liam", "Olivia", "Noah", "Emma", "Oliver", "Charlotte", "Elijah", "Amelia", "James", "Ava"),
+            "profession" + i_str -> Array("a teacher", "a bartender", "a police officer", "an electrician", "a carpenter", "a software developer", "a lawyer", "a doctor", "a server", "a janitor", "a farmer", "a photographer"),
+            "sketch" + i_str -> Array("absent-minded professor", "annoying neighbor", "curmudgeon", "hipster", "gung-ho", "romantic", "jock", "nerd", "reluctant hero", "town drunk")
+          )
+        ktMap
+      }).toList
+    }
+    val d = scala.collection.mutable.ListMap[String, Array[String]]()
+    for (map <- list_of_maps) {
+      for (kvp <- map) {
+        val (key, xs) = kvp
+        if (!d.contains(key)) {
+          d.put(key, xs)
+        } else {
+          // should be impossible
+          throw new Exception(s"Duplicate key '${key}'!")
+        }
+      }
+    }
+    d.toMap
+  }
+
   def which_one(): DSL.SurveyOutcome[List[Any]] = Survey(
     questions = ktQuestions(5),
     functions = ktFunctions(5),
+    words_candidates = ktWords(5),
     budget = 100.00,  // this field is a hard limit per question/survey on how much the user will pay
     // (the survey will terminate if total price of tasks increase beyond this limit and throw OverBudgetException`)
     csv_output = "linda_variation_" + java.time.LocalDateTime.now.toString + ".csv",
     title = "Which is more probable?",
-    text = "${description}",
-    words_candidates = ListMap[String, Array[String]](
-      "name" -> Array("Liam", "Olivia", "Noah", "Emma", "Oliver", "Charlotte", "Elijah", "Amelia", "James", "Ava"),
-      "profession" -> Array("a teacher", "a bartender", "a police officer", "an electrician", "a carpenter", "a software developer", "a lawyer", "a doctor", "a server", "a janitor", "a farmer", "a photographer"),
-      "sketch" -> Array("absent-minded professor", "annoying neighbor", "curmudgeon", "hipster", "gung-ho", "romantic", "jock", "nerd", "reluctant hero", "town drunk")
-    ),
+    text = "Which is more probable?",
     sample_size = 200,
     initial_worker_timeout_in_s = 60,
     question_timeout_multiplier = 180,  // used to calculate the time of an epoch determining "TIMEOUT" sate
