@@ -8,6 +8,8 @@ import org.automanlang.core.question.confidence._
 import org.automanlang.core.policy.aggregation._
 import org.automanlang.core.mock._
 
+import scala.collection.immutable.ListMap
+
 trait DSL {
   val automan: org.automanlang.automan.type = org.automanlang.automan
   val LogConfig: logging.LogConfig.type = org.automanlang.core.logging.LogConfig
@@ -761,8 +763,8 @@ trait DSL {
                                       wage: BigDecimal = MagicNumbers.USFederalMinimumWage,
                                       cohen_d_threshold: Double = 12,
                                       noise_percentage: Double = 0.2,
-                                      words_candidates: Map[String, Array[String]] = Map(),
-                                      functions: Map[String, (String, Map[String, String])] = Map()
+                                      words_candidates: ListMap[String, Array[String]] = ListMap(),
+                                      functions: ListMap[String, (String, Map[String, String])] = ListMap()
                                     )(implicit a: A): FakeSurvey#O = {
     def initf[Q <: FakeSurvey](q: Q): Unit = {
       // mandatory parameters

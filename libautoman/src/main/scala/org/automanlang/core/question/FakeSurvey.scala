@@ -8,7 +8,9 @@ import org.automanlang.core.mock.MockResponse
 import org.automanlang.core.policy.aggregation.{AdversarialPolicy, SimpleSurveyVectorPolicy, SurveyPolicy}
 import org.automanlang.core.policy.price.{FixedPricePolicy, MLEPricePolicy}
 import org.automanlang.core.policy.timeout.{DoublingTimeoutPolicy, FixedTimeoutPolicy}
+
 import java.util.{Date, UUID}
+import scala.collection.immutable.ListMap
 import scala.concurrent.ExecutionContext.Implicits.global
 
 abstract class FakeSurvey extends Question {
@@ -81,19 +83,19 @@ abstract class FakeSurvey extends Question {
   def questions_=(newQs: List[Any]): Unit = _questions = newQs.asInstanceOf[List[Q]] // ways to work around this ugly typecasting?
 
   // list of candidates for mad-libs styled syntaxs
-  private var _words_candidates: Map[String, Array[String]] = Map()
-  def words_candidates: Map[String, Array[String]] = _words_candidates
-  def words_candidates_=(new_c: Map[String, Array[String]]): Unit = {
+  private var _words_candidates: ListMap[String, Array[String]] = ListMap()
+  def words_candidates: ListMap[String, Array[String]] = _words_candidates
+  def words_candidates_=(new_c: ListMap[String, Array[String]]): Unit = {
     _words_candidates = new_c
   }
 
   // output_var => (input_var, choice)
   // where choice is a Map of [input_var_value => output_var_value] pairs
-  private var _functions: Map[String, (String, Map[String, String])] = Map()
+  private var _functions: ListMap[String, (String, Map[String, String])] = ListMap()
 
-  def functions: Map[String, (String, Map[String, String])] = _functions
+  def functions: ListMap[String, (String, Map[String, String])] = _functions
 
-  def functions_=(new_f: Map[String, (String, Map[String, String])]): Unit = {
+  def functions_=(new_f: ListMap[String, (String, Map[String, String])]): Unit = {
     _functions = new_f
   }
 

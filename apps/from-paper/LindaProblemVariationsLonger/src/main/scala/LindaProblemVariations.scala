@@ -69,7 +69,7 @@ object LindaProblemVariations extends App {
         ktMap
       }).toList
     }
-    val d = scala.collection.mutable.ListMap[String, (String, ListMap[String, String])]()
+    val d = scala.collection.mutable.LinkedHashMap[String, (String, ListMap[String, String])]()
     for (map <- list_of_maps) {
       for (kvp <- map) {
         val (key, value) = kvp
@@ -101,7 +101,7 @@ object LindaProblemVariations extends App {
         ktMap
       }).toList
     }
-    val d = scala.collection.mutable.ListMap[String, Array[String]]()
+    val d = scala.collection.mutable.LinkedHashMap[String, Array[String]]()
     for (map <- list_of_maps) {
       for (kvp <- map) {
         val (key, xs) = kvp
