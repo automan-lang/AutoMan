@@ -23,7 +23,7 @@ object LindaProblemVariations extends App {
     ).toList
   }
 
-  def ktFunctions(n: Int):  ListMap[String, (String, Map[String, String])] = {
+  def ktFunctions(n: Int):  Map[String, (String, Map[String, String])] = {
     val list_of_maps = {
       (for (i <- 0 until n) yield {
         val i_str = i.toString
@@ -83,6 +83,7 @@ object LindaProblemVariations extends App {
         }
       }
     }
+    d.toMap
   }
 
   def which_one(): DSL.SurveyOutcome[List[Any]] = Survey(
