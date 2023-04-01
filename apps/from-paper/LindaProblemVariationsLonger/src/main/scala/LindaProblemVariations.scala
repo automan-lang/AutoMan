@@ -123,16 +123,19 @@ object LindaProblemVariations extends App {
     questions = ktQuestions(TRIALS),
     functions = ktFunctions(TRIALS),
     words_candidates = ktWords(TRIALS),
-    budget = 100.00,  // this field is a hard limit per question/survey on how much the user will pay
+    budget = 100.00 * TRIALS,  // this field is a hard limit per question/survey on how much the user will pay
     // (the survey will terminate if total price of tasks increase beyond this limit and throw OverBudgetException`)
     csv_output = "linda_variation_" + java.time.LocalDateTime.now.toString + ".csv",
     title = "Which is more probable?",
-    text = "Which is more probable?",
+    text = "This survey contains a set of short descriptions and questions.  " +
+           "Please read the description and answer the question immediately following it " +
+           "before proceeding to the next description.",
     sample_size = 200,
-    initial_worker_timeout_in_s = 60*TRIALS,
+    initial_worker_timeout_in_s = 60 * TRIALS,
     question_timeout_multiplier = 180,  // used to calculate the time of an epoch determining "TIMEOUT" sate
     noise_percentage = 0.4,
-    cohen_d_threshold = -1000
+    cohen_d_threshold = -1000,
+    wage = 7.25 / 2
   )
 
   automan(a) {
