@@ -13,8 +13,8 @@ object LindaProblemKTExactLongerPics extends App {
 
 	def conjunction_fallacy() = Survey(
 	  budget = 100.00,
-		title = "Answer some short questions that test your cognitive function",
-		text = "Please read the following questions and answer them carefully.",
+		title = "Answer a short cognitive function test",
+		text = "Read the following questions and answer them carefully.",
 	  questions = List(
 			estimateQuestion(
 				// How many peas would you estimate are on this plate?
@@ -23,7 +23,8 @@ object LindaProblemKTExactLongerPics extends App {
 			),
 			radioQuestion(
 				// What time of day is it where you are?
-				text = "https://danaws.s3.amazonaws.com/time.png",
+				image_url = "https://danaws.s3.amazonaws.com/time.png",
+				text = "",
 				options = (
 					choice('morning, "", "https://danaws.s3.amazonaws.com/Morning.png"),
 					choice('noon, "", "https://danaws.s3.amazonaws.com/Noon.png"),
