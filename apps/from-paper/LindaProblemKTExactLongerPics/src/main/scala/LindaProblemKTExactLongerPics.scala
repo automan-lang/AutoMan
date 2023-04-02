@@ -41,7 +41,7 @@ object LindaProblemKTExactLongerPics extends App {
 					choice('suv, "", "https://danaws.s3.amazonaws.com/SUV.png"),
 					choice('twuck, "", "https://danaws.s3.amazonaws.com/Twuck.png"),
 					choice('motorcycle, "", "https://danaws.s3.amazonaws.com/Motorcycle.png"),
-					choice('sport, "", "https://danaws.s3.amazonaws.com/Sport.png"),
+					choice('sport, "", "https://danaws.s3.amazonaws.com/Sports.png"),
 				)
 			),
 			estimateQuestion(
