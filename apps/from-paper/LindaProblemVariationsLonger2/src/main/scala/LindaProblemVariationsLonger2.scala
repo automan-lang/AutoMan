@@ -50,7 +50,6 @@ object LindaProblemVariationsLonger2 extends App {
     ),
     budget = 100.00,  // this field is a hard limit per question/survey on how much the user will pay
     // (the survey will terminate if total price of tasks increase beyond this limit and throw OverBudgetException`)
-    csv_output = "linda_" + java.time.LocalDateTime.now.toString + ".csv",
     title = "Answer some short questions that test your cognitive function",
     text = "Please read the following questions and answer them carefully.",
     words_candidates = ListMap[String, Array[String]](
@@ -101,7 +100,8 @@ object LindaProblemVariationsLonger2 extends App {
     question_timeout_multiplier = 180,  // used to calculate the length of an epoch before producing a timeout
     noise_percentage = 0.4,
     cohen_d_threshold = -1000,
-    wage = 7.25 / 4
+    wage = 7.25 / 4,
+    csv_output = "linda_variations_" + java.time.LocalDateTime.now.toString + ".csv"
   )
 
   automan(a) {
