@@ -51,7 +51,7 @@ object LindaProblemVariationsLonger2 extends App {
     budget = 100.00,  // this field is a hard limit per question/survey on how much the user will pay
     // (the survey will terminate if total price of tasks increase beyond this limit and throw OverBudgetException`)
     csv_output = "linda_" + java.time.LocalDateTime.now.toString + ".csv",
-    title = "What do you think?",
+    title = "Answer some short questions that test your cognitive function",
     text = "Please read the following questions and answer them carefully.",
     words_candidates = ListMap[String, Array[String]](
       "name" -> Array("Liam", "Olivia", "Noah", "Emma", "Oliver", "Charlotte", "Elijah", "Amelia", "James", "Ava"),
