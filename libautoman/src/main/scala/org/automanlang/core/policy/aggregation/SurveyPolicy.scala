@@ -110,8 +110,8 @@ class SurveyPolicy(question: FakeSurvey)
           val q3 = StatUtils.percentile(answers(i), 0, answers(i).length, 75)
           val IQR = q3 - q1
 
-          val upper_bound = q3 + 1.5 * IQR
-          val lower_bound = q1 - 1.5 * IQR
+          val upper_bound = Math.min(q3 + 1.5 * IQR, answers(i).max)
+          val lower_bound = Math.max(q1 - 1.5 * IQR, answers(i).min)
 
           // digitize the answers matrix for EQ
           answers(i) = answers(i).map(v => {
@@ -121,7 +121,7 @@ class SurveyPolicy(question: FakeSurvey)
               21.0
             } else {
               // digitize into bins 1...20
-              math.floor((v-lower_bound) / upper_bound * 20) + 1
+              math.floor((v-lower_bound) / (upper_bound-lower_bound) * 20) + 1
             }
           })
 
