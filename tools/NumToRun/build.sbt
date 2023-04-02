@@ -1,11 +1,11 @@
 name := "NumToRun"
 
-version := "1.0"
+version := "1.1"
 
-organization := "edu.umass.cs"
+organization := "org.automanlang"
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.12.12"
 
 libraryDependencies ++= Seq(
-  "edu.umass.cs"        %% "automan" % "1.2-SNAPSHOT"
+  "org.automanlang" %% "automan" % "1.4.3-SNAPSHOT"
 )
