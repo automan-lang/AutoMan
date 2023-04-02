@@ -5,28 +5,28 @@ object NumToRun {
   def main(args: Array[String]) {
     if (args.length < 3 || args.length > 4) {
       println("Computes how many trials are needed to determine that a coin/die is biased with the given bias, # faces, and confidence.")
-      println("Usage: sbt \"run <bias probability> <# sides> <confidence> [--upper|--lower]\"")
+      println("Usage: sbt \"run <bias probability> <# sides> <confidence> [--greater|--smaller]\"")
       println("Example:\n\nsbt \"run 0.75 2 0.95 --upper\"\n")
       System.exit(1)
     }
 
-    val p_succ = args(0).toDouble
+    val p_bias = args(0).toDouble
     val opts = args(1).toInt
     val conf = args(2).toDouble
     val testType =
       (if (args.length == 4) {
         args(3) match {
-          case "--upper" => UPPER
-          case "--lower" => LOWER
+          case "--greater" => UPPER
+          case "--smaller" => LOWER
         }
       } else {
-        println("Unknown tail.  Provide either --upper or --lower.")
+        println("Unknown tail.  Provide either --greater or --smaller.")
         System.exit(1)
       })
 
     // if the "coin" is unbiased, this would be the probability
     val unbiased_p = 1.0/opts
-    var trials = 0
+    var trials = 1
     var empirical_conf = 0.00
 
     do {
@@ -35,7 +35,7 @@ object NumToRun {
 
       // compute the expected number of observed successes
       // given the actual (biased) probability of success
-      val successes = (trials * p_succ).toInt
+      val successes = (trials * p_bias).toInt
 
       // compute Chernoff bound with the hypothesis that the
       // "coin" is unbiased
@@ -48,9 +48,12 @@ object NumToRun {
         case UPPER => empirical_conf = 1.0 - upper
       }
 
+      println(s"The probability of ${successes} or more heads out of ${trials} flips is ${upper}")
+      println(s"The probability of ${successes} or fewer heads out of ${trials} flips is ${lower}")
+
     } while (empirical_conf < conf)
-    
-    println(s"Need ${trials} trials to demonstrate bias of ${p_succ} with confidence = ${empirical_conf}.")
+
+    println(s"Need ${trials} trials to demonstrate bias of ${p_bias} with confidence = ${empirical_conf}.")
   }
 
   /**
@@ -61,8 +64,8 @@ object NumToRun {
    * @return Epsilon
    */
   private def upperEpsilon(n: Int, t: Int, p: Double) : Double = {
-    val μ = n * p
-    t/μ - 1
+    val μ = n.toDouble * p
+    t.toDouble/μ - 1.0
   }
 
   /**
@@ -74,8 +77,8 @@ object NumToRun {
    * @return Epsilon
    */
   private def lowerEpsilon(n: Int, t: Int, p: Double): Double = {
-    val μ = n * p
-    1 - t / μ
+    val μ = n.toDouble * p
+    1.0 - t.toDouble / μ
   }
 
   /**
