@@ -243,7 +243,8 @@ object MTurkMethods {
                                     batch_key: BatchKey,
                                     state: MTState,
                                     backend: AmazonMTurk,
-                                    is_sandbox: Boolean) : MTState = {
+                                    is_sandbox: Boolean,
+                                    quals: List[QualificationRequirement]) : MTState = {
     var internal_state = state
 
     DebugLog("Registering new HIT Type for batch key = " + batch_key, LogLevelDebug(), LogType.ADAPTER, null)
@@ -275,12 +276,14 @@ object MTurkMethods {
 
     // also create a Masters requirement
     //  THIS IS A HORRIBLE HACK; FIX LATER
-    val mastersRequirement = new QualificationRequirement();
-    val SANDBOX = "2ARFPLSP75KLA8M8DH1HTEQVJT3SY6"
-    val PRODUCTION = "2F1QJWKUDD8XADTFD2Q0G6UTO95ALH"
-    val qualificationID = if (is_sandbox) SANDBOX else PRODUCTION
-    mastersRequirement.setQualificationTypeId(qualificationID)
-    mastersRequirement.setComparator("Exists")
+//    val mastersRequirement = new QualificationRequirement();
+//    val SANDBOX = "2ARFPLSP75KLA8M8DH1HTEQVJT3SY6"
+//    val PRODUCTION = "2F1QJWKUDD8XADTFD2Q0G6UTO95ALH"
+//    val qualificationID = if (is_sandbox) SANDBOX else PRODUCTION
+//    mastersRequirement.setQualificationTypeId(qualificationID)
+//    mastersRequirement.setComparator("Exists")
+
+    val quals2 = quals ++ List(disqualification)
 
     val hit_type_id = backend.createHITType(new CreateHITTypeRequest()
       .withAutoApprovalDelayInSeconds(autoApprovalDelayInSeconds)
@@ -289,7 +292,7 @@ object MTurkMethods {
       .withTitle(title)                                                      // title
       .withKeywords(keywords.mkString(","))                              // keywords
       .withDescription(desc)                                                      // description
-      .withQualificationRequirements(List(disqualification, mastersRequirement))                      // qualifications
+      .withQualificationRequirements(quals2)                      // qualifications
     )
     val hittype = HITType(hit_type_id.getHITTypeId, disqualification, group_id)
 
@@ -314,7 +317,7 @@ object MTurkMethods {
     val q = ts.head.question.asInstanceOf[MTurkQuestion]
 
     // get hit_type for batch
-    val (hit_type,state2) = get_or_create_hittype(question.title, q.description, q.keywords, batch_key, internal_state, backend, is_sandbox)
+    val (hit_type,state2) = get_or_create_hittype(question.title, q.description, q.keywords, batch_key, internal_state, backend, is_sandbox, q.qualifications)
     internal_state = state2
 
     // render HTML
@@ -394,7 +397,8 @@ object MTurkMethods {
                                             batch_key: BatchKey,
                                             state: MTState,
                                             backend: AmazonMTurk,
-                                            is_sandbox: Boolean) : (HITType, MTState) = {
+                                            is_sandbox: Boolean,
+                                            quals: List[QualificationRequirement]) : (HITType, MTState) = {
     var internal_state = state
 
     // when these properties change from what we've seen before
@@ -408,7 +412,7 @@ object MTurkMethods {
 
     if (!internal_state.hit_types.contains(batch_key)) {
       // request new HITTypeId from MTurk
-      internal_state = mturk_registerHITType(title, desc, keywords, batch_key, internal_state, backend, is_sandbox)
+      internal_state = mturk_registerHITType(title, desc, keywords, batch_key, internal_state, backend, is_sandbox, quals)
     } else {
       DebugLog(s"Reusing HITType with ID ${internal_state.hit_types(batch_key).id} for batch key ${batch_key}.", LogLevelInfo(), LogType.ADAPTER, null)
     }
