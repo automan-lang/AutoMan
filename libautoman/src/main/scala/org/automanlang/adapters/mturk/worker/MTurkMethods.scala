@@ -15,6 +15,7 @@ import org.automanlang.core.question.Question
 import org.automanlang.core.scheduler.Task
 import org.automanlang.core.util.Utilities.x_seconds_from_now
 import scala.collection.JavaConversions._
+import com.amazonaws.services.mturk.model.QualificationRequirement
 
 /**
   * A collection of stateless MTurk utility functions.
@@ -241,7 +242,8 @@ object MTurkMethods {
                                     keywords: List[String],
                                     batch_key: BatchKey,
                                     state: MTState,
-                                    backend: AmazonMTurk) : MTState = {
+                                    backend: AmazonMTurk,
+                                    is_sandbox: Boolean) : MTState = {
     var internal_state = state
 
     DebugLog("Registering new HIT Type for batch key = " + batch_key, LogLevelDebug(), LogType.ADAPTER, null)
@@ -271,14 +273,23 @@ object MTurkMethods {
 
     val autoApprovalDelayInSeconds = (3 * 24 * 60 * 60).toLong     // 3 days
 
+    // also create a Masters requirement
+    //  THIS IS A HORRIBLE HACK; FIX LATER
+    val mastersRequirement = new QualificationRequirement();
+    val SANDBOX = "2ARFPLSP75KLA8M8DH1HTEQVJT3SY6"
+    val PRODUCTION = "2F1QJWKUDD8XADTFD2Q0G6UTO95ALH"
+    val qualificationID = if (is_sandbox) SANDBOX else PRODUCTION
+    mastersRequirement.setQualificationTypeId(qualificationID)
+    mastersRequirement.setComparator("Exists")
+
     val hit_type_id = backend.createHITType(new CreateHITTypeRequest()
       .withAutoApprovalDelayInSeconds(autoApprovalDelayInSeconds)
       .withAssignmentDurationInSeconds(worker_timeout.toLong + WORKER_TIMEOUT_EPSILON_S)              // amount of time the worker has to complete the task
-      .withReward(cost.toString())                                                // cost in USD TODO: reward == cost?
+      .withReward(cost.toString())                                                // cost (reward) in USD
       .withTitle(title)                                                      // title
       .withKeywords(keywords.mkString(","))                              // keywords
       .withDescription(desc)                                                      // description
-      .withQualificationRequirements(List(disqualification))                      // qualifications
+      .withQualificationRequirements(List(disqualification, mastersRequirement))                      // qualifications
     )
     val hittype = HITType(hit_type_id.getHITTypeId, disqualification, group_id)
 
@@ -291,14 +302,19 @@ object MTurkMethods {
     internal_state
   }
 
-  private[worker] def mturk_createHIT(ts: List[Task], batch_key: BatchKey, question: Question, state: MTState, backend: AmazonMTurk) : MTState = {
+  private[worker] def mturk_createHIT(ts: List[Task],
+                                      batch_key: BatchKey,
+                                      question: Question,
+                                      state: MTState,
+                                      backend: AmazonMTurk,
+                                      is_sandbox: Boolean) : MTState = {
     var internal_state = state
 
     // question
     val q = ts.head.question.asInstanceOf[MTurkQuestion]
 
     // get hit_type for batch
-    val (hit_type,state2) = get_or_create_hittype(question.title, q.description, q.keywords, batch_key, internal_state, backend)
+    val (hit_type,state2) = get_or_create_hittype(question.title, q.description, q.keywords, batch_key, internal_state, backend, is_sandbox)
     internal_state = state2
 
     // render HTML
@@ -372,7 +388,13 @@ object MTurkMethods {
     * @param batch_key A GroupKey tuple that uniquely identifies a batch round.
     * @return A HITType
     */
-  private[worker] def get_or_create_hittype(title: String, desc: String, keywords: List[String], batch_key: BatchKey, state: MTState, backend: AmazonMTurk) : (HITType, MTState) = {
+  private[worker] def get_or_create_hittype(title: String,
+                                            desc: String,
+                                            keywords: List[String],
+                                            batch_key: BatchKey,
+                                            state: MTState,
+                                            backend: AmazonMTurk,
+                                            is_sandbox: Boolean) : (HITType, MTState) = {
     var internal_state = state
 
     // when these properties change from what we've seen before
@@ -386,7 +408,7 @@ object MTurkMethods {
 
     if (!internal_state.hit_types.contains(batch_key)) {
       // request new HITTypeId from MTurk
-      internal_state = mturk_registerHITType(title, desc, keywords, batch_key, internal_state, backend)
+      internal_state = mturk_registerHITType(title, desc, keywords, batch_key, internal_state, backend, is_sandbox)
     } else {
       DebugLog(s"Reusing HITType with ID ${internal_state.hit_types(batch_key).id} for batch key ${batch_key}.", LogLevelInfo(), LogType.ADAPTER, null)
     }

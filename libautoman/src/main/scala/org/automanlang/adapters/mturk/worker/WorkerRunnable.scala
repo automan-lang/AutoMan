@@ -377,7 +377,7 @@ class WorkerRunnable(tw: TurkWorker,
           internal_state = WorkerRunnable.turkRetry(() => MTurkMethods.mturk_extendHIT(tz, tz.head.timeout_in_s, hit_key, internal_state, tw.backend), timeoutState)
         } else {
           // if not, post a new HIT on MTurk
-          internal_state = WorkerRunnable.turkRetry(() => MTurkMethods.mturk_createHIT(tz, group_key, q, internal_state, tw.backend), timeoutState)
+          internal_state = WorkerRunnable.turkRetry(() => MTurkMethods.mturk_createHIT(tz, group_key, q, internal_state, tw.backend, tw.is_sandbox), timeoutState)
         }
 
         // mark as running

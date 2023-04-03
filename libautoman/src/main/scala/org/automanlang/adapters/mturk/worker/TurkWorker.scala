@@ -11,7 +11,11 @@ import org.automanlang.adapters.mturk.question.MTurkQuestion
 import org.automanlang.core.logging._
 import org.automanlang.core.scheduler.{SchedulerState, Task}
 
-class TurkWorker(val backend: AmazonMTurk, val sleep_ms: Int, val mock_service: Option[MockRequesterService], val memo_handle: MTMemo) {
+class TurkWorker(val backend: AmazonMTurk,
+                 val sleep_ms: Int,
+                 val mock_service: Option[MockRequesterService],
+                 val memo_handle: MTMemo,
+                 val is_sandbox: Boolean) {
   type HITID = String
   type BatchKey = (String,BigDecimal,Int)   // (group_id, cost, timeout); uniquely identifies a batch
   type HITKey = (BatchKey, String)          // (BatchKey, memo_hash); uniquely identifies a HIT

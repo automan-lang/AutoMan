@@ -182,9 +182,9 @@ class MTurkAdapter extends AutomanAdapter {
     }
     val pool = _use_mock match {
       case Some(mock_setup) =>
-        new TurkWorker(rs, 0, Some(rs.asInstanceOf[MockRequesterService]), _memoizer)
+        new TurkWorker(rs, 0, Some(rs.asInstanceOf[MockRequesterService]), _memoizer, sandbox_mode)
       case None =>
-        new TurkWorker(rs, _backend_update_frequency_ms, None, _memoizer)
+        new TurkWorker(rs, _backend_update_frequency_ms, None, _memoizer, sandbox_mode)
     }
     _service = Some(rs)
     _worker = Some(pool)
