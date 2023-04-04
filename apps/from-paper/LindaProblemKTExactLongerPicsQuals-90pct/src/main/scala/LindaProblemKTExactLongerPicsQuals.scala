@@ -117,7 +117,7 @@ object LindaProblemKTExactLongerPicsQuals extends App {
 		noise_percentage = 0.4,
 		cohen_d_threshold = -1000,
 		wage = 7.25 / 5,
-		csv_output = "linda_exact_longer" + java.time.LocalDateTime.now.toString + ".csv"
+		csv_output = this.getClass.getSimpleName + java.time.LocalDateTime.now.toString + ".csv"
   )
 
   automan(a) {
