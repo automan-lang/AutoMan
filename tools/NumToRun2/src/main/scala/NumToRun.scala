@@ -6,7 +6,7 @@ object NumToRun {
     if (args.length < 3 || args.length > 4) {
       println("Computes how many trials are needed to determine that a coin/die is biased with the given bias, # faces, and confidence.")
       println("Usage: sbt \"run <bias probability> <# sides> <confidence> [--greater|--smaller]\"")
-      println("Example:\n\nsbt \"run 0.75 2 0.95 --upper\"\n")
+      println("Example:\n\nsbt \"run 0.75 2 0.95 --greater\"\n")
       System.exit(1)
     }
 
