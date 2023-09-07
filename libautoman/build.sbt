@@ -127,3 +127,16 @@ developers := List(
 
 // don't trap System.exit() calls-- really quit SBT
 trapExit := false
+
+// Refer to https://github.com/sbt/sbt-assembly?tab=readme-ov-file#merge-strategy
+ThisBuild / assemblyMergeStrategy := {
+  case PathList("javax", "servlet", xs @ _*)         => MergeStrategy.first
+  case PathList("META-INF", xs @ _*) => MergeStrategy.discard // Discard META-INF files
+  case PathList("module-info.class", xs @ _*) => MergeStrategy.discard // Discard module-info.class
+  case PathList(ps @ _*) if ps.last endsWith ".html" => MergeStrategy.first
+  case "application.conf"                            => MergeStrategy.concat
+  case "unwanted.txt"                                => MergeStrategy.discard
+  case x =>
+    val oldStrategy = (ThisBuild / assemblyMergeStrategy).value
+    oldStrategy(x)
+}
