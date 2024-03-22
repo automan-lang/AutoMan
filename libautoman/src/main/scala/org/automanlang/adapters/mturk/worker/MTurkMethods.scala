@@ -70,7 +70,7 @@ object MTurkMethods {
       if (internal_state.worker_whitelist.contains(worker_id, group_id)) {
         // if that disqualification is not the same as the one they're asking for, sorry, reject;
         // granting this would violate i.i.d. guarantee
-        // note by Ye Shu: this is the case where disqualification has been granted for previous batch
+        // note by <ANONYMIZED>: this is the case where disqualification has been granted for previous batch
         if (internal_state.getHITTypeForWhitelistedWorker(worker_id, group_id).id != hit_type_id) {
           backend.rejectQualificationRequest(new model.RejectQualificationRequestRequest()
             .withQualificationRequestId(request.getQualificationRequestId)
@@ -78,7 +78,7 @@ object MTurkMethods {
                         "that disqualifies you from participating in this HITType."))
           // otherwise, they're requesting something we've already granted; reject
         } else {
-          // note by Ye Shu: this is the case where disqualification has been granted for this branch
+          // note by <ANONYMIZED>: this is the case where disqualification has been granted for this branch
           backend.rejectQualificationRequest(new model.RejectQualificationRequestRequest()
             .withQualificationRequestId(request.getQualificationRequestId)
             .withReason("You cannot request this qualification more than once.")
@@ -86,7 +86,7 @@ object MTurkMethods {
         }
       } else {
         // if we don't know them, record the user and grant their disqualification request
-        // note by Ye Shu: this code is unlikely to be reached, because we are now using qualification requirement
+        // note by <ANONYMIZED>: this code is unlikely to be reached, because we are now using qualification requirement
         // that "xxx has not been granted". So if a worker asks for qualification, they are likely already disqualified
         // However I'm keeping this code here just in case
         DebugLog(s"Granting qualification request: (worker ID: ${worker_id}, group ID: ${group_id}).", LogLevelInfo(), LogType.ADAPTER, null)

@@ -7,7 +7,7 @@ organization := "org.automanlang"
 
 licenses := Seq("GPL-2.0" -> url("http://opensource.org/licenses/GPL-2.0"))
 
-homepage := Some(url("http://github.com/dbarowy/AutoMan"))
+homepage := Some(url("http://github.com/automan-lang/AutoMan"))
 
 scalaVersion := "2.12.12"
 
@@ -17,7 +17,7 @@ exportJars := true
 crossScalaVersions := Seq("2.11.7")
 
 // SUPPORTED JAVA VERSIONS (to work around FasterXML InaccessibleObjectException issue)
-// Ye Shu note: I have not encountered this problem on OpenJDK 17, so commenting out for now
+// <ANONYMIZED> note: I have not encountered this problem on OpenJDK 17, so commenting out for now
 // scalacOptions += "-target:jvm-1.8"
 
 // DEPENDENCIES

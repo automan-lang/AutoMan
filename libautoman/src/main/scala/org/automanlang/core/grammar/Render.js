@@ -10,12 +10,12 @@ const fs = require("fs");
 const grammarText = fs.readFileSync("lindaGrammar_expanded.json");
 
 /**
- * 
- * @param {any} expr 
- * @param {any} g 
- * @param {Array<Number>} assignment 
- * @param {Map<Number, any>} generatingScope 
- * @param {Set<String>} generatedNames 
+ *
+ * @param {any} expr
+ * @param {any} g
+ * @param {Array<Number>} assignment
+ * @param {Map<Number, any>} generatingScope
+ * @param {Set<String>} generatedNames
  * @returns {{soFarScope: Map<Number, any>, soFarNames: Set<String>}}
  */
 const bindHelper = (expr, g, assignment, generatingScope, generatedNames) => {
@@ -61,15 +61,15 @@ const bind = (g, assignment) => {
 }
 
 /**
- * 
- * @param {any} expr 
- * @param {any} g 
- * @param {Map<Number, any>} scope 
- * @param {Array<any>} generatingBod 
- * @param {Array<Array<any>>} generatingOpts 
- * @param {boolean} doAppend 
- * @param {number} index 
- * @param {Map<String, String>} boundVars 
+ *
+ * @param {any} expr
+ * @param {any} g
+ * @param {Map<Number, any>} scope
+ * @param {Array<any>} generatingBod
+ * @param {Array<Array<any>>} generatingOpts
+ * @param {boolean} doAppend
+ * @param {number} index
+ * @param {Map<String, String>} boundVars
  * @returns {{bodSoFar: Array<any>, optsSoFar: Array<Array<any>>, boundVarsSoFar: Map<String, String>, position: number}}
  */
 const firstRender = (expr, g, scope, generatingBod, generatingOpts, doAppend, index, boundVars) => {
@@ -104,8 +104,8 @@ const firstRender = (expr, g, scope, generatingBod, generatingOpts, doAppend, in
       })
       return {bodSoFar, optsSoFar, boundVarsSoFar, position};
     case "OptionProduction":
-      // here we reuse firstRender instead of reimplementing Emmie's renderHelper
-      // the core idea is to treat the options as body, and reuse the function logic to construct a body 
+      // here we reuse firstRender instead of reimplementing <ANONYMIZED>'s renderHelper
+      // the core idea is to treat the options as body, and reuse the function logic to construct a body
       let {bodSoFar: newOpt, boundVarsSoFar: newBound, position: newPos } = firstRender(expr["text"], g, scope, [], [], doAppend, position, boundVarsSoFar);
       return {bodSoFar, optsSoFar: optsSoFar.concat([newOpt]), boundVarsSoFar: newBound, position: newPos};
     case "Binding":
@@ -129,8 +129,8 @@ const firstRender = (expr, g, scope, generatingBod, generatingOpts, doAppend, in
 
 /**
  * Helper method to generate a string from the Expression arrays by appending Terminals and calling Functions
- * @param {Array<any>} instArr 
- * @param {Map<String, String>} bingdingMap 
+ * @param {Array<any>} instArr
+ * @param {Map<String, String>} bingdingMap
  * @returns {String}
  */
 const secondRenderHelper = (instArr, bingdingMap) => {
@@ -164,9 +164,9 @@ const secondRender = (bodArr, optsArr, bingdingMap) => {
 /**
  * Creates a string of the experiment instance specified by the Scope.
  *
- * @param {Map<Number, any>} scope 
- * @param {any} grammar 
- * @returns 
+ * @param {Map<Number, any>} scope
+ * @param {any} grammar
+ * @returns
  */
 const renderInstance = (scope, grammar) => {
   let {bodSoFar, optsSoFar, boundVarsSoFar} = firstRender(grammar["Start"], grammar, scope, Array(), Array(), true, -1, new Map())

@@ -159,7 +159,7 @@ public class lapjv
         int dim = assigncost.length;
         //int dim = Math.max(assigncost.length, assigncost[0].length);
 
-        // YE SHU NOTE: MAY GO INTO INFINITE LOOP AT L283 (`free[--k]`)
+        // <ANONYMIZED> NOTE: MAY GO INTO INFINITE LOOP AT L283 (`free[--k]`)
         // READ https://github.com/hrldcpr/pyLAPJV#nota-bene
         // The scale method does not work in our case since some distances are very close to zero (1E-7).
         // Instead, I have used a patch inspired by https://github.com/Fil/lap-jv/blob/1e5857b5e7d764ced8f760eaac1657d5cc234819/lap.js
