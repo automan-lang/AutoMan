@@ -26,7 +26,7 @@ title: Changelog
 |1.2.0||New DSL syntax|
 |     ||AutoMan now has a simplified syntax that does away with some Scala idiosyncrasies and simplifies imports.|
 |1.1.7||Point release.|
-|     ||Fix a bug in the qualification cleanup routine.  See [issue #28](https://github.com/dbarowy/AutoMan/issues/28).
+|     ||Fix a bug in the qualification cleanup routine.  See [issue #28](https://github.com/automan-lang/AutoMan/issues/28).
 |1.1.6||Major release.|
 |     ||Now includes support for quality-controlled estimation queries!|
 |     ||Preliminary estimation composition support.|

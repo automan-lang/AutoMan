@@ -118,10 +118,10 @@ scmInfo := Some(
 )
 developers := List(
   Developer(
-    id="dbarowy",
-    name="Daniel W. Barowy",
-    email="dbarowy@cs.williams.edu",
-    url=url("https://www.cs.williams.edu/~dbarowy")
+    id="anonymous",
+    name="Anonymous",
+    email="anonymous@example.com",
+    url=url("https://example.com")
   )
 )
 

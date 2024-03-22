@@ -1,4 +1,6 @@
-# AutoMan
+# MadLabs
+
+Note: We are building off the Automan project. This is a fork of the AutoMan repository.
 
 ## What is AutoMan? <a id="overview"></a>
 

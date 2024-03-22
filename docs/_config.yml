@@ -1,5 +1,5 @@
 # username/repository
-id: dbarowy/AutoMan
+id: automan-lang/AutoMan
 # name of the software
 name: AutoMan
 # current version of the software
@@ -31,14 +31,14 @@ customNavBar: true
 # list of additional links on the right of the top menu
 headerLinks:
   - title: GitHub
-    url: https://github.com/dbarowy/AutoMan
+    url: https://github.com/automan-lang/AutoMan
 
 # list if additional links on the footer
 footerLinks:
   - title: GitHub
-    url: https://github.com/dbarowy/AutoMan
+    url: https://github.com/automan-lang/AutoMan
   - title: Issues
-    url: https://github.com/dbarowy/AutoMan/issues
+    url: https://github.com/automan-lang/AutoMan/issues
 
 # header
 header:
@@ -53,7 +53,7 @@ analytics:
 
 # github buttons
 #githubButton:
-#  user: dbarowy
+#  user: automan-lang
 #  repo: AutoMan
 
 # twitter buttons

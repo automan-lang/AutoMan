@@ -5,7 +5,7 @@ description: Domain-Specific Language for Crowdsourcing Tasks
 isHome: true
 ---
 
-[![Circle CI](https://circleci.com/gh/dbarowy/AutoMan.svg?style=shield)](https://circleci.com/gh/dbarowy/AutoMan)
+[![Circle CI](https://circleci.com/gh/automan-lang/AutoMan.svg?style=shield)](https://circleci.com/gh/automan-lang/AutoMan)
 
 <section class="bs-docs-section">
 <h1 id="overview" class="page-header">What is AutoMan?</h1>
@@ -16,7 +16,7 @@ AutoMan is available as a library for Scala.
 
 ### Where did it all come from?
 
-AutoMan is being actively developed by [Daniel Barowy](http://www.cs.williams.edu/~dbarowy/) at [Williams College](https://csci.williams.edu/) and [Emery Berger](https://emeryberger.com/) at the [PLASMA Laboratory](http://plasma.cs.umass.edu/) at the [University of Massachusetts Amherst](https://www.cics.umass.edu/). Portions of AutoMan were developed as a collaboration with researchers at [Microsoft Research NYC](https://www.microsoft.com/en-us/research/lab/microsoft-research-new-york/).
+AutoMan is being actively developed by <ANONYMIZED>.
 
 <section class="bs-docs-section">
   <h1 id="downloading" class="page-header">Getting AutoMan</h1>
@@ -39,13 +39,13 @@ _or_ if you're using Maven:
   <h1 id="bugs" class="page-header">Reporting bugs</h1>
 </section>
 
-Please report bugs using this repository's [issue tracker](https://github.com/dbarowy/AutoMan/issues).
+Please report bugs using this repository's [issue tracker](https://github.com/automan-lang/AutoMan/issues).
 
 <section class="bs-docs-section">
   <h1 id="license" class="page-header">License</h1>
 </section>
 
-AutoMan is licensed under the GPLv2, Copyright (C) 2011-2020 The University of Massachusetts, Amherst / Williams College.
+AutoMan is licensed under the GPLv2, Copyright (C) 2011-2020 <ANONYMOUS>.
 
 <section class="bs-docs-section">
   <h1 id="using_automan" class="page-header">Using AutoMan</h1>
